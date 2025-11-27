@@ -1,9 +1,5 @@
 use aptos_types::{sparse_merkle_proof::SparseMerkleProof, storage_proof::StorageProof};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait, types::ErrorObject};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use state_lens_ics23_smt_light_client_types::{ClientState, ConsensusState};

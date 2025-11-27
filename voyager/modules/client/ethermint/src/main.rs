@@ -1,26 +1,22 @@
 use ethermint_light_client_types::ClientState;
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::Value;
 use tendermint_light_client_types::{ConsensusState, Header};
-use tracing::{debug, instrument};
+use tracing::instrument;
 use unionlabs::{
-    self, ErrorReporter,
     encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
+    ibc::core::commitment::merkle_proof::MerkleProof,
     primitives::Bytes,
 };
 use voyager_sdk::{
-    anyhow,
+    anyhow, ensure_null, into_value,
     plugin::ClientModule,
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         IbcSpecId, Timestamp,
     },
-    rpc::{ClientModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientModuleInfo},
+    rpc::{ClientModuleServer, RpcError, RpcResult, types::ClientModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -49,144 +45,98 @@ impl ClientModule for Module {
 }
 
 impl Module {
-    pub fn decode_consensus_state(&self, consensus_state: &[u8]) -> RpcResult<ConsensusState> {
-        ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to decode consensus state: {}", ErrorReporter(err)),
-                None::<()>,
-            )
-        })
+    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<ClientState> {
+        ClientState::decode_as::<Bincode>(client_state)
+            .map_err(RpcError::fatal("unable to decode client state"))
     }
 
-    pub fn decode_client_state(&self, client_state: &[u8]) -> RpcResult<ClientState> {
-        ClientState::decode_as::<Bincode>(client_state).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to decode client state: {err}"),
-                None::<()>,
-            )
-        })
+    pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<ConsensusState> {
+        ConsensusState::decode_as::<EthAbi>(consensus_state)
+            .map_err(RpcError::fatal("unable to decode consensus state"))
     }
 }
 
 #[async_trait]
 impl ClientModuleServer for Module {
-    #[instrument(skip_all)]
+    #[instrument]
     async fn decode_client_state_meta(
         &self,
         _: &Extensions,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
-        let cs = self.decode_client_state(&client_state)?;
+        let client_state = Module::decode_client_state(&client_state)?;
 
         Ok(ClientStateMeta {
-            counterparty_chain_id: ChainId::new(cs.tendermint_client_state.chain_id),
-            counterparty_height: cs.tendermint_client_state.latest_height,
+            counterparty_chain_id: ChainId::new(client_state.tendermint_client_state.chain_id),
+            counterparty_height: client_state.tendermint_client_state.latest_height,
         })
     }
 
-    #[instrument(skip_all)]
+    #[instrument]
     async fn decode_consensus_state_meta(
         &self,
         _: &Extensions,
         consensus_state: Bytes,
     ) -> RpcResult<ConsensusStateMeta> {
-        let cs = self.decode_consensus_state(&consensus_state)?;
+        let consensus_state = Module::decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
-            timestamp: Timestamp::from_nanos(cs.timestamp.as_unix_nanos()),
+            timestamp: Timestamp::from_nanos(consensus_state.timestamp.as_unix_nanos()),
         })
     }
 
-    #[instrument(skip_all)]
+    #[instrument]
     async fn decode_client_state(&self, _: &Extensions, client_state: Bytes) -> RpcResult<Value> {
-        Ok(serde_json::to_value(self.decode_client_state(&client_state)?).unwrap())
+        Ok(into_value(Module::decode_client_state(&client_state)?))
     }
 
-    #[instrument(skip_all)]
+    #[instrument]
     async fn decode_consensus_state(
         &self,
         _: &Extensions,
         consensus_state: Bytes,
     ) -> RpcResult<Value> {
-        Ok(serde_json::to_value(self.decode_consensus_state(&consensus_state)?).unwrap())
+        Ok(into_value(Module::decode_consensus_state(
+            &consensus_state,
+        )?))
     }
 
-    #[instrument(skip_all)]
+    #[instrument]
     async fn encode_client_state(
         &self,
         _: &Extensions,
         client_state: Value,
         metadata: Value,
     ) -> RpcResult<Bytes> {
-        if !metadata.is_null() {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                "metadata was provided, but this client type does not require metadata for client \
-                state encoding",
-                Some(json!({
-                    "provided_metadata": metadata,
-                })),
-            ));
-        }
+        ensure_null(metadata)?;
 
         serde_json::from_value::<ClientState>(client_state)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize client state: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })
-            .map(|cs| cs.encode_as::<Bincode>().into())
+            .map_err(RpcError::fatal("unable to deserialize client state"))
+            .map(|client_state| client_state.encode_as::<Bincode>().into())
     }
 
-    #[instrument(skip_all)]
+    #[instrument]
     async fn encode_consensus_state(
         &self,
         _: &Extensions,
         consensus_state: Value,
     ) -> RpcResult<Bytes> {
         serde_json::from_value::<ConsensusState>(consensus_state)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!(
-                        "unable to deserialize consensus state: {}",
-                        ErrorReporter(err)
-                    ),
-                    None::<()>,
-                )
-            })
-            .map(|cs| cs.encode_as::<EthAbi>().into())
+            .map_err(RpcError::fatal("unable to deserialize consensus state"))
+            .map(|consensus_state| consensus_state.encode_as::<EthAbi>().into())
     }
 
-    #[instrument(skip_all)]
+    #[instrument]
     async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<Header>(header)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize header: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })
+            .map_err(RpcError::fatal("unable to deserialize header"))
             .map(|header| header.encode_as::<Bincode>().into())
     }
 
-    #[instrument(skip_all)]
+    #[instrument]
     async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
-        debug!(%proof, "encoding proof");
-
-        serde_json::from_value::<unionlabs::ibc::core::commitment::merkle_proof::MerkleProof>(proof)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize proof: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })
+        serde_json::from_value::<MerkleProof>(proof)
+            .map_err(RpcError::fatal("unable to deserialize proof"))
             .map(|cs| cs.encode_as::<Bincode>().into())
     }
 }

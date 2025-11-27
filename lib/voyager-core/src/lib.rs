@@ -38,8 +38,7 @@ use voyager_plugin_protocol::{
 };
 use voyager_primitives::{ClientInfo, IbcSpec, QueryHeight};
 use voyager_rpc::{
-    ClientModuleClient, PluginClient, VoyagerRpcServer, error_object_to_queue_error,
-    json_rpc_error_to_queue_error, missing_state,
+    ClientModuleClient, PluginClient, RpcError, VoyagerRpcServer, json_rpc_error_to_queue_error,
     types::{
         ClientBootstrapModuleInfo, ClientModuleInfo, FinalityModuleInfo, PluginInfo,
         ProofModuleInfo, StateModuleInfo,
@@ -850,8 +849,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                     .server
                     // .with_id(Some(self.id))
                     .query_latest_height(&chain_id, finalized)
-                    .await
-                    .map_err(error_object_to_queue_error)?;
+                    .await?;
 
                 if !chain_height.revision_matches(&height) {
                     return Err(QueueError::Fatal(
@@ -888,8 +886,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                     .server
                     // .with_id(Some(self.id))
                     .query_latest_timestamp(&chain_id, finalized)
-                    .await
-                    .map_err(error_object_to_queue_error)?;
+                    .await?;
 
                 if chain_timestamp >= timestamp {
                     info!(%chain_id, %timestamp, %chain_timestamp, "timestamp reached");
@@ -918,8 +915,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                     .server
                     // .with_id(Some(self.id))
                     .query_latest_height(&chain_id, finalized)
-                    .await
-                    .map_err(error_object_to_queue_error)?;
+                    .await?;
 
                 Ok(seq([
                     defer(now() + 1),
@@ -951,8 +947,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                         },
                         client_id.clone(),
                     )
-                    .await
-                    .map_err(error_object_to_queue_error)?;
+                    .await?;
 
                 let continuation = seq([
                     // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would
@@ -1008,8 +1003,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                         },
                         client_id.clone(),
                     )
-                    .await
-                    .map_err(error_object_to_queue_error)?;
+                    .await?;
 
                 let continuation = seq([
                     // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would
@@ -1040,8 +1034,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                                 client_id.clone(),
                                 trusted_client_state_meta.counterparty_height,
                             )
-                            .await
-                            .map_err(error_object_to_queue_error)?;
+                            .await?;
 
                         match trusted_consensus_state_meta {
                             Some(trusted_consensus_state_meta)
@@ -1081,8 +1074,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                         client_id.clone(),
                         height,
                     )
-                    .await
-                    .map_err(error_object_to_queue_error)?;
+                    .await?;
 
                 match consensus_state_meta {
                     Some(consensus_state_meta) => {
@@ -1114,8 +1106,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                 Ok(PluginClient::<Value, Value>::call(
                     &self
                         .server
-                        .context()
-                        .map_err(error_object_to_queue_error)?
+                        .context()?
                         .plugin(&plugin)?
                         .with_id(self.server.id()),
                     message,
@@ -1167,25 +1158,17 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                     .server
                     // .with_id(Some(self.id))
                     .client_info(&chain_id, &ibc_spec_id, client_id.clone())
-                    .await
-                    .map_err(error_object_to_queue_error)?
-                    .ok_or_else(missing_state("client not found", None))
-                    .map_err(error_object_to_queue_error)?;
+                    .await?
+                    .ok_or_else(|| RpcError::missing_state("client not found"))?;
 
                 let client_module = self
                     .server
-                    .context()
-                    .map_err(error_object_to_queue_error)?
+                    .context()?
                     .client_module(&client_type, &ibc_interface, &ibc_spec_id)?
                     .with_id(self.server.id());
 
-                let ibc_spec_handler = self
-                    .server
-                    .context()
-                    .map_err(error_object_to_queue_error)?
-                    .ibc_spec_handlers
-                    .get(&ibc_spec_id)
-                    .map_err(error_object_to_queue_error)?;
+                let ibc_spec_handler =
+                    self.server.context()?.ibc_spec_handlers.get(&ibc_spec_id)?;
 
                 // OrderedClientUpdates
 
@@ -1223,8 +1206,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                 Ok(PluginClient::<Value, Value>::callback(
                     &self
                         .server
-                        .context()
-                        .map_err(error_object_to_queue_error)?
+                        .context()?
                         .plugin(&plugin)?
                         .with_id(self.server.id()),
                     message,

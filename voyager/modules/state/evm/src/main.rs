@@ -24,11 +24,7 @@ use ibc_union_spec::{
     },
     query::{PacketAckByHashResponse, PacketByHashResponse, PacketsByBatchHashResponse, Query},
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait, types::ErrorObject};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, info, instrument, trace};
@@ -42,7 +38,7 @@ use voyager_sdk::{
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
     rpc::{
-        FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE, RpcError, RpcErrorExt,
+        FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE, RpcError, RpcErrorExt, RpcResult,
         StateModuleServer, types::StateModuleInfo,
     },
 };
@@ -159,20 +155,14 @@ impl Module {
                     .block(height.into())
                     .call()
                     .await
-                    .map_err(|err| {
-                        ErrorObject::owned(
-                            -1,
-                            format!("error fetching client address: {}", ErrorReporter(err)),
-                            None::<()>,
-                        )
-                    })?;
+                    .map_err(RpcError::retryable("error fetching client address"))?;
 
                 debug!(%client_address, "fetched client address");
 
                 Ok(client_address)
             })
             .await
-            .map_err(|e: Arc<ErrorObject>| (*e).clone())
+            .map_err(|e: Arc<RpcError>| (*e).clone())
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]

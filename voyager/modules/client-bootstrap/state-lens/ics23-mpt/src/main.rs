@@ -1,9 +1,5 @@
 use ibc_union_spec::{ClientId, IbcUnion, path::ConsensusStatePath};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait, types::ErrorObject};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use state_lens_ics23_mpt_light_client::client::extract_consensus_state;
@@ -15,7 +11,8 @@ use voyager_sdk::{
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, QueryHeight},
     rpc::{
-        ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientBootstrapModuleInfo,
+        ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE, RpcError, RpcResult,
+        types::ClientBootstrapModuleInfo,
     },
 };
 
@@ -106,16 +103,8 @@ impl ClientBootstrapModuleServer for Module {
         height: Height,
         config: Value,
     ) -> RpcResult<Value> {
-        let config = serde_json::from_value::<ClientStateConfig>(config).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "unable to deserialize consensus state config: {}",
-                    ErrorReporter(err)
-                ),
-                None::<()>,
-            )
-        })?;
+        let config = serde_json::from_value::<ClientStateConfig>(config)
+            .map_err(RpcError::fatal("unable to deserialize consensus state"))?;
 
         let voyager_client = ext.voyager_client()?;
 

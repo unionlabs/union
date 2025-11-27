@@ -157,8 +157,7 @@ impl ClientBootstrapModuleServer for Module {
                 Some(i64::try_from(height.height()).unwrap().try_into().unwrap()),
                 false,
             )
-            .await
-            .map_err(json_rpc_error_to_error_object)?
+            .await?
             .value
             .unwrap()
             .params

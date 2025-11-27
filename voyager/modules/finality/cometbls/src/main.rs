@@ -121,10 +121,10 @@ impl FinalityModuleServer for Module {
     /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_latest_height(&self, _: &Extensions, finalized: bool) -> RpcResult<Height> {
-        self.latest_height(finalized)
-            .await
+        Ok(self
+            .latest_height(finalized)
             // TODO: Add more context here
-            .map_err(json_rpc_error_to_error_object)
+            .await?)
     }
 
     /// Query the latest finalized timestamp of this chain.
@@ -134,11 +134,7 @@ impl FinalityModuleServer for Module {
         _: &Extensions,
         finalized: bool,
     ) -> RpcResult<Timestamp> {
-        let mut commit_response = self
-            .cometbft_client
-            .commit(None)
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+        let mut commit_response = self.cometbft_client.commit(None).await?;
 
         if finalized && commit_response.canonical {
             trace!(
@@ -153,8 +149,7 @@ impl FinalityModuleServer for Module {
                     .try_into()
                     .expect("should be fine"),
                 ))
-                .await
-                .map_err(json_rpc_error_to_error_object)?;
+                .await?;
 
             if !commit_response.canonical {
                 error!(

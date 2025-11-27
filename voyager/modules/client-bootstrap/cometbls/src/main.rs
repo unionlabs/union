@@ -22,7 +22,7 @@ use voyager_sdk::{
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, Duration, Timestamp},
     rpc::{
-        ClientBootstrapModuleServer, json_rpc_error_to_error_object,
+        ClientBootstrapModuleServer, RpcError, json_rpc_error_to_error_object,
         types::ClientBootstrapModuleInfo,
     },
 };
@@ -120,19 +120,12 @@ impl ClientBootstrapModuleServer for Module {
                 None,
                 false,
             )
-            .await
-            .map_err(json_rpc_error_to_error_object)?
+            .await?
             .into_result()
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching params"),
-                    None::<()>,
-                )
-            })?
-            .ok_or_else(|| {
-                ErrorObject::owned(-1, "error fetching params: empty response", None::<()>)
-            })?
+            .map_err(RpcError::retryable("error fetching params"))?
+            .ok_or_else(RpcError::retryable_from_message(
+                "error fetching params: empty response",
+            ))?
             .params
             .unwrap_or_default();
 

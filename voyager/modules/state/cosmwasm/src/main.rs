@@ -15,10 +15,7 @@ use ibc_union_spec::{
         PacketsByBatchHash, PacketsByBatchHashResponse, Query,
     },
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use protos::cosmwasm::wasm::v1::{
     QueryContractInfoRequest, QueryContractInfoResponse, QuerySmartContractStateRequest,
     QuerySmartContractStateResponse,
@@ -113,7 +110,7 @@ impl Module {
         &self,
         channel_id: ChannelId,
         packet_hash: H256,
-    ) -> RpcResult<PacketByHashResponse> {
+    ) -> Result<PacketByHashResponse, RpcError> {
         let query = format!(
             "wasm-packet_send.packet_hash='{packet_hash}' AND wasm-packet_send.channel_id={channel_id}"
         );
@@ -137,8 +134,7 @@ impl Module {
                 expected 1 tx but found {}",
                 tx_result.total_count,
             ))
-            .with_data(json!({ "tx_result": tx_result }))
-            .into());
+            .with_data(json!({ "tx_result": tx_result })));
         }
 
         let tx = tx_result.txs.pop().unwrap();
@@ -174,8 +170,7 @@ impl Module {
                 "error querying for packet {packet_hash}, channel \
                 {channel_id}; the wasm-write_ack event was not found",
             ))
-            .with_data(json!({ "tx": tx }))
-            .into());
+            .with_data(json!({ "tx": tx })));
         };
 
         info!(%packet_hash, %channel_id, "queried packet");
@@ -192,7 +187,7 @@ impl Module {
         &self,
         channel_id: ChannelId,
         packet_hash: H256,
-    ) -> RpcResult<PacketAckByHashResponse> {
+    ) -> Result<PacketAckByHashResponse, RpcError> {
         let query = format!(
             "wasm-write_ack.packet_hash='{packet_hash}' AND wasm-write_ack.channel_id={channel_id}"
         );
@@ -216,8 +211,7 @@ impl Module {
                  {packet_hash}, expected 1 tx but found {}",
                 tx_result.total_count,
             ))
-            .with_data(json!({ "tx_result": tx_result }))
-            .into());
+            .with_data(json!({ "tx_result": tx_result })));
         };
 
         let tx = tx_result.txs.pop().unwrap();
@@ -242,8 +236,7 @@ impl Module {
                 "error querying for acknowledgement for packet {packet_hash}, \
                 channel {channel_id}; the wasm-write_ack event was not found",
             ))
-            .with_data(json!({ "tx": tx }))
-            .into());
+            .with_data(json!({ "tx": tx })));
         };
 
         info!(%ack, %packet_hash, %channel_id, "queried ack for packet");
@@ -260,7 +253,7 @@ impl Module {
         &self,
         query: &Q,
         height: Option<Height>,
-    ) -> RpcResult<Option<R>> {
+    ) -> Result<Option<R>, RpcError> {
         let query_data = serde_json::to_string(query).expect("serialization is infallible; qed;");
         let response = self
             .cometbft_client
@@ -313,7 +306,6 @@ impl Module {
                 })
                 .transpose()
         }
-        .map_err(Into::into)
     }
 
     #[instrument(
@@ -328,7 +320,7 @@ impl Module {
         &self,
         height: Height,
         client_id: ClientId,
-    ) -> RpcResult<Option<Bytes>> {
+    ) -> Result<Option<Bytes>, RpcError> {
         let client_state = self
             .query_smart::<_, Bytes>(&QueryMsg::GetClientState { client_id }, Some(height))
             .await?;
@@ -350,7 +342,7 @@ impl Module {
         height: Height,
         client_id: ClientId,
         trusted_height: u64,
-    ) -> RpcResult<Option<Bytes>> {
+    ) -> Result<Option<Bytes>, RpcError> {
         let client_state = self
             .query_smart::<_, Bytes>(
                 &QueryMsg::GetConsensusState {
@@ -376,7 +368,7 @@ impl Module {
         &self,
         height: Height,
         connection_id: ConnectionId,
-    ) -> RpcResult<Option<Connection>> {
+    ) -> Result<Option<Connection>, RpcError> {
         let client_state = self
             .query_smart::<_, Connection>(&QueryMsg::GetConnection { connection_id }, Some(height))
             .await?;
@@ -396,7 +388,7 @@ impl Module {
         &self,
         height: Height,
         channel_id: ChannelId,
-    ) -> RpcResult<Option<Channel>> {
+    ) -> Result<Option<Channel>, RpcError> {
         let channel = self
             .query_smart::<_, Channel>(&QueryMsg::GetChannel { channel_id }, Some(height))
             .await?;
@@ -416,7 +408,7 @@ impl Module {
         &self,
         height: Height,
         batch_hash: H256,
-    ) -> RpcResult<Option<H256>> {
+    ) -> Result<Option<H256>, RpcError> {
         let commitment = self
             .query_smart::<_, Option<H256>>(&QueryMsg::GetBatchPackets { batch_hash }, Some(height))
             .await?;
@@ -436,7 +428,7 @@ impl Module {
         &self,
         height: Height,
         batch_hash: H256,
-    ) -> RpcResult<Option<H256>> {
+    ) -> Result<Option<H256>, RpcError> {
         let commitment = self
             .query_smart::<_, Option<H256>>(
                 &QueryMsg::GetBatchReceipts { batch_hash },
@@ -463,7 +455,7 @@ impl Module {
         client_id: ClientId,
         proof_height: u64,
         path: Bytes,
-    ) -> RpcResult<Option<H256>> {
+    ) -> Result<Option<H256>, RpcError> {
         let commitment = self
             .query_smart::<_, Option<H256>>(
                 &QueryMsg::GetCommittedMembershipProof {
@@ -494,7 +486,7 @@ impl Module {
         client_id: ClientId,
         proof_height: u64,
         path: Bytes,
-    ) -> RpcResult<bool> {
+    ) -> Result<bool, RpcError> {
         let commitment = self
             .query_smart::<_, bool>(
                 &QueryMsg::GetCommittedNonMembershipProof {
@@ -513,7 +505,7 @@ impl Module {
 #[async_trait]
 impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query(&self, _: &Extensions, query: Query) -> RpcResult<Value> {
+    async fn query(&self, _: &Extensions, query: Query) -> Result<Value, RpcError> {
         match query {
             Query::PacketByHash(PacketByHash {
                 channel_id,
@@ -548,8 +540,7 @@ impl StateModuleServer<IbcUnion> for Module {
                         "error querying for batch {batch_hash}, \
                         expected only 1 transaction but found {}",
                         res.total_count,
-                    ))
-                    .into());
+                    )));
                 }
 
                 let tx = res.txs[1].clone();
@@ -559,8 +550,7 @@ impl StateModuleServer<IbcUnion> for Module {
                         "error querying for batch {batch_hash}, \
                         expected at least 2 events but found {}",
                         tx.tx_result.events.len()
-                    ))
-                    .into());
+                    )));
                 }
 
                 let packets = tx
@@ -649,7 +639,7 @@ impl StateModuleServer<IbcUnion> for Module {
         _: &Extensions,
         at: Height,
         path: StorePath,
-    ) -> RpcResult<Value> {
+    ) -> Result<Value, RpcError> {
         match path {
             StorePath::ClientState(path) => self
                 .query_client_state(at, path.client_id)

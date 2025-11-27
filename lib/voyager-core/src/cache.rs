@@ -1,7 +1,6 @@
 use std::{future::Future, time::Duration};
 
 use futures::TryFutureExt;
-use jsonrpsee::core::RpcResult;
 use moka::policy::EvictionPolicy;
 use opentelemetry::KeyValue;
 use schemars::JsonSchema;
@@ -10,6 +9,7 @@ use serde_json::Value;
 use tracing::{debug, trace, warn};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_primitives::{ChainId, ClientInfo, IbcSpec, IbcSpecId, IbcStorePathKey, Timestamp};
+use voyager_rpc::RpcResult;
 use voyager_types::RawClientId;
 
 #[derive(Debug, Clone)]

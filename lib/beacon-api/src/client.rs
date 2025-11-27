@@ -407,6 +407,12 @@ impl From<H256> for BlockId {
     }
 }
 
+impl From<[u8; 32]> for BlockId {
+    fn from(root: [u8; 32]) -> Self {
+        BlockId::Hash(root.into())
+    }
+}
+
 impl Display for BlockId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
