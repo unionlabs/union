@@ -1,6 +1,7 @@
 [package]
 edition = "2024.beta"
 name    = "owned_vault"
+published-at = "0x43bd9824d09fbc994b2ecded5c31805b63166687c24d325c2541ee7e3f216c02"
 
 [dependencies]
 ibc = { local = "../ibc" }

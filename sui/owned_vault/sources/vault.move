@@ -174,7 +174,7 @@ module owned_vault::owned_vault {
 
         vault.fungible_counterparties.add(
             FungibleLane {
-                token: token.into_string().into_bytes(),
+                token: type_name_to_quote_token<T>(),
                 path,
                 channel,
                 base_token
@@ -229,7 +229,7 @@ module owned_vault::owned_vault {
         intent: bool,
         ctx: &mut TxContext,
     ): (vector<u8>, u64) {
-        if (type_name::with_defining_ids<T>().into_string().into_bytes() != quote_token) {
+        if (type_name_to_quote_token<T>() != quote_token) {
             return (vector::empty(), E_INVALID_QUOTE_TOKEN)
         };
 
@@ -353,6 +353,15 @@ module owned_vault::owned_vault {
         &mut vault.token_type_to_treasury.borrow_mut<_, TreasuryCapWithMetadata<T>>(key).cap
     }
 
+    // returns a hex prefixed type name
+    fun type_name_to_quote_token<T>(): vector<u8> {
+        // A nasty hack we do to get an additional 2 bytes before the actual type name so that we can replace it with
+        // 0x. Appending to a vector is very costly. 
+        let mut name = bcs::to_bytes(&option::some(type_name::with_defining_ids<T>()));
+        *name.borrow_mut(0) = 48; // 0
+        *name.borrow_mut(1) = 120; // x
+        name
+    }
 
     #[test_only]
     public fun init_for_tests(ctx: &mut TxContext) {
