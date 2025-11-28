@@ -1,8 +1,4 @@
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait, types::ErrorObject};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_light_client_types::{
@@ -17,13 +13,15 @@ use unionlabs::{
     primitives::Bytes,
 };
 use voyager_sdk::{
-    anyhow, ensure_null,
+    anyhow, ensure_null, into_value,
     plugin::ClientModule,
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         Timestamp,
     },
-    rpc::{ClientModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientModuleInfo},
+    rpc::{
+        ClientModuleServer, FATAL_JSONRPC_ERROR_CODE, RpcError, RpcResult, types::ClientModuleInfo,
+    },
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -52,23 +50,13 @@ impl ClientModule for Module {
 
 impl Module {
     pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<ConsensusState> {
-        ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to decode consensus state: {}", ErrorReporter(err)),
-                None::<()>,
-            )
-        })
+        ConsensusState::decode_as::<EthAbi>(consensus_state)
+            .map_err(RpcError::fatal("unable to decode consensus state"))
     }
 
     pub fn decode_client_state(client_state: &[u8]) -> RpcResult<ClientState> {
-        <ClientState>::decode_as::<Bincode>(client_state).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to decode client state: {err}"),
-                None::<()>,
-            )
-        })
+        <ClientState>::decode_as::<Bincode>(client_state)
+            .map_err(RpcError::fatal("unable to decode client state"))
     }
 
     pub fn make_height(revision_height: u64) -> Height {
@@ -110,7 +98,7 @@ impl ClientModuleServer for Module {
 
     #[instrument]
     async fn decode_client_state(&self, _: &Extensions, client_state: Bytes) -> RpcResult<Value> {
-        Ok(serde_json::to_value(Module::decode_client_state(&client_state)?).unwrap())
+        Ok(into_value(Module::decode_client_state(&client_state)?))
     }
 
     #[instrument]
@@ -119,7 +107,9 @@ impl ClientModuleServer for Module {
         _: &Extensions,
         consensus_state: Bytes,
     ) -> RpcResult<Value> {
-        Ok(serde_json::to_value(Module::decode_consensus_state(&consensus_state)?).unwrap())
+        Ok(into_value(Module::decode_consensus_state(
+            &consensus_state,
+        )?))
     }
 
     #[instrument]
@@ -132,13 +122,7 @@ impl ClientModuleServer for Module {
         ensure_null(metadata)?;
 
         serde_json::from_value::<ClientState>(client_state)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize client state: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })
+            .map_err(RpcError::fatal("unable to deserialize client state"))
             .map(|cs| cs.encode_as::<Bincode>())
             .map(Into::into)
     }
@@ -150,45 +134,21 @@ impl ClientModuleServer for Module {
         consensus_state: Value,
     ) -> RpcResult<Bytes> {
         serde_json::from_value::<ConsensusState>(consensus_state)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!(
-                        "unable to deserialize consensus state: {}",
-                        ErrorReporter(err)
-                    ),
-                    None::<()>,
-                )
-            })
-            .map(|cs| cs.encode_as::<EthAbi>())
-            .map(Into::into)
+            .map_err(RpcError::fatal("unable to deserialize consensus state"))
+            .map(|cs| cs.encode_as::<EthAbi>().into())
     }
 
     #[instrument]
     async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<Header>(header)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize header: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })
-            .map(|header| header.encode_as::<Bincode>())
-            .map(Into::into)
+            .map_err(RpcError::fatal("unable to deserialize header"))
+            .map(|header| header.encode_as::<Bincode>().into())
     }
 
     #[instrument]
     async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<StorageProof>(proof)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize proof: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })
-            .map(|cs| cs.encode_as::<Bincode>())
-            .map(Into::into)
+            .map_err(RpcError::fatal("unable to deserialize proof"))
+            .map(|cs| cs.encode_as::<Bincode>().into())
     }
 }
