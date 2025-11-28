@@ -51,7 +51,7 @@ $effect(() => {
         ? "50%"
         : "75%"}
         style:width="25%"
-        style:height="75%"
+        style:height="100%"
       >
       </div>
       <button
