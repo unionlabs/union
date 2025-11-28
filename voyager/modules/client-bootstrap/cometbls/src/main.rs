@@ -38,17 +38,21 @@ pub struct Module {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub rpc_url: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub ibc_host_contract_address: Option<Bech32<H256>>,
+    pub ibc_host_contract_address: Bech32<H256>,
 }
 
 impl ClientBootstrapModule for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: ClientBootstrapModuleInfo) -> anyhow::Result<Self> {
-        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
+        let cometbft_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
-        let chain_id = tm_client.status().await?.node_info.network.to_string();
+        let chain_id = cometbft_client
+            .status()
+            .await?
+            .node_info
+            .network
+            .to_string();
 
         info.ensure_chain_id(&chain_id)?;
         info.ensure_client_type(ClientType::COMETBLS)?;
@@ -67,13 +71,10 @@ impl ClientBootstrapModule for Module {
             })?;
 
         Ok(Self {
-            cometbft_client: tm_client,
+            cometbft_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            ibc_host_contract_address: config
-                .ibc_host_contract_address
-                .map(|a| *a.data())
-                .unwrap_or_default(),
+            ibc_host_contract_address: *config.ibc_host_contract_address.data(),
         })
     }
 }
