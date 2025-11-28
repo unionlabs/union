@@ -4,16 +4,11 @@ use std::{
 };
 
 use cometbls_light_client_types::{ClientState, ConsensusState};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{error, instrument};
 use unionlabs::{
-    ErrorReporter,
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     primitives::{Bech32, H256},
 };
@@ -21,10 +16,7 @@ use voyager_sdk::{
     anyhow, ensure_null,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, Duration, Timestamp},
-    rpc::{
-        ClientBootstrapModuleServer, RpcError, json_rpc_error_to_error_object,
-        types::ClientBootstrapModuleInfo,
-    },
+    rpc::{ClientBootstrapModuleServer, RpcError, RpcResult, types::ClientBootstrapModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -123,9 +115,9 @@ impl ClientBootstrapModuleServer for Module {
             .await?
             .into_result()
             .map_err(RpcError::retryable("error fetching params"))?
-            .ok_or_else(RpcError::retryable_from_message(
-                "error fetching params: empty response",
-            ))?
+            .ok_or_else(|| {
+                RpcError::retryable_from_message("error fetching params: empty response")
+            })?
             .params
             .unwrap_or_default();
 

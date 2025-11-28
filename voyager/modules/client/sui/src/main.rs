@@ -1,4 +1,4 @@
-use jsonrpsee::{Extensions, core::async_trait, types::ErrorObject};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_light_client_types::{
@@ -7,7 +7,6 @@ use sui_light_client_types::{
 };
 use tracing::instrument;
 use unionlabs::{
-    self, ErrorReporter,
     encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     primitives::Bytes,
@@ -19,9 +18,7 @@ use voyager_sdk::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         Timestamp,
     },
-    rpc::{
-        ClientModuleServer, FATAL_JSONRPC_ERROR_CODE, RpcError, RpcResult, types::ClientModuleInfo,
-    },
+    rpc::{ClientModuleServer, RpcError, RpcResult, types::ClientModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -123,7 +120,7 @@ impl ClientModuleServer for Module {
 
         serde_json::from_value::<ClientState>(client_state)
             .map_err(RpcError::fatal("unable to deserialize client state"))
-            .map(|cs| cs.encode_as::<Bincode>())
+            .map(|client_state| client_state.encode_as::<Bincode>())
             .map(Into::into)
     }
 
@@ -135,7 +132,7 @@ impl ClientModuleServer for Module {
     ) -> RpcResult<Bytes> {
         serde_json::from_value::<ConsensusState>(consensus_state)
             .map_err(RpcError::fatal("unable to deserialize consensus state"))
-            .map(|cs| cs.encode_as::<EthAbi>().into())
+            .map(|consensus_state| consensus_state.encode_as::<EthAbi>().into())
     }
 
     #[instrument]
@@ -149,6 +146,6 @@ impl ClientModuleServer for Module {
     async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<StorageProof>(proof)
             .map_err(RpcError::fatal("unable to deserialize proof"))
-            .map(|cs| cs.encode_as::<Bincode>().into())
+            .map(|proof| proof.encode_as::<Bincode>().into())
     }
 }

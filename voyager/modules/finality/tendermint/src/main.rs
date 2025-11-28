@@ -12,7 +12,7 @@ use voyager_sdk::{
     anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{FinalityModuleServer, json_rpc_error_to_error_object, types::FinalityModuleInfo},
+    rpc::{FinalityModuleServer, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]

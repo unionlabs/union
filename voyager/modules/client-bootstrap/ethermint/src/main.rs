@@ -5,11 +5,7 @@ use std::{
 
 use ethermint_light_client_types::ClientState;
 use ics23::ibc_api::SDK_SPECS;
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait, types::ErrorObject};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tendermint_light_client_types::{ConsensusState, Fraction};
@@ -21,13 +17,10 @@ use unionlabs::{
     result_unwrap,
 };
 use voyager_sdk::{
-    anyhow, ensure_null,
+    anyhow, ensure_null, into_value,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType},
-    rpc::{
-        ClientBootstrapModuleServer, json_rpc_error_to_error_object,
-        types::ClientBootstrapModuleInfo,
-    },
+    rpc::{ClientBootstrapModuleServer, RpcError, RpcResult, types::ClientBootstrapModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -182,7 +175,7 @@ impl ClientBootstrapModuleServer for Module {
                 .unwrap(),
         );
 
-        Ok(serde_json::to_value(ClientState {
+        Ok(into_value(ClientState {
             tendermint_client_state: tendermint_light_client_types::ClientState {
                 chain_id: self.chain_id.to_string(),
                 // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
@@ -223,8 +216,7 @@ impl ClientBootstrapModuleServer for Module {
             store_key: self.store_key.clone(),
             key_prefix_storage: self.key_prefix_storage.clone(),
             ibc_contract_address: self.ibc_handler_address,
-        })
-        .unwrap())
+        }))
     }
 
     /// The consensus state on this chain at the specified `Height`.
@@ -241,13 +233,7 @@ impl ClientBootstrapModuleServer for Module {
             .cometbft_client
             .commit(Some(height.height().try_into().unwrap()))
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching commit: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching commit"))?;
 
         Ok(serde_json::to_value(&ConsensusState {
             root: MerkleRoot {
