@@ -5,6 +5,7 @@
  */
 import { Match, Schedule } from "effect"
 import { UniversalChainId } from "./schema/chain.js"
+import { SuiTypeTag } from "./schema/hex.js"
 import { TokenRawDenom } from "./schema/token.js"
 import * as Token from "./Token.js"
 import * as Ucs05 from "./Ucs05.js"
@@ -14,7 +15,7 @@ import * as Ucs05 from "./Ucs05.js"
  * @since 2.0.0
  */
 interface GasDenomMetadata {
-  address: TokenRawDenom
+  address: TokenRawDenom | SuiTypeTag
   name: string
   symbol: string
   /**
@@ -120,6 +121,13 @@ const BNB_METADATA: GasDenomMetadata = {
   decimals: 18,
 } as const
 
+const SUI_METADATA: GasDenomMetadata = {
+  address: SuiTypeTag.make("0x2::sui::SUI"),
+  name: "SUI",
+  symbol: "SUI",
+  tickerSymbol: "SUI",
+  decimals: 9,
+} as const
 /**
  * @category constants
  * @since 2.0.0
@@ -173,6 +181,9 @@ export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
   // Base
   [UniversalChainId.make("base.8453")]: ETH_METADATA,
   [UniversalChainId.make("base.84532")]: ETH_METADATA,
+
+  // Sui
+  [UniversalChainId.make("sui.4c78adac")]: SUI_METADATA,
 }
 
 /**
@@ -234,6 +245,22 @@ export const U_ERC20 = Token.Erc20.make({ address: "0xba5eD44733953d79717F626935
  * @category constants
  * @since 2.0.0
  */
+export const U_SUI = Token.SuiCoin.make({
+  address: "0x650be2f4aafc86a91f506b4efc35f34af9a7fafe21e143c0f45f4f465f4d51ff::u::U",
+})
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const SUI_NATIVE_COIN = Token.SuiCoin.make({
+  address: "0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI",
+})
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
 export const EU_ERC20 = Token.Erc20.make({ address: "0xe5Cf13C84c0fEa3236C101Bd7d743d30366E5CF1" })
 
 /**
@@ -242,6 +269,22 @@ export const EU_ERC20 = Token.Erc20.make({ address: "0xe5Cf13C84c0fEa3236C101Bd7
  */
 export const EU_LST = Ucs05.CosmosDisplay.make({
   address: "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f",
+})
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const SUI_ADDR = Ucs05.CosmosDisplay.make({
+  address: "union1fufatgkyd23qmqlzt4avwj36kfhvjuur20pqjf8xewnx2mnhsses6dspmf",
+})
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const SUI_U_COIN = Token.SuiCoin.make({
+  address: "0x650be2f4aafc86a91f506b4efc35f34af9a7fafe21e143c0f45f4f465f4d51ff::u::U",
 })
 
 /**
@@ -279,3 +322,24 @@ export const EU_SOLVER_ON_UNION_METADATA =
  */
 export const EU_SOLVER_ON_ETH_METADATA =
   "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014e5cf13c84c0fea3236c101bd7d743d30366e5cf10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" as const
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const SUI_SOLVER_ON_COSMOS_METADATA =
+  "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000040756e696f6e316675666174676b79643233716d716c7a74346176776a33366b6668766a757572323070716a66387865776e78326d6e6873736573366473706d660000000000000000000000000000000000000000000000000000000000000000" as const
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const SUI_SOLVER_ON_SUI_METADATA =
+  "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001775637330332d7a6b676d2d657363726f772d7661756c74000000000000000000" as const
+
+/**
+ * @category constants
+ * @since 2.0.0
+ */
+export const U_SOLVER_ON_SUI_METADATA =
+  "0x00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000001675637330332d7a6b676d2d6f776e65642d7661756c74000000000000000000000000000000000000000000000000000000000000000000000000000000000000" as const

@@ -1,5 +1,5 @@
 import { SuiClient, SuiClientOptions } from "@mysten/sui/client"
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
+import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import * as Utils from "@unionlabs/sdk/Utils"
 import { Context, Effect, Layer, pipe } from "effect"
 import * as Sui from "../Sui.js"
@@ -38,7 +38,7 @@ export const walletClientLayer = <Id>(
           throw new Error("Invalid Sui signer: expected Ed25519Keypair")
         }
         const client = new SuiClient({ url: opts.url } satisfies SuiClientOptions)
-        return { client, signer: opts.signer }
+        return { client, signer: opts.signer, rpc: opts.url }
       },
       catch: (err) =>
         new Sui.CreateWalletClientError({
