@@ -15,11 +15,7 @@ use ibc_union_spec::{
         PacketsByBatchHash, PacketsByBatchHashResponse, Query,
     },
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use protos::cosmwasm::wasm::v1::{
     QueryContractInfoRequest, QueryContractInfoResponse, QuerySmartContractStateRequest,
     QuerySmartContractStateResponse,
@@ -28,7 +24,6 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use tracing::{debug, info, instrument, trace};
 use unionlabs::{
-    ErrorReporter,
     ibc::core::client::height::Height,
     primitives::{Bech32, Bytes, H256, encoding::HexUnprefixed},
 };
@@ -37,7 +32,7 @@ use voyager_sdk::{
     into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface, IbcSpec},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, StateModuleServer, rpc_error, types::StateModuleInfo},
+    rpc::{RpcError, RpcErrorExt, StateModuleServer, types::StateModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -115,7 +110,7 @@ impl Module {
         &self,
         channel_id: ChannelId,
         packet_hash: H256,
-    ) -> RpcResult<PacketByHashResponse> {
+    ) -> Result<PacketByHashResponse, RpcError> {
         let query = format!(
             "wasm-packet_send.packet_hash='{packet_hash}' AND wasm-packet_send.channel_id={channel_id}"
         );
@@ -130,18 +125,16 @@ impl Module {
                 Order::Asc,
             )
             .await
-            .map_err(rpc_error("error querying packet by packet hash", None))?;
+            .map_err(RpcError::retryable)
+            .with_message("error querying packet by packet hash")?;
 
         if tx_result.total_count != 1 {
-            return Err(ErrorObject::owned(
-                -1,
-                format!(
-                    "error querying for packet {packet_hash}, \
-                    expected 1 tx but found {}",
-                    tx_result.total_count,
-                ),
-                Some(json!({ "tx_result": tx_result })),
-            ));
+            return Err(RpcError::retryable_from_message(format!(
+                "error querying for packet {packet_hash}, \
+                expected 1 tx but found {}",
+                tx_result.total_count,
+            ))
+            .with_data(json!({ "tx_result": tx_result })));
         }
 
         let tx = tx_result.txs.pop().unwrap();
@@ -173,14 +166,11 @@ impl Module {
         });
 
         let Some(packet) = maybe_packet else {
-            return Err(ErrorObject::owned(
-                -1,
-                format!(
-                    "error querying for packet {packet_hash}, channel \
-                    {channel_id}; the wasm-write_ack event was not found",
-                ),
-                Some(json!({ "tx": tx })),
-            ));
+            return Err(RpcError::retryable_from_message(format!(
+                "error querying for packet {packet_hash}, channel \
+                {channel_id}; the wasm-write_ack event was not found",
+            ))
+            .with_data(json!({ "tx": tx })));
         };
 
         info!(%packet_hash, %channel_id, "queried packet");
@@ -197,7 +187,7 @@ impl Module {
         &self,
         channel_id: ChannelId,
         packet_hash: H256,
-    ) -> RpcResult<PacketAckByHashResponse> {
+    ) -> Result<PacketAckByHashResponse, RpcError> {
         let query = format!(
             "wasm-write_ack.packet_hash='{packet_hash}' AND wasm-write_ack.channel_id={channel_id}"
         );
@@ -212,20 +202,17 @@ impl Module {
                 Order::Asc,
             )
             .await
-            .map_err(rpc_error("error querying packet ack by packet hash", None))?;
+            .map_err(RpcError::retryable)
+            .with_message("error querying packet ack by packet hash")?;
 
         if tx_result.total_count != 1 {
-            return Err(ErrorObject::owned(
-                -1,
-                format!(
-                    "error querying for acknowledgement for \
-                     packet {packet_hash}, expected 1 tx \
-                     but found {}",
-                    tx_result.total_count,
-                ),
-                Some(json!({ "tx_result": tx_result })),
-            ));
-        }
+            return Err(RpcError::retryable_from_message(format!(
+                "error querying for acknowledgement for packet \
+                 {packet_hash}, expected 1 tx but found {}",
+                tx_result.total_count,
+            ))
+            .with_data(json!({ "tx_result": tx_result })));
+        };
 
         let tx = tx_result.txs.pop().unwrap();
 
@@ -245,14 +232,11 @@ impl Module {
                 })
         });
         let Some(ack) = maybe_ack else {
-            return Err(ErrorObject::owned(
-                -1,
-                format!(
-                    "error querying for acknowledgement for packet {packet_hash}, \
-                    channel {channel_id}; the wasm-write_ack event was not found",
-                ),
-                Some(json!({ "tx": tx })),
-            ));
+            return Err(RpcError::retryable_from_message(format!(
+                "error querying for acknowledgement for packet {packet_hash}, \
+                channel {channel_id}; the wasm-write_ack event was not found",
+            ))
+            .with_data(json!({ "tx": tx })));
         };
 
         info!(%ack, %packet_hash, %channel_id, "queried ack for packet");
@@ -269,7 +253,7 @@ impl Module {
         &self,
         query: &Q,
         height: Option<Height>,
-    ) -> RpcResult<Option<R>> {
+    ) -> Result<Option<R>, RpcError> {
         let query_data = serde_json::to_string(query).expect("serialization is infallible; qed;");
         let response = self
             .cometbft_client
@@ -288,43 +272,37 @@ impl Module {
                 false,
             )
             .await
-            .map_err(rpc_error(
-                "error fetching abci query",
-                Some(json!({
-                    "height": height,
-                    "query_data": query_data
-                })),
-            ))?;
+            .map_err(RpcError::retryable)
+            .with_message("error fetching abci query")
+            .with_data(json!({
+                "height": height,
+                "query_data": query_data
+            }))?;
 
         // https://github.com/cosmos/cosmos-sdk/blob/e2027bf62893bb5f82e8f7a8ea59d1a43eb6b78f/baseapp/abci.go#L1272-L1278
         if response
             .code
             .is_err_code(const { NonZeroU32::new(26).unwrap() })
         {
-            Err(ErrorObject::owned(
-                -1,
+            Err(RpcError::retryable_from_message(
                 "attempted to query state at a nonexistent height, \
                 potentially due to load balanced rpc endpoints",
-                Some(json!({
-                    "height": height,
-                    "query_data": query_data
-                })),
-            ))
+            )
+            .with_data(json!({
+                "height": height,
+                "query_data": query_data
+            })))
         } else {
             response
                 .value
                 .map(|value| {
                     trace!("raw response: {}", String::from_utf8_lossy(&value.data));
-                    serde_json::from_slice(&value.data).map_err(|e| {
-                        ErrorObject::owned(
-                            -1,
-                            ErrorReporter(e).with_message(&format!(
-                                "unable to deserialize response ({})",
-                                std::any::type_name::<R>()
-                            )),
-                            None::<()>,
-                        )
-                    })
+                    serde_json::from_slice(&value.data)
+                        .map_err(RpcError::retryable)
+                        .with_message(format!(
+                            "unable to deserialize response ({})",
+                            std::any::type_name::<R>()
+                        ))
                 })
                 .transpose()
         }
@@ -342,7 +320,7 @@ impl Module {
         &self,
         height: Height,
         client_id: ClientId,
-    ) -> RpcResult<Option<Bytes>> {
+    ) -> Result<Option<Bytes>, RpcError> {
         let client_state = self
             .query_smart::<_, Bytes>(&QueryMsg::GetClientState { client_id }, Some(height))
             .await?;
@@ -364,7 +342,7 @@ impl Module {
         height: Height,
         client_id: ClientId,
         trusted_height: u64,
-    ) -> RpcResult<Option<Bytes>> {
+    ) -> Result<Option<Bytes>, RpcError> {
         let client_state = self
             .query_smart::<_, Bytes>(
                 &QueryMsg::GetConsensusState {
@@ -390,7 +368,7 @@ impl Module {
         &self,
         height: Height,
         connection_id: ConnectionId,
-    ) -> RpcResult<Option<Connection>> {
+    ) -> Result<Option<Connection>, RpcError> {
         let client_state = self
             .query_smart::<_, Connection>(&QueryMsg::GetConnection { connection_id }, Some(height))
             .await?;
@@ -410,7 +388,7 @@ impl Module {
         &self,
         height: Height,
         channel_id: ChannelId,
-    ) -> RpcResult<Option<Channel>> {
+    ) -> Result<Option<Channel>, RpcError> {
         let channel = self
             .query_smart::<_, Channel>(&QueryMsg::GetChannel { channel_id }, Some(height))
             .await?;
@@ -430,7 +408,7 @@ impl Module {
         &self,
         height: Height,
         batch_hash: H256,
-    ) -> RpcResult<Option<H256>> {
+    ) -> Result<Option<H256>, RpcError> {
         let commitment = self
             .query_smart::<_, Option<H256>>(&QueryMsg::GetBatchPackets { batch_hash }, Some(height))
             .await?;
@@ -450,7 +428,7 @@ impl Module {
         &self,
         height: Height,
         batch_hash: H256,
-    ) -> RpcResult<Option<H256>> {
+    ) -> Result<Option<H256>, RpcError> {
         let commitment = self
             .query_smart::<_, Option<H256>>(
                 &QueryMsg::GetBatchReceipts { batch_hash },
@@ -477,7 +455,7 @@ impl Module {
         client_id: ClientId,
         proof_height: u64,
         path: Bytes,
-    ) -> RpcResult<Option<H256>> {
+    ) -> Result<Option<H256>, RpcError> {
         let commitment = self
             .query_smart::<_, Option<H256>>(
                 &QueryMsg::GetCommittedMembershipProof {
@@ -508,7 +486,7 @@ impl Module {
         client_id: ClientId,
         proof_height: u64,
         path: Bytes,
-    ) -> RpcResult<bool> {
+    ) -> Result<bool, RpcError> {
         let commitment = self
             .query_smart::<_, bool>(
                 &QueryMsg::GetCommittedNonMembershipProof {
@@ -527,7 +505,7 @@ impl Module {
 #[async_trait]
 impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query(&self, _: &Extensions, query: Query) -> RpcResult<Value> {
+    async fn query(&self, _: &Extensions, query: Query) -> Result<Value, RpcError> {
         match query {
             Query::PacketByHash(PacketByHash {
                 channel_id,
@@ -554,32 +532,25 @@ impl StateModuleServer<IbcUnion> for Module {
                         Order::Asc,
                     )
                     .await
-                    .map_err(rpc_error("error querying packet by packet hash", None))?;
+                    .map_err(RpcError::fatal)
+                    .with_message("error querying packet by packet hash")?;
 
                 if res.total_count != 1 {
-                    return Err(ErrorObject::owned(
-                        -1,
-                        format!(
-                            "error querying for batch {batch_hash}, \
-                            expected only 1 transaction but found {}",
-                            res.total_count,
-                        ),
-                        None::<()>,
-                    ));
+                    return Err(RpcError::retryable_from_message(format!(
+                        "error querying for batch {batch_hash}, \
+                        expected only 1 transaction but found {}",
+                        res.total_count,
+                    )));
                 }
 
                 let tx = res.txs[1].clone();
 
                 if tx.tx_result.events.len() < 2 {
-                    return Err(ErrorObject::owned(
-                        -1,
-                        format!(
-                            "error querying for batch {batch_hash}, \
-                            expected at least 2 events but found {}",
-                            tx.tx_result.events.len()
-                        ),
-                        None::<()>,
-                    ));
+                    return Err(RpcError::retryable_from_message(format!(
+                        "error querying for batch {batch_hash}, \
+                        expected at least 2 events but found {}",
+                        tx.tx_result.events.len()
+                    )));
                 }
 
                 let packets = tx
@@ -626,11 +597,9 @@ impl StateModuleServer<IbcUnion> for Module {
                         height.map(Height::new),
                     )
                     .await?
-                    .ok_or(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("client {client_id} not found at height {height:?}"),
-                        None::<()>,
-                    ))?;
+                    .ok_or(RpcError::fatal_from_message(format!(
+                        "client `{client_id}` not found at height {height:?}"
+                    )))?;
 
                 debug!(
                     %status,
@@ -645,15 +614,17 @@ impl StateModuleServer<IbcUnion> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
+    async fn client_info(
+        &self,
+        _: &Extensions,
+        client_id: ClientId,
+    ) -> Result<ClientInfo, RpcError> {
         let client_type = self
             .query_smart::<_, String>(&QueryMsg::GetClientType { client_id }, None)
             .await?
-            .ok_or(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("client `{client_id}` not found"),
-                None::<()>,
-            ))?;
+            .ok_or(RpcError::fatal_from_message(format!(
+                "client `{client_id}` not found"
+            )))?;
 
         Ok(ClientInfo {
             client_type: ClientType::new(client_type),
@@ -668,7 +639,7 @@ impl StateModuleServer<IbcUnion> for Module {
         _: &Extensions,
         at: Height,
         path: StorePath,
-    ) -> RpcResult<Value> {
+    ) -> Result<Value, RpcError> {
         match path {
             StorePath::ClientState(path) => self
                 .query_client_state(at, path.client_id)

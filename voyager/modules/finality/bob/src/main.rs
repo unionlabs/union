@@ -5,19 +5,15 @@ use alloy::{
     network::AnyNetwork,
     providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer},
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::H160};
+use unionlabs::{ibc::core::client::height::Height, primitives::H160};
 use voyager_sdk::{
     ExtensionsExt, anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{FinalityModuleServer, types::FinalityModuleInfo},
+    rpc::{FinalityModuleServer, RpcError, RpcResult, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -92,7 +88,6 @@ impl FinalityModule for Module {
 
 #[async_trait]
 impl FinalityModuleServer for Module {
-    /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
     async fn query_latest_height(&self, e: &Extensions, finalized: bool) -> RpcResult<Height> {
         if finalized {
@@ -108,14 +103,9 @@ impl FinalityModuleServer for Module {
                 l1_latest_height.height(),
             )
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e)
-                        .with_message("error fetching finalized l2 execution block of l1 height"),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable(
+                "error fetching finalized l2 execution block of l1 height",
+            ))?;
 
             Ok(Height::new(block_number))
         } else {
@@ -123,11 +113,10 @@ impl FinalityModuleServer for Module {
                 .get_block_number()
                 .await
                 .map(Height::new)
-                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
+                .map_err(RpcError::retryable("error fetching l2 block number"))
         }
     }
 
-    /// Query the latest finalized timestamp of this chain.
     #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
     async fn query_latest_timestamp(
         &self,
@@ -147,27 +136,18 @@ impl FinalityModuleServer for Module {
                 l1_latest_height.height(),
             )
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e)
-                        .with_message("error fetching finalized l2 execution block of l1 height"),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable(
+                "error fetching finalized l2 execution block of l1 height",
+            ))?;
 
             let block = self
                 .l2_provider
                 .get_block(block_number.into())
                 .await
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        ErrorReporter(e).with_message("error fetching finalized l2 block"),
-                        None::<()>,
-                    )
-                })?
-                .expect("block should exist");
+                .map_err(RpcError::retryable("error fetching finalized l2 block"))?
+                .ok_or_else(|| {
+                    RpcError::missing_state("error fetching finalized l2 block: block should exist")
+                })?;
 
             Ok(Timestamp::from_secs(block.header.timestamp))
         } else {
@@ -175,7 +155,7 @@ impl FinalityModuleServer for Module {
                 .get_block(BlockId::latest())
                 .await
                 .map(|b| Timestamp::from_secs(b.expect("block exists").header.timestamp))
-                .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
+                .map_err(RpcError::retryable("error fetching l2 block"))
         }
     }
 }

@@ -24,16 +24,11 @@ use ibc_union_spec::{
     },
     query::{PacketAckByHashResponse, PacketByHashResponse, PacketsByBatchHashResponse, Query},
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, info, instrument, trace};
 use unionlabs::{
-    ErrorReporter,
     ibc::core::client::height::Height,
     primitives::{Bytes, H160, H256},
 };
@@ -41,10 +36,7 @@ use voyager_sdk::{
     ExtensionsExt, anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
-    rpc::{
-        FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE, StateModuleServer,
-        types::StateModuleInfo,
-    },
+    rpc::{RpcError, RpcResult, StateModuleServer, types::StateModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -159,20 +151,14 @@ impl Module {
                     .block(height.into())
                     .call()
                     .await
-                    .map_err(|err| {
-                        ErrorObject::owned(
-                            -1,
-                            format!("error fetching client address: {}", ErrorReporter(err)),
-                            None::<()>,
-                        )
-                    })?;
+                    .map_err(RpcError::retryable("error fetching client address"))?;
 
                 debug!(%client_address, "fetched client address");
 
                 Ok(client_address)
             })
             .await
-            .map_err(|e: Arc<ErrorObject>| (*e).clone())
+            .map_err(|e: Arc<RpcError>| (*e).clone())
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]
@@ -199,11 +185,7 @@ impl Module {
             Err(alloy::contract::Error::AbiError(_) | alloy::contract::Error::ZeroData(_, _)) => {
                 Ok(None)
             }
-            Err(err) => Err(ErrorObject::owned(
-                -1,
-                format!("error fetching client state: {}", ErrorReporter(err)),
-                None::<()>,
-            )),
+            Err(err) => Err(RpcError::retryable("error fetching client state")(err)),
         }
     }
 
@@ -233,11 +215,7 @@ impl Module {
             Err(alloy::contract::Error::AbiError(_) | alloy::contract::Error::ZeroData(_, _)) => {
                 Ok(None)
             }
-            Err(err) => Err(ErrorObject::owned(
-                -1,
-                format!("error fetching consensus state: {}", ErrorReporter(err)),
-                None::<()>,
-            )),
+            Err(err) => Err(RpcError::retryable("error fetching consensus state")(err)),
         }
     }
 
@@ -271,25 +249,14 @@ impl Module {
             }))
             .block(execution_height.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error querying channel: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error querying connection"))?;
 
         if **raw == **EMPTY_CONNECTION_BYTES {
             return Ok(None);
         }
 
-        let connection = Connection::abi_decode_params_validate(&raw).map_err(|e| {
-            ErrorObject::owned(
-                -1,
-                format!("error decoding channel: {}", ErrorReporter(e)),
-                None::<()>,
-            )
-        })?;
+        let connection = Connection::abi_decode_params_validate(&raw)
+            .map_err(RpcError::retryable("error decoding connection"))?;
 
         if connection.state == ConnectionState::Open {
             info!("connection is open, caching");
@@ -346,25 +313,14 @@ impl Module {
             }))
             .block(execution_height.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error querying channel: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error querying channel"))?;
 
         if **raw == **EMPTY_CHANNEL_BYTES {
             return Ok(None);
         }
 
-        let channel = Channel::abi_decode_params_validate(&raw).map_err(|e| {
-            ErrorObject::owned(
-                -1,
-                format!("error decoding channel: {}", ErrorReporter(e)),
-                None::<()>,
-            )
-        })?;
+        let channel = Channel::abi_decode_params_validate(&raw)
+            .map_err(RpcError::retryable("error decoding channel"))?;
 
         if channel.state == ChannelState::Open {
             info!("channel is open, caching");
@@ -390,13 +346,7 @@ impl Module {
             .block(execution_height.into())
             .call()
             .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching batch commitments: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching batch commitments"))?;
 
         if <H256>::from(raw) == <H256>::default() {
             Ok(None)
@@ -420,13 +370,7 @@ impl Module {
             .block(execution_height.into())
             .call()
             .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching batch receipts: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching batch receipts"))?;
 
         if <H256>::from(raw) == <H256>::default() {
             Ok(None)
@@ -469,16 +413,9 @@ impl Module {
             .block(execution_height.into())
             .call()
             .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    format!(
-                        "error fetching committed membership proof: {}",
-                        ErrorReporter(err)
-                    ),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable(
+                "error fetching committed membership proof",
+            ))?;
 
         if <H256>::from(raw) == <H256>::default() {
             Ok(None)
@@ -521,16 +458,9 @@ impl Module {
             .block(execution_height.into())
             .call()
             .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    format!(
-                        "error fetching committed non membership proof: {}",
-                        ErrorReporter(err)
-                    ),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable(
+                "error fetching committed non membership proof",
+            ))?
             .into();
 
         if raw == <H256>::MIN {
@@ -538,11 +468,9 @@ impl Module {
         } else if raw == NON_MEMBERSHIP_COMMITMENT_VALUE {
             Ok(true)
         } else {
-            Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("invalid non membership proof commitment: {raw}",),
-                None::<()>,
-            ))
+            Err(RpcError::fatal_from_message(format!(
+                "invalid non membership proof commitment: {raw}",
+            )))
         }
     }
 
@@ -556,16 +484,14 @@ impl Module {
 
         let windows = match self.max_query_window {
             Some(window) => {
-                let latest_height = self.provider.get_block_number().await.map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!(
-                            "error querying latest height while constructing query windows for decoding packet send event for packet {packet_hash}: {}",
-                            ErrorReporter(e)
-                        ),
-                        None::<()>,
-                    )
-                })?;
+                let latest_height =
+                    self.provider
+                        .get_block_number()
+                        .await
+                        .map_err(RpcError::retryable(format!(
+                            "error querying latest height while constructing query windows \
+                            for decoding packet send event for packet {packet_hash}",
+                        )))?;
                 mk_windows(latest_height, window)
             }
             None => vec![(BlockNumberOrTag::Earliest, BlockNumberOrTag::Latest)],
@@ -587,16 +513,9 @@ impl Module {
                     .to_block(to)
                     .query()
                     .await
-                    .map_err(|e| {
-                        ErrorObject::owned(
-                            -1,
-                            format!(
-                                "error querying for packet {packet_hash}: {}",
-                                ErrorReporter(e)
-                            ),
-                            None::<()>,
-                        )
-                    })?;
+                    .map_err(RpcError::retryable(format!(
+                        "error querying for packet {packet_hash}",
+                    )))?;
 
             if packet_logs.is_empty() {
                 debug!(%from, %to, "packet not found in range");
@@ -605,17 +524,13 @@ impl Module {
                 // there's really no nicer way to do this without having multiple checks (we want to ensure there's only 1 item in the list)
                 let (packet_log, log) = packet_logs.pop().expect("len is 1; qed;");
 
-                let packet = packet_log.packet.try_into().map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!(
-                            "error decoding packet send event \
-                            for packet {packet_hash}: {}",
-                            ErrorReporter(e)
-                        ),
-                        None::<()>,
-                    )
-                })?;
+                let packet = packet_log
+                    .packet
+                    .try_into()
+                    .map_err(RpcError::retryable(format!(
+                        "error decoding packet send event \
+                        for packet {packet_hash}",
+                    )))?;
 
                 return Ok(PacketByHashResponse {
                     packet,
@@ -626,23 +541,17 @@ impl Module {
                     provable_height: log.block_number.expect("log must have block number; qed;"),
                 });
             } else {
-                return Err(ErrorObject::owned(
-                    -1,
-                    format!(
-                        "error querying for packet {packet_hash}, \
-                        expected 1 event but found {}",
-                        packet_logs.len()
-                    ),
-                    None::<()>,
-                ));
+                return Err(RpcError::retryable_from_message(format!(
+                    "error querying for packet {packet_hash}, \
+                    expected 1 event but found {}",
+                    packet_logs.len()
+                )));
             }
         }
 
-        Err(ErrorObject::owned(
-            MISSING_STATE_ERROR_CODE,
-            format!("packet {packet_hash}, {channel_id} not found"),
-            None::<()>,
-        ))
+        Err(RpcError::missing_state(format!(
+            "packet {packet_hash}, {channel_id} not found"
+        )))
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %channel_id, %batch_hash))]
@@ -655,16 +564,14 @@ impl Module {
 
         let windows = match self.max_query_window {
             Some(window) => {
-                let latest_height = self.provider.get_block_number().await.map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!(
-                            "error querying latest height while constructing query windows for decoding packet send event for packet {batch_hash}: {}",
-                            ErrorReporter(e)
-                        ),
-                        None::<()>,
-                    )
-                })?;
+                let latest_height =
+                    self.provider
+                        .get_block_number()
+                        .await
+                        .map_err(RpcError::retryable(format!(
+                            "error querying latest height while constructing query windows \
+                            for decoding packet send event for packet {batch_hash}",
+                        )))?;
                 mk_windows(latest_height, window)
             }
             None => vec![(BlockNumberOrTag::Earliest, BlockNumberOrTag::Latest)],
@@ -680,21 +587,15 @@ impl Module {
 
             trace!(?query, "raw query");
 
-            let batch_logs = query
-                .from_block(from)
-                .to_block(to)
-                .query()
-                .await
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!(
-                            "error querying for packet {batch_hash}: {}",
-                            ErrorReporter(e)
-                        ),
-                        None::<()>,
-                    )
-                })?;
+            let batch_logs =
+                query
+                    .from_block(from)
+                    .to_block(to)
+                    .query()
+                    .await
+                    .map_err(RpcError::retryable(format!(
+                        "error querying for packet {batch_hash}",
+                    )))?;
 
             if batch_logs.is_empty() {
                 debug!(%from, %to, "batch not found in range");
@@ -728,11 +629,9 @@ impl Module {
             }
         }
 
-        Err(ErrorObject::owned(
-            MISSING_STATE_ERROR_CODE,
-            format!("packet batch {batch_hash}, {channel_id} not found"),
-            None::<()>,
-        ))
+        Err(RpcError::missing_state(format!(
+            "packet batch {batch_hash}, {channel_id} not found"
+        )))
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %channel_id, %packet_hash))]
@@ -745,16 +644,14 @@ impl Module {
 
         let windows = match self.max_query_window {
             Some(window) => {
-                let latest_height = self.provider.get_block_number().await.map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!(
-                            "error querying latest height while constructing query windows for decoding write ack event for packet {packet_hash}: {}",
-                            ErrorReporter(e)
-                        ),
-                        None::<()>,
-                    )
-                })?;
+                let latest_height =
+                    self.provider
+                        .get_block_number()
+                        .await
+                        .map_err(RpcError::retryable(format!(
+                            "error querying latest height while constructing query windows \
+                            for decoding write ack event for packet {packet_hash}",
+                        )))?;
                 mk_windows(latest_height, window)
             }
             None => vec![(BlockNumberOrTag::Earliest, BlockNumberOrTag::Latest)],
@@ -776,16 +673,9 @@ impl Module {
                     .to_block(to)
                     .query()
                     .await
-                    .map_err(|e| {
-                        ErrorObject::owned(
-                            -1,
-                            format!(
-                                "error querying for packet {packet_hash}: {}",
-                                ErrorReporter(e)
-                            ),
-                            None::<()>,
-                        )
-                    })?;
+                    .map_err(RpcError::retryable(format!(
+                        "error querying for packet {packet_hash}"
+                    )))?;
 
             if packet_logs.is_empty() {
                 debug!(%from, %to, "packet not found in range");
@@ -803,23 +693,17 @@ impl Module {
                     provable_height: log.block_number.expect("log must have block number; qed;"),
                 });
             } else {
-                return Err(ErrorObject::owned(
-                    -1,
-                    format!(
-                        "error querying for packet {packet_hash}, \
-                        expected 1 event but found {}",
-                        packet_logs.len()
-                    ),
-                    None::<()>,
-                ));
+                return Err(RpcError::retryable_from_message(format!(
+                    "error querying for packet {packet_hash}, \
+                    expected 1 event but found {}",
+                    packet_logs.len()
+                )));
             }
         }
 
-        Err(ErrorObject::owned(
-            MISSING_STATE_ERROR_CODE,
-            format!("packet ack for packet {packet_hash}, {channel_id} not found"),
-            None::<()>,
-        ))
+        Err(RpcError::missing_state(format!(
+            "packet ack for packet {packet_hash}, {channel_id} not found"
+        )))
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %client_id, %height))]
@@ -831,19 +715,14 @@ impl Module {
             .isFrozen(client_id.raw())
             .block(height.into())
             .call()
-            .await;
+            .await
+            .map_err(RpcError::retryable(format!(
+                "error fetching client status at height {height}",
+            )))?;
 
         match status {
-            Ok(true) => Ok(Status::Frozen),
-            Ok(false) => Ok(Status::Active),
-            Err(err) => Err(ErrorObject::owned(
-                -1,
-                format!(
-                    "error fetching client status at height {height}: {}",
-                    ErrorReporter(err)
-                ),
-                None::<()>,
-            )),
+            true => Ok(Status::Frozen),
+            false => Ok(Status::Active),
         }
     }
 }
@@ -947,19 +826,17 @@ impl StateModuleServer<IbcUnion> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
+    async fn client_info(
+        &self,
+        _: &Extensions,
+        client_id: ClientId,
+    ) -> Result<ClientInfo, RpcError> {
         let ibc_handler = self.ibc_handler();
         let client_type = ibc_handler
             .clientTypes(client_id.raw())
             .call()
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching client info: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching client info"))?;
 
         Ok(ClientInfo {
             client_type: ClientType::new(client_type),

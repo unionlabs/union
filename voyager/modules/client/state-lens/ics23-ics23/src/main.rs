@@ -1,24 +1,14 @@
 use alloy_sol_types::SolValue as _;
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
-use macros::model;
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use state_lens_ics23_ics23_light_client_types::{
-    ClientState, ConsensusState,
-    client_state::{Extra, ExtraV1},
-};
+use state_lens_ics23_ics23_light_client_types::{ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
 use tracing::instrument;
 use unionlabs::{
-    self, ErrorReporter,
-    encoding::{Bcs, Bincode, DecodeAs, EncodeAs, EthAbi},
+    encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     primitives::Bytes,
-    tuple::AsTuple,
     union::ics23,
 };
 use voyager_sdk::{
@@ -28,7 +18,7 @@ use voyager_sdk::{
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
     },
-    rpc::{ClientModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientModuleInfo},
+    rpc::{ClientModuleServer, RpcError, RpcResult, types::ClientModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -40,7 +30,6 @@ async fn main() {
 #[serde(try_from = "String", into = "String")]
 pub enum SupportedIbcInterface {
     IbcSolidity,
-    IbcMoveAptos,
     IbcCosmwasm,
 }
 
@@ -51,7 +40,6 @@ impl TryFrom<String> for SupportedIbcInterface {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match &*value {
             IbcInterface::IBC_SOLIDITY => Ok(SupportedIbcInterface::IbcSolidity),
-            IbcInterface::IBC_MOVE_APTOS => Ok(SupportedIbcInterface::IbcMoveAptos),
             IbcInterface::IBC_COSMWASM => Ok(SupportedIbcInterface::IbcCosmwasm),
             _ => Err(format!("unsupported IBC interface: `{value}`")),
         }
@@ -62,7 +50,6 @@ impl SupportedIbcInterface {
     fn as_str(&self) -> &'static str {
         match self {
             SupportedIbcInterface::IbcSolidity => IbcInterface::IBC_SOLIDITY,
-            SupportedIbcInterface::IbcMoveAptos => IbcInterface::IBC_MOVE_APTOS,
             SupportedIbcInterface::IbcCosmwasm => IbcInterface::IBC_COSMWASM,
         }
     }
@@ -98,53 +85,16 @@ impl ClientModule for Module {
 
 impl Module {
     pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<ConsensusState> {
-        ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to decode consensus state: {}", ErrorReporter(err)),
-                None::<()>,
-            )
-        })
+        ConsensusState::decode_as::<EthAbi>(consensus_state)
+            .map_err(RpcError::fatal("unable to decode consensus state"))
     }
 
     pub fn decode_client_state(&self, client_state: &[u8]) -> RpcResult<ClientState> {
         match self.ibc_interface {
             SupportedIbcInterface::IbcSolidity => ClientState::decode_as::<EthAbi>(client_state)
-                .map_err(|err| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unable to decode client state: {}", ErrorReporter(err)),
-                        None::<()>,
-                    )
-                }),
-            SupportedIbcInterface::IbcMoveAptos => <state_lens_light_client_types::ClientState<
-                ExtraV1,
-            > as AsTuple>::Tuple::decode_as::<Bcs>(
-                client_state
-            )
-            .map(<state_lens_light_client_types::ClientState<ExtraV1>>::from_tuple)
-            .map(|cs| ClientState {
-                l2_chain_id: cs.l2_chain_id,
-                l1_client_id: cs.l1_client_id,
-                l2_client_id: cs.l2_client_id,
-                l2_latest_height: cs.l2_latest_height,
-                extra: Extra::V1(cs.extra),
-            })
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to decode client state: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            }),
+                .map_err(RpcError::fatal("unable to decode client state")),
             SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Bincode>(client_state)
-                .map_err(|err| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unable to decode client state: {}", ErrorReporter(err)),
-                        None::<()>,
-                    )
-                }),
+                .map_err(RpcError::fatal("unable to decode client state")),
         }
     }
 
@@ -164,7 +114,7 @@ impl ClientModuleServer for Module {
         let cs = self.decode_client_state(&client_state)?;
 
         Ok(ClientStateMeta {
-            counterparty_chain_id: ChainId::new(cs.l2_chain_id.to_string()),
+            counterparty_chain_id: ChainId::new(cs.l2_chain_id),
             counterparty_height: Module::make_height(cs.l2_latest_height),
         })
     }
@@ -208,33 +158,11 @@ impl ClientModuleServer for Module {
         ensure_null(metadata)?;
 
         serde_json::from_value::<ClientState>(client_state)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize client state: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })
+            .map_err(RpcError::fatal("unable to deserialize client state"))
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcMoveAptos => {
-                    #[allow(clippy::match_single_binding)]
-                    match cs.extra {
-                        // Extra::V1(versioned_extra_v1) => state_lens_light_client_types::ClientState {
-                        //     l2_chain_id: cs.l2_chain_id,
-                        //     l1_client_id: cs.l1_client_id,
-                        //     l2_client_id: cs.l2_client_id,
-                        //     l2_latest_height: cs.l2_latest_height,
-                        //     extra: versioned_extra_v1,
-                        // }
-                        // .as_tuple()
-                        // .encode_as::<Bcs>(),
-                        _ => todo!("figure out implementation for bcs"),
-                    }
-                }
-                SupportedIbcInterface::IbcSolidity => cs.encode_as::<EthAbi>(),
-                SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>(),
+                SupportedIbcInterface::IbcSolidity => cs.encode_as::<EthAbi>().into(),
+                SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>().into(),
             })
-            .map(Into::into)
     }
 
     #[instrument]
@@ -244,36 +172,18 @@ impl ClientModuleServer for Module {
         consensus_state: Value,
     ) -> RpcResult<Bytes> {
         serde_json::from_value::<ConsensusState>(consensus_state)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!(
-                        "unable to deserialize consensus state: {}",
-                        ErrorReporter(err)
-                    ),
-                    None::<()>,
-                )
-            })
-            .map(|cs| cs.encode_as::<EthAbi>())
-            .map(Into::into)
+            .map_err(RpcError::fatal("unable to deserialize consensus state"))
+            .map(|cs| cs.encode_as::<EthAbi>().into())
     }
 
     #[instrument]
     async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<Header>(header)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize header: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })
+            .map_err(RpcError::fatal("unable to deserialize header"))
             .map(|header| match self.ibc_interface {
-                SupportedIbcInterface::IbcMoveAptos => header.encode_as::<Bcs>(),
-                SupportedIbcInterface::IbcSolidity => header.encode_as::<EthAbi>(),
-                SupportedIbcInterface::IbcCosmwasm => header.encode_as::<Bincode>(),
+                SupportedIbcInterface::IbcSolidity => header.encode_as::<EthAbi>().into(),
+                SupportedIbcInterface::IbcCosmwasm => header.encode_as::<Bincode>().into(),
             })
-            .map(Into::into)
     }
 
     #[instrument]
@@ -282,45 +192,13 @@ impl ClientModuleServer for Module {
         let proof = serde_json::from_value::<
             unionlabs::ibc::core::commitment::merkle_proof::MerkleProof,
         >(proof)
-        .map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to deserialize proof: {}", ErrorReporter(err)),
-                None::<()>,
-            )
-        })?;
+        .map_err(RpcError::fatal("unable to deserialize proof"))?;
 
         match self.ibc_interface {
             SupportedIbcInterface::IbcSolidity => Ok(encode_merkle_proof_for_evm(proof).into()),
-            SupportedIbcInterface::IbcMoveAptos => Ok(encode_merkle_proof_for_move(proof).into()),
             SupportedIbcInterface::IbcCosmwasm => Ok(proof.encode_as::<Bincode>().into()),
         }
     }
-}
-
-#[model]
-struct MoveMembershipProof {
-    sub_proof: ics23::existence_proof::ExistenceProof,
-    top_level_proof: ics23::existence_proof::ExistenceProof,
-}
-
-fn encode_merkle_proof_for_move(
-    proof: unionlabs::ibc::core::commitment::merkle_proof::MerkleProof,
-) -> Vec<u8> {
-    let proof = ics23::merkle_proof::MerkleProof::try_from(
-        protos::ibc::core::commitment::v1::MerkleProof::from(proof),
-    )
-    .unwrap();
-    match proof {
-        ics23::merkle_proof::MerkleProof::Membership(sub_proof, top_level_proof) => {
-            MoveMembershipProof {
-                sub_proof,
-                top_level_proof,
-            }
-        }
-        ics23::merkle_proof::MerkleProof::NonMembership(_, _) => todo!(),
-    }
-    .encode_as::<Bcs>()
 }
 
 alloy_sol_types::sol! {

@@ -12,7 +12,7 @@ use voyager_sdk::{
     anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{FinalityModuleServer, json_rpc_error_to_error_object, types::FinalityModuleInfo},
+    rpc::{FinalityModuleServer, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -124,11 +124,7 @@ impl FinalityModuleServer for Module {
         _: &Extensions,
         finalized: bool,
     ) -> RpcResult<Timestamp> {
-        let mut commit_response = self
-            .cometbft_client
-            .commit(None)
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+        let mut commit_response = self.cometbft_client.commit(None).await?;
 
         if finalized && !commit_response.canonical {
             trace!(
@@ -143,8 +139,7 @@ impl FinalityModuleServer for Module {
                     .try_into()
                     .expect("should be fine"),
                 ))
-                .await
-                .map_err(json_rpc_error_to_error_object)?;
+                .await?;
 
             if !commit_response.canonical {
                 error!(

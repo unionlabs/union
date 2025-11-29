@@ -38,7 +38,7 @@ use voyager_sdk::{
     anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, StateModuleServer, types::StateModuleInfo},
+    rpc::{FATAL_JSONRPC_ERROR_CODE, RpcError, StateModuleServer, types::StateModuleInfo},
     serde_json::json,
 };
 
@@ -291,7 +291,7 @@ impl StateModuleServer<IbcUnion> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn client_info(&self, _: &Extensions, _: ClientId) -> RpcResult<ClientInfo> {
+    async fn client_info(&self, _: &Extensions, _: ClientId) -> Result<ClientInfo, RpcError> {
         Ok(ClientInfo {
             // TODO(aeryz): make this queryable
             client_type: ClientType::new("cometbls"),
