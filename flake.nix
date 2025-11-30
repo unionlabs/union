@@ -569,6 +569,8 @@
                 nodePackages_latest."@tailwindcss/language-server"
                 nodePackages_latest.typescript-language-server
                 nodePackages_latest.vscode-langservers-extracted
+                wasm-bindgen-cli_0_2_99
+                binaryen
               ])
               ++ (with pkgs; [
                 wasm-tools

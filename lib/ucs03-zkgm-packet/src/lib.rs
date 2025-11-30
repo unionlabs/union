@@ -3,6 +3,7 @@ use std::error::Error;
 use alloy_sol_types::{SolValue, abi::TokenSeq};
 use ucs03_zkgm::com::{TAG_ACK_FAILURE, TAG_ACK_SUCCESS};
 use unionlabs_primitives::{Bytes, H256, U256};
+use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 pub use crate::{
     batch::{Batch, BatchAck, BatchShape},
@@ -132,6 +133,13 @@ impl Instruction {
             operand: self.operand.into(),
         }
     }
+}
+
+#[wasm_bindgen]
+pub fn decode_packet(packet: Vec<u8>) -> core::result::Result<JsValue, JsValue> {
+    let packet = ZkgmPacket::decode(packet).map_err(|err| JsValue::from_str(&err.to_string()))?;
+
+    Ok(serde_wasm_bindgen::to_value(&packet)?)
 }
 
 #[cfg(test)]

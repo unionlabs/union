@@ -11,13 +11,19 @@ repository   = { workspace = true }
 [lints]
 workspace = true
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
 alloy-sol-types      = { workspace = true }
+embed-commit         = { workspace = true }
 enumorph             = { workspace = true }
 hex-literal          = { workspace = true }
 serde                = { workspace = true, optional = true, features = ["derive"] }
+serde-wasm-bindgen   = "0.6.5"
 ucs03-zkgm           = { workspace = true }
 unionlabs-primitives = { workspace = true }
+wasm-bindgen         = "0.2.106"
 
 [features]
 default = ["serde"]

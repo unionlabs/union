@@ -1051,6 +1051,10 @@ _: {
       access-manager = crane.buildWasmContract "cosmwasm/access-manager" { };
       access-managed-example = crane.buildWasmContract "e2e/access-managed-example" { };
 
+      ucs03-zkgm-packet = crane.buildWasmContract "lib/ucs03-zkgm-packet" {
+        features = [ "serde" ];
+      };
+
       cw20-base = crane.buildWasmContract "cosmwasm/cw20-base" { };
 
       cw20-wrapped-tokenfactory = crane.buildWasmContract "cosmwasm/cw20-wrapped-tokenfactory" { };
@@ -1127,6 +1131,7 @@ _: {
             lst-staker
             access-managed-example
             proxy-account-factory
+            ucs03-zkgm-packet
             ;
           cosmwasm-scripts =
             {
