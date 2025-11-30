@@ -146,7 +146,9 @@ impl bincode::Encode for U256 {
 #[cfg(feature = "schemars")]
 impl schemars::JsonSchema for U256 {
     fn schema_name() -> alloc::string::String {
-        "U256".into()
+        use alloc::borrow::ToOwned;
+
+        "U256".to_owned()
     }
 
     fn json_schema(_: &mut schemars::r#gen::SchemaGenerator) -> schemars::schema::Schema {

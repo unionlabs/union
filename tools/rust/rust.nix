@@ -133,7 +133,7 @@ _: {
             extensions = builtins.attrValues availableComponents;
             targets = [
               "wasm32-unknown-unknown"
-              # "riscv32im-risc0-zkvm-elf"
+              "wasm32v1-none"
             ];
           };
         };

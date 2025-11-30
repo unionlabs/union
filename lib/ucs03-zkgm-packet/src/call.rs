@@ -1,9 +1,13 @@
+use alloc::format;
+
 use alloy_sol_types::SolValue;
 use enumorph::Enumorph;
-use ucs03_zkgm::com::{INSTR_VERSION_0, OP_CALL, TAG_ACK_SUCCESS};
 use unionlabs_primitives::Bytes;
 
-use crate::{Instruction, Result};
+use crate::{
+    Instruction, Result,
+    com::{INSTR_VERSION_0, OP_CALL, TAG_ACK_SUCCESS},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
 #[cfg_attr(
@@ -71,12 +75,12 @@ pub struct CallV0 {
 
 impl CallV0 {
     pub(crate) fn decode(operand: impl AsRef<[u8]>) -> Result<Self> {
-        let ucs03_zkgm::com::Call {
+        let crate::com::Call {
             sender,
             eureka,
             contract_address,
             contract_calldata,
-        } = ucs03_zkgm::com::Call::abi_decode_params_validate(operand.as_ref())?;
+        } = crate::com::Call::abi_decode_params_validate(operand.as_ref())?;
         Ok(Self {
             sender: sender.into(),
             eureka,
@@ -89,7 +93,7 @@ impl CallV0 {
         Instruction::new(
             OP_CALL,
             INSTR_VERSION_0,
-            ucs03_zkgm::com::Call {
+            crate::com::Call {
                 sender: self.sender.into(),
                 eureka: self.eureka,
                 contract_address: self.contract_address.into(),
@@ -138,7 +142,7 @@ impl CallV0Ack {
     pub(crate) fn decode(shape: CallV0Shape, ack: impl AsRef<[u8]>) -> Result<Self> {
         if shape.eureka {
             Ok(Self::Eureka(ack.as_ref().into()))
-        } else if ack.as_ref() == TAG_ACK_SUCCESS.to_be_bytes::<32>() {
+        } else if ack.as_ref() == TAG_ACK_SUCCESS.to_be_bytes() {
             Ok(Self::NonEureka)
         } else {
             Err("invalid call v1 eureka ack, expected bytes32(TAG_ACK_SUCCESS)")?
@@ -147,7 +151,7 @@ impl CallV0Ack {
 
     pub(crate) fn encode(&self) -> Bytes {
         match self {
-            CallV0Ack::NonEureka => TAG_ACK_SUCCESS.to_be_bytes::<32>().into(),
+            CallV0Ack::NonEureka => TAG_ACK_SUCCESS.to_be_bytes().into(),
             CallV0Ack::Eureka(bytes) => bytes.clone(),
         }
     }

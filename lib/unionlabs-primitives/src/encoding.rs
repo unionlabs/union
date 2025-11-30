@@ -110,6 +110,10 @@ impl From<hex::FromHexError> for HexUnprefixedFromStrError {
     }
 }
 
+#[derive(Debug, PartialEq, thiserror::Error)]
+#[error("{0}")]
+pub struct HexUnprefixedFromStrError(pub hex::FromHexError);
+
 #[cfg(feature = "base64")]
 pub struct Base64;
 #[cfg(feature = "base64")]

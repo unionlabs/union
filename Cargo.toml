@@ -467,7 +467,7 @@ wasm-client-type                          = { path = "lib/wasm-client-type", def
 # =====================
 alloy              = { version = "1.0", default-features = false }
 alloy-primitives   = { version = "1.1", default-features = false }
-alloy-sol-types    = { version = "1.1", default-features = true }
+alloy-sol-types    = { version = "1.1", default-features = false }
 anyhow             = { version = "1" }
 async-sqlite       = { version = "0.4.0", default-features = false }
 axum               = { version = "0.8", default-features = false }
