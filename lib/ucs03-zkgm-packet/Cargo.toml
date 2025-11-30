@@ -21,9 +21,9 @@ enumorph             = { workspace = true }
 hex-literal          = { workspace = true }
 serde                = { workspace = true, optional = true, features = ["derive"] }
 serde-wasm-bindgen   = "0.6.5"
-ucs03-zkgm           = { workspace = true }
+ucs03-zkgm           = { workspace = true, features = ["library"] }
 unionlabs-primitives = { workspace = true }
-wasm-bindgen         = "0.2.106"
+wasm-bindgen         = "=0.2.100"
 
 [features]
 default = ["serde"]

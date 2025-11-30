@@ -1051,7 +1051,7 @@ _: {
       access-manager = crane.buildWasmContract "cosmwasm/access-manager" { };
       access-managed-example = crane.buildWasmContract "e2e/access-managed-example" { };
 
-      ucs03-zkgm-packet = crane.buildWasmContract "lib/ucs03-zkgm-packet" {
+      ucs03-zkgm-packet = crane.buildWasm "lib/ucs03-zkgm-packet" {
         features = [ "serde" ];
       };
 
