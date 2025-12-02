@@ -1,6 +1,6 @@
 [package]
-edition = "2024.beta"
-name    = "escrow_vault"
+edition      = "2024.beta"
+name         = "escrow_vault"
 published-at = "0x99d670dcf856a3099b4b099a06d55893aaa31103798701ccea1eb1812c80f5f9"
 
 [dependencies]
