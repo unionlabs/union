@@ -29,7 +29,6 @@ class BannerStore {
       onSome: (data) => data[edition].banners.filter(banner => banner.enabled),
     })
   }
-  3
 }
 
 export const bannerStore = new BannerStore()
