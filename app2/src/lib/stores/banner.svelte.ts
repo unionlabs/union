@@ -4,17 +4,17 @@ import { Option } from "effect"
 export type BannerType = "info" | "warning" | "error"
 
 export type BannerConfig = {
-  enabled: boolean
-  type: BannerType
-  message: string
+  readonly enabled: boolean
+  readonly type: BannerType
+  readonly message: string
 }
 
 export type BannerData = {
-  app: {
-    banner: BannerConfig
+  readonly app: {
+    readonly banners: readonly BannerConfig[]
   }
-  btc: {
-    banner: BannerConfig
+  readonly btc: {
+    readonly banners: readonly BannerConfig[]
   }
 }
 
@@ -22,10 +22,14 @@ class BannerStore {
   data: Option.Option<BannerData> = $state(Option.none())
   error: Option.Option<FetchDecodeError> = $state(Option.none())
 
-  // Get banner for specific edition
-  getBannerForEdition(edition: "app" | "btc"): Option.Option<BannerConfig> {
-    return Option.map(this.data, (data) => data[edition].banner)
+  // Get banners for specific edition
+  getBannersForEdition(edition: "app" | "btc"): BannerConfig[] {
+    return Option.match(this.data, {
+      onNone: () => [],
+      onSome: (data) => data[edition].banners.filter(banner => banner.enabled),
+    })
   }
+  3
 }
 
 export const bannerStore = new BannerStore()
