@@ -1,6 +1,7 @@
 use ethereum_light_client_types::{AccountProof, StorageProof};
 use rlp::Encodable;
 use unionlabs::{
+    errors::InvalidLength,
     ethereum::keccak256,
     primitives::{Bytes, H64, H72, H160, H256, H2048, U256},
 };
@@ -65,7 +66,7 @@ pub struct L2Header {
     pub gas_used: u64,
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::u64_hex"))]
     pub timestamp: u64,
-    pub extra_data: H72,
+    pub extra_data: BytesMax32,
     pub mix_hash: H256,
     pub nonce: H64,
     #[cfg_attr(
@@ -89,6 +90,64 @@ impl L2Header {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(try_from = "Bytes", into = "Bytes")
+)]
+pub struct BytesMax32(Bytes);
+
+impl rlp::Encodable for BytesMax32 {
+    fn rlp_append(&self, s: &mut rlp::RlpStream) {
+        s.encoder().encode_value(&self.0);
+    }
+}
+
+#[cfg(feature = "bincode")]
+impl bincode::Encode for BytesMax32 {
+    fn encode<E: bincode::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), bincode::error::EncodeError> {
+        bincode::Encode::encode(&self.0, encoder)
+    }
+}
+
+#[cfg(feature = "bincode")]
+impl<Context> bincode::Decode<Context> for BytesMax32 {
+    fn decode<D: bincode::de::Decoder<Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode::error::DecodeError> {
+        <Bytes as bincode::Decode<Context>>::decode(decoder)?
+            .try_into()
+            .map_err(|_| bincode::error::DecodeError::Other("invalid BytesMax32 length"))
+    }
+}
+#[cfg(feature = "bincode")]
+bincode::impl_borrow_decode!(BytesMax32);
+
+impl TryFrom<Bytes> for BytesMax32 {
+    type Error = InvalidLength;
+
+    fn try_from(value: Bytes) -> Result<Self, Self::Error> {
+        if value.len() > 32 {
+            Err(InvalidLength {
+                expected: unionlabs::errors::ExpectedLength::LessThan(33),
+                found: value.len(),
+            })
+        } else {
+            Ok(Self(value))
+        }
+    }
+}
+
+impl From<BytesMax32> for Bytes {
+    fn from(value: BytesMax32) -> Self {
+        value.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
@@ -97,6 +156,7 @@ mod tests {
 
     #[test]
     fn hash() {
+        // https://basescan.org/block/32376940
         let header = L2Header {
             parent_hash: hex!("327686d326438b9f95b8300c1ceed12050a3d685fcfbe895f23f8a812e57ee15").into(),
             sha3_uncles: hex!("1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347").into(),
@@ -114,7 +174,7 @@ mod tests {
             gas_limit: 0x8f0d180,
             gas_used: 0x254cdb6,
             timestamp: 0x68666dbb,
-            extra_data: hex!("000000003200000003").into(),
+            extra_data: <Bytes>::from(hex!("000000003200000003")).try_into().unwrap(),
             mix_hash: hex!("40bfcd42c3cb3b7966a467ce8cdc2638cbd6b03558448a82a47b42ad5504ef72").into(),
             nonce: hex!("0000000000000000").into(),
             base_fee_per_gas: 0x326e8f_u64.into(),
@@ -131,6 +191,44 @@ mod tests {
 
         let hash: H256 =
             hex!("f5b06eb8b0bacf8b030dbd596964b6bf346f7602f906f57db958e12c726367f1").into();
+
+        assert_eq!(hash, header.hash());
+
+        // https://basescan.org/block/39005683
+        let header = L2Header {
+            parent_hash: hex!("103eaa3a864d151e8e966daa3807f0a1966bf02126ca72e2aceda161d93b1bd3").into(),
+            sha3_uncles: hex!("1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347").into(),
+            miner: hex!("4200000000000000000000000000000000000011").into(),
+            state_root: hex!("e718c13ab76b9d7e59753321ec332de4bea4acf7a11cc9505e13d96281ce374a").into(),
+            transactions_root: hex!(
+                "14422934a5fdef752e5c27e2d6f4365667853c27ffc42631b6c1ee9e2c820819"
+            ).into(),
+            receipts_root: hex!(
+                "de6348feed5cc63ee6834ca033949e42f1a643676fbb6451d0edb7364d44995f"
+            ).into(),
+            logs_bloom: Box::new(hex!("223f05d7499dccfd9d0b53dae6ec7282f347e264d1f0fd91cf27841fb9e6cc61296efc84f387fa3a067625dbdb473665355de80fbf30202daef6b792aabc62c634f8d89cf76fa5cd6d9d4829b6d5653e277f56efe54ffdf8e76af79f8c72b3c035b8e337bacb356ca4d8fd9b1c629ecdc7b45d166c953467aeabf9b6cc1a32a711e4982bdd1c5caf736f8403b171ab8995e9b6cbbaf59d6afc8fe8d503b4e52b6a4d861795942f4602e8958abaadea43bd0c4cce15337c9aefd35305a2d375a65a58feaa5a8bbee3cff97fafe07499a057698ef75435d313d8f300c6fc7a7dbe4dff1a16ea8c2784f2e22af6cc6b15a58ea2edc35dbddd56af1df345a442abca").into()),
+            difficulty: 0_u64.into(),
+            number: 0x2532df3_u64.into(),
+            gas_limit: 0x11e1a300,
+            gas_used: 0x29ac3a4,
+            timestamp: 0x6930b8c9,
+            extra_data: <Bytes>::from(hex!("0100000032000000050000000000000000")).try_into().unwrap(),
+            mix_hash: hex!("c539cd614e4c82f7ac22833903cb30c85a6dc24ab1f9f192235cc6e6abcf7588").into(),
+            nonce: hex!("0000000000000000").into(),
+            base_fee_per_gas: 0x20c76f_u64.into(),
+            withdrawals_root: hex!(
+                "e82b20a3da27b8c381ac30bceb387396cdcebaf0789c6e2aecfc37ee5a98363f"
+            ).into(),
+            blob_gas_used: 0x1a59690,
+            excess_blob_gas: 0,
+            parent_beacon_block_root: hex!(
+                "4451f63c0564df865f78b6efa3119e7f105da80a00fa64503ccf3e826908c436"
+            ).into(),
+            requests_hash: hex!("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").into(),
+        };
+
+        let hash: H256 =
+            hex!("b62c3105be49780d3beec0990b78dcade5eace8a5e87462f6e7c357a29b3ccd1").into();
 
         assert_eq!(hash, header.hash());
     }

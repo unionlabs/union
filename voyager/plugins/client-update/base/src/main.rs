@@ -612,7 +612,9 @@ impl Module {
                         gas_limit: l2_block.header.gas_limit,
                         gas_used: l2_block.header.gas_used,
                         timestamp: l2_block.header.timestamp,
-                        extra_data: l2_block.header.extra_data.to_vec().try_into().unwrap(),
+                        extra_data: <Bytes>::from(l2_block.header.extra_data)
+                            .try_into()
+                            .unwrap(),
                         mix_hash: l2_block.header.mix_hash.unwrap_or_default().into(),
                         nonce: l2_block.header.nonce.unwrap_or_default().into(),
                         base_fee_per_gas: l2_block
