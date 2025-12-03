@@ -451,7 +451,7 @@ mod Ucs03Zkgm {
             order: TokenOrderV2,
             intent: bool,
         ) -> Result<ByteArray, ()> {
-            let metadata: SolverMetadata = ethabi_decode(order.metadata.clone()).ok_or(())?;
+            let metadata: SolverMetadata = ethabi_decode(order.metadata.clone())?;
 
             let (_, solver) = metadata.solver_address.read_felt252(0);
 
@@ -502,7 +502,7 @@ mod Ucs03Zkgm {
                 IZkgmERC20Dispatcher { contract_address: wrapped_token }.mint(relayer, fee);
             }
 
-            Ok(// ethabi_encode(
+            Ok( // ethabi_encode(
             //     @TokenOrderAck {
             //         fill_type: FILL_TYPE_PROTOCOL, market_maker: Default::default(),
             //     },
