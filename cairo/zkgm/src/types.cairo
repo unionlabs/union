@@ -217,10 +217,97 @@ pub struct TokenOrderV2 {
 }
 
 impl TokenOrderV2EthAbiImpl of EthAbi<TokenOrderV2> {
-    fn encode(self: @TokenOrderV2, ref buf: ByteArray) {}
+    fn encode(self: @TokenOrderV2, ref buf: ByteArray) {
+        let (sender_len, receiver_len, base_token_len, quote_token_len) = (
+            encoded_bytes_len(self.sender),
+            encoded_bytes_len(self.receiver),
+            encoded_bytes_len(self.base_token),
+            encoded_bytes_len(self.quote_token),
+        );
+
+        let mut cursor: u32 = 0x20 * 8;
+
+        // sender offset
+        buf.append_u256(cursor.into());
+        cursor = cursor + 0x20 + sender_len;
+
+        // receiver offset
+        buf.append_u256(cursor.into());
+        cursor = cursor + 0x20 + receiver_len;
+
+        // base_token offset
+        buf.append_u256(cursor.into());
+        cursor = cursor + 0x20 + base_token_len;
+
+        // base_amount
+        buf.append_u256(*self.base_amount);
+
+        // quote_token offset
+        buf.append_u256(cursor.into());
+        cursor = cursor + 0x20 + quote_token_len;
+
+        // quote_amount
+        buf.append_u256(*self.quote_amount);
+
+        // kind
+        buf.append_u256((*self.kind).into());
+
+        // metadata offset
+        buf.append_u256(cursor.into());
+
+        // sender len
+        buf.append_u256(self.sender.len().into());
+
+        // sender
+        buf.append(self.sender);
+        postfix_bytes(self.sender, ref buf);
+
+        // receiver len
+        buf.append_u256(self.receiver.len().into());
+
+        // receiver
+        buf.append(self.receiver);
+        postfix_bytes(self.receiver, ref buf);
+
+        // base_token len
+        buf.append_u256(self.base_token.len().into());
+
+        // base_token
+        buf.append(self.base_token);
+        postfix_bytes(self.base_token, ref buf);
+
+        // quote_token len
+        buf.append_u256(self.quote_token.len().into());
+
+        // quote_token
+        buf.append(self.quote_token);
+        postfix_bytes(self.quote_token, ref buf);
+
+        // metadata len
+        buf.append_u256(self.metadata.len().into());
+
+        // metadata
+        buf.append(self.metadata);
+        postfix_bytes(self.metadata, ref buf);
+    }
 
     fn decode(val: ByteArray, offset: u32) -> Result<TokenOrderV2, ()> {
-        Err(())
+        let (_, base_amount) = val.read_u256(offset + 0x20 * 3);
+        let (_, quote_amount) = val.read_u256(offset + 0x20 * 5);
+        let (_, kind) = val.read_u256(offset + 0x20 * 6);
+
+        Ok(
+            TokenOrderV2 {
+                sender: read_bytes(@val, offset, 0),
+                receiver: read_bytes(@val, offset, 1),
+                base_token: read_bytes(@val, offset, 2),
+                base_amount,
+                quote_token: read_bytes(@val, offset, 4),
+                quote_amount,
+                kind: kind.try_into().unwrap(),
+                metadata: read_bytes(@val, offset, 7),
+            },
+        )
     }
 }
 
@@ -245,10 +332,37 @@ pub struct SolverMetadata {
 }
 
 impl SolverMetadataEthAbiImpl of EthAbi<SolverMetadata> {
-    fn encode(self: @SolverMetadata, ref buf: ByteArray) {}
+    fn encode(self: @SolverMetadata, ref buf: ByteArray) {
+        // solver_address offset
+        buf.append_u256(0x20 * 2);
+
+        // metadata offset
+        buf
+            .append_u256(
+                ( // the solver_address bytes start here
+                0x20 * 2
+                    + // the length of the solver_address
+                    0x20
+                    + // the actual solver_address
+                    encoded_bytes_len(self.solver_address))
+                    .into(),
+            );
+
+        buf.append_u256(self.solver_address.len().into());
+        buf.append(self.solver_address);
+        postfix_bytes(self.solver_address, ref buf);
+
+        buf.append_u256(self.metadata.len().into());
+        buf.append(self.metadata);
+        postfix_bytes(self.metadata, ref buf);
+    }
 
     fn decode(val: ByteArray, offset: u32) -> Result<SolverMetadata, ()> {
-        Err(())
+        Ok(
+            SolverMetadata {
+                solver_address: read_bytes(@val, offset, 0), metadata: read_bytes(@val, offset, 1),
+            },
+        )
     }
 }
 
@@ -355,7 +469,13 @@ fn read_bytes(bytes: @ByteArray, base_offset: u32, bytes_order: u32) -> ByteArra
 
 /// Postfixes the encoded `bytes` with zeroes s.t. the encoded length is 32 * N
 fn postfix_bytes(bytes: @ByteArray, ref buffer: ByteArray) {
-    let mut len = 32 - (bytes.len() % 32);
+    let len_mod_32 = bytes.len() % 32;
+
+    if len_mod_32 == 0 {
+        return;
+    }
+
+    let mut len = 32 - len_mod_32;
 
     // the following reduces the number of appends to Log2(len) and removes the need
     // for a loop
@@ -381,6 +501,15 @@ fn postfix_bytes(bytes: @ByteArray, ref buffer: ByteArray) {
 
     if len >= 1 {
         buffer.append_u8(0);
+    }
+}
+
+#[inline]
+fn encoded_bytes_len(bytes: @ByteArray) -> u32 {
+    if bytes.len() % 32 == 0 {
+        bytes.len()
+    } else {
+        bytes.len() + (32 - (bytes.len() % 32))
     }
 }
 
