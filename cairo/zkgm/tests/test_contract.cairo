@@ -1,5 +1,8 @@
 use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
-use zkgm::types::{Forward, Instruction, Opcode, Version, ZkgmPacket, ethabi_decode, ethabi_encode};
+use zkgm::types::{
+    BatchAck, EthAbi2, Forward, Instruction, Opcode, TokenOrderAck, Version, ZkgmPacket,
+    ethabi_decode, ethabi_encode,
+};
 
 #[test]
 fn test_instruction_decode() {
@@ -73,6 +76,46 @@ fn test_forward_encode_decode() {
     };
     assert!(forward == f);
     assert!(encoded == ethabi_encode(@forward));
+}
+
+#[test]
+fn test_token_order_ack_encode_decode() {
+    let mut encoded: ByteArray = Default::default();
+    encoded.append_u256(0x00000000000000000000000000000000000000000000000000000000001e8480);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000040);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000067);
+    encoded.append_u256(0x61736466736e6564666c6561736e64666c656e6173646c66656e6173656c646e);
+    encoded.append_u256(0x6c6561736e64666c65616e7364666c656e6173646c65666e616c73656e64666c);
+    encoded.append_u256(0x656e61736466656c6e61736c6564666c6561736e64666c656e61736c6465666e);
+    encoded.append_u256(0x6c65616e73646600000000000000000000000000000000000000000000000000);
+
+    let ack = TokenOrderAck {
+        fill_type: 2000000,
+        market_maker: "asdfsnedfleasndflenasdlfenaseldnleasndfleansdflenasdlefnalsendflenasdfelnasledfleasndflenasldefnleansdf",
+    };
+
+    assert!(ack.encode() == encoded);
+    assert!(ack == EthAbi2::decode(encoded).unwrap());
+}
+
+#[test]
+fn test_batch_ack_encode_decode() {
+    let mut encoded: ByteArray = Default::default();
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000020);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000003);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000060);
+    encoded.append_u256(0x00000000000000000000000000000000000000000000000000000000000000a0);
+    encoded.append_u256(0x00000000000000000000000000000000000000000000000000000000000000e0);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000005);
+    encoded.append_u256(0x68656c6c6f000000000000000000000000000000000000000000000000000000);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000002);
+    encoded.append_u256(0x6869000000000000000000000000000000000000000000000000000000000000);
+    encoded.append_u256(0x0000000000000000000000000000000000000000000000000000000000000004);
+    encoded.append_u256(0x6865686500000000000000000000000000000000000000000000000000000000);
+
+    let batch_ack = BatchAck { acknowledgements: array!["hello", "hi", "hehe"] };
+
+    assert!(batch_ack.encode() == encoded);
 }
 
 #[test]

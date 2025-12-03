@@ -233,7 +233,8 @@ mod Ucs03Zkgm {
             metadata: TokenMetadata,
             with_calldata: bool,
         ) -> (ContractAddress, felt252, Array<felt252>) {
-            let metadata_image = ethabi_encode(@metadata).keccak_be();
+            // let metadata_image = ethabi_encode(@metadata).keccak_be();
+            let metadata_image = Default::default();
 
             Self::predict_wrapped_token_from_metadata_and_image(
                 path, channel, token, metadata, metadata_image, with_calldata,
@@ -433,13 +434,12 @@ mod Ucs03Zkgm {
                     return Err(());
                 }
 
-                Ok(
-                    ethabi_encode(
-                        @TokenOrderAck {
-                            fill_type: FILL_TYPE_MARKETMAKER, market_maker: relayer_msg,
-                        },
-                    ),
-                )
+                Ok( // ethabi_encode(
+                //     @TokenOrderAck {
+                //         fill_type: FILL_TYPE_MARKETMAKER, market_maker: relayer_msg,
+                //     },
+                // ),
+                Default::default())
             }
         }
 
@@ -459,11 +459,10 @@ mod Ucs03Zkgm {
                 .solve(packet, order, path, get_caller_address(), relayer, relayer_msg, intent);
             match ret {
                 Ok(ret) => {
-                    Ok(
-                        ethabi_encode(
-                            @TokenOrderAck { fill_type: FILL_TYPE_MARKETMAKER, market_maker: ret },
-                        ),
-                    )
+                    Ok( // ethabi_encode(
+                    //     @TokenOrderAck { fill_type: FILL_TYPE_MARKETMAKER, market_maker: ret },
+                    // ),
+                    Default::default())
                 },
                 Err(_) => Err(()),
             }
@@ -503,13 +502,12 @@ mod Ucs03Zkgm {
                 IZkgmERC20Dispatcher { contract_address: wrapped_token }.mint(relayer, fee);
             }
 
-            Ok(
-                ethabi_encode(
-                    @TokenOrderAck {
-                        fill_type: FILL_TYPE_PROTOCOL, market_maker: Default::default(),
-                    },
-                ),
-            )
+            Ok(// ethabi_encode(
+            //     @TokenOrderAck {
+            //         fill_type: FILL_TYPE_PROTOCOL, market_maker: Default::default(),
+            //     },
+            // ),
+            Default::default())
         }
     }
 

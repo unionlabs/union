@@ -1,7 +1,14 @@
+use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
 use alexandria_evm::decoder::AbiDecodeTrait;
 use alexandria_evm::encoder::{AbiEncodeTrait, EVMCalldata};
 use alexandria_evm::evm_enum::EVMTypes;
 use alexandria_evm::evm_struct::EVMCalldata as StructEVMCalldata;
+
+pub trait EthAbi2<T> {
+    fn encode(self: @T) -> ByteArray;
+
+    fn decode(val: ByteArray) -> Result<T, ()>;
+}
 
 pub fn ethabi_decode<T, +Serde<T>, +EthAbi<T>>(data: ByteArray) -> Option<T> {
     let mut calldata = StructEVMCalldata { relative_offset: 0, offset: 0, calldata: data };
@@ -208,9 +215,35 @@ pub struct BatchAck {
     pub acknowledgements: Array<ByteArray>,
 }
 
-impl BatchAckEthAbiImpl of EthAbi<BatchAck> {
-    fn tokens() -> Array<EVMTypes> {
-        array![EVMTypes::Array(array![EVMTypes::Bytes].span())]
+impl BatchAckEthAbiImpl of EthAbi2<BatchAck> {
+    fn encode(self: @BatchAck) -> ByteArray {
+        let mut out = Default::default();
+
+        out.append_u256(0x20);
+        out.append_u256(self.acknowledgements.len().into());
+
+        let mut total_len = 0;
+        let base_offset: u256 = self.acknowledgements.len().into() * 0x20;
+        for ack in self.acknowledgements {
+            out.append_u256(base_offset + total_len);
+            let mut len = ack.len();
+            len = len + (32 - (len % 32));
+
+            total_len += 0x20 + len.into();
+        }
+
+        for ack in self.acknowledgements {
+            out.append_u256(ack.len().into());
+            out.append(ack);
+
+            postfix_bytes(ack, ref out);
+        }
+
+        out
+    }
+
+    fn decode(val: ByteArray) -> Result<BatchAck, ()> {
+        Err(())
     }
 }
 
@@ -220,26 +253,59 @@ pub struct TokenOrderAck {
     pub market_maker: ByteArray,
 }
 
-pub trait EthAbi2<T> {
-    fn encode(data: T) -> ByteArray;
+impl TokenOrderAckEthAbiImpl of EthAbi2<TokenOrderAck> {
+    fn encode(self: @TokenOrderAck) -> ByteArray {
+        let mut out = Default::default();
 
-    fn decode(val: ByteArray) -> T;
-}
+        out.append_u256(*self.fill_type);
+        out.append_u256(0x40);
+        out.append_u256(self.market_maker.len().into());
+        out.append(self.market_maker);
 
-impl TokenOrderAckEthAbi2Impl of EthAbi2<TokenOrderAck> {
-    fn encode(data: TokenOrderAck) -> ByteArray {}
+        postfix_bytes(self.market_maker, ref out);
 
-    fn decode(
-
-}
-
-
-impl TokenOrderAckEthAbiImpl of EthAbi<TokenOrderAck> {
-    fn tokens() -> Array<EVMTypes> {
-        array![EVMTypes::Uint256, EVMTypes::Bytes]
+        out
     }
 
-    fn dynamic_offset() -> u32 {
-        0x20
+    fn decode(val: ByteArray) -> Result<TokenOrderAck, ()> {
+        let (_, fill_type) = val.read_u256(0);
+
+        let (_, len) = val.read_u256(32 * 2);
+        let (_, market_maker) = val.read_bytes(32 * 3, len.try_into().unwrap());
+
+        Ok(TokenOrderAck { fill_type, market_maker })
     }
 }
+
+
+/// Postfixes the encoded `bytes` with zeroes s.t. the encoded length is 32 * N
+fn postfix_bytes(bytes: @ByteArray, ref buffer: ByteArray) {
+    let mut len = 32 - (bytes.len() % 32);
+
+    // the following reduces the number of appends to Log2(len) and removes the need
+    // for a loop
+    if len >= 16 {
+        buffer.append_u128(0);
+        len -= 16;
+    }
+
+    if len >= 8 {
+        buffer.append_u64(0);
+        len -= 8;
+    }
+
+    if len >= 4 {
+        buffer.append_u32(0);
+        len -= 4;
+    }
+
+    if len >= 2 {
+        buffer.append_u16(0);
+        len -= 2;
+    }
+
+    if len >= 1 {
+        buffer.append_u8(0);
+    }
+}
+
