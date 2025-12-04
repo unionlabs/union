@@ -425,7 +425,7 @@ contract UCS03ZkgmTokenOrderImpl is Versioned, TokenBucket, UCS03ZkgmStore {
         address payable receiver = payable(address(bytes20(order.receiver)));
 
         // For intent packets, the protocol is not allowed to provide any fund
-        // as the packet has not been checked for membership poof. Instead, we
+        // as the packet has not been checked for membership proof. Instead, we
         // know the market maker will be repaid on the source chain, if and only
         // if the currently executing packet hash had been registered as sent on
         // the source. In other words, the market maker is unable to lie.

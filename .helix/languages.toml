@@ -23,7 +23,7 @@ command = "emmet-language-server"
 
 [language-server.solc]
 args    = ["--lsp"]
-command = "solc"
+command = "solc-0.8.27"
 
 [language-server.tailwindcss-ls]
 args    = ["--stdio"]

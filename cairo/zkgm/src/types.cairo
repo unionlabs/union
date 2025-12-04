@@ -311,6 +311,8 @@ impl TokenOrderV2EthAbiImpl of EthAbi<TokenOrderV2> {
     }
 }
 
+/// implementation: ClassHash
+/// initializer: Serde serialized calldata
 #[derive(Clone, Drop, Debug, Serde, PartialEq, starknet::Store)]
 pub struct TokenMetadata {
     pub implementation: ByteArray,
@@ -325,6 +327,7 @@ impl TokenMetadataEthAbiImpl of EthAbi<TokenMetadata> {
     }
 }
 
+/// `solver_address`: Little-Endian felt252 which is encoded as LE u256
 #[derive(Drop, Debug, Serde, PartialEq)]
 pub struct SolverMetadata {
     pub solver_address: ByteArray,
@@ -368,9 +371,55 @@ impl SolverMetadataEthAbiImpl of EthAbi<SolverMetadata> {
 
 #[derive(Drop, Debug, Serde, PartialEq)]
 pub struct Ack {
-    pub tag: u256,
+    pub tag: AckTag,
     pub inner_ack: ByteArray,
 }
+
+
+#[generate_trait]
+pub impl AckImpl of AckTrait {
+    fn new_failure() -> Ack {
+        Ack { tag: AckTag::Failure, inner_ack: "" }
+    }
+
+    fn new_success(inner_ack: ByteArray) -> Ack {
+        Ack { tag: AckTag::Success, inner_ack }
+    }
+}
+
+impl AckEthAbiImpl of EthAbi<Ack> {
+    fn encode(self: @Ack, ref buf: ByteArray) {}
+
+    fn decode(val: ByteArray, offset: u32) -> Result<Ack, ()> {
+        Err(())
+    }
+}
+
+#[derive(Copy, Drop, Debug, Serde, PartialEq)]
+pub enum AckTag {
+    Failure,
+    Success,
+}
+
+impl U256TryIntoAckTagImpl of TryInto<u256, AckTag> {
+    fn try_into(self: u256) -> Option<AckTag> {
+        match self {
+            0 => Some(AckTag::Failure),
+            1 => Some(AckTag::Success),
+            _ => None,
+        }
+    }
+}
+
+impl AckTagIntoImpl of Into<@AckTag, u256> {
+    fn into(self: @AckTag) -> u256 {
+        match self {
+            AckTag::Failure => 0,
+            AckTag::Success => 1,
+        }
+    }
+}
+
 
 #[derive(Drop, Debug, Serde, PartialEq)]
 pub struct BatchAck {

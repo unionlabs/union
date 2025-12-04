@@ -1,3 +1,6 @@
+use core::hash::{Hash, HashStateTrait};
+use starknet::ContractAddress;
+
 pub mod event;
 pub mod isolver;
 pub mod izkgmerc20;
@@ -18,29 +21,62 @@ const INSTR_VERSION_0: u8 = 0x00;
 const INSTR_VERSION_1: u8 = 0x01;
 const INSTR_VERSION_2: u8 = 0x02;
 
+// TODO(aeryz): do we need to hash this?
+const ACK_ERR_ONLYMAKER: u256 = 0xdeadc0de;
+
+#[derive(Drop, Clone)]
+struct ChannelBalanceKey {
+    source_channel_id: u32,
+    path: u256,
+    base_token: ContractAddress,
+    quote_token: ByteArray,
+}
+
+impl ChannelBalanceKeyHashImpl<S, +HashStateTrait<S>, +Drop<S>> of Hash<ChannelBalanceKey, S> {
+    fn update_state(mut state: S, value: ChannelBalanceKey) -> S {
+        state = state
+            .update(value.source_channel_id.into())
+            .update(value.path.try_into().unwrap())
+            .update(value.base_token.into());
+
+        let mut encoded_quote_token = Default::default();
+        value.quote_token.serialize(ref encoded_quote_token);
+
+        for i in encoded_quote_token {
+            state = state.update(i);
+        }
+
+        state
+    }
+}
+
 #[starknet::contract]
 mod Ucs03Zkgm {
     use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
     use alexandria_math::bitmap::Bitmap;
+    use alexandria_math::keccak256;
     use alexandria_math::opt_math::OptBitShift;
     use core::hash::HashStateTrait;
     use core::pedersen::PedersenTrait;
     use ibc::types::{ChannelId, Id, Packet};
     use openzeppelin::interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{
+        Map, StorageAsPath, StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry,
+        StoragePointerReadAccess,
+    };
     use starknet::syscalls::{deploy_syscall, get_class_hash_at_syscall};
     use starknet::{ContractAddress, SyscallResultTrait, get_caller_address};
     use crate::event::CreateWrappedToken;
     use crate::isolver::{ISolverDispatcher, ISolverDispatcherTrait};
     use crate::izkgmerc20::{IZkgmERC20Dispatcher, IZkgmERC20DispatcherTrait};
     use crate::types::{
-        Instruction, Opcode, SolverMetadata, TokenMetadata, TokenOrderAck, TokenOrderV2, Version,
-        ZkgmPacket, ethabi_decode, ethabi_encode,
+        AckTrait, Instruction, Opcode, SolverMetadata, TokenMetadata, TokenOrderAck, TokenOrderV2,
+        Version, ZkgmPacket, ethabi_decode, ethabi_encode,
     };
     use crate::{
-        FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, TOKEN_ORDER_KIND_ESCROW,
-        TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW,
-        WRAPPED_TOKEN_KIND_THIRD_PARTY,
+        ACK_ERR_ONLYMAKER, ChannelBalanceKey, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL,
+        TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE,
+        TOKEN_ORDER_KIND_UNESCROW, WRAPPED_TOKEN_KIND_THIRD_PARTY,
     };
 
     #[storage]
@@ -48,6 +84,7 @@ mod Ucs03Zkgm {
         token_metadata_image_to_preimage: Map<u256, TokenMetadata>,
         metadata_image_of: Map<ContractAddress, u256>,
         token_origin: Map<ContractAddress, u256>,
+        channel_balance: Map<ChannelBalanceKey, u256>,
     }
 
     #[event]
@@ -68,7 +105,7 @@ mod Ucs03Zkgm {
             relayer: ContractAddress,
             relayer_msg: ByteArray,
         ) -> ByteArray {
-            Default::default()
+            self.process_receive(packet, relayer, relayer_msg, false)
         }
 
         fn on_recv_intent_packet(
@@ -78,7 +115,7 @@ mod Ucs03Zkgm {
             market_maker: ContractAddress,
             market_maker_msg: ByteArray,
         ) -> ByteArray {
-            Default::default()
+            self.process_receive(packet, market_maker, market_maker_msg, true)
         }
     }
 
@@ -90,10 +127,10 @@ mod Ucs03Zkgm {
             relayer: ContractAddress,
             relayer_msg: ByteArray,
             intent: bool,
-        ) {
+        ) -> ByteArray {
             let zkgm_packet: ZkgmPacket = ethabi_decode(packet.data.clone()).unwrap();
 
-            let _ = self
+            match self
                 .execute(
                     packet,
                     relayer,
@@ -102,8 +139,23 @@ mod Ucs03Zkgm {
                     zkgm_packet.path,
                     zkgm_packet.instruction,
                     intent,
-                )
-                .unwrap();
+                ) {
+                Ok(ack) => {
+                    // For the async ack
+                    if ack == "" {
+                        return "";
+                    }
+
+                    let mut only_maker: ByteArray = Default::default();
+                    only_maker.append_u256(ACK_ERR_ONLYMAKER);
+
+                    // we panic if the error is onlymaker so that the marketmakers can fill later
+                    assert!(ack != only_maker);
+
+                    ethabi_encode(@AckTrait::new_success(ack))
+                },
+                Err(_) => { ethabi_encode(@AckTrait::new_failure()) },
+            }
         }
 
         fn execute(
@@ -128,6 +180,7 @@ mod Ucs03Zkgm {
             }
         }
 
+        // NOTE: TokenOrderV2 impl
         fn execute_token_order(
             ref self: ContractState,
             packet: ibc::types::Packet,
@@ -140,6 +193,11 @@ mod Ucs03Zkgm {
             let (_, quote_token) = order.quote_token.read_address(0);
             let (_, receiver) = order.receiver.read_address(0);
 
+            // For intent packets, the protocol is not allowed to provide any fund
+            // as the packet has not been checked for membership proof. Instead, we
+            // know the market maker will be repaid on the source chain, if and only
+            // if the currently executing packet hash had been registered as sent on
+            // the source. In other words, the market maker is unable to lie.
             if intent || order.kind == TOKEN_ORDER_KIND_SOLVE {
                 return Self::market_maker_fill(
                     packet, relayer, relayer_msg, path, quote_token, receiver, order, intent,
@@ -162,8 +220,7 @@ mod Ucs03Zkgm {
                         order.quote_amount,
                     );
             } else {
-                let (wrapped_token, _) = if order
-                    .kind == TOKEN_ORDER_KIND_ESCROW { // (wrapped_token, wrapped_token_salt) =
+                let (wrapped_token, _) = if order.kind == TOKEN_ORDER_KIND_ESCROW {
                     let metadata_image = self.metadata_image_of.read(quote_token);
                     self
                         .predict_wrapped_token_from_metadata_image(
@@ -333,13 +390,9 @@ mod Ucs03Zkgm {
 
                 self
                     .token_origin
-                    .write(wrapped_token, Self::update_channel_path(path, channel_id)?);
+                    .write(wrapped_token, Self::update_channel_path(path, channel_id.raw())?);
 
-                // TODO(aeryz):
-                // bytes memory encodedMetadata = ZkgmLib.encodeTokenMetadata(metadata);
-                // metadataImageOf[wrappedToken] = EfficientHashLib.hash(encodedMetadata);
-
-                self.metadata_image_of.write(wrapped_token, Default::default());
+                self.metadata_image_of.write(wrapped_token, ethabi_encode(@metadata).keccak_be());
 
                 let kind = WRAPPED_TOKEN_KIND_THIRD_PARTY;
 
@@ -378,8 +431,37 @@ mod Ucs03Zkgm {
             Ok(())
         }
 
-        fn update_channel_path(path: u256, next_channel_id: ChannelId) -> Result<u256, ()> {
-            let next_channel_id = next_channel_id.raw().into();
+        fn reverse_channel_path(mut path: u256) -> Result<u256, ()> {
+            let mut reversed_path = 0;
+
+            loop {
+                let (tail, head) = Self::pop_channel_from_path(path);
+                reversed_path = Self::update_channel_path(reversed_path, head)?;
+                path = tail;
+
+                if path == 0 {
+                    return Ok(reversed_path);
+                }
+            }
+        }
+
+        fn pop_channel_from_path(path: u256) -> (u256, u32) {
+            if path == 0 {
+                return (0, 0);
+            }
+
+            let current_hop_index = Bitmap::most_significant_bit(path).unwrap() / 32;
+            let clear_shift = (8 - current_hop_index) * 32;
+
+            return (
+                OptBitShift::shr(OptBitShift::shl(path, clear_shift), clear_shift),
+                OptBitShift::shr(path, current_hop_index * 32).try_into().unwrap(),
+            );
+        }
+
+
+        fn update_channel_path(path: u256, next_channel_id: u32) -> Result<u256, ()> {
+            let next_channel_id = next_channel_id.into();
             if path == 0 {
                 return Ok(next_channel_id);
             }
@@ -425,16 +507,27 @@ mod Ucs03Zkgm {
             } else {
                 let quote_amount = order.quote_amount;
 
-                // TODO(aeryz): NATIVE_TOKEN_ERC_7528_ADDRESS?
+                // We want the top level handler in onRecvPacket to know we need to
+                // revert for another MM to get a chance to fill. If we revert now
+                // the entire packet would be considered to be "failed" and refunded
+                // at origin, which we want to avoid.
+                // Hence, in case of transfer failure, we yield the ack to notify the onRecvPacket.
+
+                // TODO(aeryz): gas station?
                 if quote_amount > 0
                     && !(IERC20Dispatcher { contract_address: quote_token }
                         .transfer_from(get_caller_address(), receiver, quote_amount)) {
-                    // onlymaker
-                    return Err(());
+                    let mut out: ByteArray = Default::default();
+                    out.append_u256(ACK_ERR_ONLYMAKER);
+                    return Ok(out);
                 }
 
                 Ok(
                     ethabi_encode(
+                        // The relayer has to provide it's maker address using the
+                        // relayerMsg. This address is specific to the counterparty
+                        // chain and is where the protocol will pay back the base amount
+                        // on acknowledgement.
                         @TokenOrderAck {
                             fill_type: FILL_TYPE_MARKETMAKER, market_maker: relayer_msg,
                         },
@@ -461,11 +554,18 @@ mod Ucs03Zkgm {
                 Ok(ret) => {
                     Ok(
                         ethabi_encode(
+                            // The solver has to provide it's maker addresss that the
+                            // counterparty chain will repay on acknowledgement with the
+                            // base token.
                             @TokenOrderAck { fill_type: FILL_TYPE_MARKETMAKER, market_maker: ret },
                         ),
                     )
                 },
-                Err(_) => Err(()),
+                Err(_) => {
+                    let mut out: ByteArray = Default::default();
+                    out.append_u256(ACK_ERR_ONLYMAKER);
+                    Ok(out)
+                },
             }
         }
 
@@ -480,7 +580,31 @@ mod Ucs03Zkgm {
             base_amount: u256,
             quote_amount: u256,
         ) -> Result<ByteArray, ()> {
-            Err(())
+            let fee = base_amount - quote_amount;
+
+            // If the base token path is being unwrapped, it's escrowed balance will be non zero.
+            self
+                .decrease_outstanding(
+                    channel_id.raw(),
+                    Self::reverse_channel_path(path)?,
+                    quote_token,
+                    base_token,
+                    base_amount,
+                );
+
+            // TODO(aeryz): gas station?
+            if quote_amount > 0
+                && !(IERC20Dispatcher { contract_address: quote_token }
+                    .transfer(receiver, quote_amount)) {
+                return Err(());
+            }
+
+            if fee > 0
+                && !(IERC20Dispatcher { contract_address: quote_token }.transfer(relayer, fee)) {
+                return Err(());
+            }
+
+            Ok(ethabi_encode(@TokenOrderAck { fill_type: FILL_TYPE_PROTOCOL, market_maker: "" }))
         }
 
         fn protocol_fill_mint(
@@ -503,13 +627,33 @@ mod Ucs03Zkgm {
                 IZkgmERC20Dispatcher { contract_address: wrapped_token }.mint(relayer, fee);
             }
 
-            Ok(
-                ethabi_encode(
-                    @TokenOrderAck {
-                        fill_type: FILL_TYPE_PROTOCOL, market_maker: Default::default(),
-                    },
-                ),
-            )
+            Ok(ethabi_encode(@TokenOrderAck { fill_type: FILL_TYPE_PROTOCOL, market_maker: "" }))
+        }
+
+        fn decrease_outstanding(
+            ref self: ContractState,
+            source_channel_id: u32,
+            path: u256,
+            base_token: ContractAddress,
+            quote_token: ByteArray,
+            amount: u256,
+        ) {
+            let key = ChannelBalanceKey { source_channel_id, path, base_token, quote_token };
+            let val = self.channel_balance.read(key.clone());
+            self.channel_balance.write(key, val - amount);
+        }
+
+        fn increase_outstanding(
+            ref self: ContractState,
+            source_channel_id: u32,
+            path: u256,
+            base_token: ContractAddress,
+            quote_token: ByteArray,
+            amount: u256,
+        ) {
+            let key = ChannelBalanceKey { source_channel_id, path, base_token, quote_token };
+            let val = self.channel_balance.read(key.clone());
+            self.channel_balance.write(key, val + amount);
         }
     }
 
