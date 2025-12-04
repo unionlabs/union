@@ -30,11 +30,14 @@ impl ChannelBalanceKeyHashImpl<S, +HashStateTrait<S>, +Drop<S>> of Hash<ChannelB
 #[starknet::contract]
 mod Ucs03Zkgm {
     use alexandria_math::bitmap::Bitmap;
+    use ibc::ibc_dispatcher::{IIBCDispatcher, IIBCDispatcherTrait};
     use ibc::types::{ChannelId, Packet};
     use openzeppelin::interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
-    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+    };
     use starknet::syscalls::{deploy_syscall, get_class_hash_at_syscall};
-    use starknet::{ContractAddress, SyscallResultTrait, get_caller_address};
+    use starknet::{ContractAddress, SyscallResultTrait, get_caller_address, get_contract_address};
     use crate::event::CreateWrappedToken;
     use crate::isolver::{ISolverDispatcher, ISolverDispatcherTrait};
     use crate::izkgmerc20::{IZkgmERC20Dispatcher, IZkgmERC20DispatcherTrait};
@@ -43,14 +46,16 @@ mod Ucs03Zkgm {
         Version, ZkgmPacket, ethabi_decode, ethabi_encode,
     };
     use crate::{
-        *, ACK_ERR_ONLYMAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, TOKEN_ORDER_KIND_ESCROW,
-        TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW,
-        WRAPPED_TOKEN_KIND_THIRD_PARTY,
+        *, ACK_ERR_ONLYMAKER, ByteArrayTraitExt, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL,
+        TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE,
+        TOKEN_ORDER_KIND_UNESCROW, WRAPPED_TOKEN_KIND_THIRD_PARTY, pop_channel_from_path,
+        predict_wrapped_token, reverse_channel_path,
     };
     use super::ChannelBalanceKey;
 
     #[storage]
     struct Storage {
+        ibc: ContractAddress,
         token_metadata_image_to_preimage: Map<u256, TokenMetadata>,
         metadata_image_of: Map<ContractAddress, u256>,
         token_origin: Map<ContractAddress, u256>,
@@ -125,6 +130,88 @@ mod Ucs03Zkgm {
                     ethabi_encode(@AckTrait::new_success(ack))
                 },
                 Err(_) => { ethabi_encode(@AckTrait::new_failure()) },
+            }
+        }
+
+        fn send(
+            ref self: ContractState,
+            channel_id: ChannelId,
+            timeout_height: u64,
+            timeout_timestamp: u64,
+            salt: ByteArray,
+            instruction: Instruction,
+        ) {
+            assert!(salt.len() == 32);
+
+            self.verify(channel_id, 0, instruction);
+
+            assert!(
+                IIBCDispatcher { contract_address: self.ibc.read() }
+                    .send_packet(channel_id, timeout_height, timeout_timestamp, Default::default())
+                    .is_ok(),
+            );
+        }
+
+        fn verify(
+            ref self: ContractState, channel_id: ChannelId, path: u256, instruction: Instruction,
+        ) {
+            match (instruction.opcode, instruction.version) {
+                (
+                    Opcode::TokenOrder, Version::V2,
+                ) => {
+                    let order = ethabi_decode(instruction.operand).unwrap();
+                    self.verify_token_order(channel_id, path, order);
+                },
+                _ => panic!("unsupported (instruction, version)"),
+            }
+        }
+
+        fn verify_token_order(
+            ref self: ContractState, channel_id: ChannelId, path: u256, order: TokenOrderV2,
+        ) {
+            let (_, base_token) = order.base_token.read_felt252(0);
+            let base_token: ContractAddress = base_token.try_into().unwrap();
+
+            if order.kind == TOKEN_ORDER_KIND_UNESCROW {
+                let (intermediate_channel_path, destination_channel_id) = pop_channel_from_path(
+                    self.token_origin.read(base_token),
+                );
+
+                let is_inverse_intermediate_path = path == reverse_channel_path(
+                    intermediate_channel_path,
+                )
+                    .unwrap();
+
+                let is_sending_back_to_same_channel = destination_channel_id == channel_id.raw();
+
+                let metadata_image = self.metadata_image_of.read(base_token);
+                let (wrapped_token, _) = self
+                    .predict_wrapped_token_from_metadata_image(
+                        path, channel_id, order.quote_token, metadata_image,
+                    );
+
+                let is_unwrapping = base_token == wrapped_token;
+
+                assert!(
+                    is_unwrapping
+                        && is_inverse_intermediate_path
+                        && is_sending_back_to_same_channel,
+                );
+
+                IZkgmERC20Dispatcher { contract_address: base_token }
+                    .burn(get_caller_address(), order.base_amount);
+            } else {
+                self
+                    .increase_outstanding(
+                        channel_id.raw(), path, base_token, order.quote_token, order.base_amount,
+                    );
+                // TODO(aeryz): gas station
+                assert!(
+                    IERC20Dispatcher { contract_address: base_token }
+                        .transfer_from(
+                            get_caller_address(), get_contract_address(), order.base_amount,
+                        ),
+                );
             }
         }
 

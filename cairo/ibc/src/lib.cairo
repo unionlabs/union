@@ -2,6 +2,7 @@ pub mod app;
 
 pub mod contract;
 pub mod event;
+pub mod ibc_dispatcher;
 pub mod lightclient;
 pub mod msg;
 #[feature(
