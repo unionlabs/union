@@ -61,6 +61,16 @@
 use starknet::ContractAddress;
 use crate::types::{ChannelId, ConnectionId, Packet};
 
+#[starknet::interface]
+pub trait IIbcModuleSend<TContractState> {
+    fn send_packet(
+        ref self: TContractState,
+        channel_id: ChannelId,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        data: ByteArray,
+    ) -> Result<Packet, ()>;
+}
 
 #[starknet::interface]
 pub trait IIbcModuleRecv<TContractState> {

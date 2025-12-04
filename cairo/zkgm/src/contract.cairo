@@ -90,7 +90,7 @@ impl ChannelBalanceKeyHashImpl<S, +HashStateTrait<S>, +Drop<S>> of Hash<ChannelB
 #[starknet::contract]
 mod Ucs03Zkgm {
     use alexandria_math::bitmap::Bitmap;
-    use ibc::ibc_dispatcher::{IIBCDispatcher, IIBCDispatcherTrait};
+    use ibc::app::{IIbcModuleSendDispatcher, IIbcModuleSendDispatcherTrait};
     use ibc::types::{ChannelId, Packet};
     use openzeppelin::interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use starknet::storage::{
@@ -206,7 +206,7 @@ mod Ucs03Zkgm {
             self.verify(channel_id, 0, instruction);
 
             assert!(
-                IIBCDispatcher { contract_address: self.ibc.read() }
+                IIbcModuleSendDispatcher { contract_address: self.ibc.read() }
                     .send_packet(channel_id, timeout_height, timeout_timestamp, Default::default())
                     .is_ok(),
             );
