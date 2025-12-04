@@ -99,8 +99,9 @@ mod Ucs03Zkgm {
     use starknet::syscalls::{deploy_syscall, get_class_hash_at_syscall};
     use starknet::{ContractAddress, SyscallResultTrait, get_caller_address, get_contract_address};
     use crate::event::CreateWrappedToken;
-    use crate::isolver::{ISolverDispatcher, ISolverDispatcherTrait};
-    use crate::izkgmerc20::{IZkgmERC20Dispatcher, IZkgmERC20DispatcherTrait};
+    use crate::interfaces::{
+        ISolverDispatcher, ISolverDispatcherTrait, IZkgmERC20Dispatcher, IZkgmERC20DispatcherTrait,
+    };
     use crate::types::{
         AckTrait, Instruction, Opcode, SolverMetadata, TokenMetadata, TokenOrderAck, TokenOrderV2,
         Version, ZkgmPacket, ethabi_decode, ethabi_encode,

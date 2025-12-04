@@ -61,7 +61,7 @@
 use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
 use alexandria_math::bitmap::Bitmap;
 use alexandria_math::opt_math::OptBitShift;
-use core::hash::{Hash, HashStateTrait};
+use core::hash::HashStateTrait;
 use core::pedersen::PedersenTrait;
 use ibc::types::{ChannelId, Id};
 use starknet::ContractAddress;
@@ -70,8 +70,7 @@ use types::{TokenMetadata, ethabi_encode};
 pub mod contract;
 
 pub mod event;
-pub mod isolver;
-pub mod izkgmerc20;
+pub mod interfaces;
 pub mod types;
 
 const TOKEN_ORDER_KIND_INITIALIZE: u8 = 0x00;
