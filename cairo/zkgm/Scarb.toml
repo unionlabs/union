@@ -1,22 +1,22 @@
 [package]
-name = "zkgm"
-version = "0.1.0"
 edition = "2024_07"
+name    = "zkgm"
+version = "0.1.0"
 
 # See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
 
 [dependencies]
-starknet = { workspace = true }
-alexandria_bytes = { workspace = true }
+alexandria_bytes    = { workspace = true }
 alexandria_encoding = { workspace = true }
-alexandria_evm = { workspace = true }
-alexandria_math = { workspace = true }
-ibc = { workspace = true }
-openzeppelin = { workspace = true }
+alexandria_evm      = { workspace = true }
+alexandria_math     = { workspace = true }
+ibc                 = { workspace = true }
+openzeppelin        = { workspace = true }
+starknet            = { workspace = true }
 
 [dev-dependencies]
-snforge_std = "0.51.1"
 assert_macros = "2.13.1"
+snforge_std   = "0.51.1"
 
 [[target.starknet-contract]]
 sierra = true

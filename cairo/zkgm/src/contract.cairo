@@ -551,7 +551,7 @@ mod Ucs03Zkgm {
                 Ok(ret) => {
                     Ok(
                         ethabi_encode(
-                            // The solver has to provide it's maker addresss that the
+                            // The solver has to provide it's maker address that the
                             // counterparty chain will repay on acknowledgement with the
                             // base token.
                             @TokenOrderAck { fill_type: FILL_TYPE_MARKETMAKER, market_maker: ret },

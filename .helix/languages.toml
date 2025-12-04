@@ -57,9 +57,9 @@ scope            = "source.astro"
 # block-comment-tokens = { start = "<!--", end = "-->" }
 
 [[language]]
-auto-format      = true
-formatter        = { command = "cairo-format", args = ["-"] }
-name             = "cairo"
+auto-format = true
+formatter   = { command = "cairo-format", args = ["-"] }
+name        = "cairo"
 
 [[language]]
 auto-format = true

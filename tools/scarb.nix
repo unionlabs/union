@@ -9,7 +9,7 @@ _: {
       ...
     }:
     let
-      craneLib = (crane.lib.overrideToolchain (_: rust.mkToolchain { channel = "1.91.1"; }));
+      craneLib = crane.lib.overrideToolchain (_: rust.mkToolchain { channel = "1.91.1"; });
 
       cairoVersion = "v2.13.1";
 

@@ -1,15 +1,12 @@
 
 [workspace]
-members = [
-  "cairo/ibc",
-  "cairo/zkgm"
-]
+members = ["cairo/ibc", "cairo/zkgm"]
 
 [workspace.dependencies]
-alexandria_bytes = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
+alexandria_bytes    = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
 alexandria_encoding = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
-alexandria_evm = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
-alexandria_math = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
-starknet = "2.12.2"
-ibc = { path = "cairo/ibc" }
-openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v3.0.0-alpha.3" }
+alexandria_evm      = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
+alexandria_math     = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
+ibc                 = { path = "cairo/ibc" }
+openzeppelin        = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v3.0.0-alpha.3" }
+starknet            = "2.12.2"
