@@ -46,6 +46,8 @@ pub enum Forks {
     Electra = 5,
     /// <https://github.com/ethereum/consensus-specs/tree/dev/specs/fulu>
     Fulu = 6,
+    /// <https://github.com/ethereum/consensus-specs/tree/dev/specs/gloas>
+    Gloas = 7,
 }
 
 impl ForkSchedule {
@@ -171,7 +173,7 @@ impl ForkSchedule {
     /// # use hex_literal::hex;
     /// # use beacon_api_types::custom_types::Version;
     /// assert_eq!(
-    ///     MAINNET.fork(Forks::Fulu),
+    ///     MAINNET.fork(Forks::Gloas),
     ///     None
     /// );
     /// ```
@@ -235,6 +237,7 @@ pub const MAINNET: _ = [
     ("03000000", 194048), // capella
     ("04000000", 269568), // deneb
     ("05000000", 364032), // electra
+    ("06000000", 411392), // fulu
 ];
 
 /// Mainnet chain id.
@@ -332,6 +335,11 @@ mod tests {
                     current_version: Version(hex!("05000000").into()),
                     epoch: Epoch::new(364032),
                 },
+                Fork {
+                    previous_version: Version(hex!("05000000").into()),
+                    current_version: Version(hex!("06000000").into()),
+                    epoch: Epoch::new(411392),
+                },
             ]
         );
     }
@@ -373,10 +381,19 @@ mod tests {
                 epoch: Epoch::new(364032),
             }),
         );
+
+        assert_eq!(
+            MAINNET.fork(Forks::Fulu),
+            Some(Fork {
+                previous_version: Version(hex!("05000000").into()),
+                current_version: Version(hex!("06000000").into()),
+                epoch: Epoch::new(411392),
+            }),
+        );
     }
 
     #[test]
     fn test_len() {
-        assert_eq!(MAINNET.len(), 6);
+        assert_eq!(MAINNET.len(), 7);
     }
 }
