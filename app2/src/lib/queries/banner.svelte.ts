@@ -10,16 +10,16 @@ const BannerConfig = Schema.Struct({
 
 const BannerData = Schema.Struct({
   app: Schema.Struct({
-    banner: BannerConfig,
+    banners: Schema.Array(BannerConfig),
   }),
   btc: Schema.Struct({
-    banner: BannerConfig,
+    banners: Schema.Array(BannerConfig),
   }),
 })
 
 export const bannerQuery = () =>
   createQuery({
-    url: "https://app-banner.unionlabs.workers.dev/",
+    url: "https://banner-app.unionlabs.workers.dev/",
     schema: BannerData,
     refetchInterval: "1 minutes",
     writeData: data => {
