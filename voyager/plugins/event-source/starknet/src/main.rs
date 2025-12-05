@@ -1,34 +1,17 @@
 // #![warn(clippy::unwrap_used)]
 
-use core::slice;
-use std::{
-    cmp::Ordering,
-    collections::{BTreeMap, BTreeSet, VecDeque, btree_map::Entry},
-    num::{NonZeroU8, NonZeroU32, ParseIntError},
-};
+use std::{cmp::Ordering, collections::VecDeque, num::NonZeroU32};
 
 use cainome_cairo_serde::CairoSerde;
-use ibc_union_spec::{
-    IbcUnion, MustBeZero, Packet,
-    event::{
-        BatchSend, ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
-        ChannelOpenTry, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm,
-        ConnectionOpenInit, ConnectionOpenTry, CounterpartyChannelMetadata, CreateClient,
-        PacketAck, PacketMetadata, PacketRecv, PacketSend, UpdateClient, WriteAck,
-    },
-    path::ChannelPath,
-    query::PacketByHash,
-};
-use jsonrpsee::{Extensions, core::async_trait, types::ErrorObject};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use starknet::{
     core::types::{BlockId, EventFilter, Felt},
     macros::selector,
     providers::{JsonRpcClient, Provider, Url, jsonrpc::HttpTransport},
 };
-use tracing::{debug, error, info, info_span, instrument, trace, warn};
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height, never::Never, primitives::H256};
+use tracing::{info, instrument, warn};
+use unionlabs::{ibc::core::client::height::Height, never::Never, primitives::H256};
 use voyager_sdk::{
     ExtensionsExt, VoyagerClient,
     anyhow::{self, bail},
@@ -37,12 +20,12 @@ use voyager_sdk::{
     message::{
         PluginMessage, VoyagerMessage,
         call::{Call, WaitForHeight},
-        data::{ChainEvent, Data, EventProvableHeight},
+        data::{Data, EventProvableHeight},
     },
     plugin::Plugin,
-    primitives::{ChainId, ClientType, QueryHeight},
+    primitives::ChainId,
     rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
-    vm::{Op, call, conc, data, noop, pass::PassResult, seq},
+    vm::{Op, call, conc, pass::PassResult, seq},
 };
 
 use crate::{
@@ -53,8 +36,6 @@ use crate::{
 pub mod ibc_events;
 
 pub mod call;
-
-const PER_PAGE_LIMIT: NonZeroU8 = NonZeroU8::new(100).unwrap();
 
 #[tokio::main]
 async fn main() {

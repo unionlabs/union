@@ -4880,6 +4880,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "deunicode"
+version = "1.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "abd57806937c9cc163efc8ea3910e00a62e2aeb0b8119f1793a978088f8f6b04"
+
+[[package]]
 name = "devnet-compose"
 version = "0.0.0"
 dependencies = [
@@ -5772,6 +5778,16 @@ checksum = "7cd915d99f24784cdc19fd37ef22b97e3ff0ae756c7e492e9fbfe897d61e2aec"
 dependencies = [
  "indenter",
  "once_cell",
+]
+
+[[package]]
+name = "fake"
+version = "2.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d391ba4af7f1d93f01fcf7b2f29e2bc9348e109dfdbf4dcbdc51dfa38dab0b6"
+dependencies = [
+ "deunicode",
+ "rand 0.8.5",
 ]
 
 [[package]]
@@ -10311,6 +10327,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
+name = "pathfinder-crypto"
+version = "0.21.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a208532e37e570178e12004616041b1aa6930c7eb4c9bba2460d192fbeb90a62"
+dependencies = [
+ "bitvec 1.0.1",
+ "fake",
+ "rand 0.8.5",
+ "serde",
+]
+
+[[package]]
 name = "pausable"
 version = "0.0.0"
 dependencies = [
@@ -13553,7 +13581,9 @@ dependencies = [
 name = "starknet-storage-verifier"
 version = "0.0.0"
 dependencies = [
+ "bitvec 1.0.1",
  "hex-literal 0.4.1",
+ "pathfinder-crypto",
  "serde",
  "serde-utils",
  "serde_json",

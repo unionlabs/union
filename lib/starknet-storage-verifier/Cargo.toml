@@ -12,9 +12,11 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+bitvec          = { workspace = true }
+pathfinder-crypto = "0.21.3"
 serde           = { workspace = true, features = ["derive"] }
 serde-utils     = { workspace = true }
-starknet-crypto = { workspace = true }
+starknet-crypto = { workspace = true, features = ["alloc"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
