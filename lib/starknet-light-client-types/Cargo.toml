@@ -1,0 +1,43 @@
+[package]
+name    = "starknet-light-client-types"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = "LICENSE"
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy-sol-types             = { workspace = true, optional = true }
+bincode                     = { workspace = true, features = ["alloc", "derive"], optional = true }
+ethereum-light-client-types = { workspace = true }
+ibc-union-spec              = { workspace = true }
+serde                       = { workspace = true, optional = true, features = ["derive"] }
+starknet-crypto             = { workspace = true }
+starknet-types              = { workspace = true }
+unionlabs-encoding          = { workspace = true }
+unionlabs-primitives        = { workspace = true }
+
+[features]
+bincode = [
+  "dep:bincode",
+  "unionlabs-encoding/bincode",
+  "starknet-types/bincode",
+  "unionlabs-primitives/bincode",
+  "ethereum-light-client-types/bincode",
+  "ibc-union-spec/bincode",
+]
+ethabi = ["dep:alloy-sol-types", "unionlabs-encoding/ethabi"]
+serde = [
+  "dep:serde",
+  "starknet-types/serde",
+  "ethereum-light-client-types/serde",
+  "ibc-union-spec/serde",
+]
+
+[dev-dependencies]
+hex-literal = { workspace = true }

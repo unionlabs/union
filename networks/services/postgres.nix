@@ -1,12 +1,30 @@
-{ lib, pkgs, ... }:
+{
+  lib,
+  pkgs,
+  system,
+}:
 let
-  postgres = pkgs.dockerTools.pullImage {
-    imageName = "timescale/timescaledb";
-    imageDigest = "sha256:eb8a3142384e8fd93ebd311783b297a04398ca61902b41233912a1a115279b69";
-    sha256 = "sha256-zJ6HTYhxO7h+brEQOoJgDbHp74JfFe0Jcsfnz8MCFHM=";
-    finalImageName = "timescaledb";
-    finalImageTag = "2.14.1-pg16";
-  };
+  postgres =
+    if system == "aarch64-linux" then
+      pkgs.dockerTools.pullImage {
+        imageName = "arm64v8/postgres";
+        imageDigest = "sha256:1b6ca2021138a093566ef47bd851c3ad2c52a665bd8486609fc23cdc44563a4b";
+        sha256 = "sha256-SNmjeAyMv1cxC3Qr3MZKHoWXsLMrrAEVWrhf/n13Y3U=";
+        finalImageName = "arm64v8/postgres";
+        finalImageTag = "18.1";
+        arch = "arm64";
+      }
+    else if system == "x86_64-linux" then
+      pkgs.dockerTools.pullImage {
+        imageName = "";
+        imageDigest = "";
+        sha256 = "";
+        finalImageName = "";
+        finalImageTag = "";
+        arch = "";
+      }
+    else
+      throw "invalid system";
 in
 {
   build.image = lib.mkForce postgres;

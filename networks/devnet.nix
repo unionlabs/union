@@ -314,7 +314,7 @@
           );
 
         postgres = {
-          postgres = import ./services/postgres.nix { inherit lib pkgs; };
+          postgres = import ./services/postgres.nix { inherit lib pkgs system; };
         };
       };
 
