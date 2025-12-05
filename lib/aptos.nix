@@ -35,15 +35,19 @@ _: {
         pname = "movement";
         version = "001913f20f140aa8245cd55cbb492df91b6e0e0e";
 
-        buildInputs = [
-          pkgsUnstable.pkg-config
-          pkgsUnstable.openssl
-          pkgsUnstable.systemd
-          config.treefmt.build.programs.rustfmt
-          pkgsUnstable.elfutils
-          pkgsUnstable.lld
-          pkgsUnstable.mold
-        ] ++ (lib.optionals pkgsUnstable.stdenv.isDarwin [ pkgsUnstable.darwin.apple_sdk.frameworks.Security ]);
+        buildInputs =
+          [
+            pkgsUnstable.pkg-config
+            pkgsUnstable.openssl
+            pkgsUnstable.systemd
+            config.treefmt.build.programs.rustfmt
+            pkgsUnstable.elfutils
+            pkgsUnstable.lld
+            pkgsUnstable.mold
+          ]
+          ++ (lib.optionals pkgsUnstable.stdenv.isDarwin [
+            pkgsUnstable.darwin.apple_sdk.frameworks.Security
+          ]);
 
         nativeBuildInputs = [
           pkgsUnstable.clang

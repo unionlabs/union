@@ -591,6 +591,7 @@
                     self'.packages.sncast
                     self'.packages.cairo-language-server
                     self'.packages.cairo-format
+                    self'.packages.universal-sierra-compiler
                   ]
                 else
                   [ ]

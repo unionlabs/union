@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 use starknet_crypto::Felt;
 
-fn verify_storage_proof(root: Felt, proof: Vec<MerkleNode>) {}
-
 /// A node in the Merkle-Patricia tree, can be a leaf, binary node, or an edge node.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]

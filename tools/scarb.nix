@@ -94,7 +94,7 @@ _: {
         let
           baseArgs = rec {
             pname = "starknet-foundry";
-            version = "v0.51.1";
+            version = "v0.53.0-rc.0";
             buildInputs = [ pkgs.perl ];
             doCheck = false;
             src = pkgs.fetchFromGitHub {
@@ -102,9 +102,10 @@ _: {
               owner = "foundry-rs";
               repo = "starknet-foundry";
               rev = version;
-              sha256 = "sha256-1a5qQzXhc3kBhWBsWwHMYhSjHznETLx/Rn7vhSL28Ow=";
+              sha256 = "sha256-d+nQvbMWLqoY6G/53r4JqBUkk6n4zGyGIEh+eqx+cAU=";
             };
             cargoExtraArgs = "-p forge -p sncast";
+            ALCHEMY_API_KEY="bullshit";
           };
         in
         craneLib.buildPackage baseArgs;
