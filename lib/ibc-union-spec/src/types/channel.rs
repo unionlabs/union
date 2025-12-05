@@ -218,10 +218,7 @@ pub mod ethabi {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use unionlabs::{
-        encoding::{Bincode, EthAbi},
-        test_utils::assert_codec_iso_bytes,
-    };
+    use unionlabs::{encoding::EthAbi, test_utils::assert_codec_iso_bytes};
 
     use super::*;
 

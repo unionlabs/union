@@ -4,6 +4,7 @@
   perSystem =
     args@{
       pkgsUnstable,
+      pkgs,
       rust,
       dbg,
       gitRev,
@@ -810,7 +811,7 @@
 
       # these are incredibly useful for debugging
       packages = {
-        rust-lib = pkgs.mkRootDrv "rust-lib" {
+        rust-lib = args.pkgs.mkRootDrv "rust-lib" {
           inherit mkCrane;
         };
         # cleanCargoLock = writeTOML "Cargo.lock" (cleanCargoLock [ "ibc-union" ]);

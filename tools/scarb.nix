@@ -105,7 +105,7 @@ _: {
               sha256 = "sha256-d+nQvbMWLqoY6G/53r4JqBUkk6n4zGyGIEh+eqx+cAU=";
             };
             cargoExtraArgs = "-p forge -p sncast";
-            ALCHEMY_API_KEY="bullshit";
+            ALCHEMY_API_KEY = "bullshit";
           };
         in
         craneLib.buildPackage baseArgs;
