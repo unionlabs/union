@@ -1,6 +1,7 @@
 [package]
-edition = "2024.beta"
-name    = "zkgm"
+edition      = "2024.beta"
+name         = "zkgm"
+published-at = "0xa44252db37fe69b02b1d3e2266a6c2f25b27733be20990f0e31291b0f77b5344"
 
 [dependencies]
 escrow_vault = { local = "../escrow_vault" }

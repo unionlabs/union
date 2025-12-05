@@ -159,6 +159,7 @@ function getArrowSpan(
         i > 0 ? packetTracesWithOrWithoutAck[i - 1] : null,
       )}
         {@const arrowSpan = getArrowSpan(trace, nextTrace, positions)}
+        {@const formattedTxHash = trace.getDisplayTransactionHash()}
 
         <!-- Trace card -->
 
@@ -194,11 +195,11 @@ function getArrowSpan(
               </div>
 
               {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp)
-              && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
+              && Option.isSome(formattedTxHash) && Option.isSome(chain)}
                 <div class="text-xs text-zinc-400">
                   <TransactionHashComponent
                     chain={chain.value}
-                    hash={trace.transaction_hash.value}
+                    hash={formattedTxHash.value}
                   />
                 </div>
               {/if}

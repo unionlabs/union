@@ -60,8 +60,9 @@
     "vitest": "catalog:"
   },
   "dependencies": {
+    "@mysten/sui": "^1.38.0",
     "@scure/base": "1.2.4",
-    "crc": "^4.3.2",
-    "@mysten/sui": "^1.38.0"
+    "bs58": "^6",
+    "crc": "^4.3.2"
   }
 }

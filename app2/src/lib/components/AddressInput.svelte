@@ -1,5 +1,6 @@
 <script lang="ts">
 import Input from "$lib/components/ui/Input.svelte"
+import { Ucs05 } from "@unionlabs/sdk"
 import { Bech32FromAddressCanonicalBytesWithPrefix, Chain } from "@unionlabs/sdk/schema"
 import * as Address from "@unionlabs/sdk/schema/address"
 import {
@@ -72,6 +73,8 @@ const transform = $derived(
                 Bech32FromAddressCanonicalBytesWithPrefix(chain.value.addr_prefix),
               ),
           ),
+          Match.when("sui", () => S.validateEither(Ucs05.SuiAddress)),
+          Match.when("aptos", () => S.validateEither(Address.AddressAptosDisplay)),
           Match.orElseAbsurd,
         ),
     ),

@@ -205,40 +205,76 @@ export const TokenFromString = S.transformOrFail(
   },
 )
 
+// export const AnyFromEncoded = (rpcType: Chain.RpcType) =>
+//   S.transformOrFail(
+//     Hex.Hex,
+//     Any,
+//     {
+//       decode: (fromA, options, ast, fromI) => {
+//         return Match.value(rpcType).pipe(
+//           Match.when("evm", () => S.decode(TokenFromString)(fromA)),
+//           Match.when("cosmos", () =>
+//             pipe(
+//               fromA,
+//               S.decode(S.compose(
+//                 Hex.StringFromHex,
+//                 TokenFromString,
+//               )),
+//             )),
+//           Match.when("aptos", (fromA) =>
+//             Effect.fail(new ParseResult.Type(ast, fromA, "Aptos not supported."))),
+//           Match.when("sui", () =>
+//             pipe(fromA, S.decode(S.compose(Hex.StringFromSuiHex, TokenFromString)))),
+//           Match.exhaustive,
+//           Effect.catchTag("ParseError", (error) =>
+//             ParseResult.fail(error.issue)),
+//         )
+//       },
+//       encode: (toI, toA) => {
+//         // TODO: do encode
+//         return Effect.succeed(Utils.ensureHex(toI.address))
+//       },
+//     },
+//   )
+
 /**
  * @since 2.0.0
  */
-export const AnyFromEncoded = (rpcType: Chain.RpcType) =>
-  S.transformOrFail(
-    Hex.Hex,
-    Any,
-    {
-      decode: (fromA, options, ast, fromI) => {
-        return Match.value(rpcType).pipe(
-          Match.when("evm", () => S.decode(TokenFromString)(fromA)),
-          Match.when("cosmos", () =>
-            pipe(
-              fromA,
-              S.decode(S.compose(
-                Hex.StringFromHex,
-                TokenFromString,
-              )),
-            )),
-          Match.when("aptos", (fromA) =>
-            Effect.fail(new ParseResult.Type(ast, fromA, "Aptos not supported."))),
-          Match.when("sui", () =>
-            pipe(fromA, S.decode(S.compose(Hex.StringFromHex, TokenFromString)))),
-          Match.exhaustive,
-          Effect.catchTag("ParseError", (error) =>
-            ParseResult.fail(error.issue)),
-        )
-      },
-      encode: (toI, toA) => {
-        // TODO: do encode
-        return Effect.succeed(Utils.ensureHex(toI.address))
-      },
+export const AnyFromEncoded = (rpcType: Chain.RpcType) => {
+  const From = rpcType === "sui"
+    ? S.Union(Hex.Hex, S.String)
+    : Hex.Hex
+
+  return S.transformOrFail(From, Any, {
+    decode: (fromA, options, ast) => {
+      return Match.value(rpcType).pipe(
+        Match.when("evm", () => S.decode(TokenFromString)(fromA as string)),
+        Match.when("cosmos", () =>
+          pipe(
+            fromA as typeof Hex.Hex.Type,
+            S.decode(S.compose(Hex.StringFromHex, TokenFromString)),
+          )),
+        Match.when(
+          "aptos",
+          () => Effect.fail(new ParseResult.Type(ast, fromA, "Aptos not supported.")),
+        ),
+        Match.when("sui", () => {
+          const s = String(fromA)
+          if (/^0x[0-9a-fA-F]+$/.test(s)) {
+            return pipe(
+              s as typeof Hex.Hex.Type,
+              S.decode(S.compose(Hex.StringFromSuiHex, TokenFromString)),
+            )
+          }
+          return S.decode(TokenFromString)(s)
+        }),
+        Match.exhaustive,
+        Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
+      )
     },
-  )
+    encode: (toI) => Effect.succeed(Utils.ensureHex(toI.address)),
+  })
+}
 
 /**
  * @since 2.0.0

@@ -38,7 +38,7 @@ _: {
             ../ts-sdk-evm
             ../ts-sdk-sui
           ];
-          hash = "sha256-6n4Co3CIVrmjbG4/bCLEBJi+doAB+u24x5C79WiA180=";
+          hash = "sha256-muTjcrxyASfVYRIClyU4Z+ZyCwlFTNkw9UnVWOBEhGA=";
           buildInputs = deps;
           nativeBuildInputs = buildInputs;
           pnpmWorkspaces = [
@@ -135,7 +135,7 @@ _: {
             text = ''
               ${ensureAtRepositoryRoot}
               cd app2/
-              pnpm dlx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://orion.james.union.build/v1/graphql"
+              pnpm dlx gql.tada generate-schema --tsconfig ./tsconfig.json --output "./src/generated/schema.graphql" "https://development.graphql.union.build/v1/graphql"
               pnpm dlx gql.tada generate-output --disable-preprocessing --tsconfig ./tsconfig.json --output ./src/generated/graphql-env.d.ts
             '';
           };
