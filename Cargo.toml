@@ -210,6 +210,7 @@ members = [
   "voyager/plugins/event-source/evm",
   # "voyager/plugins/event-source/movement",
   "voyager/plugins/event-source/sui",
+  "voyager/plugins/event-source/starknet",
 
   "voyager/plugins/transaction/cosmos",
   "voyager/plugins/transaction/evm",
@@ -528,6 +529,7 @@ serde_with               = { version = "3.12.0", default-features = false, featu
 sha2                     = { version = "0.10.9", default-features = false }
 sha3                     = { version = "0.10.8", default-features = false }
 sqlx                     = { version = "0.7.4", default-features = false }
+starknet                 = { version = "0.17.0", default-features = false }
 starknet-core            = { version = "0.16.0", default-features = false }
 starknet-crypto          = { version = "0.8.1", default-features = false }
 static_assertions        = { git = "https://github.com/nvzqz/static-assertions" }                                # https://github.com/nvzqz/static-assertions/pull/28
