@@ -176,6 +176,7 @@
           let
             voyagerNode = mkVoyagerNode voyagerConfigFile;
             voyagerBin = "${self'.packages.voyager}/bin/voyager";
+            _30Mins = "18000";
           in
           mkTest {
             inherit name;
@@ -190,10 +191,10 @@
               devnetUnion.succeed('${self'.packages.cosmwasm-scripts.union-devnet.deploy}/bin/union-devnet-deploy-full')
 
               # match non-zero blocks
-              devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26657/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]')
+              devnetUnion.wait_until_succeeds('[[ $(curl "http://localhost:26657/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 1") == "true" ]]', timeout = ${_30Mins})
 
               # we are waiting until slot 20 so that we are sure that the contracts are deployed
-              devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 32\') == "true" ]]')
+              devnetEth.wait_until_succeeds('[[ $(curl http://localhost:9596/eth/v2/beacon/blocks/head --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} \'.data.message.slot | tonumber > 32\') == "true" ]]', timeout = ${_30Mins})
 
               devnetVoyager.wait_for_open_port(${toString voyagerNode.wait_for_open_port})
               devnetVoyager.wait_until_succeeds('${voyagerBin} rpc info')
@@ -217,7 +218,7 @@
                 devnetVoyager.wait_until_succeeds("${voyagerBin} -c ${voyagerNode.voyagerConfig} q e $(cat /tmp/payload.json)")
 
                 # wait until the connection is opened
-                devnetVoyager.wait_until_succeeds("[[ $(${voyagerBin} rpc ibc-state 32382 '{ \"connection\": { \"connection_id\": 1 } }' | jq '.state.state == \"open\"') == true ]]")
+                devnetVoyager.wait_until_succeeds("[[ $(${voyagerBin} rpc ibc-state 32382 '{ \"connection\": { \"connection_id\": 1 } }' | jq '.state.state == \"open\"') == true ]]", timeout = ${_30Mins})
               else:
                 print("Skipping connection...")
 

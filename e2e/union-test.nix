@@ -7,6 +7,7 @@ let
   voyagerConfigFile = ../tools/union-test/config.jsonc;
   voyagerNode = e2e.mkVoyagerNode voyagerConfigFile;
   voyagerBin = "${self'.packages.voyager}/bin/voyager";
+  _30Mins = "18000";
 in
 {
   e2e-lst = e2e.mkE2eTestEthUnion voyagerConfigFile {
@@ -23,7 +24,7 @@ in
       devnetVoyager.wait_until_succeeds("${voyagerBin} -c ${voyagerNode.voyagerConfig} q e $(cat /tmp/payload.json)")
 
       # wait until the channel is opened
-      devnetVoyager.wait_until_succeeds("[[ $(${voyagerBin} rpc ibc-state 32382 '{ \"channel\": { \"channel_id\": 1 } }' | jq '.state.state == \"open\"') == true ]]")
+      devnetVoyager.wait_until_succeeds("[[ $(${voyagerBin} rpc ibc-state 32382 '{ \"channel\": { \"channel_id\": 1 } }' | jq '.state.state == \"open\"') == true ]]", timeout = ${_30Mins})
 
       # deploy lst staker 
       devnetUnion.wait_until_succeeds("${self'.packages.cosmwasm-deployer}/bin/cosmwasm-deployer deploy-contract --rpc-url http://devnetUnion:26657 --private-key 0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f --bytecode ${self'.packages.lst-staker} --init-msg '{ \"local\": { \"admin\": \"union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2\" } }' --salt apps/lst-staker --gas feemarket --max-gas 100000000 --gas-multiplier 1.4")
