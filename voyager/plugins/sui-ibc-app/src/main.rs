@@ -3,8 +3,7 @@ use std::collections::VecDeque;
 use ibc_union_spec::datagram::{MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout};
 use jsonrpsee::{
     Extensions, MethodsError,
-    core::{JsonValue as Value, RpcResult, async_trait},
-    types::ErrorObject,
+    core::{JsonValue as Value, async_trait},
 };
 use serde::{Deserialize, Serialize};
 use sui_sdk::{
@@ -21,14 +20,14 @@ use ucs03_zkgm::com::{
     OP_BATCH, OP_TOKEN_ORDER, TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE,
     TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW,
 };
-use unionlabs::{ErrorReporter, never::Never};
+use unionlabs::never::Never;
 use voyager_sdk::{
     DefaultCmd, anyhow,
     hook::NEVER_FILTER,
     message::{VoyagerMessage, data::Data},
     plugin::Plugin,
     primitives::ChainId,
-    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
     vm::{Op, pass::PassResult},
 };
 use voyager_transaction_plugin_sui::{ModuleInfo, TransactionPluginServer};
@@ -121,13 +120,7 @@ impl TransactionPluginServer for Module {
         // the registered tokens are returned.
         let mut coin_ts = vec![];
         for p in &data.packets {
-            coin_ts.extend_from_slice(
-                &register_tokens_if_zkgm(self, &mut ptb, &pk, p)
-                    .await
-                    .map_err(|e| {
-                        ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, e.to_string(), None::<()>)
-                    })?,
-            );
+            coin_ts.extend_from_slice(&register_tokens_if_zkgm(self, &mut ptb, &pk, p).await?);
         }
 
         // We start the session by calling `begin_recv`. The returned `session` has no drop nor store,
@@ -262,8 +255,7 @@ impl Module {
                 ObjectID::new(config.ibc_store.to_inner()),
                 SuiObjectDataOptions::default().with_owner(),
             )
-            .await
-            .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?
+            .await?
             .data
             .expect("ibc store object exists on chain")
             .owner
@@ -280,6 +272,7 @@ impl Module {
         })
     }
 
+    // TODO: Return a result here
     async fn get_initial_seq(&self, object: ObjectID) -> SequenceNumber {
         self.sui_client
             .read_api()
@@ -330,17 +323,13 @@ impl PluginServer<Never, Never> for Module {
             .call::<Vec<Value>, Value>(&method, params)
             .await
             .map_err(|e| match e {
-                MethodsError::Parse(error) => ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    ErrorReporter(error).with_message("error parsing args"),
-                    None::<()>,
-                ),
-                MethodsError::JsonRpc(error_object) => error_object,
-                MethodsError::InvalidSubscriptionId(_) => ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "subscriptions are not supported",
-                    None::<()>,
-                ),
+                MethodsError::Parse(e) => RpcError::fatal("error parsing args")(e),
+                MethodsError::JsonRpc(error) => {
+                    RpcError::from_parts(error.code(), error.message(), error.data())
+                }
+                MethodsError::InvalidSubscriptionId(_) => {
+                    RpcError::fatal_from_message("subscriptions are not supported")
+                }
             })
     }
 }

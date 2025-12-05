@@ -6,15 +6,11 @@ use ibc_union_spec::{
     event::{FullEvent, PacketSend},
     path::BatchReceiptsPath,
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, info, instrument, warn};
-use unionlabs::{self, ErrorReporter, never::Never};
+use unionlabs::{self, never::Never};
 use voyager_sdk::{
     DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
     message::{
@@ -24,7 +20,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpec, QueryHeight},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcErrorExt, RpcResult, types::PluginInfo},
     types::{ProofType, RawClientId},
     vm::{Op, call, defer, noop, pass::PassResult, seq},
 };
@@ -109,24 +105,16 @@ impl PluginServer<ModuleCall, Never> for Module {
                 Op::Data(Data::IbcEvent(ref chain_event)) => match chain_event
                     .decode_event::<IbcUnion>()
                     .ok_or_else(|| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            "unexpected data message in queue",
-                            Some(json!({
+                        RpcError::fatal_from_message("unexpected data message in queue").with_data(
+                            json!({
                                 "msg": msg.clone(),
-                            })),
+                            }),
                         )
                     })?
-                    .map_err(|err| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            "unable to parse ibc datagram",
-                            Some(json!({
-                                "err": ErrorReporter(err).to_string(),
-                                "msg": msg,
-                            })),
-                        )
-                    })? {
+                    .map_err(RpcError::fatal("unable to parse ibc datagram"))
+                    .with_data(json!({
+                        "msg": msg.clone(),
+                    }))? {
                     FullEvent::PacketSend(packet_send) => Ok((
                         vec![idx],
                         call(PluginMessage::new(
@@ -138,21 +126,19 @@ impl PluginServer<ModuleCall, Never> for Module {
                             }),
                         )),
                     )),
-                    datagram => Err(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unexpected ibc datagram {}", datagram.name()),
-                        Some(json!({
-                            "msg": msg,
-                        })),
-                    )),
+                    datagram => Err(RpcError::fatal_from_message(format!(
+                        "unexpected ibc datagram {}",
+                        datagram.name()
+                    ))
+                    .with_data(json!({
+                        "msg": msg,
+                    }))),
                 },
-                _ => Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "unexpected message in queue",
-                    Some(json!({
+                _ => Err(
+                    RpcError::fatal_from_message("unexpected message in queue").with_data(json!({
                         "msg": msg,
                     })),
-                )),
+                ),
             })
             .collect::<RpcResult<Vec<_>>>()?;
 

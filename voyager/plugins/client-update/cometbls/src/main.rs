@@ -19,11 +19,7 @@ use galois_rpc::{
     prove_request::ProveRequest,
     validator_set_commit::ValidatorSetCommit,
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -44,7 +40,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, rpc_error, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcErrorExt, RpcResult, types::PluginInfo},
     vm::{Op, Visit, call, data, defer, noop, now, pass::PassResult, promise, seq, void},
 };
 
@@ -161,10 +157,8 @@ impl Module {
             .cometbft_client
             .all_validators(Some(from.increment().height().try_into().unwrap()))
             .await
-            .map_err(rpc_error(
-                "error fetching trusted validators",
-                Some(json!({"height": from})),
-            ))?
+            .map_err(RpcError::retryable("error fetching trusted validators"))
+            .with_data(json!({"height": from}))?
             .validators;
 
         let trusted_map = sort_validators(trusted_validators);
@@ -215,10 +209,8 @@ impl Module {
             .cometbft_client
             .commit(Some(to.height().try_into().unwrap()))
             .await
-            .map_err(rpc_error(
-                "error fetching block while bisecting",
-                Some(json!({"height": to})),
-            ))?
+            .map_err(RpcError::retryable("error fetching block while bisecting"))
+            .with_data(json!({"height": to}))?
             .signed_header;
 
         // 2. fetch untrusted validators
@@ -375,30 +367,24 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .cometbft_client
                     .all_validators(Some(update_from.increment().height().try_into().unwrap()))
                     .await
-                    .map_err(rpc_error(
-                        "error fetching trusted validators",
-                        Some(json!({"height": update_from})),
-                    ))?
+                    .map_err(RpcError::retryable("error fetching trusted validators"))
+                    .with_data(json!({"height": update_from}))?
                     .validators;
 
                 let untrusted_validators = self
                     .cometbft_client
                     .all_validators(Some(update_to.height().try_into().unwrap()))
                     .await
-                    .map_err(rpc_error(
-                        "error fetching untrusted validators",
-                        Some(json!({"height": update_to})),
-                    ))?
+                    .map_err(RpcError::retryable("error fetching untrusted validators"))
+                    .with_data(json!({"height": update_to}))?
                     .validators;
 
                 let signed_header = self
                     .cometbft_client
                     .commit(Some(update_to.height().try_into().unwrap()))
                     .await
-                    .map_err(rpc_error(
-                        "error fetching signed header",
-                        Some(json!({"height": update_to})),
-                    ))?
+                    .map_err(RpcError::retryable("error fetching signed header"))
+                    .with_data(json!({"height": update_to}))?
                     .signed_header;
 
                 let make_validators_commit = |mut validators: Vec<Validator>| {
@@ -561,10 +547,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                 let response = galois_rpc::Client::connect(prover_endpoint)
                     .await
-                    .map_err(rpc_error(
-                        "error connecting to prover endpoint",
-                        Some(json!({"prover_endpoint": prover_endpoint})),
-                    ))?
+                    .map_err(RpcError::retryable("error connecting to prover endpoint"))
+                    .with_data(json!({"prover_endpoint": prover_endpoint}))?
                     .poll(PollRequest {
                         request: request.clone(),
                     })
@@ -594,11 +578,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     Ok(PollResponse::Failed(ProveRequestFailed { message })) => {
                         error!(%message, "prove request failed");
 
-                        Err(ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            format!("prove request failed: {message}"),
-                            None::<()>,
-                        ))
+                        Err(RpcError::fatal_from_message(format!(
+                            "prove request failed: {message}"
+                        )))
                     }
                     Ok(PollResponse::Done(ProveRequestDone { response })) => {
                         info!(prover = %prover_endpoint, "proof generated");

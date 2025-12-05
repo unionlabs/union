@@ -18,7 +18,7 @@ use sui_sdk::{
     },
 };
 use unionlabs::primitives::{H256, encoding::HexPrefixed};
-use voyager_sdk::anyhow;
+use voyager_sdk::rpc::{RpcError, RpcResult};
 
 use crate::{Module, ModuleInfo};
 
@@ -106,7 +106,7 @@ pub fn create_client(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     data: MsgCreateClient,
-) -> anyhow::Result<()> {
+) -> RpcResult<()> {
     ptb.move_call(
         module.ibc_contract.into(),
         IBC_IDENT.into(),
@@ -123,13 +123,14 @@ pub fn create_client(
             (&data.consensus_state_bytes.into_vec()).into(),
         ],
     )
+    .map_err(RpcError::fatal_from_message)
 }
 
 pub fn update_client(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     data: MsgUpdateClient,
-) -> anyhow::Result<()> {
+) -> RpcResult<()> {
     ptb.move_call(
         module.ibc_contract.into(),
         IBC_IDENT.into(),
@@ -147,13 +148,14 @@ pub fn update_client(
             CallArg::Pure(H256::<HexPrefixed>::default().into_bytes().to_vec()),
         ],
     )
+    .map_err(RpcError::fatal_from_message)
 }
 
 pub fn connection_open_init(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     data: MsgConnectionOpenInit,
-) -> anyhow::Result<()> {
+) -> RpcResult<()> {
     ptb.move_call(
         module.ibc_contract.into(),
         IBC_IDENT.into(),
@@ -169,13 +171,14 @@ pub fn connection_open_init(
             data.counterparty_client_id.raw().into(),
         ],
     )
+    .map_err(RpcError::fatal_from_message)
 }
 
 pub fn connection_open_try(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     data: MsgConnectionOpenTry,
-) -> anyhow::Result<()> {
+) -> RpcResult<()> {
     ptb.move_call(
         module.ibc_contract.into(),
         IBC_IDENT.into(),
@@ -194,13 +197,14 @@ pub fn connection_open_try(
             data.proof_height.into(),
         ],
     )
+    .map_err(RpcError::fatal_from_message)
 }
 
 pub fn connection_open_ack(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     data: MsgConnectionOpenAck,
-) -> anyhow::Result<()> {
+) -> RpcResult<()> {
     ptb.move_call(
         module.ibc_contract.into(),
         IBC_IDENT.into(),
@@ -218,13 +222,14 @@ pub fn connection_open_ack(
             data.proof_height.into(),
         ],
     )
+    .map_err(RpcError::fatal_from_message)
 }
 
 pub fn connection_open_confirm(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     data: MsgConnectionOpenConfirm,
-) -> anyhow::Result<()> {
+) -> RpcResult<()> {
     ptb.move_call(
         module.ibc_contract.into(),
         IBC_IDENT.into(),
@@ -241,6 +246,7 @@ pub fn connection_open_confirm(
             data.proof_height.into(),
         ],
     )
+    .map_err(RpcError::fatal_from_message)
 }
 
 pub fn channel_open_init(
@@ -248,7 +254,7 @@ pub fn channel_open_init(
     module: &Module,
     module_info: ModuleInfo,
     data: MsgChannelOpenInit,
-) -> anyhow::Result<()> {
+) -> RpcResult<()> {
     ptb.move_call(
         module_info.latest_address.into(),
         IBC_IDENT.into(),
@@ -271,6 +277,7 @@ pub fn channel_open_init(
             (&data.version.into_bytes()).into(),
         ],
     )
+    .map_err(RpcError::fatal_from_message)
 }
 
 pub fn channel_open_try(
@@ -278,7 +285,7 @@ pub fn channel_open_try(
     module: &Module,
     module_info: ModuleInfo,
     data: MsgChannelOpenTry,
-) -> anyhow::Result<()> {
+) -> RpcResult<()> {
     ptb.move_call(
         module_info.latest_address.into(),
         IBC_IDENT.into(),
@@ -304,6 +311,7 @@ pub fn channel_open_try(
             data.proof_height.into(),
         ],
     )
+    .map_err(RpcError::fatal_from_message)
 }
 
 pub fn channel_open_ack(
@@ -311,7 +319,7 @@ pub fn channel_open_ack(
     module: &Module,
     module_info: ModuleInfo,
     data: MsgChannelOpenAck,
-) -> anyhow::Result<()> {
+) -> RpcResult<()> {
     ptb.move_call(
         module_info.latest_address.into(),
         IBC_IDENT.into(),
@@ -335,6 +343,7 @@ pub fn channel_open_ack(
             data.proof_height.into(),
         ],
     )
+    .map_err(RpcError::fatal_from_message)
 }
 
 pub fn channel_open_confirm_call(
@@ -342,7 +351,7 @@ pub fn channel_open_confirm_call(
     module: &Module,
     module_info: ModuleInfo,
     data: MsgChannelOpenConfirm,
-) -> anyhow::Result<()> {
+) -> RpcResult<()> {
     ptb.move_call(
         module_info.latest_address.into(),
         IBC_IDENT.into(),
@@ -364,13 +373,14 @@ pub fn channel_open_confirm_call(
             data.proof_height.into(),
         ],
     )
+    .map_err(RpcError::fatal_from_message)
 }
 
 pub fn packet_timeout_commitment_call(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     data: MsgCommitPacketTimeout,
-) -> anyhow::Result<()> {
+) -> RpcResult<()> {
     ptb.move_call(
         module.ibc_contract.into(),
         IBC_IDENT.into(),
@@ -387,22 +397,24 @@ pub fn packet_timeout_commitment_call(
             data.proof_height.into(),
         ],
     )
+    .map_err(RpcError::fatal_from_message)
 }
 
-pub async fn get_port_id(module: &Module, channel_id: ChannelId) -> anyhow::Result<SuiAddress> {
+pub async fn get_port_id(module: &Module, channel_id: ChannelId) -> RpcResult<SuiAddress> {
     let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
 
     let res = query
         .add_param(channel_id.raw())
         .call(module.ibc_contract.into(), "get_port_id")
         .await
-        .map_err(|e| anyhow::anyhow!(e))?;
+        .map_err(RpcError::retryable_from_message)?;
 
     if res.len() != 1 {
-        panic!("expected a single encoded connection end")
+        panic!("expected a single port id")
     }
 
-    let port_id = bcs::from_bytes::<SuiAddress>(&res[0].0)?;
+    let port_id = bcs::from_bytes::<SuiAddress>(&res[0].0)
+        .map_err(RpcError::fatal("error decoding sui address from bcs"))?;
 
     Ok(port_id)
 }

@@ -12,11 +12,7 @@ use ibc_union_spec::{
     path::{BatchReceiptsPath, ChannelPath, ConnectionPath},
     query::PacketByHash,
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use sui_sdk::{
     SuiClientBuilder,
@@ -24,7 +20,7 @@ use sui_sdk::{
     types::base_types::SuiAddress,
 };
 use tracing::{info, instrument};
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::H256};
+use unionlabs::{ibc::core::client::height::Height, primitives::H256};
 use voyager_sdk::{
     DefaultCmd, ExtensionsExt, VoyagerClient,
     hook::simple_take_filter,
@@ -36,7 +32,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
-    rpc::{PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
     vm::{Op, call, conc, data, noop, pass::PassResult, seq},
 };
 
@@ -551,13 +547,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .read_api()
                     .get_checkpoint(sui_sdk::rpc_types::CheckpointId::SequenceNumber(height))
                     .await
-                    .map_err(|e| {
-                        ErrorObject::owned(
-                            -1,
-                            ErrorReporter(e).with_message("error fetching a checkpoint"),
-                            None::<()>,
-                        )
-                    })?
+                    .map_err(RpcError::retryable("error fetching a checkpoint"))?
                     .transactions;
 
                 let events = self
@@ -568,13 +558,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         SuiTransactionBlockResponseOptions::new().with_events(),
                     )
                     .await
-                    .map_err(|e| {
-                        ErrorObject::owned(
-                            -1,
-                            ErrorReporter(e).with_message("error fetching txs"),
-                            None::<()>,
-                        )
-                    })?
+                    .map_err(RpcError::retryable("error fetching txs"))?
                     .into_iter()
                     .flat_map(|tx| {
                         tx.events

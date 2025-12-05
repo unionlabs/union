@@ -19,12 +19,7 @@ use cosmos_client::{
 };
 use ibc_union::ContractErrorKind;
 use ibc_union_spec::datagram::Datagram;
-use jsonrpsee::{
-    Extensions, MethodsError,
-    core::{RpcResult, async_trait},
-    proc_macros::rpc,
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, MethodsError, core::async_trait, proc_macros::rpc};
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -44,7 +39,7 @@ use voyager_sdk::{
     message::{PluginMessage, VoyagerMessage, data::Data},
     plugin::Plugin,
     primitives::ChainId,
-    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
     vm::{BoxDynError, Op, Visit, call, defer_relative, noop, pass::PassResult, seq},
 };
 
@@ -284,27 +279,15 @@ impl TransactionPluginServer for Module {
                     false,
                 )
                 .await
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        ErrorReporter(e).with_message("error fetching balance"),
-                        None::<()>,
-                    )
-                })?
+                .map_err(RpcError::retryable("error fetching balance"))?
                 .into_result()
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        ErrorReporter(e).with_message("error fetching balance"),
-                        None::<()>,
-                    )
-                })?
+                .map_err(RpcError::retryable("error fetching balance"))?
                 .ok_or_else(|| {
-                    ErrorObject::owned(-1, "empty response when fetching balance", None::<()>)
+                    RpcError::retryable_from_message("empty response when fetching balance")
                 })?
                 .balance
                 .ok_or_else(|| {
-                    ErrorObject::owned(-1, "empty balance when fetching balance", None::<()>)
+                    RpcError::retryable_from_message("empty balance when fetching balance")
                 })?
                 .amount;
 
@@ -353,7 +336,7 @@ impl Module {
                     .filter_map(|msg| match msg {
                         Ok(msg) => Some(msg),
                         Err(err) => {
-                            error!("invalid msg: {}", ErrorReporter(err));
+                            error!("invalid msg: {err}");
                             None
                         }
                     })
@@ -493,7 +476,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                 let batch_submission_result = self.do_send_transaction(msgs.clone()).await;
 
                 match batch_submission_result {
-                    None => Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
+                    None => Err(RpcError::retryable_from_message("no signers available")),
                     Some(Ok(None)) => {
                         for (idx, msg) in msgs.into_iter().enumerate() {
                             info!(
@@ -509,11 +492,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                     Some(Err(err)) => {
                         match err {
                             _ if let Some(err) = err.as_json_rpc_error() => {
-                                return Err(ErrorObject::owned(
-                                    -1,
-                                    ErrorReporter(err).with_message("jsonrpc error"),
-                                    None::<()>,
-                                ));
+                                return Err(RpcError::retryable("jsonrpc error")(err));
                             }
 
                             BroadcastTxCommitError::Query(GrpcAbciQueryError {
@@ -528,13 +507,9 @@ impl PluginServer<ModuleCall, Never> for Module {
                             } if ACCOUNT_SEQUENCE_ERRORS.contains(&(&codespace, error_code))
                                 || log.contains("account sequence mismatch") =>
                             {
-                                return Err(ErrorObject::owned(
-                                    -1,
-                                    format!(
-                                        "account sequence mismatch ({codespace}, {error_code}): {log}"
-                                    ),
-                                    None::<()>,
-                                ));
+                                return Err(RpcError::retryable_from_message(format!(
+                                    "account sequence mismatch ({codespace}, {error_code}): {log}"
+                                )));
                             }
 
                             BroadcastTxCommitError::Query(GrpcAbciQueryError {
@@ -621,7 +596,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                                 } else if log.contains("insufficient funds") {
                                     warn!("out of gas");
 
-                                    return Err(ErrorObject::owned(-1, "out of gas", None::<()>));
+                                    return Err(RpcError::retryable_from_message("out of gas"));
                                 } else {
                                     warn!(
                                         "unable to parse message index from tx failure ({codespace}, {error_code}): {log}"
@@ -640,11 +615,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                                     }
                                 }
                             }
-                            _ => Err(ErrorObject::owned(
-                                -1,
-                                ErrorReporter(err).with_message("error submitting tx"),
-                                None::<()>,
-                            )),
+                            err => Err(RpcError::retryable("error submitting tx")(err)),
                         }
                     }
                 }
@@ -668,17 +639,13 @@ impl PluginServer<ModuleCall, Never> for Module {
             .call::<Vec<Value>, Value>(&method, params)
             .await
             .map_err(|e| match e {
-                MethodsError::Parse(error) => ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    ErrorReporter(error).with_message("error parsing ergs"),
-                    None::<()>,
-                ),
-                MethodsError::JsonRpc(error_object) => error_object,
-                MethodsError::InvalidSubscriptionId(_) => ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "subscriptions are not supported",
-                    None::<()>,
-                ),
+                MethodsError::Parse(e) => RpcError::fatal("error parsing args")(e),
+                MethodsError::JsonRpc(error) => {
+                    RpcError::from_parts(error.code(), error.message(), error.data())
+                }
+                MethodsError::InvalidSubscriptionId(_) => {
+                    RpcError::fatal_from_message("subscriptions are not supported")
+                }
             })
     }
 }
@@ -880,11 +847,7 @@ fn process_msgs(
 
 fn parse_port_id(bz: Vec<u8>) -> RpcResult<String> {
     String::from_utf8(bz).map_err(|e| {
-        ErrorObject::owned(
-            FATAL_JSONRPC_ERROR_CODE,
-            format!("invalid utf8: {}", <Bytes>::new(e.into_bytes())),
-            None::<()>,
-        )
+        RpcError::fatal_from_message(format!("invalid utf8: {}", <Bytes>::new(e.into_bytes())))
     })
 }
 

@@ -1,13 +1,12 @@
 use std::{collections::HashMap, path::PathBuf};
 
-use jsonrpsee::types::{ErrorObject, ErrorObjectOwned};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use voyager_plugin_protocol::WorkerClient;
 use voyager_primitives::{ChainId, ClientType, ConsensusType, IbcInterface, IbcSpecId};
 use voyager_rpc::{
-    UNPROCESSABLE_JSONRPC_ERROR_CODE,
+    RpcError,
     types::{
         ClientBootstrapModuleInfo, ClientModuleInfo, FinalityModuleInfo, InfoResponse,
         ProofModuleInfo, StateModuleInfo,
@@ -248,19 +247,9 @@ macro_rules! module_error {
             }
         }
 
-        impl From<$Error> for ErrorObjectOwned {
+        impl From<$Error> for RpcError {
             fn from(value: $Error) -> Self {
-                ErrorObject::owned(
-                    UNPROCESSABLE_JSONRPC_ERROR_CODE,
-                    value.to_string(),
-                    None::<()>,
-                )
-            }
-        }
-
-        impl From<$Error> for jsonrpsee::core::client::Error {
-            fn from(value: $Error) -> Self {
-                ErrorObject::from(value).into()
+                RpcError::unprocessable(value)
             }
         }
     };

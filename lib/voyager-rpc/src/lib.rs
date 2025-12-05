@@ -1,14 +1,13 @@
 #![feature(trait_alias)]
 
+use core::{error::Error, fmt};
 use std::{
     collections::VecDeque,
-    error::Error,
     fmt::{Debug, Display},
 };
 
 use jsonrpsee::{
     self,
-    core::RpcResult,
     proc_macros::rpc,
     types::{
         ErrorObject, ErrorObjectOwned,
@@ -16,7 +15,7 @@ use jsonrpsee::{
     },
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Value, to_value};
 use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::Bytes};
 use voyager_message::{VoyagerMessage, data::Data};
 use voyager_primitives::{
@@ -32,6 +31,197 @@ use crate::types::{
 };
 
 pub mod types;
+
+#[derive(Debug, Clone)]
+pub struct RpcError {
+    code: RpcErrorCode,
+    message: String,
+    data: Value,
+}
+
+impl fmt::Display for RpcError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.code {
+            RpcErrorCode::Fatal => write!(f, "fatal: ")?,
+            RpcErrorCode::Unprocessable => write!(f, "unprocessable: ")?,
+            RpcErrorCode::MissingState => write!(f, "missing state: ")?,
+            RpcErrorCode::Retryable(code) => write!(f, "retryable ({code}): ")?,
+        }
+
+        write!(f, "{}", self.message)?;
+
+        if !self.data.is_null() {
+            write!(f, " ({})", self.message)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl From<RpcError> for QueueError {
+    fn from(value: RpcError) -> Self {
+        let err = |ty| {
+            format!(
+                "{}{}{}",
+                ty,
+                value.message,
+                if value.data.is_null() {
+                    format_args!("")
+                } else {
+                    format_args!(" ({})", value.data)
+                }
+            )
+        };
+
+        match value.code {
+            RpcErrorCode::Fatal => QueueError::Fatal(err("").into()),
+            RpcErrorCode::Unprocessable => QueueError::Unprocessable(err("").into()),
+            RpcErrorCode::MissingState => QueueError::Retry(err("missing state: ").into()),
+            RpcErrorCode::Retryable(code) => QueueError::Retry(err(&format!("{code}: ")).into()),
+        }
+    }
+}
+
+pub type RpcResult<T> = Result<T, RpcError>;
+
+impl RpcError {
+    pub fn from_parts(code: i32, message: impl Display, data: impl Serialize) -> Self {
+        Self {
+            code: RpcErrorCode::from_error_code(code),
+            message: message.to_string(),
+            data: serde_json::to_value(data).unwrap(),
+        }
+    }
+
+    pub fn code(&self) -> RpcErrorCode {
+        self.code
+    }
+
+    pub fn fatal<E: Error>(message: impl Display) -> impl FnOnce(E) -> Self {
+        move |error| Self {
+            code: RpcErrorCode::Fatal,
+            message: ErrorReporter(error).with_message(&message.to_string()),
+            data: Value::Null,
+        }
+    }
+
+    pub fn fatal_from_message(message: impl fmt::Display) -> Self {
+        Self {
+            code: RpcErrorCode::Fatal,
+            message: message.to_string(),
+            data: Value::Null,
+        }
+    }
+
+    pub fn unprocessable<E: Error>(error: E) -> Self {
+        Self {
+            code: RpcErrorCode::Unprocessable,
+            message: ErrorReporter(error).to_string(),
+            data: Value::Null,
+        }
+    }
+
+    pub fn missing_state(message: impl fmt::Display) -> Self {
+        Self {
+            code: RpcErrorCode::MissingState,
+            message: message.to_string(),
+            data: Value::Null,
+        }
+    }
+
+    pub fn retryable<E: Error>(message: impl Display) -> impl FnOnce(E) -> Self {
+        move |error| Self {
+            code: RpcErrorCode::Retryable(-1),
+            message: ErrorReporter(error).with_message(&message.to_string()),
+            data: Value::Null,
+        }
+    }
+
+    pub fn retryable_from_message(message: impl fmt::Display) -> Self {
+        Self {
+            code: RpcErrorCode::Retryable(-1),
+            message: message.to_string(),
+            data: Value::Null,
+        }
+    }
+
+    pub fn retryable_with_code<E: Error>(code: i32) -> impl FnOnce(E) -> Self {
+        move |error| Self {
+            code: RpcErrorCode::Retryable(code),
+            message: ErrorReporter(error).to_string(),
+            data: Value::Null,
+        }
+    }
+
+    pub fn with_data(self, data: impl Serialize) -> RpcError {
+        RpcError {
+            data: to_value(data).expect("serialization must be infallible"),
+            ..self
+        }
+    }
+
+    pub fn with_message(self, message: impl fmt::Display) -> Self {
+        RpcError {
+            message: format!("{message}: {}", message),
+            ..self
+        }
+    }
+}
+
+pub trait RpcErrorExt {
+    fn with_data(self, data: impl Serialize) -> Self;
+
+    fn with_message(self, message: impl fmt::Display) -> Self;
+}
+
+impl<T> RpcErrorExt for Result<T, RpcError> {
+    fn with_data(self, data: impl Serialize) -> Self {
+        self.map_err(|e| e.with_data(data))
+    }
+
+    fn with_message(self, message: impl fmt::Display) -> Self {
+        self.map_err(|e| e.with_message(message))
+    }
+}
+
+impl From<RpcError> for ErrorObjectOwned {
+    fn from(value: RpcError) -> Self {
+        ErrorObject::owned(
+            value.code.into_error_code(),
+            value.message,
+            Some(value.data),
+        )
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(i32)]
+pub enum RpcErrorCode {
+    Fatal = FATAL_JSONRPC_ERROR_CODE,
+    Unprocessable = UNPROCESSABLE_JSONRPC_ERROR_CODE,
+    MissingState = MISSING_STATE_ERROR_CODE,
+    Retryable(i32),
+}
+
+impl RpcErrorCode {
+    fn from_error_code(code: i32) -> Self {
+        match code {
+            FATAL_JSONRPC_ERROR_CODE => Self::Fatal,
+            UNPROCESSABLE_JSONRPC_ERROR_CODE => Self::Unprocessable,
+            MISSING_STATE_ERROR_CODE => Self::MissingState,
+            _ => Self::Retryable(code),
+        }
+    }
+
+    fn into_error_code(self) -> i32 {
+        match self {
+            RpcErrorCode::Fatal => FATAL_JSONRPC_ERROR_CODE,
+            RpcErrorCode::Unprocessable => UNPROCESSABLE_JSONRPC_ERROR_CODE,
+            RpcErrorCode::MissingState => MISSING_STATE_ERROR_CODE,
+            RpcErrorCode::Retryable(code) => code,
+        }
+    }
+}
 
 /// Trait alias for traits commonly used together throughout this crate.
 // TODO: Add `Eq`
@@ -69,34 +259,14 @@ pub fn json_rpc_error_to_queue_error(error: jsonrpsee::core::client::Error) -> Q
     }
 }
 
-pub fn json_rpc_error_to_error_object(e: jsonrpsee::core::client::Error) -> ErrorObjectOwned {
-    match e {
-        jsonrpsee::core::client::Error::Call(e) => e,
-        jsonrpsee::core::client::Error::ParseError(e) => ErrorObject::owned(
-            FATAL_JSONRPC_ERROR_CODE,
-            format!("parse error: {}", ErrorReporter(e)),
-            None::<()>,
-        ),
-        value => ErrorObject::owned(-1, format!("error: {}", ErrorReporter(value)), None::<()>),
-    }
-}
-
-/// Some required state was missing (connection/channel end, packet commitment,
-/// ..)
-pub fn missing_state(
-    message: impl Into<String>,
-    data: Option<Value>,
-) -> impl FnOnce() -> ErrorObjectOwned {
-    move || ErrorObject::owned(MISSING_STATE_ERROR_CODE, message, data)
-}
-
-pub fn rpc_error<E: Error>(
-    message: impl Display,
-    data: Option<Value>,
-) -> impl FnOnce(E) -> ErrorObjectOwned {
-    move |e| {
-        let message = format!("{message}: {}", ErrorReporter(e));
-        ErrorObject::owned(-1, message, data)
+impl From<jsonrpsee::core::client::Error> for RpcError {
+    fn from(value: jsonrpsee::core::client::Error) -> Self {
+        match value {
+            jsonrpsee::core::client::Error::Call(error) => {
+                Self::from_parts(error.code(), error.message(), error.data())
+            }
+            value => Self::retryable("")(value),
+        }
     }
 }
 
@@ -342,11 +512,7 @@ pub trait Plugin<C: Member, Cb: Member> {
     /// The default implementetion returns an error.
     #[method(name = "custom", with_extensions)]
     async fn custom(&self, _method: String, _params: Vec<Value>) -> RpcResult<Value> {
-        Err(ErrorObject::owned(
-            FATAL_JSONRPC_ERROR_CODE,
-            "unimplemented",
-            None::<()>,
-        ))
+        Err(RpcError::fatal_from_message("unimplemented"))
     }
 }
 

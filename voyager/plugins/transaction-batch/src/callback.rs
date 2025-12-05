@@ -6,7 +6,6 @@ use futures::{TryFutureExt, TryStreamExt, stream::FuturesOrdered};
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
 use itertools::Itertools;
-use jsonrpsee::core::RpcResult;
 use macros::model;
 use subset_of::{SubsetOf, Superset};
 use tracing::{debug, info, instrument, warn};
@@ -22,6 +21,7 @@ use voyager_sdk::{
         data::{Data, EventProvableHeight, IbcDatagram, OrderedHeaders},
     },
     primitives::{ChainId, ClientStateMeta, IbcSpec, QueryHeight},
+    rpc::RpcResult,
     types::RawClientId,
     vm::{Op, call, conc, noop, promise, seq},
 };

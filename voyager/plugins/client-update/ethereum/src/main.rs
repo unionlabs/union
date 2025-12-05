@@ -11,22 +11,17 @@ use ethereum_light_client_types::{
     SyncCommitteePeriodChangeUpdate, WithinSyncCommitteePeriodUpdate,
 };
 use futures::{StreamExt, TryStreamExt, stream};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument, trace};
 use unionlabs::{
-    ErrorReporter,
     ibc::core::client::height::Height,
     never::Never,
     primitives::{H160, H256},
 };
 use voyager_sdk::{
     DefaultCmd,
-    anyhow::{self, bail},
+    anyhow::{self, Context, bail},
     hook::UpdateHook,
     into_value,
     message::{
@@ -36,7 +31,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, Timestamp},
-    rpc::{PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
     types::RawClientId,
     vm::{self, Op, Visit, call, defer, now, pass::PassResult, seq},
 };
@@ -104,20 +99,9 @@ impl Module {
         let account_update = self
             .provider
             .get_proof(self.ibc_handler_address.into(), vec![])
-            .block_id(
-                // NOTE: Proofs are from the execution layer, so we use execution height, not beacon slot.
-                block_number.into(),
-            )
+            .block_id(block_number.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching account update"),
-                    None::<()>,
-                )
-            })?;
-
-        // tokio::time::sleep(std::time::Duration::from_millis(500));
+            .map_err(RpcError::retryable("error fetching account update"))?;
 
         debug!(storage_hash = %account_update.storage_hash, "fetched account update");
 
@@ -159,13 +143,10 @@ impl Plugin for Module {
 
         let beacon_api_client = BeaconApiClient::new(config.beacon_rpc_url);
 
-        let spec = beacon_api_client.spec().await.map_err(|e| {
-            ErrorObject::owned(
-                -1,
-                ErrorReporter(e).with_message("error fetching beacon spec"),
-                None::<()>,
-            )
-        })?;
+        let spec = beacon_api_client
+            .spec()
+            .await
+            .context("error fetching beacon spec")?;
 
         if spec.preset_base != config.chain_spec {
             bail!(
@@ -270,34 +251,23 @@ impl Module {
             .get_block((block_number + 1).into())
             .hashes()
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching block: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
-            .expect("block should exist");
+            .map_err(RpcError::retryable("error fetching block"))?
+            .ok_or_else(|| RpcError::missing_state("error fetching block: block not found"))?;
 
         let beacon_slot = self
             .beacon_api_client
             .block(
-                <H256>::from(
-                    block
-                        .header
-                        .parent_beacon_block_root
-                        .expect("parent beacon block root should exist"),
-                )
-                .into(),
+                block
+                    .header
+                    .parent_beacon_block_root
+                    .ok_or_else(|| {
+                        RpcError::missing_state("parent beacon block root should exist")
+                    })?
+                    .0
+                    .into(),
             )
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching block: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching beacon block"))?;
 
         Ok(beacon_slot.response.fold(
             |b| b.message.slot,
@@ -345,13 +315,7 @@ impl Module {
             .beacon_api_client
             .finality_update()
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching finality update"),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching finality update"))?
             .fold(
                 |f| match f {},
                 |_| todo!("altair is not supported"),
@@ -380,13 +344,11 @@ impl Module {
                 },
             );
 
-        let spec = self.beacon_api_client.spec().await.map_err(|e| {
-            ErrorObject::owned(
-                -1,
-                ErrorReporter(e).with_message("error fetching beacon spec"),
-                None::<()>,
-            )
-        })?;
+        let spec = self
+            .beacon_api_client
+            .spec()
+            .await
+            .map_err(RpcError::retryable("error fetching beacon spec"))?;
 
         // === FETCH VALID FINALITY UPDATE
 
@@ -455,13 +417,7 @@ impl Module {
                 .beacon_api_client
                 .light_client_updates(trusted_period + 1, target_period - trusted_period)
                 .await
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        ErrorReporter(e).with_message("error fetching light client updates"),
-                        None::<()>,
-                    )
-                })?
+                .map_err(RpcError::retryable("error fetching light client updates"))?
                 .into_iter()
                 .map(|x| {
                     x.fold::<ethereum_sync_protocol_types::LightClientUpdate>(
@@ -548,13 +504,11 @@ impl Module {
 
         // header.sort_by_key(|header| header.consensus_update.attested_header.beacon.slot);
 
-        let genesis = self.beacon_api_client.genesis().await.map_err(|e| {
-            ErrorObject::owned(
-                -1,
-                ErrorReporter(e).with_message("error fetching beacon genesis"),
-                None::<()>,
-            )
-        })?;
+        let genesis = self
+            .beacon_api_client
+            .genesis()
+            .await
+            .map_err(RpcError::retryable("error fetching beacon genesis"))?;
 
         let last_update_signature_slot = headers
             .iter()

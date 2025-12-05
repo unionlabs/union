@@ -15,11 +15,7 @@ use ibc_union_spec::{
     IbcUnion,
     event::{FullEvent, WriteAck},
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{
@@ -54,7 +50,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpec},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcErrorExt, RpcResult, types::PluginInfo},
     vm::{Op, call, data, noop, pass::PassResult},
 };
 
@@ -409,24 +405,22 @@ impl PluginServer<ModuleCall, Never> for Module {
                     let full_event = chain_event
                         .decode_event::<IbcUnion>()
                         .ok_or_else(|| {
-                            ErrorObject::owned(
-                                FATAL_JSONRPC_ERROR_CODE,
+                            RpcError::fatal_from_message(
                                 "unexpected data message in queue",
-                                Some(json!({
-                                    "msg": msg.clone(),
-                                })),
                             )
+                            .with_data(json!({
+                                "msg": msg.clone(),
+                            }))
                         })?
-                        .map_err(|err| {
-                            ErrorObject::owned(
-                                FATAL_JSONRPC_ERROR_CODE,
-                                "unable to parse ibc datagram",
-                                Some(json!({
-                                    "err": ErrorReporter(err).to_string(),
-                                    "msg": msg,
-                                })),
+                        .map_err(
+                            RpcError::fatal(
+                                "unable to parse ibc datagram"
                             )
-                        })?;
+                        )
+                            .with_data(json!({
+                                "msg": msg.clone(),
+                            }))
+                    ?;
 
                     let ready = || {
                         let first_seen_at: u64 = SystemTime::now()
@@ -487,22 +481,18 @@ impl PluginServer<ModuleCall, Never> for Module {
 
                             ready()
                         }
-                        datagram => Err(ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
+                        datagram => Err(RpcError::fatal_from_message(
                             format!("unexpected ibc datagram {}", datagram.name()),
-                            Some(json!({
+                        ).with_data(json!({
                                 "msg": msg,
-                            })),
-                        )),
+                            }))),
                     }
                 }
-                _ => Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
+                _ => Err(RpcError::fatal_from_message(
                     "unexpected message in queue",
-                    Some(json!({
+                ).with_data(json!({
                         "msg": msg,
-                    })),
-                )),
+                    }))),
             })
             .collect::<RpcResult<Vec<_>>>()?;
 
@@ -574,16 +564,14 @@ impl Module {
 
         let (valid, address) = match &self.provider {
             ChainProvider::Cosmos { client } => {
-                let tx = client.tx(tx_hash, false).await.map_err(|err| {
-                    ErrorObject::owned(
-                        -1,
-                        ErrorReporter(err).with_message("error fetching source tx for packet"),
-                        Some(json!({
-                            "packet_hash": packet_hash,
-                            "tx_hash": tx_hash,
-                        })),
-                    )
-                })?;
+                let tx = client
+                    .tx(tx_hash, false)
+                    .await
+                    .map_err(RpcError::retryable("error fetching source tx for packet"))
+                    .with_data(json!({
+                        "packet_hash": packet_hash,
+                        "tx_hash": tx_hash,
+                    }))?;
 
                 let (valid, address) = valid_checksum_cosmos(&tx.tx);
 
@@ -593,17 +581,16 @@ impl Module {
                 let tx = provider
                     .get_transaction_by_hash(tx_hash.into())
                     .await
-                    .map_err(|err| {
-                        ErrorObject::owned(
-                            -1,
-                            ErrorReporter(err).with_message("error fetching source tx for packet"),
-                            Some(json!({
-                                "packet_hash": packet_hash,
-                                "tx_hash": tx_hash,
-                            })),
-                        )
-                    })?
-                    .expect("tx exists");
+                    .map_err(RpcError::retryable("error fetching source tx for packet"))
+                    .with_data(json!({
+                        "packet_hash": packet_hash,
+                        "tx_hash": tx_hash,
+                    }))?
+                    .ok_or_else(|| RpcError::missing_state("tx not found"))
+                    .with_data(json!({
+                        "packet_hash": packet_hash,
+                        "tx_hash": tx_hash,
+                    }))?;
 
                 (
                     valid_checksum_eth(tx.input()),
@@ -670,16 +657,7 @@ impl Module {
                 .try_map(|r| Count::from_row(&r))
                 .fetch_one(&self.db)
                 .await
-                .map_err(|err| {
-                    ErrorObject::owned(
-                        -1,
-                        ErrorReporter(err).with_message("error inserting into db"),
-                        Some(json!({
-                            "packet_hash": packet_hash,
-                            "tx_hash": tx_hash,
-                        })),
-                    )
-                })?;
+                .map_err(RpcError::retryable("error inserting into db"))?;
 
                 info!(total_invalid = %res.count, %address, "invalid checksum for address");
 

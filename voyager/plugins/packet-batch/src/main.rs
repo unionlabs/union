@@ -10,10 +10,7 @@ use ibc_union_spec::{
     event::FullEvent,
 };
 use itertools::Itertools;
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::{info, instrument};
 use unionlabs::never::Never;
@@ -27,7 +24,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpec},
-    rpc::{PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcResult, types::PluginInfo},
     vm::{Op, call, data, pass::PassResult},
 };
 

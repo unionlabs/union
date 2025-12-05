@@ -2,10 +2,7 @@ use std::fmt::Debug;
 
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use beacon_api_types::{chain_spec::Mainnet, deneb};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use unionlabs::{
@@ -18,7 +15,7 @@ use voyager_sdk::{
     ExtensionsExt, anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{FinalityModuleServer, types::FinalityModuleInfo},
+    rpc::{FinalityModuleServer, RpcResult, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -72,7 +69,6 @@ impl FinalityModule for Module {
 
 #[async_trait]
 impl FinalityModuleServer for Module {
-    /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
     async fn query_latest_height(&self, ext: &Extensions, finalized: bool) -> RpcResult<Height> {
         let voy_client = ext.voyager_client()?;
@@ -114,7 +110,6 @@ impl FinalityModuleServer for Module {
         }
     }
 
-    /// Query the latest finalized timestamp of this chain.
     #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
     async fn query_latest_timestamp(
         &self,

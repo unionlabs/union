@@ -1,17 +1,13 @@
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use sui_sdk::SuiClientBuilder;
 use tracing::{debug, trace};
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
     anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{FinalityModuleServer, types::FinalityModuleInfo},
+    rpc::{FinalityModuleServer, RpcError, RpcResult, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -61,54 +57,44 @@ pub enum ModuleInitError {
 
 #[async_trait]
 impl FinalityModuleServer for Module {
-    /// Query the latest finalized height of this chain.
     async fn query_latest_height(&self, _: &Extensions, _finalized: bool) -> RpcResult<Height> {
-        match self
+        let latest_height = self
             .sui_client
             .read_api()
             .get_latest_checkpoint_sequence_number()
             .await
-        {
-            Ok(latest_height) => {
-                trace!(latest_height, "latest height");
-                Ok(Height::new(latest_height))
-            }
-            Err(err) => Err(ErrorObject::owned(
-                -1,
-                ErrorReporter(err).to_string(),
-                None::<()>,
-            )),
-        }
+            .map_err(RpcError::retryable(
+                "error fetching latest checkpoint sequence number",
+            ))?;
+
+        trace!(latest_height, "latest height");
+
+        Ok(Height::new(latest_height))
     }
 
     /// Query the latest finalized timestamp of this chain.
     async fn query_latest_timestamp(
         &self,
-        ext: &Extensions,
+        e: &Extensions,
         finalized: bool,
     ) -> RpcResult<Timestamp> {
-        let latest_height = self.query_latest_height(ext, finalized).await?;
+        let latest_height = self.query_latest_height(e, finalized).await?;
 
-        match self
+        let checkpoint = self
             .sui_client
             .read_api()
             .get_checkpoint(sui_sdk::rpc_types::CheckpointId::SequenceNumber(
                 latest_height.height(),
             ))
             .await
-        {
-            Ok(checkpoint) => {
-                let timestamp = checkpoint.timestamp_ms;
+            .map_err(RpcError::retryable(
+                "error fetching latest checkpoint sequence number",
+            ))?;
 
-                debug!(%timestamp, %latest_height, "latest timestamp");
+        let timestamp = checkpoint.timestamp_ms;
 
-                Ok(Timestamp::from_nanos(timestamp * 1_000_000))
-            }
-            Err(err) => Err(ErrorObject::owned(
-                -1,
-                ErrorReporter(err).to_string(),
-                None::<()>,
-            )),
-        }
+        debug!(%timestamp, %latest_height, "latest timestamp");
+
+        Ok(Timestamp::from_millis(timestamp))
     }
 }

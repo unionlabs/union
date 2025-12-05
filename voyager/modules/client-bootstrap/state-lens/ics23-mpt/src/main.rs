@@ -1,22 +1,16 @@
 use ibc_union_spec::{ClientId, IbcUnion, path::ConsensusStatePath};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use state_lens_ics23_mpt_light_client::client::extract_consensus_state;
 use state_lens_ics23_mpt_light_client_types::{ClientState, client_state::Extra};
 use tracing::{info, instrument};
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
     ExtensionsExt, anyhow, into_value,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, QueryHeight},
-    rpc::{
-        ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientBootstrapModuleInfo,
-    },
+    rpc::{ClientBootstrapModuleServer, RpcError, RpcResult, types::ClientBootstrapModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -74,16 +68,8 @@ impl ClientBootstrapModuleServer for Module {
         height: Height,
         config: Value,
     ) -> RpcResult<Value> {
-        let config = serde_json::from_value::<ClientStateConfig>(config).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "unable to deserialize client state config: {}",
-                    ErrorReporter(err)
-                ),
-                None::<()>,
-            )
-        })?;
+        let config = serde_json::from_value::<ClientStateConfig>(config)
+            .map_err(RpcError::fatal("unable to deserialize client state config"))?;
 
         Ok(into_value(ClientState {
             l1_client_id: config.l1_client_id,
@@ -106,16 +92,8 @@ impl ClientBootstrapModuleServer for Module {
         height: Height,
         config: Value,
     ) -> RpcResult<Value> {
-        let config = serde_json::from_value::<ClientStateConfig>(config).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "unable to deserialize consensus state config: {}",
-                    ErrorReporter(err)
-                ),
-                None::<()>,
-            )
-        })?;
+        let config = serde_json::from_value::<ClientStateConfig>(config)
+            .map_err(RpcError::fatal("unable to deserialize consensus state"))?;
 
         let voyager_client = ext.voyager_client()?;
 
@@ -154,17 +132,13 @@ impl ClientBootstrapModuleServer for Module {
         );
 
         if l2_client_meta.counterparty_chain_id != self.l2_chain_id {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "l2 client {} on {} tracks {}, but this module is for {}",
-                    config.l2_client_id,
-                    l1_client_meta.counterparty_chain_id,
-                    l2_client_meta.counterparty_chain_id,
-                    self.l2_chain_id
-                ),
-                None::<()>,
-            ));
+            return Err(RpcError::fatal_from_message(format_args!(
+                "l2 client {} on {} tracks {}, but this module is for {}",
+                config.l2_client_id,
+                l1_client_meta.counterparty_chain_id,
+                l2_client_meta.counterparty_chain_id,
+                self.l2_chain_id
+            )));
         }
 
         let l1_latest_height = voyager_client

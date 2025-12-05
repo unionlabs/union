@@ -4,15 +4,10 @@ use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use beacon_api_types::{chain_spec::Mainnet, deneb};
 use berachain_light_client_types::Header;
 use ethereum_light_client_types::AccountProof;
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use unionlabs::{
-    ErrorReporter,
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
     encoding::{DecodeAs, Ssz},
     ibc::core::commitment::merkle_proof::MerkleProof,
@@ -31,7 +26,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpecId},
-    rpc::{PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
     types::RawClientId,
     vm::{Op, Visit, call, conc, data, pass::PassResult, seq},
 };
@@ -132,13 +127,7 @@ impl Module {
             .get_proof(self.ibc_handler_address.into(), vec![])
             .block_id(block_number.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching account update"),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching account update"))?;
 
         Ok(AccountProof {
             storage_root: account_update.storage_hash.into(),

@@ -12,15 +12,10 @@ use arbitrum_light_client_types::{
 };
 use ethereum_light_client_types::{AccountProof, StorageProof};
 use ibc_union_spec::{ClientId, IbcUnion, path::ClientStatePath};
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
 use unionlabs::{
-    ErrorReporter,
     ibc::core::client::height::Height,
     never::Never,
     primitives::{H160, H256, U256},
@@ -37,7 +32,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, rpc_error, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
     types::RawClientId,
     vm::{Op, Visit, call, conc, data, pass::PassResult, promise, seq},
 };
@@ -257,13 +252,7 @@ impl Module {
             .get_proof(self.l1_contract_address.into(), vec![])
             .block_id(l1_block_number.into())
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching account update"),
-                    None::<()>,
-                )
-            })?;
+            .map_err(RpcError::retryable("error fetching account update"))?;
 
         debug!(storage_hash = %account_update.storage_hash, "fetched rollup account update");
 
@@ -318,9 +307,8 @@ impl Module {
             )
             .block_id(l1_block_number.into())
             .await
-            .map_err(rpc_error(
+            .map_err(RpcError::retryable(
                 "error fetching finalized l2 block of l1 height",
-                None,
             ))?
             .storage_proof
             .try_into()
@@ -370,7 +358,7 @@ impl Module {
                 l1_block_number,
             )
             .await
-            .map_err(|e| rpc_error("error fetching AssertionCreated event", None)(&*e))?;
+            .map_err(|e| RpcError::retryable("error fetching AssertionCreated event")(&*e))?;
 
         let [assertion_proof]: [_; 1] = self
             .l1_provider
@@ -386,7 +374,7 @@ impl Module {
             )
             .block_id(l1_block_number.into())
             .await
-            .map_err(rpc_error("error fetching _assertions proof", None))?
+            .map_err(RpcError::retryable("error fetching _assertions proof"))?
             .storage_proof
             .try_into()
             .unwrap();
@@ -448,7 +436,9 @@ impl Module {
             .get_proof(self.ibc_handler_address.into(), vec![])
             .block_id(l2_block_number.into())
             .await
-            .map_err(rpc_error("error fetching l2 ibc contract root proof", None))?;
+            .map_err(RpcError::retryable(
+                "error fetching l2 ibc contract root proof",
+            ))?;
 
         Ok(AccountProof {
             storage_root: proof.storage_hash.into(),
@@ -474,13 +464,9 @@ impl Module {
         counterparty_chain_id: ChainId,
         client_id: RawClientId,
     ) -> RpcResult<Op<VoyagerMessage>> {
-        let client_id = client_id.decode_spec::<IbcUnion>().map_err(|e| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                ErrorReporter(e).with_message("invalid client id"),
-                None::<()>,
-            )
-        })?;
+        let client_id = client_id
+            .decode_spec::<IbcUnion>()
+            .map_err(RpcError::fatal("invalid client id"))?;
 
         // client info
 
@@ -538,7 +524,7 @@ impl Module {
                 )
                 .await
                 .map_err(|e| {
-                    rpc_error("error fetching finalized l2 block of l1 height", None)(&*e)
+                    RpcError::retryable("error fetching finalized l2 block of l1 height")(&*e)
                 })?;
 
                 info!(
@@ -624,7 +610,7 @@ impl Module {
                 )
                 .await
                 .map_err(|e| {
-                    rpc_error("error fetching finalized l2 block of l1 height", None)(&*e)
+                    RpcError::retryable("error fetching finalized l2 block of l1 height")(&*e)
                 })?;
 
                 info!(
@@ -764,21 +750,17 @@ impl Module {
                 )
                 .await
                 .map_err(|e| {
-                    rpc_error("error fetching finalized l2 block of l1 height", None)(&*e)
+                    RpcError::retryable("error fetching finalized l2 block of l1 height")(&*e)
                 })?;
 
                 debug!(?l2_settlement_block, "l2 settlement block");
 
                 if l2_settlement_block.header.number < update_from.height() {
-                    return Err(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!(
-                            "attempted to update to a height ({to_height}) \
-                            < the intended update_from height {update_from}",
-                            to_height = l2_settlement_block.header.number
-                        ),
-                        None::<()>,
-                    ));
+                    return Err(RpcError::fatal_from_message(format!(
+                        "attempted to update to a height ({to_height}) \
+                        < the intended update_from height {update_from}",
+                        to_height = l2_settlement_block.header.number
+                    )));
                 }
 
                 if l2_settlement_block.header.number == arbitrum_client_state_v1.latest_height {
@@ -798,11 +780,7 @@ impl Module {
 
                     let l2_ibc_account_proof = self
                         .fetch_l2_ibc_contract_root_proof(l2_settlement_block.header.number)
-                        .await
-                        .map_err(rpc_error(
-                            "error fetching finalized l2 block of l1 height",
-                            None,
-                        ))?;
+                        .await?;
 
                     Ok(data(OrderedHeaders {
                         headers: vec![(
@@ -887,21 +865,17 @@ impl Module {
                 )
                 .await
                 .map_err(|e| {
-                    rpc_error("error fetching finalized l2 block of l1 height", None)(&*e)
+                    RpcError::retryable("error fetching finalized l2 block of l1 height")(&*e)
                 })?;
 
                 debug!(?l2_settlement_block, "l2 settlement block");
 
                 if l2_settlement_block.header.number < update_from.height() {
-                    return Err(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!(
-                            "attempted to update to a height ({to_height}) \
-                            < the intended update_from height {update_from}",
-                            to_height = l2_settlement_block.header.number
-                        ),
-                        None::<()>,
-                    ));
+                    return Err(RpcError::fatal_from_message(format!(
+                        "attempted to update to a height ({to_height}) \
+                        < the intended update_from height {update_from}",
+                        to_height = l2_settlement_block.header.number
+                    )));
                 }
 
                 if l2_settlement_block.header.number == arbitrum_client_state_v2.latest_height {

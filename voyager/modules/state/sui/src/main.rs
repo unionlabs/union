@@ -6,11 +6,7 @@ use ibc_union_spec::{
     path::{BatchReceiptsPath, StorePath},
     query::{PacketByHash, PacketByHashResponse, Query},
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_sdk::{
@@ -29,7 +25,6 @@ use sui_sdk::{
 };
 use tracing::instrument;
 use unionlabs::{
-    ErrorReporter,
     encoding::{Bcs, DecodeAs as _},
     ibc::core::client::height::Height,
     primitives::{Bytes, H256},
@@ -38,7 +33,7 @@ use voyager_sdk::{
     anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, StateModuleServer, types::StateModuleInfo},
+    rpc::{RpcError, RpcResult, StateModuleServer, types::StateModuleInfo},
     serde_json::json,
 };
 
@@ -112,6 +107,7 @@ impl Module {
             .chain(&[32]) // packet_hash len
             .chain(packet_hash.as_ref())
             .collect::<Vec<_>>();
+
         let SuiParsedData::MoveObject(object) = self
             .sui_client
             .read_api()
@@ -123,22 +119,14 @@ impl Module {
                 },
             )
             .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to fetch the packet hash: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("unable to fetch the packet hash"))?
             .data
             .expect("data exists")
             .content
             .expect("content exists")
         else {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
+            return Err(RpcError::fatal_from_message(
                 "unexpected data found when trying to fetch the packet hash to digest",
-                None::<()>,
             ));
         };
 
@@ -147,10 +135,8 @@ impl Module {
             .field_value("value")
             .expect("table has a value")
         else {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
+            return Err(RpcError::fatal_from_message(
                 "invalid value type when parsing the packet to digest",
-                None::<()>,
             ));
         };
 
@@ -201,14 +187,12 @@ impl Module {
                     None
                 }
             })
-            .ok_or(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
+            .ok_or_else(|| {
+                RpcError::fatal_from_message(format!(
                     "couldn't find the send event with packet hash: {}",
                     packet_hash
-                ),
-                None::<()>,
-            ))?;
+                ))
+            })?;
 
         Ok(PacketByHashResponse {
             packet: packet.into(),

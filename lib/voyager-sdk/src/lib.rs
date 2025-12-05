@@ -2,13 +2,13 @@ pub mod hook;
 
 use std::fmt::Debug;
 
-use jsonrpsee::{Extensions, async_client, core::RpcResult, types::ErrorObject};
+use jsonrpsee::{Extensions, async_client};
 use serde::Serialize;
 use serde_json::Value;
 use tracing::error;
 use unionlabs::ErrorReporter;
 use voyager_plugin::protocol::{ArcClient, IdThreadClient};
-use voyager_rpc::FATAL_JSONRPC_ERROR_CODE;
+use voyager_rpc::{RpcError, RpcResult};
 #[doc(no_inline)]
 pub use {
     anyhow, jsonrpsee, serde_json, voyager_client as client, voyager_message as message,
@@ -39,11 +39,9 @@ pub fn ensure_null(value: Value) -> RpcResult<()> {
     if value == Value::Null {
         Ok(())
     } else {
-        Err(ErrorObject::owned(
-            FATAL_JSONRPC_ERROR_CODE,
-            format!("expected null but found {value}"),
-            None::<()>,
-        ))
+        Err(RpcError::fatal_from_message(format!(
+            "expected null but found {value}"
+        )))
     }
 }
 
@@ -58,10 +56,8 @@ impl ExtensionsExt for Extensions {
     fn voyager_client(&self) -> RpcResult<&VoyagerClient> {
         match self.get() {
             Some(t) => Ok(t),
-            None => Err(ErrorObject::owned(
-                -1,
+            None => Err(RpcError::retryable_from_message(
                 "failed to retrieve voyager client from extensions",
-                None::<()>,
             )),
         }
     }

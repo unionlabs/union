@@ -22,10 +22,7 @@ use sui_sdk::{
 };
 use ucs03_zkgm::com::{Batch, TokenMetadata, TokenOrderV2, ZkgmPacket};
 use unionlabs::primitives::{Bytes, H256, encoding::HexPrefixed};
-use voyager_sdk::{
-    anyhow::{self, anyhow},
-    serde_json,
-};
+use voyager_sdk::serde_json;
 
 use super::*;
 
@@ -445,7 +442,7 @@ pub async fn publish_new_coin(
     module: &Module,
     pk: &SuiKeyPair,
     decimals: u8,
-) -> anyhow::Result<(ObjectRef, ObjectRef, TypeTag)> {
+) -> RpcResult<(ObjectRef, ObjectRef, TypeTag)> {
     // There is no wrapped token
     let mut bytecode = TOKEN_BYTECODE[0].to_vec();
     // 31 because it will be followed by a u8 (decimals)
@@ -529,7 +526,7 @@ pub async fn publish_new_coin(
 pub async fn get_registered_wrapped_token(
     module: &Module,
     wrapped_token: &[u8],
-) -> anyhow::Result<Option<TypeTag>> {
+) -> RpcResult<Option<TypeTag>> {
     if let Some(wrapped_token_t) = module
         .sui_client
         .read_api()
@@ -541,7 +538,9 @@ pub async fn get_registered_wrapped_token(
             },
         )
         .await
-        .map_err(|_| anyhow!("wrapped_token_to_t is expected to return some data"))?
+        .map_err(RpcError::fatal(
+            "wrapped_token_to_t is expected to return some data",
+        ))?
         .data
     {
         match wrapped_token_t.content.expect("content always exists") {
@@ -580,10 +579,11 @@ pub async fn get_registered_wrapped_token(
     }
 }
 
-pub fn parse_coin_ts(packet_data: Vec<Bytes>) -> anyhow::Result<Vec<TypeTag>> {
-    let parse_type_tag = |base_token: Vec<u8>| -> anyhow::Result<TypeTag> {
-        let quote_token = String::from_utf8(base_token)
-            .map_err(|_| anyhow!("in the unwrap case, the quote token must be a utf8 string"))?;
+pub fn parse_coin_ts(packet_data: Vec<Bytes>) -> RpcResult<Vec<TypeTag>> {
+    let parse_type_tag = |base_token: Vec<u8>| -> RpcResult<TypeTag> {
+        let quote_token = String::from_utf8(base_token).map_err(RpcError::fatal(
+            "in the unwrap case, the quote token must be a utf8 string",
+        ))?;
         let fields: Vec<&str> = quote_token.split("::").collect();
         if fields.len() != 3 {
             panic!("a registered token must be always in `address::module_name::name` form");
@@ -601,7 +601,8 @@ pub fn parse_coin_ts(packet_data: Vec<Bytes>) -> anyhow::Result<Vec<TypeTag>> {
     Ok(packet_data
         .into_iter()
         .map(|d| {
-            let zkgm_packet = ZkgmPacket::abi_decode_params(&d)?;
+            let zkgm_packet = ZkgmPacket::abi_decode_params(&d)
+                .map_err(RpcError::fatal("error decoding zkgm packet"))?;
             let mut coin_ts = vec![];
             match zkgm_packet.instruction.opcode {
                 OP_BATCH => {
@@ -629,7 +630,7 @@ pub fn parse_coin_ts(packet_data: Vec<Bytes>) -> anyhow::Result<Vec<TypeTag>> {
                 _ => {}
             }
 
-            Ok::<_, anyhow::Error>(coin_ts)
+            Ok::<_, RpcError>(coin_ts)
         })
         .collect::<Result<Vec<Vec<_>>, _>>()?
         .into_iter()
@@ -655,12 +656,12 @@ pub async fn register_token_if_zkgm(
     pk: &SuiKeyPair,
     packet: &ibc_union_spec::Packet,
     zkgm_packet: &ZkgmPacket,
-    fao: TokenOrderV2,
-) -> anyhow::Result<Option<TypeTag>> {
-    let (metadata_image, coin_metadata) = match fao.kind {
+    token_order: TokenOrderV2,
+) -> RpcResult<Option<TypeTag>> {
+    let (metadata_image, coin_metadata) = match token_order.kind {
         TOKEN_ORDER_KIND_INITIALIZE => {
             // TODO(aeryz): we could drop this packet as well since we know that its gonna fail
-            let Ok(metadata) = TokenMetadata::abi_decode_params(&fao.metadata) else {
+            let Ok(metadata) = TokenMetadata::abi_decode_params(&token_order.metadata) else {
                 return Ok(None);
             };
 
@@ -674,22 +675,25 @@ pub async fn register_token_if_zkgm(
 
             (
                 Keccak256::new()
-                    .chain_update(&fao.metadata)
+                    .chain_update(&token_order.metadata)
                     .finalize()
                     .to_vec(),
                 Some(sui_metadata),
             )
         }
         TOKEN_ORDER_KIND_ESCROW => {
-            if fao.metadata.len() != 32 {
-                return Err(anyhow!("invalid metadata"));
+            if token_order.metadata.len() != 32 {
+                return Err(RpcError::fatal_from_message(format!(
+                    "invalid metadata, expected 32 bytes but found {}",
+                    token_order.metadata
+                )));
             }
 
             let wrapped_token = predict_wrapped_denom(
                 zkgm_packet.path.to_le_bytes().into(),
                 packet.destination_channel_id,
-                fao.base_token.to_vec(),
-                fao.metadata.into(),
+                token_order.base_token.to_vec(),
+                token_order.metadata.into(),
             );
 
             // A wrapped token is only registered once, and once it's being received in the SUI side.
@@ -700,8 +704,8 @@ pub async fn register_token_if_zkgm(
             {
                 return Ok(Some(wrapped_token_t));
             } else {
-                return Err(anyhow!(
-                    "a token cannot be received for the first time with `ESCROW`, it must be received with `INITIALIZE` first"
+                return Err(RpcError::fatal_from_message(
+                    "a token cannot be received for the first time with `ESCROW`, it must be received with `INITIALIZE` first",
                 ));
             }
         }
@@ -712,12 +716,14 @@ pub async fn register_token_if_zkgm(
         TOKEN_ORDER_KIND_UNESCROW | TOKEN_ORDER_KIND_SOLVE => {
             // This means the transfer is an unwrap. Hence the `quote_token` must already be in the form `address::module::name`
             // which defines the coin type `T`.
-            let quote_token = String::from_utf8(fao.quote_token.into()).map_err(|_| {
-                anyhow!("in the unwrap case, the quote token must be a utf8 string")
-            })?;
+            let quote_token = String::from_utf8(token_order.quote_token.into()).map_err(
+                RpcError::fatal("in the unwrap case, the quote token must be a utf8 string"),
+            )?;
             let fields: Vec<&str> = quote_token.split("::").collect();
             if fields.len() != 3 {
-                panic!("a registered token must be always in `address::module_name::name` form");
+                return Err(RpcError::fatal_from_message(
+                    "a registered token must be always in `address::module_name::name` form",
+                ));
             }
 
             return Ok(Some(
@@ -736,7 +742,7 @@ pub async fn register_token_if_zkgm(
     let wrapped_token = predict_wrapped_denom(
         zkgm_packet.path.to_le_bytes().into(),
         packet.destination_channel_id,
-        fao.base_token.to_vec(),
+        token_order.base_token.to_vec(),
         metadata_image,
     );
 
@@ -747,8 +753,8 @@ pub async fn register_token_if_zkgm(
     }
 
     let Some(coin_metadata) = coin_metadata else {
-        return Err(anyhow!(
-            "the coin is going to be received for the first time, so the metadata must be provided"
+        return Err(RpcError::fatal_from_message(
+            "the coin is going to be received for the first time, so the metadata must be provided",
         ));
     };
     let (treasury_ref, metadata_ref, coin_t) =
@@ -845,7 +851,7 @@ pub async fn register_tokens_if_zkgm(
     ptb: &mut ProgrammableTransactionBuilder,
     pk: &SuiKeyPair,
     packet: &ibc_union_spec::Packet,
-) -> anyhow::Result<Vec<TypeTag>> {
+) -> RpcResult<Vec<TypeTag>> {
     let Ok(zkgm_packet) = ZkgmPacket::abi_decode_params(&packet.data) else {
         return Ok(vec![]);
     };

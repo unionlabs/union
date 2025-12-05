@@ -113,7 +113,6 @@ impl Module {
         ledger_version
     }
 
-    /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     pub async fn query_latest_height(&self, _: &Extensions) -> RpcResult<Height> {
         match self.aptos_client.get_index().await {

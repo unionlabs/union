@@ -1,10 +1,7 @@
 use std::collections::VecDeque;
 
 use ibc_union_spec::IbcUnion;
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
@@ -17,7 +14,7 @@ use voyager_sdk::{
     message::{VoyagerMessage, data::Data},
     plugin::Plugin,
     primitives::IbcSpec,
-    rpc::{PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcResult, types::PluginInfo},
     vm::{Op, pass::PassResult},
 };
 

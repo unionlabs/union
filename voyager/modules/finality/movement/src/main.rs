@@ -1,9 +1,5 @@
 use aptos_rest_client::error::RestError;
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 use unionlabs::{
@@ -124,7 +120,6 @@ pub enum ModuleInitError {
 
 #[async_trait]
 impl FinalityModuleServer for Module {
-    /// Query the latest finalized height of this chain.
     async fn query_latest_height(&self, _: &Extensions, _finalized: bool) -> RpcResult<Height> {
         match self.aptos_client.get_index().await {
             Ok(ledger_info) => {

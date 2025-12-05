@@ -19,13 +19,8 @@ use ibc_union_spec::{
     path::ChannelPath,
     query::PacketByHash,
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use tracing::{debug, error, info, info_span, instrument, trace, warn};
 use unionlabs::{
     ErrorReporter,
@@ -44,7 +39,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType, QueryHeight},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, rpc_error, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
     vm::{Op, call, conc, data, noop, pass::PassResult, seq},
 };
 
@@ -285,11 +280,9 @@ impl Module {
     ) -> RpcResult<Op<VoyagerMessage>> {
         if let Some(until) = until {
             if height.height() > until.height() {
-                return Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("height {height} cannot be greater than the until height {until}"),
-                    None::<()>,
-                ));
+                return Err(RpcError::fatal_from_message(format!(
+                    "height {height} cannot be greater than the until height {until}"
+                )));
             } else if height.height() == until.height() {
                 // if this is a ranged fetch, we need to fetch the upper bound of the range individually since FetchBlocks is exclusive on the upper bound
                 return Ok(call(PluginMessage::new(
@@ -309,14 +302,10 @@ impl Module {
         info!(%latest_height, %height, ?until, "fetching blocks");
 
         if !height.revision_matches(&latest_height) {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!(
-                    "revision number mismatch: fetching blocks from height \
+            return Err(RpcError::fatal_from_message(format!(
+                "revision number mismatch: fetching blocks from height \
                     {height}, but the latest height is {latest_height}"
-                ),
-                None::<()>,
-            ));
+            )));
         }
 
         let continuation = |next_height: Height| {
@@ -435,10 +424,9 @@ impl Module {
                     cometbft_rpc::rpc_types::Order::Desc,
                 )
                 .await
-                .map_err(rpc_error(
-                    format_args!("error fetching transactions at height {height}"),
-                    Some(json!({ "height": height })),
-                ))?;
+                .map_err(RpcError::retryable(format_args!(
+                    "error fetching transactions at height {height}"
+                )))?;
 
             total_count += response.txs.len();
 

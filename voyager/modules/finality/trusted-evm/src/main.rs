@@ -4,19 +4,15 @@ use alloy::{
     eips::BlockNumberOrTag,
     providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer},
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
     anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{FinalityModuleServer, types::FinalityModuleInfo},
+    rpc::{FinalityModuleServer, RpcError, RpcResult, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -72,7 +68,6 @@ impl FinalityModule for Module {
 
 #[async_trait]
 impl FinalityModuleServer for Module {
-    /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
     async fn query_latest_height(&self, _: &Extensions, finalized: bool) -> RpcResult<Height> {
         let lag = if finalized { self.finality_lag } else { 0 };
@@ -80,7 +75,7 @@ impl FinalityModuleServer for Module {
             .get_block_number()
             .await
             .map(|h| Height::new(h - lag))
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
+            .map_err(RpcError::retryable("error fetching latest block number"))
     }
 
     /// Query the latest finalized timestamp of this chain.
@@ -103,11 +98,11 @@ impl FinalityModuleServer for Module {
             .get_block(block.into())
             .hashes()
             .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
-            .ok_or_else(|| ErrorObject::owned(-1, "latest block not found", None::<()>))?
+            .map_err(RpcError::retryable("error fetching latest block"))?
+            .ok_or_else(|| RpcError::missing_state("error fetching latest block: block not found"))?
             .header
             .timestamp;
-        // Normalize to nanos in order to be compliant with cosmos
+
         Ok(Timestamp::from_secs(latest_timestamp))
     }
 }

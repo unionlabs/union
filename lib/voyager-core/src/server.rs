@@ -2,25 +2,19 @@
 
 use std::sync::{Arc, OnceLock};
 
-use anyhow::{Context as _, anyhow};
 use futures::TryFutureExt;
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::{ErrorObject, ErrorObjectOwned},
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde_json::Value;
 use tracing::{debug, info_span, instrument, trace};
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height, primitives::Bytes};
+use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
 use voyager_plugin_protocol::WithId;
 use voyager_primitives::{
     ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface, IbcSpec,
     IbcSpecId, IbcStorePathKey, QueryHeight, Timestamp,
 };
 use voyager_rpc::{
-    ClientBootstrapModuleClient, ClientModuleClient, FATAL_JSONRPC_ERROR_CODE,
-    FinalityModuleClient, PluginClient, RawProofModuleClient, RawStateModuleClient,
-    VoyagerRpcServer, json_rpc_error_to_error_object,
+    ClientBootstrapModuleClient, ClientModuleClient, FinalityModuleClient, PluginClient,
+    RawProofModuleClient, RawStateModuleClient, RpcError, RpcResult, VoyagerRpcServer,
     types::{
         IbcProofResponse, IbcStateResponse, InfoResponse, SelfClientStateResponse,
         SelfConsensusStateResponse,
@@ -96,7 +90,7 @@ impl Server {
     pub fn context(&self) -> RpcResult<&Context> {
         self.context
             .get()
-            .ok_or_else(|| ErrorObject::owned(-2, "server has not started", None::<()>))
+            .ok_or_else(|| RpcError::retryable_from_message("server has not started"))
     }
 
     #[instrument(skip_all, fields(%chain_id, %finalized))]
@@ -112,7 +106,7 @@ impl Server {
                     .finality_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_height(finalized)
-                    .map_err(json_rpc_error_to_error_object),
+                    .map_err(Into::into),
             )
             .await?;
 
@@ -146,7 +140,7 @@ impl Server {
                     .finality_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_timestamp(finalized)
-                    .map_err(json_rpc_error_to_error_object),
+                    .map_err(Into::into),
             )
             .await?;
 
@@ -220,8 +214,7 @@ impl Server {
                             .state_module(chain_id, ibc_spec_id)?
                             .with_id(self.item_id)
                             .client_info_raw(client_id.clone())
-                            .await
-                            .map_err(json_rpc_error_to_error_object)?;
+                            .await?;
 
                         match client_info {
                             Some(ref client_info) => {
@@ -277,10 +270,10 @@ impl Server {
                     .handlers
                     .get(ibc_spec_id)
                     .ok_or_else(|| {
-                        fatal_error(&*anyhow!(
+                        RpcError::fatal_from_message(
                             "ibc spec {ibc_spec_id} is not \
-                            supported in this build of voyager"
-                        ))
+                            supported in this build of voyager",
+                        )
                     })?;
 
                 let raw_client_state = self
@@ -288,8 +281,9 @@ impl Server {
                         chain_id.clone(),
                         ibc_spec_id.clone(),
                         QueryHeight::Specific(height),
-                        (ibc_spec_handler.client_state_path)(client_id.clone())
-                            .map_err(|err| fatal_error(&*err))?,
+                        (ibc_spec_handler.client_state_path)(client_id.clone()).map_err(|e| {
+                            RpcError::fatal("error creating client state path")(&*e)
+                        })?,
                     )
                     .await?
                     .state;
@@ -304,14 +298,12 @@ impl Server {
 
                 trace!(?raw_client_state);
 
-                let client_state = serde_json::from_value::<Bytes>(raw_client_state)
-                    .with_context(|| {
-                        format!(
-                            "querying client state for client \
-                            {client_id} at {height} on {chain_id}"
-                        )
-                    })
-                    .map_err(|e| fatal_error(&*e))?;
+                let client_state = serde_json::from_value::<Bytes>(raw_client_state).map_err(
+                    RpcError::fatal(format!(
+                        "querying client state for client \
+                        {client_id} at {height} on {chain_id}"
+                    )),
+                )?;
 
                 let meta = context
                     .client_module(
@@ -321,8 +313,7 @@ impl Server {
                     )?
                     .with_id(self.item_id)
                     .decode_client_state_meta(client_state)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                    .await?;
 
                 trace!(
                     client_state_meta.height = %meta.counterparty_height,
@@ -371,10 +362,10 @@ impl Server {
                     .handlers
                     .get(ibc_spec_id)
                     .ok_or_else(|| {
-                        fatal_error(&*anyhow!(
-                            "ibc spec {ibc_spec_id} is \
-                            not supported in this build of voyager"
-                        ))
+                        RpcError::fatal_from_message(
+                            "ibc spec {ibc_spec_id} is not \
+                            supported in this build of voyager",
+                        )
                     })?;
 
                 let raw_consensus_state = self
@@ -386,7 +377,7 @@ impl Server {
                             client_id.clone(),
                             counterparty_height.to_string(),
                         )
-                        .map_err(|err| fatal_error(&*err))?,
+                        .map_err(|e| RpcError::fatal("error creating consensus state path")(&*e))?,
                     )
                     .await?
                     .state;
@@ -401,14 +392,11 @@ impl Server {
                 };
 
                 let consensus_state = serde_json::from_value::<Option<Bytes>>(raw_consensus_state)
-                    .with_context(|| {
-                        format!(
-                            "querying consensus state for client {client_id}, \
+                    .map_err(RpcError::fatal(format!(
+                        "querying consensus state for client {client_id}, \
                             counterparty height {counterparty_height} at \
                             {height} on {chain_id}"
-                        )
-                    })
-                    .map_err(|e| fatal_error(&*e))?;
+                    )))?;
 
                 let Some(consensus_state) = consensus_state else {
                     trace!(
@@ -427,8 +415,7 @@ impl Server {
                     )?
                     .with_id(self.item_id)
                     .decode_consensus_state_meta(consensus_state)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                    .await?;
 
                 trace!(
                     consensus_state_meta.timestamp = %meta.timestamp,
@@ -460,8 +447,7 @@ impl Server {
 
                 let value = state_module
                     .query_raw(serde_json::to_value(query.clone()).unwrap())
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                    .await?;
 
                 // TODO: Use valuable here
                 trace!(%value, "queried");
@@ -510,7 +496,7 @@ impl Server {
 
                                 if state.is_null() { None } else { Some(state) }
                             })
-                            .map_err(|e| json_rpc_error_to_error_object(e)),
+                            .map_err(Into::into),
                     )
                     .await?;
 
@@ -538,10 +524,7 @@ impl Server {
                     .proof_module(&chain_id, &ibc_spec_id)?
                     .with_id(self.item_id);
 
-                let res = proof_module
-                    .query_ibc_proof_raw(height, path)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                let res = proof_module.query_ibc_proof_raw(height, path).await?;
 
                 // TODO: Use valuable here
                 debug!(result = %serde_json::to_value(&res).unwrap(), "fetched ibc proof");
@@ -590,7 +573,7 @@ impl Server {
 
                                 serde_json::from_value(state).unwrap()
                             })
-                            .map_err(|e| json_rpc_error_to_error_object(e)),
+                            .map_err(Into::into),
                     )
                     .await?;
 
@@ -625,8 +608,7 @@ impl Server {
 
                 let res = proof_module
                     .query_ibc_proof_raw(height, serde_json::to_value(path.clone()).unwrap())
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                    .await?;
 
                 // TODO: Use valuable here
                 debug!(result = %serde_json::to_value(&res).unwrap(), "fetched ibc proof");
@@ -663,8 +645,7 @@ impl Server {
 
                 let state = client_bootstrap_module
                     .self_client_state(height, config)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                    .await?;
 
                 // TODO: Use valuable here
                 trace!(%state, "fetched self client state");
@@ -695,8 +676,7 @@ impl Server {
 
                 let state = client_bootstrap_module
                     .self_consensus_state(height, config)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                    .await?;
 
                 // TODO: Use valuable here
                 trace!(%state, "fetched self consensus state");
@@ -724,10 +704,7 @@ impl Server {
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
                     .with_id(self.item_id);
 
-                let proof = client_module
-                    .encode_proof(proof)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                let proof = client_module.encode_proof(proof).await?;
 
                 trace!(%proof, "encoded proof");
 
@@ -754,10 +731,7 @@ impl Server {
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
                     .with_id(self.item_id);
 
-                let header = client_module
-                    .encode_header(header)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                let header = client_module.encode_header(header).await?;
 
                 trace!(%header, "encoded header");
 
@@ -784,10 +758,7 @@ impl Server {
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
                     .with_id(self.item_id);
 
-                let meta = client_module
-                    .decode_client_state_meta(client_state)
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                let meta = client_module.decode_client_state_meta(client_state).await?;
 
                 trace!(
                     height = %meta.counterparty_height,
@@ -815,7 +786,7 @@ impl Server {
                     .with_id(self.item_id)
                     .decode_client_state(client_state)
                     .await
-                    .map_err(json_rpc_error_to_error_object)
+                    .map_err(Into::into)
             })
             .await
     }
@@ -835,7 +806,7 @@ impl Server {
                     .with_id(self.item_id)
                     .decode_consensus_state(consensus_state)
                     .await
-                    .map_err(json_rpc_error_to_error_object)
+                    .map_err(Into::into)
             })
             .await
     }
@@ -856,7 +827,7 @@ impl Server {
                     .with_id(self.item_id)
                     .encode_client_state(client_state, metadata)
                     .await
-                    .map_err(json_rpc_error_to_error_object)
+                    .map_err(Into::into)
             })
             .await
     }
@@ -876,7 +847,7 @@ impl Server {
                     .with_id(self.item_id)
                     .encode_consensus_state(consensus_state)
                     .await
-                    .map_err(json_rpc_error_to_error_object)
+                    .map_err(Into::into)
             })
             .await
     }
@@ -1162,26 +1133,17 @@ impl VoyagerRpcServer for Server {
         method: String,
         params: Vec<Value>,
     ) -> RpcResult<Value> {
-        debug!(?params);
+        trace!(?params);
 
-        PluginClient::<Value, Value>::custom(
+        Ok(PluginClient::<Value, Value>::custom(
             self.with_id(e.try_get().ok().cloned())
                 .context()?
                 .plugin(&plugin)?,
             method,
             params,
         )
-        .await
-        .map_err(json_rpc_error_to_error_object)
+        .await?)
     }
-}
-
-pub(crate) fn fatal_error(t: impl core::error::Error) -> ErrorObjectOwned {
-    ErrorObject::owned(
-        FATAL_JSONRPC_ERROR_CODE,
-        ErrorReporter(t).to_string(),
-        None::<()>,
-    )
 }
 
 trait ExtensionsExt {
@@ -1194,14 +1156,10 @@ impl ExtensionsExt for Extensions {
     fn try_get<T: Send + Sync + 'static>(&self) -> RpcResult<&T> {
         match self.get() {
             Some(t) => Ok(t),
-            None => Err(ErrorObject::owned(
-                -1,
-                format!(
-                    "failed to retrieve value of type {} from extensions",
-                    std::any::type_name::<T>(),
-                ),
-                None::<()>,
-            )),
+            None => Err(RpcError::retryable_from_message(format!(
+                "failed to retrieve value of type {} from extensions",
+                std::any::type_name::<T>(),
+            ))),
         }
     }
 }

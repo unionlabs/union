@@ -8,25 +8,17 @@ use beacon_api_types::{altair::SyncCommittee, chain_spec::PresetBaseKind, custom
 use ethereum_light_client_types::{
     ClientState, ClientStateV1, ConsensusState, client_state::InitialSyncCommittee,
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Value, json};
 use tracing::{debug, instrument, trace};
-use unionlabs::{
-    ErrorReporter,
-    ibc::core::client::height::Height,
-    primitives::{H160, H256},
-};
+use unionlabs::{ibc::core::client::height::Height, primitives::H160};
 use voyager_sdk::{
     anyhow::{self, bail},
     ensure_null, into_value,
     plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, Timestamp},
-    rpc::{ClientBootstrapModuleServer, types::ClientBootstrapModuleInfo},
+    rpc::{ClientBootstrapModuleServer, RpcError, RpcResult, types::ClientBootstrapModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -75,34 +67,25 @@ impl Module {
             .get_block((block_number + 1).into())
             .hashes()
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching execution block: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
-            .expect("block should exist");
+            .map_err(RpcError::retryable("error fetching execution block"))?
+            .ok_or_else(|| {
+                RpcError::missing_state("error fetching execution block: block not found")
+            })?;
 
         let beacon_slot = self
             .beacon_api_client
             .block(
-                <H256>::from(
-                    block
-                        .header
-                        .parent_beacon_block_root
-                        .expect("parent beacon block root should exist"),
-                )
-                .into(),
+                block
+                    .header
+                    .parent_beacon_block_root
+                    .ok_or_else(|| {
+                        RpcError::missing_state("parent beacon block root should exist")
+                    })?
+                    .0
+                    .into(),
             )
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching beacon block: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching beacon block"))?
             .response
             .fold(
                 |b| b.message.slot,
@@ -169,21 +152,17 @@ impl ClientBootstrapModuleServer for Module {
     ) -> RpcResult<Value> {
         ensure_null(config)?;
 
-        let genesis = self.beacon_api_client.genesis().await.map_err(|err| {
-            ErrorObject::owned(
-                -1,
-                ErrorReporter(err).with_message("error fetching beacon genesis"),
-                None::<()>,
-            )
-        })?;
+        let genesis = self
+            .beacon_api_client
+            .genesis()
+            .await
+            .map_err(RpcError::retryable("error fetching beacon genesis"))?;
 
-        let spec = self.beacon_api_client.spec().await.map_err(|err| {
-            ErrorObject::owned(
-                -1,
-                ErrorReporter(err).with_message("error fetching beacon spec"),
-                None::<()>,
-            )
-        })?;
+        let spec = self
+            .beacon_api_client
+            .spec()
+            .await
+            .map_err(RpcError::retryable("error fetching beacon spec"))?;
 
         let beacon_slot = self
             .beacon_slot_of_execution_block_number(height.height())
@@ -198,23 +177,16 @@ impl ClientBootstrapModuleServer for Module {
                 .beacon_api_client
                 .light_client_updates(current_period, 1)
                 .await
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!("error fetching light client update: {}", ErrorReporter(e)),
-                        None::<()>,
-                    )
-                })?;
+                .map_err(RpcError::retryable("error fetching light client update"))?;
 
             let [light_client_update] = &*light_client_updates else {
-                return Err(ErrorObject::owned(
-                    -1,
-                    format!(
-                        "received invalid light client updates, expected \
-                        1 but received {light_client_updates:?}"
-                    ),
-                    None::<()>,
-                ));
+                return Err(RpcError::retryable_from_message(format!(
+                    "received invalid light client updates, expected 1 but received {}",
+                    light_client_updates.len(),
+                ))
+                .with_data(json!({
+                    "light_client_updates": light_client_updates,
+                })));
             };
 
             light_client_update
@@ -234,26 +206,14 @@ impl ClientBootstrapModuleServer for Module {
             .beacon_api_client
             .header(beacon_api::client::BlockId::Slot(beacon_slot))
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching beacon header: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching beacon header"))?
             .data;
 
         let current_sync_committee = self
             .beacon_api_client
             .bootstrap(trusted_header.root)
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching beacon bootstrap: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching beacon bootstrap"))?
             .fold::<SyncCommittee>(
                 |l| match l {},
                 |_| todo!("altair not supported"),
@@ -264,7 +224,7 @@ impl ClientBootstrapModuleServer for Module {
                 |l| l.current_sync_committee,
             );
 
-        Ok(serde_json::to_value(ClientState::V1(ClientStateV1 {
+        Ok(into_value(ClientState::V1(ClientStateV1 {
             chain_id: self
                 .chain_id
                 .as_str()
@@ -282,8 +242,7 @@ impl ClientBootstrapModuleServer for Module {
                     .next_sync_committee
                     .expect("next sync committee should exist"),
             }),
-        }))
-        .expect("infallible"))
+        })))
     }
 
     /// The consensus state on this chain at the specified `Height`.
@@ -304,26 +263,14 @@ impl ClientBootstrapModuleServer for Module {
             .beacon_api_client
             .header(beacon_api::client::BlockId::Slot(beacon_slot))
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching beacon header: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching beacon header"))?
             .data;
 
         let bootstrap_header = self
             .beacon_api_client
             .bootstrap(trusted_header.root)
             .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching beacon bootstrap: {}", ErrorReporter(e)),
-                    None::<()>,
-                )
-            })?
+            .map_err(RpcError::retryable("error fetching beacon bootstrap"))?
             .fold::<ethereum_sync_protocol_types::LightClientHeader>(
                 |l| match l {},
                 |_| todo!("altair not supported"),
@@ -344,13 +291,7 @@ impl ClientBootstrapModuleServer for Module {
                 .get_proof(self.ibc_handler_address.into(), vec![])
                 .block_id(bootstrap_header.execution.block_number.into())
                 .await
-                .map_err(|err| {
-                    ErrorObject::owned(
-                        -1,
-                        ErrorReporter(err).with_message("error fetching ibc storage root"),
-                        None::<()>,
-                    )
-                })?
+                .map_err(RpcError::retryable("error fetching ibc storage root"))?
                 .storage_hash
                 .0
                 .into(),

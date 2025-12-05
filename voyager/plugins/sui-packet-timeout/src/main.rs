@@ -6,11 +6,7 @@ use ibc_union_spec::{
     event::{FullEvent, PacketSend},
     path::{BatchPacketsPath, BatchReceiptsPath, BatchTimeoutPath},
 };
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sui_sdk::{
@@ -19,10 +15,10 @@ use sui_sdk::{
     types::{TypeTag, base_types::ObjectID, dynamic_field::DynamicFieldName},
 };
 use tracing::{debug, info, instrument, warn};
-use unionlabs::{self, ErrorReporter, ibc::core::client::height::Height, never::Never};
+use unionlabs::{self, ibc::core::client::height::Height, never::Never};
 use voyager_sdk::{
     DefaultCmd, ExtensionsExt, VoyagerClient,
-    anyhow::{self, anyhow},
+    anyhow::{self},
     message::{
         PluginMessage, VoyagerMessage,
         call::{SubmitTx, WaitForTrustedTimestamp},
@@ -30,7 +26,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpec, QueryHeight},
-    rpc::{FATAL_JSONRPC_ERROR_CODE, PluginServer, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcErrorExt, RpcResult, types::PluginInfo},
     types::{ProofType, RawClientId},
     vm::{Op, call, defer, defer_relative, noop, pass::PassResult, seq},
 };
@@ -132,58 +128,46 @@ impl PluginServer<ModuleCall, Never> for Module {
         _: &Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
     ) -> RpcResult<PassResult<VoyagerMessage>> {
-        let ready = msgs
-            .into_iter()
-            .enumerate()
-            .map(|(idx, msg)| match msg {
-                Op::Data(Data::IbcEvent(ref chain_event)) => match chain_event
-                    .decode_event::<IbcUnion>()
-                    .ok_or_else(|| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            "unexpected data message in queue",
-                            Some(json!({
-                                "msg": msg.clone(),
-                            })),
-                        )
-                    })?
-                    .map_err(|err| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            "unable to parse ibc datagram",
-                            Some(json!({
-                                "err": ErrorReporter(err).to_string(),
-                                "msg": msg,
-                            })),
-                        )
-                    })? {
-                    FullEvent::PacketSend(packet_send) => Ok((
-                        vec![idx],
-                        call(PluginMessage::new(
-                            Module::plugin_name(),
-                            ModuleCall::from(WaitForTimeoutOrReceipt {
-                                event: packet_send,
-                                sender_chain_id: chain_event.chain_id.clone(),
-                            }),
-                        )),
-                    )),
-                    datagram => Err(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unexpected ibc datagram {}", datagram.name()),
-                        Some(json!({
+        let ready =
+            msgs.into_iter()
+                .enumerate()
+                .map(|(idx, msg)| match msg {
+                    Op::Data(Data::IbcEvent(ref chain_event)) => match chain_event
+                        .decode_event::<IbcUnion>()
+                        .ok_or_else(|| {
+                            RpcError::fatal_from_message("unexpected data message in queue")
+                                .with_data(json!({
+                                    "msg": msg,
+                                }))
+                        })?
+                        .map_err(RpcError::fatal("unexpected data message in queue"))
+                        .with_data(json!({
                             "msg": msg,
-                        })),
-                    )),
-                },
-                _ => Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "unexpected message in queue",
-                    Some(json!({
-                        "msg": msg,
-                    })),
-                )),
-            })
-            .collect::<RpcResult<Vec<_>>>()?;
+                        }))? {
+                        FullEvent::PacketSend(packet_send) => Ok((
+                            vec![idx],
+                            call(PluginMessage::new(
+                                Module::plugin_name(),
+                                ModuleCall::from(WaitForTimeoutOrReceipt {
+                                    event: packet_send,
+                                    sender_chain_id: chain_event.chain_id.clone(),
+                                }),
+                            )),
+                        )),
+                        datagram => Err(RpcError::fatal_from_message(format!(
+                            "unexpected ibc datagram {}",
+                            datagram.name()
+                        ))
+                        .with_data(json!({
+                            "msg": msg,
+                        }))),
+                    },
+                    _ => Err(RpcError::fatal_from_message("unexpected message in queue")
+                        .with_data(json!({
+                            "msg": msg,
+                        }))),
+                })
+                .collect::<RpcResult<Vec<_>>>()?;
 
         Ok(PassResult {
             optimize_further: vec![],
@@ -429,7 +413,7 @@ impl Module {
         voyager_client: &VoyagerClient,
         event: PacketSend,
         sender_chain_id: ChainId,
-    ) -> anyhow::Result<Op<VoyagerMessage>> {
+    ) -> RpcResult<Op<VoyagerMessage>> {
         let timeout_path = BatchTimeoutPath::from_packet(&event.packet());
 
         let SuiParsedData::MoveObject(object) = self
@@ -443,16 +427,16 @@ impl Module {
                 },
             )
             .await
-            .map_err(|_| {
-                anyhow!("could not get the dynamic field object, this might be an RPC issue")
-            })?
+            .map_err(RpcError::retryable(
+                "could not get the dynamic field object, this might be an RPC issue",
+            ))?
             .data
-            .ok_or(anyhow!("data does not exist"))?
+            .ok_or_else(|| RpcError::missing_state("data does not exist"))?
             .content
-            .ok_or(anyhow!("content does not exist"))?
+            .ok_or_else(|| RpcError::missing_state("content does not exist"))?
         else {
-            return Err(anyhow!(
-                "data type is not `MoveObject`, this might be an RPC issue"
+            return Err(RpcError::retryable_from_message(
+                "data type is not `MoveObject`, this might be an RPC issue",
             ));
         };
 
@@ -461,8 +445,8 @@ impl Module {
             .field_value("value")
             .expect("table has a value")
         else {
-            return Err(anyhow!(
-                "Returned data is not a `vector<u8>`. Either the data is not committed, or we are having an RPC issue."
+            return Err(RpcError::retryable_from_message(
+                "Returned data is not a `vector<u8>`. Either the data is not committed, or we are having an RPC issue.",
             ));
         };
 
@@ -486,12 +470,12 @@ impl Module {
                 SuiTransactionBlockResponseOptions::new(),
             )
             .await
-            .map_err(|_| {
-                anyhow!("The tx exists. But we might be having an RPC issue, so will retry.")
-            })?
+            .map_err(
+                RpcError::retryable("The tx exists. But we might be having an RPC issue, so will retry.")
+            )?
             .checkpoint
             .ok_or(
-                anyhow!("The tx exists and it has checkpoint in it. But we might be having an RPC issue, so will retry.")
+                RpcError::retryable_from_message("The tx exists and it has checkpoint in it. But we might be having an RPC issue, so will retry.")
             )?;
 
         // We are fetching the proof of timeout on SUI

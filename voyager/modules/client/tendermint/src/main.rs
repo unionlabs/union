@@ -1,27 +1,22 @@
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use macros::model;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::Value;
 use tendermint_light_client_types::{ClientState, ConsensusState, Header};
 use tracing::{debug, instrument};
 use unionlabs::{
-    self, ErrorReporter,
-    encoding::{Bincode, DecodeAs, EncodeAs, EthAbi, Proto},
-    google::protobuf::any::Any,
+    encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
     primitives::Bytes,
 };
 use voyager_sdk::{
     anyhow::{self, anyhow},
+    ensure_null, into_value,
     plugin::ClientModule,
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         Timestamp,
     },
-    rpc::{ClientModuleServer, FATAL_JSONRPC_ERROR_CODE, types::ClientModuleInfo},
+    rpc::{ClientModuleServer, RpcError, RpcResult, types::ClientModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -33,7 +28,6 @@ async fn main() {
 #[derive(Copy, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub enum SupportedIbcInterface {
-    IbcGoV8Native,
     IbcCosmwasm,
 }
 
@@ -43,7 +37,6 @@ impl TryFrom<String> for SupportedIbcInterface {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match &*value {
-            IbcInterface::IBC_GO_V8_NATIVE => Ok(SupportedIbcInterface::IbcGoV8Native),
             IbcInterface::IBC_COSMWASM => Ok(SupportedIbcInterface::IbcCosmwasm),
             _ => Err(format!("unsupported IBC interface: `{value}`")),
         }
@@ -53,7 +46,6 @@ impl TryFrom<String> for SupportedIbcInterface {
 impl SupportedIbcInterface {
     fn as_str(&self) -> &'static str {
         match self {
-            SupportedIbcInterface::IbcGoV8Native => IbcInterface::IBC_GO_V8_NATIVE,
             SupportedIbcInterface::IbcCosmwasm => IbcInterface::IBC_COSMWASM,
         }
     }
@@ -92,50 +84,17 @@ impl ClientModule for Module {
 impl Module {
     pub fn decode_consensus_state(&self, consensus_state: &[u8]) -> RpcResult<ConsensusState> {
         match self.ibc_interface {
-            SupportedIbcInterface::IbcGoV8Native => {
-                <Any<ConsensusState>>::decode_as::<Proto>(consensus_state)
-                    .map_err(|err| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            format!("unable to decode consensus state: {}", ErrorReporter(err)),
-                            None::<()>,
-                        )
-                    })
-                    .map(|any| any.0)
-            }
             SupportedIbcInterface::IbcCosmwasm => {
-                ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unable to decode consensus state: {}", ErrorReporter(err)),
-                        None::<()>,
-                    )
-                })
+                ConsensusState::decode_as::<EthAbi>(consensus_state)
+                    .map_err(RpcError::fatal("unable to decode consensus state"))
             }
         }
     }
 
     pub fn decode_client_state(&self, client_state: &[u8]) -> RpcResult<ClientState> {
         match self.ibc_interface {
-            SupportedIbcInterface::IbcGoV8Native => {
-                <Any<ClientState>>::decode_as::<Proto>(client_state)
-                    .map_err(|err| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            format!("unable to decode client state: {}", ErrorReporter(err)),
-                            None::<()>,
-                        )
-                    })
-                    .map(|any| any.0)
-            }
             SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Bincode>(client_state)
-                .map_err(|err| {
-                    ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("unable to decode client state: {err}"),
-                        None::<()>,
-                    )
-                }),
+                .map_err(RpcError::fatal("unable to decode client state")),
         }
     }
 }
@@ -148,11 +107,11 @@ impl ClientModuleServer for Module {
         _: &Extensions,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
-        let cs = self.decode_client_state(&client_state)?;
+        let client_state = self.decode_client_state(&client_state)?;
 
         Ok(ClientStateMeta {
-            counterparty_chain_id: ChainId::new(cs.chain_id),
-            counterparty_height: cs.latest_height,
+            counterparty_chain_id: ChainId::new(client_state.chain_id),
+            counterparty_height: client_state.latest_height,
         })
     }
 
@@ -162,16 +121,16 @@ impl ClientModuleServer for Module {
         _: &Extensions,
         consensus_state: Bytes,
     ) -> RpcResult<ConsensusStateMeta> {
-        let cs = self.decode_consensus_state(&consensus_state)?;
+        let consensus_state = self.decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
-            timestamp: Timestamp::from_nanos(cs.timestamp.as_unix_nanos()),
+            timestamp: Timestamp::from_nanos(consensus_state.timestamp.as_unix_nanos()),
         })
     }
 
     #[instrument(skip_all)]
     async fn decode_client_state(&self, _: &Extensions, client_state: Bytes) -> RpcResult<Value> {
-        Ok(serde_json::to_value(self.decode_client_state(&client_state)?).unwrap())
+        Ok(into_value(self.decode_client_state(&client_state)?))
     }
 
     #[instrument(skip_all)]
@@ -180,7 +139,7 @@ impl ClientModuleServer for Module {
         _: &Extensions,
         consensus_state: Bytes,
     ) -> RpcResult<Value> {
-        Ok(serde_json::to_value(self.decode_consensus_state(&consensus_state)?).unwrap())
+        Ok(into_value(self.decode_consensus_state(&consensus_state)?))
     }
 
     #[instrument(skip_all)]
@@ -190,27 +149,11 @@ impl ClientModuleServer for Module {
         client_state: Value,
         metadata: Value,
     ) -> RpcResult<Bytes> {
-        if !metadata.is_null() {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                "metadata was provided, but this client type does not require metadata for client \
-                state encoding",
-                Some(json!({
-                    "provided_metadata": metadata,
-                })),
-            ));
-        }
+        ensure_null(metadata)?;
 
         serde_json::from_value::<ClientState>(client_state)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize client state: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })
+            .map_err(RpcError::fatal("unable to deserialize client state"))
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcGoV8Native => Any(cs).encode_as::<Proto>().into(),
                 SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>().into(),
             })
     }
@@ -222,18 +165,8 @@ impl ClientModuleServer for Module {
         consensus_state: Value,
     ) -> RpcResult<Bytes> {
         serde_json::from_value::<ConsensusState>(consensus_state)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!(
-                        "unable to deserialize consensus state: {}",
-                        ErrorReporter(err)
-                    ),
-                    None::<()>,
-                )
-            })
+            .map_err(RpcError::fatal("unable to deserialize consensus state"))
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcGoV8Native => Any(cs).encode_as::<Proto>().into(),
                 SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<EthAbi>().into(),
             })
     }
@@ -241,15 +174,8 @@ impl ClientModuleServer for Module {
     #[instrument(skip_all)]
     async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<Header>(header)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize header: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })
+            .map_err(RpcError::fatal("unable to deserialize header"))
             .map(|header| match self.ibc_interface {
-                SupportedIbcInterface::IbcGoV8Native => Any(header).encode_as::<Proto>().into(),
                 SupportedIbcInterface::IbcCosmwasm => header.encode_as::<Bincode>().into(),
             })
     }
@@ -259,15 +185,8 @@ impl ClientModuleServer for Module {
         debug!(%proof, "encoding proof");
 
         serde_json::from_value::<unionlabs::ibc::core::commitment::merkle_proof::MerkleProof>(proof)
-            .map_err(|err| {
-                ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    format!("unable to deserialize proof: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })
+            .map_err(RpcError::fatal("unable to deserialize proof"))
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcGoV8Native => cs.encode_as::<Proto>().into(),
                 SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>().into(),
             })
     }

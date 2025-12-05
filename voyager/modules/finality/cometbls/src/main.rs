@@ -1,20 +1,14 @@
 use std::num::ParseIntError;
 
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::{error, instrument, trace};
-use unionlabs::{
-    ibc::core::client::height::Height,
-    primitives::{Bech32, H256},
-};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
     anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{FinalityModuleServer, json_rpc_error_to_error_object, types::FinalityModuleInfo},
+    rpc::{FinalityModuleServer, RpcResult, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -28,25 +22,21 @@ pub struct Module {
 
     pub cometbft_client: cometbft_rpc::Client,
     pub chain_revision: u64,
-
-    pub ibc_host_contract_address: H256,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub rpc_url: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub ibc_host_contract_address: Option<Bech32<H256>>,
 }
 
 impl FinalityModule for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: FinalityModuleInfo) -> anyhow::Result<Self> {
-        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
+        let cometbft_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
-        let chain_id = tm_client.status().await?.node_info.network.to_string();
+        let chain_id = cometbft_client.status().await?.node_info.network;
 
         info.ensure_chain_id(&chain_id)?;
         info.ensure_consensus_type(ConsensusType::COMETBLS)?;
@@ -65,13 +55,9 @@ impl FinalityModule for Module {
             })?;
 
         Ok(Self {
-            cometbft_client: tm_client,
+            cometbft_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            ibc_host_contract_address: config
-                .ibc_host_contract_address
-                .map(|a| *a.data())
-                .unwrap_or_default(),
         })
     }
 }
@@ -89,9 +75,12 @@ impl Module {
     pub fn make_height(&self, height: u64) -> Height {
         Height::new_with_revision(self.chain_revision, height)
     }
+}
 
-    #[instrument(skip_all, fields(%finalized))]
-    async fn latest_height(&self, finalized: bool) -> Result<Height, cometbft_rpc::JsonRpcError> {
+#[async_trait]
+impl FinalityModuleServer for Module {
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
+    async fn query_latest_height(&self, _: &Extensions, finalized: bool) -> RpcResult<Height> {
         let commit_response = self.cometbft_client.commit(None).await?;
 
         let mut height = commit_response
@@ -104,6 +93,7 @@ impl Module {
 
         if finalized && !commit_response.canonical {
             trace!(
+                %height,
                 "commit is not canonical and finalized height was requested, \
                 latest finalized height is the previous block"
             );
@@ -114,34 +104,20 @@ impl Module {
 
         Ok(self.make_height(height))
     }
-}
-
-#[async_trait]
-impl FinalityModuleServer for Module {
-    /// Query the latest finalized height of this chain.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn query_latest_height(&self, _: &Extensions, finalized: bool) -> RpcResult<Height> {
-        self.latest_height(finalized)
-            .await
-            // TODO: Add more context here
-            .map_err(json_rpc_error_to_error_object)
-    }
 
     /// Query the latest finalized timestamp of this chain.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
     async fn query_latest_timestamp(
         &self,
         _: &Extensions,
         finalized: bool,
     ) -> RpcResult<Timestamp> {
-        let mut commit_response = self
-            .cometbft_client
-            .commit(None)
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+        let mut commit_response = self.cometbft_client.commit(None).await?;
 
         if finalized && commit_response.canonical {
             trace!(
+                height = %commit_response.signed_header.header.height,
+                timestamp = %commit_response.signed_header.header.time.as_unix_nanos(),
                 "commit is not canonical and finalized timestamp was \
                 requested, fetching commit at previous block"
             );
@@ -153,8 +129,7 @@ impl FinalityModuleServer for Module {
                     .try_into()
                     .expect("should be fine"),
                 ))
-                .await
-                .map_err(json_rpc_error_to_error_object)?;
+                .await?;
 
             if !commit_response.canonical {
                 error!(

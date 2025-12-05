@@ -1,9 +1,10 @@
 use enumorph::Enumorph;
 use ibc_union_spec::IbcUnion;
-use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
-use unionlabs::ErrorReporter;
-use voyager_sdk::{message::data::IbcDatagram, rpc::FATAL_JSONRPC_ERROR_CODE};
+use voyager_sdk::{
+    message::data::IbcDatagram,
+    rpc::{RpcError, RpcResult},
+};
 
 #[model]
 #[derive(Enumorph)]
@@ -19,19 +20,16 @@ pub enum IbcMessage {
 
 impl IbcMessage {
     pub fn from_raw_datagram(datagram: IbcDatagram) -> RpcResult<Self> {
-        match datagram.decode_datagram::<IbcUnion>() {
-            Some(Ok(ok)) => Ok(ok.into()),
-            Some(Err(err)) => Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unable to decode IBC datagram: {}", ErrorReporter(err)),
-                None::<()>,
-            )),
-            None => Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                format!("unknown IBC version id: {}", datagram.ibc_spec_id),
-                None::<()>,
-            )),
-        }
+        datagram
+            .decode_datagram::<IbcUnion>()
+            .ok_or_else(|| {
+                RpcError::fatal_from_message(format!(
+                    "unknown IBC version id: {}",
+                    datagram.ibc_spec_id
+                ))
+            })?
+            .map_err(RpcError::fatal("unable to decode IBC datagram"))
+            .map(Into::into)
     }
 
     pub fn name(&self) -> &'static str {

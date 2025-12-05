@@ -1,18 +1,14 @@
 use std::{fmt::Debug, num::ParseIntError};
 
-use jsonrpsee::{
-    Extensions,
-    core::{RpcResult, async_trait},
-    types::ErrorObject,
-};
+use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use tracing::{error, instrument, trace};
-use unionlabs::{ErrorReporter, ibc::core::client::height::Height};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
     anyhow,
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    rpc::{FinalityModuleServer, json_rpc_error_to_error_object, types::FinalityModuleInfo},
+    rpc::{FinalityModuleServer, RpcError, RpcResult, types::FinalityModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -81,8 +77,12 @@ impl Module {
     }
 
     #[instrument(skip_all, fields(%finalized))]
-    async fn latest_height(&self, finalized: bool) -> Result<Height, cometbft_rpc::JsonRpcError> {
-        let commit_response = self.cometbft_client.commit(None).await?;
+    async fn latest_height(&self, finalized: bool) -> RpcResult<Height> {
+        let commit_response = self
+            .cometbft_client
+            .commit(None)
+            .await
+            .map_err(RpcError::retryable("error fetching commit"))?;
 
         let mut height = commit_response
             .signed_header
@@ -108,13 +108,9 @@ impl Module {
 
 #[async_trait]
 impl FinalityModuleServer for Module {
-    /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_latest_height(&self, _: &Extensions, finalized: bool) -> RpcResult<Height> {
-        self.latest_height(finalized)
-            .await
-            // TODO: Add more context here
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
+        self.latest_height(finalized).await
     }
 
     /// Query the latest finalized timestamp of this chain.
@@ -124,11 +120,7 @@ impl FinalityModuleServer for Module {
         _: &Extensions,
         finalized: bool,
     ) -> RpcResult<Timestamp> {
-        let mut commit_response = self
-            .cometbft_client
-            .commit(None)
-            .await
-            .map_err(json_rpc_error_to_error_object)?;
+        let mut commit_response = self.cometbft_client.commit(None).await?;
 
         if finalized && !commit_response.canonical {
             trace!(
@@ -143,8 +135,7 @@ impl FinalityModuleServer for Module {
                     .try_into()
                     .expect("should be fine"),
                 ))
-                .await
-                .map_err(json_rpc_error_to_error_object)?;
+                .await?;
 
             if !commit_response.canonical {
                 error!(
