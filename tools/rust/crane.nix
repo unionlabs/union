@@ -3,6 +3,7 @@
 {
   perSystem =
     args@{
+      pkgsUnstable,
       pkgs,
       rust,
       dbg,
@@ -10,6 +11,8 @@
       ...
     }:
     let
+      pkgs = pkgsUnstable;
+
       mkCrane =
         {
           # root of the repository.
@@ -682,7 +685,7 @@
         CARGO_PROFILE = "dev";
         SQLX_OFFLINE = true;
         PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-        LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+        LIBCLANG_PATH = "${pkgs.llvmPackages_20.libclang.lib}/lib";
         ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
 
         buildInputs = [
@@ -808,7 +811,7 @@
 
       # these are incredibly useful for debugging
       packages = {
-        rust-lib = pkgs.mkRootDrv "rust-lib" {
+        rust-lib = args.pkgs.mkRootDrv "rust-lib" {
           inherit mkCrane;
         };
         # cleanCargoLock = writeTOML "Cargo.lock" (cleanCargoLock [ "ibc-union" ]);

@@ -15,6 +15,7 @@ pub const G2_SIZE: usize = 2 * G1_SIZE;
 
 fn parse_verifying_key(buf: &[u8]) -> String {
     let (n_read, parsed_key) = VerifyingKey::parse(buf).unwrap();
+
     // we expect the verifying key to be fully parsed
     assert_eq!(n_read, buf.len());
     let alpha_g1 = G1Const(parsed_key.alpha_g1);

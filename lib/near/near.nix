@@ -56,7 +56,7 @@ _: {
           pkgs.clang
         ];
 
-        LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+        LIBCLANG_PATH = "${pkgs.llvmPackages_20.libclang.lib}/lib";
         PROTOC = "${pkgs.protobuf}/bin/protoc";
         NEAR_SANDBOX_BIN_PATH = "${near-sandbox}/bin/neard";
 

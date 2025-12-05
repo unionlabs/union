@@ -5,12 +5,14 @@ use substrate_bn::{
 
 use crate::error::Error;
 
+#[derive(Debug)]
 pub struct PedersenVerifyingKey {
     pub g: G2,
     pub g_root_sigma_neg: G2,
 }
 
 /// A verification key in the Groth16 SNARK.
+#[derive(Debug)]
 pub struct VerifyingKey {
     /// The `alpha * G`, where `G` is the generator of `E::G1`.
     pub alpha_g1: G1,

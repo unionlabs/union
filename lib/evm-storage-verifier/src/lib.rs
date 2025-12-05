@@ -13,13 +13,6 @@ use crate::rlp_node_codec::{EthLayout, KeccakHasher, keccak_256};
 pub mod error;
 mod rlp_node_codec;
 
-pub const GENESIS_SLOT: u64 = 0;
-pub const GENESIS_EPOCH: u64 = 0;
-pub const FAR_FUTURE_EPOCH: u64 = u64::MAX;
-
-pub const BLS_WITHDRAWAL_PREFIX: u8 = 0x00;
-pub const ETH1_ADDRESS_WITHDRAWAL_PREFIX: u8 = 0x01;
-
 #[derive(Debug, Clone, RlpDecodable)]
 pub struct Account {
     pub nonce: u64,

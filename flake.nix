@@ -208,6 +208,7 @@
         ./evm/evm.nix
         ./tools/rust-proto.nix
         ./tools/tools.nix
+        ./tools/scarb.nix
         ./tools/wasm-light-client.nix
         ./tools/libwasmvm/libwasmvm.nix
         ./tools/libblst/libblst.nix
@@ -585,6 +586,12 @@
                     pkgs.foundry-bin
                     pkgs.sqlx-cli
                     self'.packages.ignite-cli
+                    self'.packages.scarb
+                    self'.packages.snforge
+                    self'.packages.sncast
+                    self'.packages.cairo-language-server
+                    self'.packages.cairo-format
+                    self'.packages.universal-sierra-compiler
                   ]
                 else
                   [ ]
@@ -606,8 +613,6 @@
             VOYAGER_CONFIG_FILE_PATH = "voyager/devnet-config.json";
 
             SQLX_OFFLINE = true;
-            LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
-            # RUST_MIN_STACK = 16777216; # ICE fix: maybe related to https://github.com/rust-lang/rust/issues/131419
             PROTOC = "${pkgs.protobuf}/bin/protoc";
             FOUNDRY_LIBS = ''["${self'.packages.evm-libs}"]'';
             FOUNDRY_DISABLE_NIGHTLY_WARNING = "1";

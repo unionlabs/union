@@ -1,15 +1,12 @@
 _: {
   perSystem =
     {
-      self',
       lib,
-      pkgs,
+      pkgsUnstable,
       system,
       config,
       rust,
       crane,
-      stdenv,
-      dbg,
       ...
     }:
     let
@@ -34,62 +31,6 @@ _: {
 
       craneLib = crane.lib.overrideToolchain rustToolchain;
 
-      aptos = craneLib.buildPackage rec {
-        pname = "movement";
-        version = "001913f20f140aa8245cd55cbb492df91b6e0e0e";
-
-        buildInputs = [
-          pkgs.pkg-config
-          pkgs.openssl
-          pkgs.systemd
-          config.treefmt.build.programs.rustfmt
-          pkgs.elfutils
-          pkgs.lld
-          pkgs.mold
-        ] ++ (lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]);
-
-        nativeBuildInputs = [
-          pkgs.clang
-        ];
-
-        cargoExtraArgs = "-p movement";
-
-        LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
-
-        CARGO_PROFILE = "cli";
-
-        # CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
-
-        src = builtins.fetchGit {
-          url = "https://github.com/aeryz/aptos-core";
-          ref = "old-bump-tonic";
-          rev = version;
-        };
-
-        doCheck = false;
-      };
-
-      movement = pkgs.writeShellApplication {
-        name = "movement";
-        runtimeInputs = [
-          pkgs.systemd
-          aptos
-        ];
-        text = ''
-          out=$(mktemp -d)
-          cp ${aptos}/bin/movement "$out"
-          chmod +x "$out/movement"
-          # TODO(aeryz): not having a good time but for some reason, I can't produce a static bin
-          LD_LIBRARY_PATH="${
-            pkgs.lib.makeLibraryPath [
-              pkgs.openssl
-              pkgs.systemd
-              pkgs.gcc13Stdenv.cc.cc
-            ]
-          }" "$out/movement" "$@"
-        '';
-      };
-
       movefmt = craneLib.buildPackage rec {
         pname = "movefmt";
         version = "3201309e4cce72205994e32a4d45d1447db705e5";
@@ -106,8 +47,7 @@ _: {
     in
     {
       packages = {
-        inherit movement movefmt;
+        inherit movefmt;
       };
-
     };
 }
