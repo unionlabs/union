@@ -95,45 +95,31 @@ pub mod felt {
 fn test() {
     let proof: Vec<Node> = serde_json::from_str(
         r#"
-      [
-        {
-          "node": {
-            "left": "0x4528b483169d0c4bba2171d487dc24da7371020f1cf4d47054038af05e88654",
-            "right": "0x5ed7e88e1116bae625a84e2f7dcb637bcd061d6ccb4eb921c6e207d52db510a"
-          },
-          "node_hash": "0x2f26113a475400d1bc8dd0e9b2ea2fd548b5abe22e158568a9395780a58e2c1"
-        },
-        {
-          "node": {
-            "child": "0x5dd3d2f4429af886cd1a3b08289dbcea99a294197e9eb43b0e0325b4b",
-            "length": 247,
-            "path": "0x263e9f85527e19d3f50301aab0505ad28496620b5484760e64f4fc6673e1ee"
-          },
-          "node_hash": "0x5ed7e88e1116bae625a84e2f7dcb637bcd061d6ccb4eb921c6e207d52db510a"
-        },
-        {
-          "node": {
-            "left": "0x2f26113a475400d1bc8dd0e9b2ea2fd548b5abe22e158568a9395780a58e2c1",
-            "right": "0x310643b32d81e4ee4cf0723859775500280e40ebef3e3458ffec38d16911607"
-          },
-          "node_hash": "0x219c6c95d8eeee035ffa9bd5d301175569b6151874f157c4f9546f0073710db"
-        },
-        {
-          "node": {
-            "child": "0x56ef8be5dc020f5437e6611ca54e4f78c245c2e49592de3db76abfe0998eb22",
-            "length": 1,
-            "path": "0x0"
-          },
-          "node_hash": "0x2c8771df74e758b1fed285eef0cd07cb84b55abfabfb0d6a0f1b7b3aff761fa"
-        },
-        {
-          "node": {
-            "left": "0x778ebcee8874705995f911f4c7edaac1748f5b583c146e9c37dd48e30d11cfd",
-            "right": "0x219c6c95d8eeee035ffa9bd5d301175569b6151874f157c4f9546f0073710db"
-          },
-          "node_hash": "0x56ef8be5dc020f5437e6611ca54e4f78c245c2e49592de3db76abfe0998eb22"
-        }
-      ]
+  [
+    {
+      "node": {
+        "left": "0x778ebcee8874705995f911f4c7edaac1748f5b583c146e9c37dd48e30d11cfd",
+        "right": "0x219c6c95d8eeee035ffa9bd5d301175569b6151874f157c4f9546f0073710db"
+      },
+      "node_hash": "0x56ef8be5dc020f5437e6611ca54e4f78c245c2e49592de3db76abfe0998eb22"
+    },
+    {
+      "node": {
+        "child": "0x56ef8be5dc020f5437e6611ca54e4f78c245c2e49592de3db76abfe0998eb22",
+        "length": 1,
+        "path": "0x0"
+      },
+      "node_hash": "0x2c8771df74e758b1fed285eef0cd07cb84b55abfabfb0d6a0f1b7b3aff761fa"
+    },
+    {
+      "node": {
+        "child": "0x1611612cfc15e76d48f227e845073c85f4f55c3ef35921f169f8c475f6a819f",
+        "length": 1,
+        "path": "0x1"
+      },
+      "node_hash": "0x778ebcee8874705995f911f4c7edaac1748f5b583c146e9c37dd48e30d11cfd"
+    }
+  ]
 "#,
     )
     .unwrap();
@@ -147,11 +133,8 @@ fn test() {
 
     dbg!(&proof);
 
-    let key =
-        Felt::from_hex_str("0x02a63e9f85527e19d3f50301aab0505ad28496620b5484760e64f4fc6673e1ee")
-            .unwrap();
-    let value =
-        Felt::from_hex_str("0x5dd3d2f4429af886cd1a3b08289dbcea99a294197e9eb43b0e0325b4b").unwrap();
+    let key = Felt::from_hex_str("0x0").unwrap();
+    let value = Felt::from_hex_str("0x0").unwrap();
 
     // 0x0712ae872c44ec2baee50a19191029e437811fb22de12afb3014642cbe33f09e
 
@@ -165,11 +148,7 @@ fn test() {
 
     while let Some(proof_node) = proof.remove(&expected_hash) {
         // Hash mismatch? Return None.
-        // if proof_node.hash() != expected_hash {
-        //     return None;
-        // }
-
-        // eprintln!("{remaining_path:b}");
+        assert!(proof_node.hash() == expected_hash);
 
         match proof_node {
             MerkleNode::BinaryNode(BinaryNode { left, right }) => {
@@ -218,5 +197,6 @@ fn test() {
         }
     }
 
-    dbg!(proof, expected_hash, value);
+    assert!(proof.is_empty());
+    assert_eq!(expected_hash, value);
 }
