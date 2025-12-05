@@ -684,7 +684,7 @@
         CARGO_PROFILE = "dev";
         SQLX_OFFLINE = true;
         PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-        LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+        LIBCLANG_PATH = "${pkgs.llvmPackages_20.libclang.lib}/lib";
         ICS23_TEST_SUITE_DATA_DIR = "${inputs.ics23}/testdata";
 
         buildInputs = [

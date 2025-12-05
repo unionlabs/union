@@ -65,9 +65,7 @@ pub trait EthAbi<T> {
 
     fn decode(val: ByteArray, offset: u32) -> Result<T, ()>;
 
-    fn encoded_len(self: @T) -> u256 {
-        0
-    }
+    fn encoded_len(self: @T) -> u256;
 }
 
 pub fn ethabi_decode<T, +EthAbi<T>>(data: ByteArray) -> Result<T, ()> {
@@ -369,6 +367,17 @@ impl TokenOrderV2EthAbiImpl of EthAbi<TokenOrderV2> {
             },
         )
     }
+
+    fn encoded_len(self: @TokenOrderV2) -> u256 {
+        (8 * 0x20
+            + 5 * 0x20 // length prefixes of the following 5 dynamic types
+            + encoded_bytes_len(self.sender)
+            + encoded_bytes_len(self.receiver)
+            + encoded_bytes_len(self.base_token)
+            + encoded_bytes_len(self.quote_token)
+            + encoded_bytes_len(self.metadata))
+            .into()
+    }
 }
 
 /// implementation: ClassHash
@@ -384,6 +393,10 @@ impl TokenMetadataEthAbiImpl of EthAbi<TokenMetadata> {
 
     fn decode(val: ByteArray, offset: u32) -> Result<TokenMetadata, ()> {
         Err(())
+    }
+
+    fn encoded_len(self: @TokenMetadata) -> u256 {
+        0
     }
 }
 
@@ -427,6 +440,14 @@ impl SolverMetadataEthAbiImpl of EthAbi<SolverMetadata> {
             },
         )
     }
+
+    fn encoded_len(self: @SolverMetadata) -> u256 {
+        (0x20 * 2
+            + 0x20 * 2 // length prefixes of the following 2 dynamic types
+            + encoded_bytes_len(self.solver_address)
+            + encoded_bytes_len(self.metadata))
+            .into()
+    }
 }
 
 #[derive(Drop, Debug, Serde, PartialEq)]
@@ -452,6 +473,10 @@ impl AckEthAbiImpl of EthAbi<Ack> {
 
     fn decode(val: ByteArray, offset: u32) -> Result<Ack, ()> {
         Err(())
+    }
+
+    fn encoded_len(self: @Ack) -> u256 {
+        (0x20 * 2 + 0x20 + encoded_bytes_len(self.inner_ack)).into()
     }
 }
 
@@ -535,6 +560,15 @@ impl BatchAckEthAbiImpl of EthAbi<BatchAck> {
 
         Ok(BatchAck { acknowledgements })
     }
+
+    fn encoded_len(self: @BatchAck) -> u256 {
+        (0x20
+            + self
+                .acknowledgements
+                .into_iter()
+                .fold(0, |acc, ack| acc + encoded_bytes_len(ack) + 0x20))
+            .into()
+    }
 }
 
 #[derive(Drop, Debug, Serde, PartialEq)]
@@ -560,6 +594,10 @@ impl TokenOrderAckEthAbiImpl of EthAbi<TokenOrderAck> {
         let (_, market_maker) = val.read_bytes(offset + 32 * 3, len.try_into().unwrap());
 
         Ok(TokenOrderAck { fill_type, market_maker })
+    }
+
+    fn encoded_len(self: @TokenOrderAck) -> u256 {
+        (0x20 * 2 + 0x20 + encoded_bytes_len(self.market_maker)).into()
     }
 }
 

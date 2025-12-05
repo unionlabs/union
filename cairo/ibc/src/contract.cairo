@@ -62,42 +62,6 @@ use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
 use core::hash::{Hash, HashStateExTrait, HashStateTrait};
 use crate::msg::{MsgCreateClient, MsgRegisterClient, MsgUpdateClient};
 use crate::types::ClientId;
-// pub fn to_be_bytes<
-//     N,
-//     +Div<N>,
-//     +Rem<N>,
-//     +PartialOrd<N>,
-//     +TryInto<N, u8>,
-//     +One<N>,
-//     +Zero<N>,
-//     +Add<N>,
-//     +Mul<N>,
-//     +Pow<N, usize>[Output: N],
-//     +Drop<N>,
-//     +Copy<N>,
-//     +BitSize<N>,
-// >(
-//     mut n: N,
-// ) -> ByteArray {
-//     let modulus = (One::<N>::one() + One::<N>::one()).pow(8);
-
-//     let mut bz: ByteArray = "";
-
-//     let mut len = BitSize::<N>::bits() / 8;
-
-//     while n > Zero::<N>::zero() {
-//         len -= 1;
-//         let b = n % modulus;
-//         n = n / modulus;
-//         bz.append_byte(b.try_into().unwrap());
-//     }
-
-//     for _ in 0..len {
-//         bz.append_byte(0);
-//     }
-
-//     bz.rev().into()
-// }
 
 pub mod Error {
     pub const CLIENT_TYPE_ALREADY_REGISTERED: felt252 = 'CLIENT_TYPE_ALREADY_REGISTERED';
@@ -279,7 +243,7 @@ mod IbcHandler {
 
                     self.emit(UpdateClient { client_id: msg.client_id, height });
                 },
-                Err(err) => { panic!("error when creating client: {err:?}"); },
+                Err(err) => { panic!("error when updating client: {err:?}"); },
             }
         }
     }

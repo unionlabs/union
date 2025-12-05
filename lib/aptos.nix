@@ -1,15 +1,12 @@
 _: {
   perSystem =
     {
-      self',
       lib,
-      pkgs,
+      pkgsUnstable,
       system,
       config,
       rust,
       crane,
-      stdenv,
-      dbg,
       ...
     }:
     let
@@ -39,22 +36,22 @@ _: {
         version = "001913f20f140aa8245cd55cbb492df91b6e0e0e";
 
         buildInputs = [
-          pkgs.pkg-config
-          pkgs.openssl
-          pkgs.systemd
+          pkgsUnstable.pkg-config
+          pkgsUnstable.openssl
+          pkgsUnstable.systemd
           config.treefmt.build.programs.rustfmt
-          pkgs.elfutils
-          pkgs.lld
-          pkgs.mold
-        ] ++ (lib.optionals pkgs.stdenv.isDarwin [ pkgs.darwin.apple_sdk.frameworks.Security ]);
+          pkgsUnstable.elfutils
+          pkgsUnstable.lld
+          pkgsUnstable.mold
+        ] ++ (lib.optionals pkgsUnstable.stdenv.isDarwin [ pkgsUnstable.darwin.apple_sdk.frameworks.Security ]);
 
         nativeBuildInputs = [
-          pkgs.clang
+          pkgsUnstable.clang
         ];
 
         cargoExtraArgs = "-p movement";
 
-        LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
+        LIBCLANG_PATH = "${pkgsUnstable.llvmPackages_16.libclang.lib}/lib";
 
         CARGO_PROFILE = "cli";
 
@@ -69,10 +66,10 @@ _: {
         doCheck = false;
       };
 
-      movement = pkgs.writeShellApplication {
+      movement = pkgsUnstable.writeShellApplication {
         name = "movement";
         runtimeInputs = [
-          pkgs.systemd
+          pkgsUnstable.systemd
           aptos
         ];
         text = ''
@@ -81,10 +78,10 @@ _: {
           chmod +x "$out/movement"
           # TODO(aeryz): not having a good time but for some reason, I can't produce a static bin
           LD_LIBRARY_PATH="${
-            pkgs.lib.makeLibraryPath [
-              pkgs.openssl
-              pkgs.systemd
-              pkgs.gcc13Stdenv.cc.cc
+            pkgsUnstable.lib.makeLibraryPath [
+              pkgsUnstable.openssl
+              pkgsUnstable.systemd
+              pkgsUnstable.gcc13Stdenv.cc.cc
             ]
           }" "$out/movement" "$@"
         '';

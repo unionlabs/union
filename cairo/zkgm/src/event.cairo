@@ -67,7 +67,6 @@ pub struct CreateWrappedToken {
     #[key]
     pub channel_id: ChannelId,
     pub base_token: ByteArray,
-    // TODO(aeryz): could also be an address, check deterministic address creation
     #[key]
     pub quote_token: ContractAddress,
     pub metadata: ByteArray,
