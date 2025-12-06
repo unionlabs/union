@@ -27,7 +27,7 @@ pub struct MigrateMsg {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub struct Config {
     /// The address to set as the owner of the minter.
     pub admin: Addr,
