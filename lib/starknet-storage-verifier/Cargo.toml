@@ -12,12 +12,15 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-bitvec          = { workspace = true }
+bitvec            = { workspace = true }
 pathfinder-crypto = "0.21.3"
-serde           = { workspace = true, features = ["derive"] }
-serde-utils     = { workspace = true }
-starknet-crypto = { workspace = true, features = ["alloc"] }
+serde             = { workspace = true, optional = true, features = ["derive"] }
 
 [dev-dependencies]
-hex-literal = { workspace = true }
-serde_json  = { workspace = true }
+serde_json                = { workspace = true }
+starknet-storage-verifier = { workspace = true, features = ["serde"] }
+
+[features]
+default = []
+
+serde = ["dep:serde"]
