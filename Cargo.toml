@@ -296,6 +296,7 @@ members = [
   "cosmwasm/pausable",
   "cosmwasm/gatekeeper",
   "cosmwasm/proxy-account-factory",
+  "lib/starknet-light-client-types",
 ]
 
 [workspace.package]
@@ -420,6 +421,8 @@ serde-utils                               = { path = "lib/serde-utils", default-
 solidity-slot                             = { path = "lib/solidity-slot", default-features = false }
 ssz                                       = { path = "lib/ssz", default-features = false }
 ssz-derive                                = { path = "lib/ssz-derive", default-features = false }
+starknet-light-client-types               = { path = "lib/starknet-light-client-types", default-features = false }
+starknet-storage-verifier                 = { path = "lib/starknet-storage-verifier", default-features = false }
 state-lens-ics23-ics23-light-client-types = { path = "lib/state-lens-ics23-ics23-light-client-types", default-features = false }
 state-lens-ics23-mpt-light-client         = { path = "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt", default-features = false }
 state-lens-ics23-mpt-light-client-types   = { path = "lib/state-lens-ics23-mpt-light-client-types", default-features = false }

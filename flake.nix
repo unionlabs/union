@@ -373,7 +373,12 @@
                           mv $out/bin/cast $out/bin/cast-cursed
 
                           cat <<EOF >> $out/bin/cast
-                          export LD_LIBRARY_PATH=${lib.makeLibraryPath [ super.stdenv.cc.cc.lib ]}
+                          export LD_LIBRARY_PATH=${
+                            lib.makeLibraryPath [
+                              super.gcc14.cc.lib
+                              # super.stdenv.cc.cc.lib
+                            ]
+                          }
                           $out/bin/cast-cursed "\$@"
                           unset LD_LIBRARY_PATH
                           EOF
@@ -385,7 +390,12 @@
                           mv $out/bin/forge $out/bin/forge-cursed
 
                           cat <<EOF >> $out/bin/forge
-                          export LD_LIBRARY_PATH=${lib.makeLibraryPath [ super.stdenv.cc.cc.lib ]}
+                          export LD_LIBRARY_PATH=${
+                            lib.makeLibraryPath [
+                              super.gcc14
+                              # super.stdenv.cc.cc.lib
+                            ]
+                          }
                           $out/bin/forge-cursed "\$@"
                           unset LD_LIBRARY_PATH
                           EOF
