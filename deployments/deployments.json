@@ -963,11 +963,6 @@
       "code_id": 202
     }
   },
-  "union.union-devnet-1": {
-    "ibc_interface": "ibc-cosmwasm",
-    "deployer": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
-    "manager": "union1g8eayx25kmzmywzwq4uw44ftfpqxfz6qplnyutwqdzn92reavtmqltyh3e"
-  },
   "xion.xion-testnet-2": {
     "ibc_interface": "ibc-cosmwasm",
     "deployer": "xion10c4yqddv6w7sphruvhxs5v0es8r9fcj5nlckx8",
