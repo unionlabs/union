@@ -5,6 +5,7 @@
     args@{
       pkgsUnstable,
       pkgs,
+      pkgsUnstable,
       rust,
       dbg,
       gitRev,
@@ -633,10 +634,16 @@
               crateCargoToml
               pkgs
               lib
-              rust
-              craneLib
-              dbg
-              gitRev
+              ;
+          };
+
+          buildWasm = import ./buildWasm.nix {
+            inherit
+              buildWorkspaceMember
+              crateCargoToml
+              pkgs
+              pkgsUnstable
+              lib
               ;
           };
 
@@ -646,6 +653,7 @@
             cargoWorkspaceSrc
             buildWorkspaceMember
             buildWasmContract
+            buildWasm
             allCargoTomls
             ;
           lib = craneLib;
