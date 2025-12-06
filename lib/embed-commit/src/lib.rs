@@ -1,12 +1,15 @@
+use core::str::FromStr;
+
 use bytemuck::CheckedBitPattern;
 
 /// The git rev of the code, as supplied at build time. On `wasm32` targets, this is available via the `commit_hash` export.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, CheckedBitPattern)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, CheckedBitPattern)]
 #[repr(C, u64)]
 #[rustfmt::skip]
 pub enum Rev {
     /// The state of the build is unknown (i.e. `GIT_REV` was not set).
     //                  U  N  K  N  O  W  N
+    #[default]
     Unknown        = 0x_75_6E_6B_6E_6F_77_6E,
     /// The build is dirty.
     ///
@@ -20,6 +23,32 @@ pub enum Rev {
     Hash([u8; 20]) = 0x_68_61_73_68,
 }
 
+impl Rev {
+    /// Returns `true` if the rev is [`Unknown`].
+    ///
+    /// [`Unknown`]: Rev::Unknown
+    #[must_use]
+    pub fn is_unknown(&self) -> bool {
+        matches!(self, Self::Unknown)
+    }
+
+    /// Returns `true` if the rev is [`Dirty`].
+    ///
+    /// [`Dirty`]: Rev::Dirty
+    #[must_use]
+    pub fn is_dirty(&self) -> bool {
+        matches!(self, Self::Dirty)
+    }
+
+    /// Returns `true` if the rev is [`Hash`].
+    ///
+    /// [`Hash`]: Rev::Hash
+    #[must_use]
+    pub fn is_hash(&self) -> bool {
+        matches!(self, Self::Hash(..))
+    }
+}
+
 impl core::fmt::Display for Rev {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -27,6 +56,38 @@ impl core::fmt::Display for Rev {
             Rev::Dirty => f.write_str("dirty"),
             Rev::Hash(hash) => const_hex::Buffer::<20, false>::new().format(hash).fmt(f),
         }
+    }
+}
+
+impl FromStr for Rev {
+    type Err = const_hex::FromHexError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "unknown" => Ok(Self::Unknown),
+            "dirty" => Ok(Self::Dirty),
+            hash => const_hex::decode_to_array(hash).map(Self::Hash),
+        }
+    }
+}
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for Rev {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.collect_str(self)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Rev {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        <&str>::deserialize(deserializer).and_then(|s| s.parse().map_err(serde::de::Error::custom))
     }
 }
 

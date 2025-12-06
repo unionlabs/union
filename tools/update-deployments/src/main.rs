@@ -7,8 +7,7 @@ use anyhow::{Context, Result, bail};
 use clap::Parser;
 use cosmwasm_std::instantiate2_address;
 use deployments::{
-    Commit, DeployedContract, Deployments, IbcCosmwasmDeployedContractExtra, IbcCosmwasmUcs03Extra,
-    Minter,
+    DeployedContract, Deployments, IbcCosmwasmDeployedContractExtra, IbcCosmwasmUcs03Extra, Minter,
 };
 use protos::cosmwasm::wasm::v1::{
     QueryCodeRequest, QueryCodeResponse, QueryContractInfoRequest, QueryContractInfoResponse,
