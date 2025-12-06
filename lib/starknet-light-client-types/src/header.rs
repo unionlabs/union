@@ -1,21 +1,32 @@
-use ethereum_light_client_types::StorageProof;
+use ethereum_light_client_types::StorageProof as L1StorageProof;
 use starknet_types_core::{
     felt::Felt,
     hash::{Poseidon, StarkHash as _},
 };
 use unionlabs::primitives::H256;
 
+use crate::StorageProof;
+
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Header {
     pub l1_height: u64,
-    pub l1_block_hash_proof: StorageProof,
+    pub l1_block_hash_proof: L1StorageProof,
     pub l2_block: L2Block,
+    pub l2_ibc_contract_proof: StorageProof,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct L2Block {
     block_number: u64,
@@ -53,6 +64,7 @@ pub enum L1DaMode {
 impl L2Block {
     /// <https://docs.starknet.io/learn/protocol/blocks#block-hash>
     /// <https://github.com/starkware-libs/sequencer/blob/079ed26ce95b3b10de40c9916ffa332aaecd9f06/crates/starknet_api/src/block_hash/block_hash_calculator.rs#L134>
+    // TODO: Handle different versions
     pub fn hash(&self) -> H256 {
         Poseidon::hash_array(&[
             // hex(b"STARKNET_BLOCK_HASH1")
