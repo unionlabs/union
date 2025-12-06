@@ -659,13 +659,12 @@ _: {
         };
 
       # migrate the admin to the multisig address
-      finalize-deployment =
+      migrate-managed-contracts-admin-to-self =
         {
           name,
           rpc_url,
           gas_config,
           private_key,
-          multisig_address,
           bech32_prefix,
           ...
         }:
@@ -690,11 +689,10 @@ _: {
             PRIVATE_KEY=${private_key} \
             RUST_LOG=info \
               cosmwasm-deployer \
-              migrate-admin \
-              --new-admin ${multisig_address} \
+              migrate-admin-to-self \
               --addresses <(echo "$ADDRESSES") \
               --rpc-url ${rpc_url} \
-              ${mk-gas-args gas_config}
+              ${mk-gas-args gas_config} "$@"
           '';
         };
 
@@ -1202,13 +1200,13 @@ _: {
                       chain-deployed-contracts-json = chain-deployed-contracts-json chain;
                       deploy = deploy chain;
                       update-deployments-json = update-deployments-json chain;
-                      finalize-deployment = finalize-deployment chain;
                       get-git-rev = get-git-rev chain;
                       whitelist-relayers = whitelist-relayers chain;
                       set-bucket-config = set-bucket-config chain;
                       deploy-contract = deploy-contract chain;
                       migrate-contract = migrate-contract chain;
                       migrate-to-access-managed = migrate-to-access-managed chain;
+                      migrate-managed-contracts-admin-to-self = migrate-managed-contracts-admin-to-self chain;
                       setup-roles = setup-roles chain;
                     }
                     // (chain-migration-scripts chain)

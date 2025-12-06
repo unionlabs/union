@@ -185,15 +185,13 @@ enum App {
         #[arg(long)]
         bech32_prefix: String,
     },
-    MigrateAdmin {
+    MigrateAdminToSelf {
         #[arg(long, env)]
         private_key: H256,
         #[arg(long)]
         addresses: PathBuf,
         #[arg(long)]
         rpc_url: String,
-        #[arg(long)]
-        new_admin: Bech32<Bytes>,
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
@@ -859,14 +857,20 @@ async fn do_main() -> Result<()> {
             "{}",
             CosmosSigner::from_raw(*private_key.get(), bech32_prefix).unwrap(),
         ),
-        App::MigrateAdmin {
+        App::MigrateAdminToSelf {
             private_key,
             addresses,
             rpc_url,
-            new_admin,
             gas_config,
         } => {
-            let addresses = serde_json::from_slice::<ContractAddresses>(
+            let ContractAddresses {
+                core,
+                lightclient,
+                app,
+                manager: _,
+                escrow_vault,
+                on_zkgm_call_proxy: _,
+            } = serde_json::from_slice::<ContractAddresses>(
                 &std::fs::read(addresses).context("reading addresses path")?,
             )?;
 
@@ -877,12 +881,12 @@ async fn do_main() -> Result<()> {
                     return Ok(None);
                 };
 
-                if info.admin == new_admin.to_string() {
-                    info!("{salt} already migrated to admin {new_admin}");
+                if info.admin == address.to_string() {
+                    info!("{salt} ({address}) already admin of itself");
                     Ok(None)
                 } else if info.admin != ctx.wallet().address().to_string() {
                     bail!(
-                        "the admin of {salt} is not {}, found {}",
+                        "the admin of {salt} ({address}) is not {}, found {}",
                         ctx.wallet().address(),
                         info.admin
                     );
@@ -891,12 +895,11 @@ async fn do_main() -> Result<()> {
                 }
             };
 
-            let mut messages = [check_contract(CORE.to_owned(), addresses.core).await?]
+            let mut messages = [check_contract(CORE.to_owned(), core).await?]
                 .into_iter()
                 // not sure why i have to collect here but whatever
                 .chain(
-                    addresses
-                        .lightclient
+                    lightclient
                         .into_iter()
                         .map(|(client_type, address)| {
                             check_contract(
@@ -910,9 +913,16 @@ async fn do_main() -> Result<()> {
                 )
                 // .chain(check_contract(addresses.app.ucs00))
                 .chain(
-                    OptionFuture::from(addresses.app.ucs03.map(|address| {
+                    OptionFuture::from(app.ucs03.map(|address| {
                         check_contract(Salt::Utf8(format!("{APP}/{UCS03}")), address)
                     }))
+                    .await
+                    .transpose()?,
+                )
+                .chain(
+                    OptionFuture::from(
+                        escrow_vault.map(|address| check_contract(ESCROW_VAULT.clone(), address)),
+                    )
                     .await
                     .transpose()?,
                 )
@@ -920,7 +930,7 @@ async fn do_main() -> Result<()> {
                 .map(|contract| {
                     Any(MsgUpdateAdmin {
                         sender: ctx.wallet().address().map_data(Into::into),
-                        new_admin: new_admin.clone(),
+                        new_admin: contract.clone().map_data(Into::into),
                         contract,
                     })
                 })
@@ -931,7 +941,7 @@ async fn do_main() -> Result<()> {
             } else {
                 let result = ctx.broadcast_tx_commit(messages, "", true).await?;
 
-                info!(tx_hash = %result.hash, "admin migrated to {new_admin}");
+                info!(tx_hash = %result.hash, "admins migrated, contracts are now admins of themselves");
             }
         }
         App::StoreCode {
@@ -988,7 +998,7 @@ async fn do_main() -> Result<()> {
             };
 
             let res = deployer
-                .deploy_and_initiate(bytecode, bytecode_base_code_id, init_msg, &salt)
+                .deploy_and_initiate(bytecode, bytecode_base_code_id, init_msg, &salt, false)
                 .await?;
 
             write_output(output, res)?;
@@ -1295,6 +1305,7 @@ async fn deploy_full(
                 initial_admin: Addr::unchecked(manager_admin.to_string()),
             },
             &MANAGER,
+            true,
         )
         .await?;
 
@@ -1310,6 +1321,7 @@ async fn deploy_full(
                 access_managed_init_msg: access_managed_init_msg.clone(),
             },
             &CORE,
+            true,
         )
         .await?;
 
@@ -1341,6 +1353,7 @@ async fn deploy_full(
                     access_managed_init_msg: access_managed_init_msg.clone(),
                 },
                 &Salt::Utf8(format!("{LIGHTCLIENT}/{client_type}")),
+                true,
             )
             .await?;
 
@@ -1579,6 +1592,7 @@ async fn deploy_full(
                     access_managed_init_msg: access_managed_init_msg.clone(),
                 },
                 &salt,
+                true,
             )
             .await?;
         }
@@ -1593,6 +1607,7 @@ async fn deploy_full(
                         access_managed_init_msg: access_managed_init_msg.clone(),
                     },
                     &ESCROW_VAULT,
+                    true,
                 )
                 .await?;
 
@@ -1608,6 +1623,7 @@ async fn deploy_full(
                 zkgm: Addr::unchecked(ucs03_address.to_string()),
             },
             &ON_ZKGM_CALL_PROXY,
+            true,
         )
         .await?;
 
@@ -2062,6 +2078,7 @@ impl Deployer {
         bytecode_base_code_id: NonZeroU64,
         msg: impl Serialize,
         salt: &Salt,
+        self_admin: bool,
     ) -> Result<Bech32<H256>> {
         let address = self
             .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), salt)
@@ -2117,7 +2134,7 @@ impl Deployer {
             code_id = store_code_response.code_id,
         );
 
-        let (_, _migrate_response) = self
+        let (tx_hash, _migrate_response) = self
             .tx(
                 MsgMigrateContract {
                     sender: self.wallet().address().map_data(Into::into),
@@ -2131,7 +2148,24 @@ impl Deployer {
             .await
             .context("init")?;
 
-        // info!(%tx_hash, );
+        info!(%tx_hash, "contract initiated");
+
+        if self_admin {
+            let (tx_hash, _migrate_response) = self
+                .tx(
+                    MsgUpdateAdmin {
+                        sender: self.wallet().address().map_data(Into::into),
+                        contract: address.clone(),
+                        new_admin: address.clone().map_data(Into::into),
+                    },
+                    "",
+                    self.simulate,
+                )
+                .await
+                .context("init")?;
+
+            info!(%tx_hash, "contract admin migrated to itself");
+        }
 
         Ok(address)
     }
