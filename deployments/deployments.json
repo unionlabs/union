@@ -849,6 +849,7 @@
   "union.union-testnet-10": {
     "ibc_interface": "ibc-cosmwasm",
     "deployer": "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a",
+    "manager": "union1managerhl8ka4alvaewkhflcc44m6385pf94zmrh2f4d3yzc2y4qyvuxqf",
     "core": {
       "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
       "height": 354875,
