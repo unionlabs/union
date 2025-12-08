@@ -1,22 +1,16 @@
 use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
 use alexandria_math::opt_math::OptBitShift;
-use core::hash::HashStateTrait;
 use core::keccak::compute_keccak_byte_array;
-use core::pedersen::PedersenTrait;
 use ibc::contract::IbcHandler::Event;
 use ibc::contract::{IIbcHandlerDispatcher, IIbcHandlerDispatcherTrait};
 use ibc::event::*;
-use ibc::msg::{MsgCreateClient, MsgRegisterClient};
 use ibc::path::{ClientStatePath, ConsensusStatePath, StorePathKeyTrait};
-use ibc::types::ClientIdImpl;
+use ibc::types::{ClientIdImpl, ConnectionIdImpl, ConnectionState};
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait, EventSpyTrait, declare, load,
+    ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait, declare, load,
     map_entry_address, spy_events,
 };
-use starknet::storage_access::{
-    storage_address_from_base, storage_address_from_base_and_offset,
-    storage_base_address_from_felt252,
-};
+use starknet::storage_access::{storage_address_from_base, storage_base_address_from_felt252};
 use starknet::{ContractAddress, SyscallResultTrait};
 
 fn deploy_contract(name: ByteArray) -> ContractAddress {
@@ -118,11 +112,34 @@ fn load_byte_array_map_value<K, +Serde<K>, +Drop<K>>(
 fn load_map_value<K, +Serde<K>, +Drop<K>, V, +Serde<V>>(
     contract_address: ContractAddress, map_selector: felt252, key: K, size: felt252,
 ) -> Option<V> {
+    println!("befoesadfn");
     let mut serialized_key = Default::default();
     key.serialize(ref serialized_key);
     let key = map_entry_address(map_selector, serialized_key.span());
     let mut out = load(contract_address, key, size).span();
+    println!("out: {out:?}");
     Serde::deserialize(ref out)
+}
+
+fn load_map_value_custom<
+    K,
+    +Serde<K>,
+    +Drop<K>,
+    V,
+    +Serde<V>,
+    F,
+    +Drop<F>,
+    impl func: core::ops::Fn<F, (Array<felt252>,)>[Output: Option<V>],
+>(
+    contract_address: ContractAddress, map_selector: felt252, key: K, size: felt252, decode_fn: F,
+) -> Option<V> {
+    println!("befoesadfn");
+    let mut serialized_key = Default::default();
+    key.serialize(ref serialized_key);
+    let key = map_entry_address(map_selector, serialized_key.span());
+    let out = load(contract_address, key, size);
+
+    decode_fn(out)
 }
 
 #[inline]
@@ -156,10 +173,7 @@ mod register_client {
 
         let mut spy = spy_events();
 
-        ibc_dispatcher
-            .register_client(
-                MsgRegisterClient { client_type: "cometbls", client_address: light_client },
-            );
+        ibc_dispatcher.register_client("cometbls", light_client);
 
         let client_address = load_map_value(
             ibc_contract,
@@ -190,15 +204,9 @@ mod register_client {
     #[should_panic(expected: 'CLIENT_TYPE_ALREADY_REGISTERED')]
     fn test_register_client_fails_client_type_already_registered() {
         let (ibc_dispatcher, _, light_client) = deploy_ibc_and_client();
-        ibc_dispatcher
-            .register_client(
-                MsgRegisterClient { client_type: "cometbls", client_address: light_client },
-            );
 
-        ibc_dispatcher
-            .register_client(
-                MsgRegisterClient { client_type: "cometbls", client_address: light_client },
-            );
+        ibc_dispatcher.register_client("cometbls", light_client);
+        ibc_dispatcher.register_client("cometbls", light_client);
     }
 }
 
@@ -211,20 +219,10 @@ mod create_client {
 
         let mut spy = spy_events();
 
-        ibc_dispatcher
-            .register_client(
-                MsgRegisterClient { client_type: "cometbls", client_address: light_client },
-            );
+        ibc_dispatcher.register_client("cometbls", light_client);
 
         ibc_dispatcher
-            .create_client(
-                MsgCreateClient {
-                    client_type: "cometbls",
-                    client_state_bytes: "client_state_bytes",
-                    consensus_state_bytes: "consensus_state_bytes",
-                    relayer: ibc_contract,
-                },
-            );
+            .create_client("cometbls", "client_state_bytes", "consensus_state_bytes", ibc_contract);
 
         let client_id = ClientIdImpl::new(1);
 
@@ -276,13 +274,136 @@ mod create_client {
         let (ibc_dispatcher, ibc_contract, _) = deploy_ibc_and_client();
 
         ibc_dispatcher
-            .create_client(
-                MsgCreateClient {
-                    client_type: "cometbls",
-                    client_state_bytes: "client_state_bytes",
-                    consensus_state_bytes: "consensus_state_bytes",
-                    relayer: ibc_contract,
-                },
+            .create_client("cometbls", "client_state_bytes", "consensus_state_bytes", ibc_contract);
+    }
+}
+
+mod update_client {
+    use ibc::msg::MsgUpdateClient;
+    use super::*;
+
+    #[test]
+    fn test_update_client_works() {
+        let (ibc_dispatcher, ibc_contract, light_client) = deploy_ibc_and_client();
+
+        let mut spy = spy_events();
+
+        ibc_dispatcher.register_client("cometbls", light_client);
+
+        ibc_dispatcher
+            .create_client("cometbls", "client_state_bytes", "consensus_state_bytes", ibc_contract);
+
+        let client_id = ClientIdImpl::new(1);
+
+        let mut client_message = Default::default();
+        let new_client_state: ByteArray = "new_client_state_bytes";
+        let new_consensus_state: ByteArray = "new_consensus_state_bytes";
+        let height = 15;
+        client_message.append_u32(new_client_state.len());
+        client_message.append(@new_client_state);
+        client_message.append_u32(new_consensus_state.len());
+        client_message.append(@new_consensus_state);
+        // height
+        client_message.append_u64(height);
+
+        ibc_dispatcher.update_client(client_id, client_message, ibc_contract);
+
+        let client_state_commitment = load_commitment(ibc_contract, ClientStatePath { client_id })
+            .unwrap();
+
+        let consensus_state_commitment = load_commitment(
+            ibc_contract, ConsensusStatePath { client_id, height },
+        )
+            .unwrap();
+
+        assert!(client_state_commitment == truncate(compute_keccak_byte_array(@new_client_state)));
+
+        assert!(
+            consensus_state_commitment == truncate(compute_keccak_byte_array(@new_consensus_state)),
+        );
+        spy
+            .assert_emitted(
+                @array![(ibc_contract, Event::UpdateClient(UpdateClient { client_id, height }))],
             );
+    }
+
+    #[test]
+    #[should_panic(expected: 'CLIENT_NOT_FOUND')]
+    fn test_update_client_fails_client_not_found() {
+        let (ibc_dispatcher, ibc_contract, _) = deploy_ibc_and_client();
+
+        ibc_dispatcher.update_client(ClientIdImpl::new(1), Default::default(), ibc_contract);
+    }
+}
+
+mod connection_handshake {
+    use ibc::path::ConnectionPath;
+    use ibc::types::{Connection, ConnectionTrait};
+    use super::{*, ClientIdImpl, IIbcHandlerDispatcherTrait};
+
+    #[test]
+    fn test_connection_open_init_works() {
+        let (ibc_dispatcher, ibc_contract, light_client) = deploy_ibc_and_client();
+
+        let mut spy = spy_events();
+
+        ibc_dispatcher.register_client("cometbls", light_client);
+
+        let client_id = ibc_dispatcher
+            .create_client("cometbls", "client_state_bytes", "consensus_state_bytes", ibc_contract);
+
+        let counterparty_client_id = ClientIdImpl::new(2);
+
+        let connection_id = ibc_dispatcher.connection_open_init(client_id, counterparty_client_id);
+
+        // connections start from 1
+        assert!(connection_id.raw() == 1);
+
+        let expected_connection = Connection {
+            state: ConnectionState::Init,
+            client_id,
+            counterparty_client_id,
+            counterparty_connection_id: None,
+        };
+
+        assert!(
+            load_commitment(ibc_contract, ConnectionPath { connection_id })
+                .unwrap() == truncate(expected_connection.commit()),
+        );
+
+        let out: Connection = load_map_value_custom(
+            ibc_contract,
+            selector!("connections"),
+            connection_id,
+            5,
+            |out| {
+                let client_id: u32 = (*out[1]).try_into().unwrap();
+                let counterparty_client_id: u32 = (*out[2]).try_into().unwrap();
+                Some(
+                    Connection {
+                        state: match *out[0] {
+                            1 => ConnectionState::Init,
+                            2 => ConnectionState::TryOpen,
+                            3 => ConnectionState::Open,
+                            _ => panic!("non existent"),
+                        },
+                        client_id: ClientIdImpl::new(client_id.try_into().unwrap()),
+                        counterparty_client_id: ClientIdImpl::new(
+                            counterparty_client_id.try_into().unwrap(),
+                        ),
+                        counterparty_connection_id: match *out[3] {
+                            0 => None,
+                            1 => {
+                                let connection_id: u32 = (*out[5]).try_into().unwrap();
+
+                                Some(ConnectionIdImpl::new(connection_id.try_into().unwrap()))
+                            },
+                            _ => panic!("non existent"),
+                        },
+                    },
+                )
+            },
+        )
+            .unwrap();
     }
 }

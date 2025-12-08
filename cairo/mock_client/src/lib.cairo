@@ -39,12 +39,13 @@ mod MockClient {
             let (offset, size) = client_message.read_u32(0);
             let (offset, client_state_bytes) = client_message.read_bytes(offset, size);
             let (offset, size) = client_message.read_u32(offset);
-            let (_, consensus_state_bytes) = client_message.read_bytes(offset, size);
+            let (offset, consensus_state_bytes) = client_message.read_bytes(offset, size);
+            let (_, height) = client_message.read_u64(offset);
 
             ConsensusStateUpdate {
                 client_state_commitment: compute_keccak_byte_array(@client_state_bytes),
                 consensus_state_commitment: compute_keccak_byte_array(@consensus_state_bytes),
-                height: 10,
+                height,
             }
         }
 

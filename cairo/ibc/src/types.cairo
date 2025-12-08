@@ -73,7 +73,7 @@ pub trait Id<T, +Copy<T>> {
     fn raw(self: @T) -> u32;
 }
 
-#[derive(Copy, Drop, Serde, starknet::Store)]
+#[derive(Debug, Copy, Drop, Serde, starknet::Store)]
 pub struct ClientId {
     raw: NonZero<u32>,
 }
@@ -99,7 +99,7 @@ impl ClientIdHashImpl<S, +HashStateTrait<S>, +Drop<S>> of Hash<ClientId, S> {
     }
 }
 
-#[derive(Copy, Drop, Serde, starknet::Store)]
+#[derive(Debug, Copy, Drop, Serde, starknet::Store)]
 pub struct ConnectionId {
     raw: NonZero<u32>,
 }
@@ -151,7 +151,7 @@ impl ChannelIdHashImpl<S, +HashStateTrait<S>, +Drop<S>> of Hash<ChannelId, S> {
     }
 }
 
-#[derive(Drop, Serde, starknet::Store)]
+#[derive(Debug, Drop, Serde, starknet::Store)]
 pub struct Connection {
     pub state: ConnectionState,
     pub client_id: ClientId,
@@ -176,7 +176,7 @@ pub impl ConnectionImpl of ConnectionTrait {
     }
 }
 
-#[derive(Drop, PartialEq, Clone, Copy, Serde, starknet::Store)]
+#[derive(Debug, Drop, PartialEq, Clone, Copy, Serde, starknet::Store)]
 #[allow(starknet::store_no_default_variant)] // uninitialized is not a valid state
 pub enum ConnectionState {
     Init,

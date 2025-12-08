@@ -70,25 +70,13 @@ pub struct MsgMigrateState {
 }
 
 #[derive(Drop, Serde)]
-pub struct MsgRegisterClient {
-    pub client_type: ByteArray,
-    pub client_address: ContractAddress,
-}
+pub struct MsgRegisterClient {}
 
 #[derive(Drop, Serde)]
-pub struct MsgCreateClient {
-    pub client_type: ByteArray,
-    pub client_state_bytes: ByteArray,
-    pub consensus_state_bytes: ByteArray,
-    pub relayer: ContractAddress,
-}
+pub struct MsgCreateClient {}
 
 #[derive(Drop, Serde)]
-pub struct MsgUpdateClient {
-    pub client_id: ClientId,
-    pub client_message: ByteArray,
-    pub relayer: ContractAddress,
-}
+pub struct MsgUpdateClient {}
 
 #[derive(Drop, Serde)]
 pub struct MsgForceUpdateClient {

@@ -60,8 +60,9 @@
 
 use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
 use core::hash::{Hash, HashStateExTrait, HashStateTrait};
+use starknet::ContractAddress;
 use crate::msg::{MsgCreateClient, MsgRegisterClient, MsgUpdateClient};
-use crate::types::ClientId;
+use crate::types::{ClientId, ConnectionId};
 
 pub mod Error {
     pub const CLIENT_TYPE_ALREADY_REGISTERED: felt252 = 'CLIENT_TYPE_ALREADY_REGISTERED';
@@ -74,17 +75,89 @@ pub mod Error {
 
 #[starknet::interface]
 pub trait IIbcHandler<TContractState> {
-    fn register_client(ref self: TContractState, msg: MsgRegisterClient);
+    /// Register a client implementation at `client_address` with a client type. This
+    /// `client_type` will be used later to call the correct client implementation.
+    ///
+    /// ## Panics
+    ///
+    /// This function will panic if the `client_type` is already registered
+    /// (CLIENT_TYPE_ALREADY_REGISTERED).
+    fn register_client(
+        ref self: TContractState, client_type: ByteArray, client_address: ContractAddress,
+    );
 
-    fn create_client(ref self: TContractState, msg: MsgCreateClient) -> ClientId;
+    /// Create a light client instance
+    ///
+    /// The light client must be registered with `client_type` before. The `client_state_bytes`
+    /// and the `consensus_state_bytes` will be provided as the initial state to the client. But
+    /// the client is free to return a different data to be saved. `relayer` IS PROVIDED BY THE
+    /// USER, hence DO NOT USE it for authentication.
+    ///
+    /// Returns the ID of the client.
+    ///
+    /// Emits [`CreateClient`].
+    ///
+    /// ## Panics
+    /// This function will panic if:
+    /// 1. the `client_type` is not registered (CLIENT_TYPE_NOT_FOUND),
+    /// 2. the light client returns an error (custom error)
+    ///
+    /// ## Commitments
+    /// 1. Client state commitment is written under `ClientStatePath`
+    /// 2. Consensus state commitment is written under `ConsensusStatePath`
+    fn create_client(
+        ref self: TContractState,
+        client_type: ByteArray,
+        client_state_bytes: ByteArray,
+        consensus_state_bytes: ByteArray,
+        relayer: ContractAddress,
+    ) -> ClientId;
 
-    fn update_client(ref self: TContractState, msg: MsgUpdateClient);
+    /// Updates a light client to a new state. This state transition MUST be verified by the
+    /// light client.
+    ///
+    /// The light client has the full control over the `client_message`. There is no assumption
+    /// over the encoding by the core protocol. `relayer` IS PROVIDED BY THE USER, hence DO NOT
+    /// USE it for authentication.
+    ///
+    /// Emits [`UpdateClient`].
+    ///
+    /// ## Panics
+    /// 1. Client with `client_id` is not found. (CLIENT_NOT_FOUND)
+    /// 2. The light client returns an error. (custom error)
+    ///
+    /// ## Commitments
+    /// 1. Client state commitment is updated with the commitment returned by the client.
+    /// 2. Consensus state commitent is added or updated with the commitment returned by the
+    /// client.
+    fn update_client(
+        ref self: TContractState,
+        client_id: ClientId,
+        client_message: ByteArray,
+        relayer: ContractAddress,
+    );
+
+    /// Starts the connection handshake.
+    //
+    /// `client_id` will be the verifier of the packets on this
+    /// chain using this connection, and the `counterparty_client_id` is the same for the
+    /// counterparty chain.
+    ///
+    /// Returns the ID of the connection.
+    ///
+    /// Emits [`ConnectionOpenInit`]
+    ///
+    /// ## Commitments
+    /// 1. The ethabi encoded and keccak hashed connection will be committed under `ConnectionPath`
+    fn connection_open_init(
+        ref self: TContractState, client_id: ClientId, counterparty_client_id: ClientId,
+    ) -> ConnectionId;
 }
 
 #[starknet::contract]
 pub mod IbcHandler {
     use core::keccak::compute_keccak_byte_array;
-    use core::num::traits::{Pow, Zero};
+    use core::num::traits::Zero;
     use starknet::event::EventEmitter;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
@@ -99,20 +172,16 @@ pub mod IbcHandler {
         ConnectionOpenTry, CreateClient, RegisterClient, UpdateClient,
     };
     use crate::lightclient::{
-        ConsensusStateUpdate, ILightClient, ILightClientDispatcher, ILightClientSafeDispatcher,
-        ILightClientSafeDispatcherTrait,
+        ConsensusStateUpdate, ILightClientSafeDispatcher, ILightClientSafeDispatcherTrait,
     };
     use crate::msg::{
-        MsgChannelOpenInit, MsgChannelOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm,
-        MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgRegisterClient,
-        MsgUpdateClient,
+        MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry,
+        MsgCreateClient, MsgRegisterClient, MsgUpdateClient,
     };
-    use crate::path::{
-        ChannelPath, ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait,
-    };
+    use crate::path::{ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait};
     use crate::types::{
-        Channel, ChannelId, ChannelState, ChannelTrait, ClientId, ClientIdImpl, Connection,
-        ConnectionId, ConnectionImpl, ConnectionState, ConnectionTrait,
+        Channel, ChannelId, ClientId, ClientIdImpl, Connection, ConnectionId, ConnectionIdImpl,
+        ConnectionImpl, ConnectionState, ConnectionTrait,
     };
     use super::{Error, to_byte_array};
 
@@ -149,43 +218,49 @@ pub mod IbcHandler {
 
     #[constructor]
     fn constructor(ref self: ContractState) {
-        let t = ClientIdImpl::new(1);
-        self.next_client_id.write(t);
+        self.next_client_id.write(ClientIdImpl::new(1));
+        self.next_connection_id.write(ConnectionIdImpl::new(1));
     }
 
     #[abi(embed_v0)]
-    impl IbcHandlerImpl of super::IIbcHandler<ContractState> {
-        fn register_client(ref self: ContractState, msg: MsgRegisterClient) {
-            let key = compute_keccak_byte_array(@msg.client_type);
+    pub impl IbcHandlerImpl of super::IIbcHandler<ContractState> {
+        fn register_client(
+            ref self: ContractState, client_type: ByteArray, client_address: ContractAddress,
+        ) {
+            let key = compute_keccak_byte_array(@client_type);
 
             assert(
                 self.client_type_registry.read(key).is_zero(),
                 Error::CLIENT_TYPE_ALREADY_REGISTERED,
             );
 
-            self.client_type_registry.write(key, msg.client_address);
+            self.client_type_registry.write(key, client_address);
 
-            self
-                .emit(
-                    RegisterClient {
-                        client_type: msg.client_type, client_address: msg.client_address,
-                    },
-                );
+            self.emit(RegisterClient { client_type, client_address });
         }
 
-        fn create_client(ref self: ContractState, msg: MsgCreateClient) -> ClientId {
-            let client_address = self.client_type_impl(@msg.client_type);
+        fn create_client(
+            ref self: ContractState,
+            client_type: ByteArray,
+            client_state_bytes: ByteArray,
+            consensus_state_bytes: ByteArray,
+            relayer: ContractAddress,
+        ) -> ClientId {
+            // TODO(aeryz): check the client status and revert if its already non-active
+
+            let client_address = self.client_type_impl(@client_type);
 
             let client_id = self.get_next_client_id();
 
+            // TODO(aeryz): this code depends on this feature, we should remove this? (cc: @bonlulu)
             #[feature("safe_dispatcher")]
             let res = ILightClientSafeDispatcher { contract_address: client_address }
                 .create_client(
                     get_execution_info().caller_address,
                     client_id,
-                    msg.client_state_bytes,
-                    msg.consensus_state_bytes,
-                    msg.relayer,
+                    client_state_bytes,
+                    consensus_state_bytes,
+                    relayer,
                 );
 
             match res {
@@ -194,6 +269,9 @@ pub mod IbcHandler {
                         client_state_commitment, consensus_state_commitment, height,
                     }, counterparty_chain_id,
                 )) => {
+                    // Note that the light clients define how the commitment should be since the
+                    // commitments are verified on the counterparty chains which might not natively
+                    // support certain encoding schemes.
                     self.commit(@ClientStatePath { client_id }, client_state_commitment);
                     self
                         .commit(
@@ -201,14 +279,9 @@ pub mod IbcHandler {
                         );
 
                     self.client_impls.write(client_id, client_address);
-                    self.client_types.write(client_id, msg.client_type.clone());
+                    self.client_types.write(client_id, client_type.clone());
 
-                    self
-                        .emit(
-                            CreateClient {
-                                client_type: msg.client_type, client_id, counterparty_chain_id,
-                            },
-                        );
+                    self.emit(CreateClient { client_type, client_id, counterparty_chain_id });
 
                     client_id
                 },
@@ -216,66 +289,68 @@ pub mod IbcHandler {
             }
         }
 
-        fn update_client(ref self: ContractState, msg: MsgUpdateClient) {
+        fn update_client(
+            ref self: ContractState,
+            client_id: ClientId,
+            client_message: ByteArray,
+            relayer: ContractAddress,
+        ) {
+            // TODO(aeryz): check the client status
+
+            // TODO(aeryz): this code depends on this feature, we should remove this? (cc: @bonlulu)
             #[feature("safe_dispatcher")]
             let res = self
-                .client_impl(msg.client_id)
+                .client_impl(client_id)
                 .update_client(
-                    get_execution_info().caller_address,
-                    msg.client_id,
-                    msg.client_message,
-                    msg.relayer,
+                    get_execution_info().caller_address, client_id, client_message, relayer,
                 );
 
             match res {
                 Ok(ConsensusStateUpdate {
                     client_state_commitment, consensus_state_commitment, height,
                 }) => {
+                    // Update or add the commitments.
+                    self.commit(@ClientStatePath { client_id }, client_state_commitment);
                     self
                         .commit(
-                            @ClientStatePath { client_id: msg.client_id }, client_state_commitment,
-                        );
-                    self
-                        .commit(
-                            @ConsensusStatePath { client_id: msg.client_id, height },
-                            consensus_state_commitment,
+                            @ConsensusStatePath { client_id, height }, consensus_state_commitment,
                         );
 
-                    self.emit(UpdateClient { client_id: msg.client_id, height });
+                    self.emit(UpdateClient { client_id, height });
                 },
                 Err(err) => { panic!("error when updating client: {err:?}"); },
             }
         }
-    }
 
-    #[generate_trait]
-    impl IbcHandlerUtilsImpl of IbcHandlerUtilsTrait {
         fn connection_open_init(
-            ref self: ContractState, msg: MsgConnectionOpenInit,
+            ref self: ContractState, client_id: ClientId, counterparty_client_id: ClientId,
         ) -> ConnectionId {
+            // We get the next connection ID, and increment it.
             let connection_id = self.get_next_connection_id();
 
             let connection = Connection {
                 state: ConnectionState::Init,
-                client_id: msg.client_id,
-                counterparty_client_id: msg.counterparty_client_id,
+                client_id,
+                counterparty_client_id,
+                // This is `None` because we don't know it yet. It will be filled by the
+                // counterparty chain on `connection_open_ack`.
                 counterparty_connection_id: None,
             };
 
             self.commit(@ConnectionPath { connection_id }, connection.commit());
 
-            self
-                .emit(
-                    ConnectionOpenInit {
-                        connection_id,
-                        client_id: msg.client_id,
-                        counterparty_client_id: msg.counterparty_client_id,
-                    },
-                );
+            // The commitment is the hashed connection, hence we save the full connection
+            // seperately.
+            self.connections.write(connection_id, connection);
+
+            self.emit(ConnectionOpenInit { connection_id, client_id, counterparty_client_id });
 
             connection_id
         }
+    }
 
+    #[generate_trait]
+    impl IbcHandlerUtilsImpl of IbcHandlerUtilsTrait {
         fn connection_open_try(ref self: ContractState, msg: MsgConnectionOpenTry) -> ConnectionId {
             let expected_connection = Connection {
                 state: ConnectionState::Init,
