@@ -3,7 +3,7 @@ use rlp::Encodable;
 use unionlabs::{
     errors::InvalidLength,
     ethereum::keccak256,
-    primitives::{Bytes, H64, H72, H160, H256, H2048, U256},
+    primitives::{Bytes, H64, H160, H256, H2048, U256},
 };
 
 #[derive(Debug, Clone, PartialEq)]
