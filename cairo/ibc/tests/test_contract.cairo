@@ -1,52 +1,288 @@
-// use ibc::{
-//     IHelloStarknetDispatcher, IHelloStarknetDispatcherTrait, IHelloStarknetSafeDispatcher,
-//     IHelloStarknetSafeDispatcherTrait, to_be_bytes,
-// };
-// use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
-// use starknet::ContractAddress;
+use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
+use alexandria_math::opt_math::OptBitShift;
+use core::hash::HashStateTrait;
+use core::keccak::compute_keccak_byte_array;
+use core::pedersen::PedersenTrait;
+use ibc::contract::IbcHandler::Event;
+use ibc::contract::{IIbcHandlerDispatcher, IIbcHandlerDispatcherTrait};
+use ibc::event::*;
+use ibc::msg::{MsgCreateClient, MsgRegisterClient};
+use ibc::path::{ClientStatePath, ConsensusStatePath, StorePathKeyTrait};
+use ibc::types::ClientIdImpl;
+use snforge_std::{
+    ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait, EventSpyTrait, declare, load,
+    map_entry_address, spy_events,
+};
+use starknet::storage_access::{
+    storage_address_from_base, storage_address_from_base_and_offset,
+    storage_base_address_from_felt252,
+};
+use starknet::{ContractAddress, SyscallResultTrait};
 
-// fn deploy_contract(name: ByteArray) -> ContractAddress {
-//     let contract = declare(name).unwrap().contract_class();
-//     let (contract_address, _) = contract.deploy(@ArrayTrait::new()).unwrap();
-//     contract_address
-// }
+fn deploy_contract(name: ByteArray) -> ContractAddress {
+    let contract = declare(name).unwrap_syscall().contract_class();
+    let (contract_address, _) = contract.deploy(Default::default()).unwrap_syscall();
+    contract_address
+}
 
-// #[test]
-// fn test_increase_balance() {
-//     let contract_address = deploy_contract("HelloStarknet");
+fn deploy_ibc_and_client() -> (IIbcHandlerDispatcher, ContractAddress, ContractAddress) {
+    let ibc_contract = deploy_contract("IbcHandler");
+    let light_client = deploy_contract("MockClient");
 
-//     let dispatcher = IHelloStarknetDispatcher { contract_address };
+    let ibc_dispatcher = IIbcHandlerDispatcher { contract_address: ibc_contract };
 
-//     let balance_before = dispatcher.get_balance();
-//     assert(balance_before == 0, 'Invalid balance');
+    (ibc_dispatcher, ibc_contract, light_client)
+}
 
-//     dispatcher.increase_balance(42);
+/// Load a value from `Map<K, ByteArray>`.
+///
+/// **Important Note:** This function only supports `ByteArray` of length up to 31 * 256.
+///
+/// # Examples
+/// ```
+/// // for the following contract:
+/// mod Contract {
+///     #[storage]
+///     struct Storage {
+///         client_types: Map<ClientId, ByteArray>
+///     }
+/// }
+///
+/// // to get the value of `ClientId(1)`, do:
+/// let value = load_byte_array_map_value(deployed_contract_address, selector!("client_types"),
+/// ClientId(1)).unwrap();
+/// ```
+fn load_byte_array_map_value<K, +Serde<K>, +Drop<K>>(
+    contract_address: ContractAddress, map_selector: felt252, key: K,
+) -> Option<ByteArray> {
+    let mut serialized_key = Default::default();
+    key.serialize(ref serialized_key);
 
-//     let balance_after = dispatcher.get_balance();
-//     assert(balance_after == 42, 'Invalid balance');
-// }
+    // Compute the base address of the `ByteArray`. This only contains the size of the value.
+    let key = map_entry_address(map_selector, serialized_key.span());
 
-// #[test]
-// #[feature("safe_dispatcher")]
-// fn test_cannot_increase_balance_with_zero_value() {
-//     let contract_address = deploy_contract("HelloStarknet");
+    // Parse the size of the `ByteArray` value.
+    let mut size: usize = (*load(contract_address, key, 1).span()[0]).try_into().unwrap();
 
-//     let safe_dispatcher = IHelloStarknetSafeDispatcher { contract_address };
+    assert!(size != 0);
 
-//     let balance_before = safe_dispatcher.get_balance().unwrap();
-//     assert(balance_before == 0, 'Invalid balance');
+    // The `ByteArray` is split into (31 * 256) bytes chunks and every chunk is written to a
+    // different storage address as chunks of bytes31's. This function only supports array length up
+    // to 31 * 256 to deal with only a single chunk of bytes31's. Hence, we compute the address by
+    // using `0` as the chunk index.
+    let (chunk_base, _, _) = core::poseidon::hades_permutation(key, 0, 'ByteArray');
 
-//     match safe_dispatcher.increase_balance(0) {
-//         Result::Ok(_) => core::panic_with_felt252('Should have panicked'),
-//         Result::Err(panic_data) => {
-//             assert(*panic_data.at(0) == 'Amount cannot be 0', *panic_data.at(0));
-//         },
-//     };
-// }
+    // We read `size / 31` + 1 subchunks from the memory because our `ByteArray` is splitted into
+    // multiple `bytes31's`.
+    let mut chunks = load(contract_address, chunk_base, (size / 31).into() + 1).span();
 
-// #[test]
-// fn test_to_be_bytes() {
-//     let res = to_be_bytes(0xabcd_u64);
+    let mut chunks_size = chunks.len();
+    let mut out: ByteArray = Default::default();
+    for i in 0..chunks_size {
+        // All the chunks will have the size 31 except the latest chunk which might be less
+        let size: u8 = if i == chunks_size - 1 {
+            (size % 31).try_into().unwrap()
+        } else {
+            31
+        };
 
-//     println!("{}", res);
-// }
+        if size == 31 {
+            // If the size is already 31, we already have a builtin function for this
+            out.append_felt252(*chunks[i]);
+        } else {
+            // Else, we do it one by one. Note that we could have done `append_u128`, then
+            // `append_u64` and so on, but let's not complicate things for a test helper.
+            let chunk: u256 = (*chunks[i]).into();
+
+            // The bytes are encoded in big endian format, hence we start from parsing the bytes
+            // from the higher bytes
+            let mut and_val: u256 = OptBitShift::shl(0xFF, (size - 1) * 8);
+            let mut shr_val: u8 = size * 8 - 8;
+            for _ in 0..size {
+                // Parse the bytes one by one, by 'and'ing, we isolite the byte we want to parse as
+                // u8
+                let shifted = OptBitShift::shr(chunk & and_val, shr_val);
+                out.append_u8(shifted.try_into().unwrap());
+
+                and_val = OptBitShift::shr(and_val, 8);
+                if shr_val != 0 {
+                    shr_val -= 8;
+                }
+            }
+        }
+    }
+
+    Some(out)
+}
+
+fn load_map_value<K, +Serde<K>, +Drop<K>, V, +Serde<V>>(
+    contract_address: ContractAddress, map_selector: felt252, key: K, size: felt252,
+) -> Option<V> {
+    let mut serialized_key = Default::default();
+    key.serialize(ref serialized_key);
+    let key = map_entry_address(map_selector, serialized_key.span());
+    let mut out = load(contract_address, key, size).span();
+    Serde::deserialize(ref out)
+}
+
+#[inline]
+fn truncate(n: u256) -> felt252 {
+    // https://docs.starknet.io/learn/protocol/cryptography#starknet-keccak
+    // u250(u256::MAX);
+    let mask = 0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256;
+    (n & mask).try_into().expect('value is <= 250 bits')
+}
+
+fn load_commitment<T, +StorePathKeyTrait<T>, +Drop<T>>(
+    contract_address: ContractAddress, commitment_key: T,
+) -> Option<felt252> {
+    let mut out = load(
+        contract_address,
+        storage_address_from_base(storage_base_address_from_felt252(truncate(commitment_key.key())))
+            .into(),
+        1,
+    )
+        .span();
+
+    Serde::deserialize(ref out)
+}
+
+mod register_client {
+    use super::*;
+
+    #[test]
+    fn test_register_client_works() {
+        let (ibc_dispatcher, ibc_contract, light_client) = deploy_ibc_and_client();
+
+        let mut spy = spy_events();
+
+        ibc_dispatcher
+            .register_client(
+                MsgRegisterClient { client_type: "cometbls", client_address: light_client },
+            );
+
+        let client_address = load_map_value(
+            ibc_contract,
+            selector!("client_type_registry"),
+            compute_keccak_byte_array(@"cometbls"),
+            1,
+        )
+            .unwrap();
+
+        assert!(light_client == client_address);
+
+        spy
+            .assert_emitted(
+                @array![
+                    (
+                        ibc_contract,
+                        Event::RegisterClient(
+                            RegisterClient {
+                                client_type: "cometbls", client_address: light_client,
+                            },
+                        ),
+                    ),
+                ],
+            );
+    }
+
+    #[test]
+    #[should_panic(expected: 'CLIENT_TYPE_ALREADY_REGISTERED')]
+    fn test_register_client_fails_client_type_already_registered() {
+        let (ibc_dispatcher, _, light_client) = deploy_ibc_and_client();
+        ibc_dispatcher
+            .register_client(
+                MsgRegisterClient { client_type: "cometbls", client_address: light_client },
+            );
+
+        ibc_dispatcher
+            .register_client(
+                MsgRegisterClient { client_type: "cometbls", client_address: light_client },
+            );
+    }
+}
+
+mod create_client {
+    use super::*;
+
+    #[test]
+    fn test_create_client_works() {
+        let (ibc_dispatcher, ibc_contract, light_client) = deploy_ibc_and_client();
+
+        let mut spy = spy_events();
+
+        ibc_dispatcher
+            .register_client(
+                MsgRegisterClient { client_type: "cometbls", client_address: light_client },
+            );
+
+        ibc_dispatcher
+            .create_client(
+                MsgCreateClient {
+                    client_type: "cometbls",
+                    client_state_bytes: "client_state_bytes",
+                    consensus_state_bytes: "consensus_state_bytes",
+                    relayer: ibc_contract,
+                },
+            );
+
+        let client_id = ClientIdImpl::new(1);
+
+        assert!(load(ibc_contract, selector!("next_client_id"), 1)[0] == @2);
+
+        let client_state_commitment = load_commitment(ibc_contract, ClientStatePath { client_id })
+            .unwrap();
+
+        let consensus_state_commitment = load_commitment(
+            ibc_contract, ConsensusStatePath { client_id, height: 10 },
+        )
+            .unwrap();
+
+        assert!(
+            client_state_commitment == truncate(compute_keccak_byte_array(@"client_state_bytes")),
+        );
+
+        assert!(
+            consensus_state_commitment == truncate(
+                compute_keccak_byte_array(@"consensus_state_bytes"),
+            ),
+        );
+        assert!(
+            "cometbls" == load_byte_array_map_value(
+                ibc_contract, selector!("client_types"), client_id,
+            )
+                .unwrap(),
+        );
+        spy
+            .assert_emitted(
+                @array![
+                    (
+                        ibc_contract,
+                        Event::CreateClient(
+                            CreateClient {
+                                client_type: "cometbls",
+                                client_id,
+                                counterparty_chain_id: "counterparty-chain",
+                            },
+                        ),
+                    ),
+                ],
+            );
+    }
+
+    #[test]
+    #[should_panic(expected: 'CLIENT_TYPE_NOT_FOUND')]
+    fn test_create_client_fails_client_type_not_found() {
+        let (ibc_dispatcher, ibc_contract, _) = deploy_ibc_and_client();
+
+        ibc_dispatcher
+            .create_client(
+                MsgCreateClient {
+                    client_type: "cometbls",
+                    client_state_bytes: "client_state_bytes",
+                    consensus_state_bytes: "consensus_state_bytes",
+                    relayer: ibc_contract,
+                },
+            );
+    }
+}

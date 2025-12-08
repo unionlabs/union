@@ -64,7 +64,17 @@ dependencies = [
  "alexandria_bytes",
  "alexandria_encoding",
  "alexandria_evm",
+ "alexandria_math",
+ "mock_client",
  "snforge_std",
+]
+
+[[package]]
+name = "mock_client"
+version = "0.1.0"
+dependencies = [
+ "alexandria_bytes",
+ "ibc",
 ]
 
 [[package]]

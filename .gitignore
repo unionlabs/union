@@ -127,3 +127,6 @@ effect-svelte/build
 
 # vitest
 coverage/
+
+# cairo
+.snfoundry_cache/

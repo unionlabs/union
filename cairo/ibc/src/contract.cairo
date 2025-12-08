@@ -82,7 +82,7 @@ pub trait IIbcHandler<TContractState> {
 }
 
 #[starknet::contract]
-mod IbcHandler {
+pub mod IbcHandler {
     use core::keccak::compute_keccak_byte_array;
     use core::num::traits::{Pow, Zero};
     use starknet::event::EventEmitter;
@@ -623,7 +623,7 @@ mod IbcHandler {
             let truncate = |n: u256| -> felt252 {
                 // u250(u256::MAX);
                 let mask = 0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256;
-                (n ^ mask).try_into().expect('value is <= 250 bits')
+                (n & mask).try_into().expect('value is <= 250 bits')
             };
 
             storage_write_syscall(
