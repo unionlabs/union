@@ -2711,3 +2711,22 @@ contract SafeUpgradeZAsset is BaseUpgrade {
         upgradeCall = new bytes(0);
     }
 }
+
+contract SafeUpgradeLoopbackClient is BaseUpgrade {
+    constructor() BaseUpgrade(true, false) {}
+
+    function upgradeParameters()
+        internal
+        override
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
+    {
+        targetContract = getDeployed(LIGHT_CLIENT_SALT.LOOPBACK);
+        address handler = getDeployed(IBC_SALT.BASED);
+        newImplementation = address(new LoopbackClient(handler));
+        upgradeCall = new bytes(0);
+    }
+}

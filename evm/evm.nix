@@ -1471,6 +1471,7 @@ _: {
                         eudrop = "EUDrop";
                         quick-withdrawal = "QuickWithdrawal";
                         z-asset = "ZAsset";
+                        loopback-client = "LoopbackClient";
                       }
                   )
                 ))
