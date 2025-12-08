@@ -158,7 +158,10 @@ mod tests {
     use base_light_client_types::{ClientStateV1, Header};
     use hex_literal::hex;
     use ibc_union_spec::ClientId;
-    use unionlabs::encoding::{DecodeAs, Json};
+    use unionlabs::{
+        encoding::{DecodeAs, Json},
+        primitives::Bytes,
+    };
 
     use super::*;
 
@@ -308,7 +311,7 @@ mod tests {
             gas_limit: 0x8f0d180,
             gas_used: 0x3300938,
             timestamp: 0x686697bb,
-            extra_data: hex!("000000003200000003").into(),
+            extra_data: <Bytes>::from(hex!("000000003200000003")).try_into().unwrap(),
             mix_hash: hex!("a067545459cd316f8fb75217ebae6b0a21615d51f4b7f834e9dfec87a8eb8f77").into(),
             nonce: hex!("0000000000000000").into(),
             base_fee_per_gas: 0xa2af3e_u64.into(),
