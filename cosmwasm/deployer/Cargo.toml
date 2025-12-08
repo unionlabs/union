@@ -24,6 +24,7 @@ cw-escrow-vault             = { workspace = true, features = ["library"] }
 cw20                        = { workspace = true }
 cw20-base                   = { workspace = true }
 embed-commit                = { workspace = true }
+flate2                      = "1.1.5"
 frissitheto                 = { workspace = true }
 futures                     = { workspace = true }
 hex-literal                 = { workspace = true }

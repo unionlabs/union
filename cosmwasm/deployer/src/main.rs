@@ -1,7 +1,7 @@
 use core::fmt;
 use std::{
-    collections::BTreeMap, fmt::Display, num::NonZeroU64, ops::Deref, path::PathBuf, str::FromStr,
-    sync::LazyLock,
+    collections::BTreeMap, fmt::Display, io::Write, num::NonZeroU64, ops::Deref, path::PathBuf,
+    str::FromStr, sync::LazyLock,
 };
 
 use access_manager_types::{RoleId, Selector, manager::msg::ExecuteMsg as AccessManagerExecuteMsg};
@@ -17,6 +17,7 @@ use cosmos_client::{
 };
 use cosmos_signer::CosmosSigner;
 use cosmwasm_std::{Addr, Decimal, Uint256};
+use flate2::{Compression, write::GzEncoder};
 use futures::{TryStreamExt, future::OptionFuture, stream::FuturesOrdered};
 use hex_literal::hex;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
@@ -106,6 +107,20 @@ enum App {
         /// Whether or not the salt should be interpreted as hex.
         #[arg(long)]
         salt_hex: bool,
+        #[command(flatten)]
+        gas_config: GasFillerArgs,
+    },
+    DeployManager {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long, env)]
+        private_key: H256,
+        #[arg(long)]
+        bytecode: PathBuf,
+        #[arg(long)]
+        initial_admin: Bech32<Bytes>,
+        #[arg(long)]
+        output: Option<PathBuf>,
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
@@ -668,7 +683,11 @@ async fn do_main() -> Result<()> {
             let ctx = Deployer::new(rpc_url, private_key.unwrap_or(sha2("")), &gas_config).await?;
 
             let do_migrate = async |address, bytecode, message: Value| {
-                let bytecode = std::fs::read(bytecode).context("reading bytecode")?;
+                let raw_bytecode = std::fs::read(bytecode).context("reading bytecode")?;
+
+                let mut gz_encoder = GzEncoder::new(Vec::new(), Compression::best());
+                gz_encoder.write_all(&raw_bytecode)?;
+                let bytecode = gz_encoder.finish()?;
 
                 let contract_info = ctx
                     .contract_info(&address)
@@ -681,7 +700,7 @@ async fn do_main() -> Result<()> {
                     bail!(
                         "contract {address} has not yet been initiated, it must be fully deployed before it can be migrated"
                     )
-                } else if checksum == sha2(&bytecode) {
+                } else if checksum == sha2(&raw_bytecode) {
                     info!("contract {address} has already been migrated to this bytecode");
                     return Ok(());
                 }
@@ -690,29 +709,15 @@ async fn do_main() -> Result<()> {
 
                 info!("migrate message: {message}");
 
-                let msg = MsgStoreCode {
-                    sender: ctx.wallet().address().map_data(Into::into),
-                    wasm_byte_code: bytecode.into(),
-                    instantiate_permission: None,
-                };
+                info!("migrating {address}");
 
-                info!("storing code for {address}");
-
-                let (tx_hash, store_code_response) = ctx
-                    .tx(msg, "", gas_config.simulate)
-                    .await
-                    .context("migrate")?;
-
-                info!(%tx_hash, code_id = store_code_response.code_id, "code stored");
-
-                let msg = MsgMigrateContract {
+                let msg = MsgStoreAndMigrateContract {
                     sender: ctx.wallet().address().map_data(Into::into),
                     contract: address.clone(),
-                    code_id: store_code_response.code_id,
+                    wasm_byte_code: bytecode.into(),
+                    instantiate_permission: None,
                     msg: message.to_string().into_bytes().into(),
                 };
-
-                info!("migrating {address}");
 
                 let (tx_hash, _) = ctx
                     .tx(msg, "", gas_config.simulate)
@@ -762,17 +767,17 @@ async fn do_main() -> Result<()> {
                 .await?;
             }
 
-            if let Some(address) = addresses.escrow_vault.clone() {
-                do_migrate(
-                    address,
-                    &contracts.escrow_vault.unwrap(),
-                    to_value(cw_escrow_vault::msg::MigrateMsg {
-                        access_managed_init_msg: access_managed_init_msg.clone(),
-                    })
-                    .unwrap(),
-                )
-                .await?;
-            }
+            // if let Some(address) = addresses.escrow_vault.clone() {
+            //     do_migrate(
+            //         address,
+            //         &contracts.escrow_vault.unwrap(),
+            //         to_value(cw_escrow_vault::msg::MigrateMsg {
+            //             access_managed_init_msg: access_managed_init_msg.clone(),
+            //         })
+            //         .unwrap(),
+            //     )
+            //     .await?;
+            // }
 
             info!("migrated contracts");
             info!("roles have not been set up, use `cosmwasm-deployer setup-roles`");
@@ -999,6 +1004,34 @@ async fn do_main() -> Result<()> {
 
             let res = deployer
                 .deploy_and_initiate(bytecode, bytecode_base_code_id, init_msg, &salt, false)
+                .await?;
+
+            write_output(output, res)?;
+        }
+        App::DeployManager {
+            rpc_url,
+            private_key,
+            bytecode,
+            initial_admin,
+            output,
+            gas_config,
+        } => {
+            let bytecode = std::fs::read(bytecode).context("reading bytecode path")?;
+
+            let deployer = Deployer::new(rpc_url.clone(), private_key, &gas_config).await?;
+
+            let bytecode_base_code_id = deployer.store_bytecode_base(&gas_config).await?;
+
+            let res = deployer
+                .deploy_and_initiate(
+                    bytecode,
+                    bytecode_base_code_id,
+                    access_manager_types::manager::msg::InitMsg {
+                        initial_admin: Addr::unchecked(initial_admin.to_string()),
+                    },
+                    &MANAGER,
+                    true,
+                )
                 .await?;
 
             write_output(output, res)?;
@@ -1653,10 +1686,10 @@ async fn setup_roles(
         "misbehaviour",
         "batch_send",
         "batch_acks",
-        "recv_packet",
-        "recv_intent_packet",
-        "acknowledge_packet",
-        "timeout_packet",
+        "packet_recv",
+        "intent_packet_recv",
+        "packet_ack",
+        "packet_timeout",
     ];
 
     let rate_limiter_selectors = ["set_bucket_config"];
