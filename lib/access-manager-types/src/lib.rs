@@ -38,6 +38,7 @@ use crate::manager::msg::QueryMsg;
 #[derive(
     Debug, Clone, PartialEq, Default, Serialize, Deserialize, bincode::Encode, bincode::Decode,
 )]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct TargetConfig {
     pub admin_delay: Delay,
     pub closed: bool,
@@ -54,6 +55,7 @@ pub struct TargetConfig {
 #[derive(
     Debug, Clone, PartialEq, Default, Serialize, Deserialize, bincode::Encode, bincode::Decode,
 )]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct Access {
     /// Timepoint at which the user gets the permission.
     ///
@@ -79,6 +81,7 @@ pub struct Access {
 #[derive(
     Debug, Clone, PartialEq, Default, Serialize, Deserialize, bincode::Encode, bincode::Decode,
 )]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct Role {
     /// Admin who can grant or revoke permissions.
     pub admin: RoleId,
@@ -99,6 +102,7 @@ pub struct Role {
 #[derive(
     Debug, Clone, PartialEq, Default, Serialize, Deserialize, bincode::Encode, bincode::Decode,
 )]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct Schedule {
     /// Moment at which the operation can be executed.
     ///
@@ -557,19 +561,23 @@ impl fmt::Display for Selector {
 /// throughout the original solidity implementation; `immediate && delay != 0` is invalid and has no
 /// meaning, so this enum cannot represent that state.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum CanCall {
     /// The caller is unauthorized to execute this call.
     ///
     /// This is equivalent to `!immediate && delay == 0`.
+    #[serde(alias = "Unauthorized")]
     Unauthorized {},
     /// The caller is authorized to execute this call, with no execution delay.
     ///
     /// This is equivalent to `immediate && delay == 0`.
+    #[serde(alias = "Immediate")]
     Immediate {},
     /// The caller is authorized to execute this call, with the specified execution delay (the call
     /// must be scheduled).
     ///
     /// This is equivalent to `!immediate && delay != 0`.
+    #[serde(alias = "WithDelay")]
     WithDelay { delay: NonZero<u32> },
 }
 
@@ -579,20 +587,24 @@ pub enum CanCall {
 /// throughout the original solidity implementation; `!is_member && delay != 0` is invalid and has
 /// no meaning, so this enum cannot represent that state.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum HasRole {
     /// The account does not have the specified role.
     ///
     /// This is equivalent to `!is_member`.
+    #[serde(alias = "No")]
     No {},
     /// The account does have the specified role, potentially with an execution delay.
     ///
     /// This is equivalent to `is_member`, with `execution_delay` being `Some` if it is non-zero.
+    #[serde(alias = "Yes")]
     Yes {
         execution_delay: Option<NonZero<u32>>,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct FullAccess {
     /// Timestamp at which the account membership becomes valid. 0 means role is not granted.
     pub since: u64,
