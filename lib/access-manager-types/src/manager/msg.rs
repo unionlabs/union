@@ -10,14 +10,14 @@ use crate::{RoleId, Selector};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(rename_all = "snake_case")]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct InitMsg {
     pub initial_admin: Addr,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(rename_all = "snake_case")]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
     /// The identifier of the admin role. Required to perform most configuration operations
     /// including other roles' management and target restrictions.
@@ -233,7 +233,7 @@ pub enum QueryMsg {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(rename_all = "snake_case")]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Give a label to a role, for improved role discoverability by UIs.
     ///

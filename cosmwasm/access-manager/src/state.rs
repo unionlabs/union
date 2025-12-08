@@ -7,18 +7,6 @@ use depolama::{
 use unionlabs_encoding::{Bincode, DecodeAs, EncodeAs};
 use unionlabs_primitives::H256;
 
-/// The admin of this manager contract. This is the only address that is able to add or remove role
-/// permissions.
-pub enum Admin {}
-impl Store for Admin {
-    const PREFIX: Prefix = Prefix::new(b"admin");
-    type Key = ();
-    type Value = Addr;
-}
-impl ValueCodecViaEncoding for Admin {
-    type Encoding = RawAddrEncoding;
-}
-
 /// ```solidity
 /// mapping(address target => TargetConfig mode) private _targets;
 /// ```
