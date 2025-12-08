@@ -222,13 +222,7 @@ contract LoopbackClient is
         uint32 clientId,
         bytes calldata clientMessageBytes,
         address
-    )
-        external
-        override
-        onlyIBC
-        whenNotPaused
-        returns (ConsensusStateUpdate memory)
-    {
+    ) external override whenNotPaused returns (ConsensusStateUpdate memory) {
         Header calldata header;
         assembly {
             header := clientMessageBytes.offset
@@ -261,7 +255,7 @@ contract LoopbackClient is
         uint32 clientId,
         bytes calldata clientMessageBytes,
         address
-    ) external override onlyIBC whenNotPaused {
+    ) external override {
         revert LoopbackClientLib.ErrUnsupported();
     }
 
