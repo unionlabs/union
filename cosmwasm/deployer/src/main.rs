@@ -767,17 +767,17 @@ async fn do_main() -> Result<()> {
                 .await?;
             }
 
-            // if let Some(address) = addresses.escrow_vault.clone() {
-            //     do_migrate(
-            //         address,
-            //         &contracts.escrow_vault.unwrap(),
-            //         to_value(cw_escrow_vault::msg::MigrateMsg {
-            //             access_managed_init_msg: access_managed_init_msg.clone(),
-            //         })
-            //         .unwrap(),
-            //     )
-            //     .await?;
-            // }
+            if let Some(address) = addresses.escrow_vault.clone() {
+                do_migrate(
+                    address,
+                    &contracts.escrow_vault.unwrap(),
+                    to_value(cw_escrow_vault::msg::MigrateMsg {
+                        access_managed_init_msg: access_managed_init_msg.clone(),
+                    })
+                    .unwrap(),
+                )
+                .await?;
+            }
 
             info!("migrated contracts");
             info!("roles have not been set up, use `cosmwasm-deployer setup-roles`");
