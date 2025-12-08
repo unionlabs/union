@@ -82,6 +82,7 @@
   "babylon.bbn-1": {
     "ibc_interface": "ibc-cosmwasm",
     "deployer": "bbn10c4yqddv6w7sphruvhxs5v0es8r9fcj5xgn904",
+    "manager": "bbn1managerhl8ka4alvaewkhflcc44m6385pf94zmrh2f4d3yzc2y4qmtrxaf",
     "core": {
       "address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f",
       "height": 28972,
@@ -602,6 +603,7 @@
   "osmosis.osmosis-1": {
     "ibc_interface": "ibc-cosmwasm",
     "deployer": "osmo10c4yqddv6w7sphruvhxs5v0es8r9fcj5ed3yx7",
+    "manager": "osmo1managerhl8ka4alvaewkhflcc44m6385pf94zmrh2f4d3yzc2y4q4l623x",
     "core": {
       "address": "osmo1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqata4fx",
       "height": 39452782,
@@ -746,6 +748,7 @@
   "union.union-1": {
     "ibc_interface": "ibc-cosmwasm",
     "deployer": "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a",
+    "manager": "union1managerhl8ka4alvaewkhflcc44m6385pf94zmrh2f4d3yzc2y4qyvuxqf",
     "core": {
       "address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
       "height": 461578,
