@@ -20,13 +20,14 @@ use cosmwasm_std::{Addr, Decimal, Uint256};
 use flate2::{Compression, write::GzEncoder};
 use futures::{TryStreamExt, future::OptionFuture, stream::FuturesOrdered};
 use hex_literal::hex;
+use ibc_union_light_client::upgradable::msg::Upgradable;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use rand_chacha::{
     ChaChaCore,
     rand_core::{SeedableRng, block::BlockRng},
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use serde_json::{Value, json, to_value};
+use serde_json::{Value, json};
 use sha2::Digest;
 use tracing::{info, instrument};
 use tracing_subscriber::EnvFilter;
@@ -34,10 +35,12 @@ use ucs03_zkgm::msg::TokenMinterInitParams;
 use unionlabs::{
     cosmos::{bank::msg_send::MsgSend, base::coin::Coin},
     cosmwasm::wasm::{
-        access_config::AccessConfig, msg_execute_contract::MsgExecuteContract,
+        access_config::AccessConfig,
+        msg_execute_contract::MsgExecuteContract,
         msg_instantiate_contract2::MsgInstantiateContract2,
         msg_migrate_contract::MsgMigrateContract,
-        msg_store_and_migrate_contract::MsgStoreAndMigrateContract, msg_store_code::MsgStoreCode,
+        msg_store_and_migrate_contract::MsgStoreAndMigrateContract,
+        msg_store_code::{MsgStoreCode, response::MsgStoreCodeResponse},
         msg_update_admin::MsgUpdateAdmin,
         msg_update_instantiate_config::MsgUpdateInstantiateConfig,
     },
@@ -133,25 +136,11 @@ enum App {
         #[arg(long)]
         salt_hex: bool,
     },
-    MigrateToAccessManaged {
-        #[arg(long)]
-        rpc_url: String,
-        #[arg(long, env)]
-        private_key: Option<H256>,
-        #[arg(long)]
-        contracts: PathBuf,
-        #[arg(long)]
-        addresses: PathBuf,
-        #[arg(long)]
-        manager: Bech32<H256>,
-        #[command(flatten)]
-        gas_config: GasFillerArgs,
-    },
     Migrate {
         #[arg(long)]
         rpc_url: String,
         #[arg(long, env, required_unless_present("dump_to"))]
-        private_key: Option<H256>,
+        private_key: String,
         #[arg(long)]
         address: Bech32<H256>,
         #[arg(long)]
@@ -159,6 +148,31 @@ enum App {
         #[arg(long, conflicts_with = "private_key")]
         dump_to: Option<PathBuf>,
         #[arg(long, conflicts_with = "private_key")]
+        sender: Option<Bech32<H160>>,
+        #[arg(
+            long,
+            // the autoref value parser selector chooses From<String> before FromStr, but Value's From<String> impl always returns Value::String(..), whereas FromStr actually parses the json contained within the string
+            value_parser(serde_json::Value::from_str),
+            default_value_t = serde_json::Value::Object(serde_json::Map::new())
+        )]
+        message: Value,
+        #[arg(long, default_value_t = false)]
+        force: bool,
+        #[command(flatten)]
+        gas_config: GasFillerArgs,
+    },
+    Upgrade {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long, env)]
+        private_key: H256,
+        #[arg(long)]
+        address: Bech32<H256>,
+        #[arg(long)]
+        new_bytecode: PathBuf,
+        #[arg(long, requires = "sender")]
+        dump_to: Option<PathBuf>,
+        #[arg(long)]
         sender: Option<Bech32<H160>>,
         #[arg(
             long,
@@ -664,125 +678,89 @@ async fn do_main() -> Result<()> {
 
             write_output(output, heights)?;
         }
-        App::MigrateToAccessManaged {
+        App::Migrate {
             rpc_url,
             private_key,
-            contracts,
-            addresses,
-            manager,
+            address,
+            new_bytecode,
+            dump_to,
+            sender,
+            message,
+            force,
             gas_config,
         } => {
-            let contracts = serde_json::from_slice::<ContractPaths>(
-                &std::fs::read(contracts).context("reading contracts path")?,
-            )?;
+            let (new_checksum, new_bytecode) = read_bytecode(new_bytecode)?;
 
-            let addresses = serde_json::from_slice::<ContractAddresses>(
-                &std::fs::read(addresses).context("reading addresses path")?,
-            )?;
+            let ctx = Deployer::new(
+                rpc_url,
+                if private_key.is_empty() {
+                    sha2("")
+                } else {
+                    private_key.parse()?
+                },
+                &gas_config,
+            )
+            .await?;
 
-            let ctx = Deployer::new(rpc_url, private_key.unwrap_or(sha2("")), &gas_config).await?;
+            let contract_info = ctx
+                .contract_info(&address)
+                .await?
+                .with_context(|| format!("contract {address} does not exist"))?;
 
-            let do_migrate = async |address, bytecode, message: Value| {
-                let raw_bytecode = std::fs::read(bytecode).context("reading bytecode")?;
+            let checksum = ctx.code_checksum(contract_info.code_id).await?.unwrap();
 
-                let mut gz_encoder = GzEncoder::new(Vec::new(), Compression::best());
-                gz_encoder.write_all(&raw_bytecode)?;
-                let bytecode = gz_encoder.finish()?;
-
-                let contract_info = ctx
-                    .contract_info(&address)
-                    .await?
-                    .with_context(|| format!("contract {address} does not exist"))?;
-
-                let checksum = ctx.code_checksum(contract_info.code_id).await?.unwrap();
-
-                if checksum == sha2(BYTECODE_BASE_BYTECODE) {
-                    bail!(
-                        "contract {address} has not yet been initiated, it must be fully deployed before it can be migrated"
-                    )
-                } else if checksum == sha2(&raw_bytecode) {
+            if checksum == sha2(BYTECODE_BASE_BYTECODE) {
+                bail!(
+                    "contract {address} has not yet been initiated, it must be fully deployed before it can be migrated"
+                )
+            } else if checksum == new_checksum {
+                if force {
+                    info!(
+                        "contract {address} has already been migrated to this bytecode, migrating anyways since --force was passed"
+                    );
+                } else {
                     info!("contract {address} has already been migrated to this bytecode");
                     return Ok(());
                 }
+            }
 
-                let message = json!({ "migrate": message });
+            let message = json!({ "migrate": message });
 
-                info!("migrate message: {message}");
+            info!("migrate message: {message}");
 
-                info!("migrating {address}");
+            let msg = MsgStoreAndMigrateContract {
+                sender: sender
+                    .unwrap_or_else(|| ctx.wallet().address())
+                    .map_data(Into::into),
+                wasm_byte_code: new_bytecode.into_encoding(),
+                instantiate_permission: None,
+                contract: address.clone(),
+                msg: message.to_string().into_bytes().into(),
+            };
 
-                let msg = MsgStoreAndMigrateContract {
-                    sender: ctx.wallet().address().map_data(Into::into),
-                    contract: address.clone(),
-                    wasm_byte_code: bytecode.into(),
-                    instantiate_permission: None,
-                    msg: message.to_string().into_bytes().into(),
-                };
+            if let Some(dump_to) = dump_to {
+                write_output(
+                    Some(dump_to.clone()),
+                    json!({
+                        "body": {
+                            "messages": [Any(msg)],
+                        },
+                    }),
+                )?;
 
-                let (tx_hash, _) = ctx
+                info!("raw tx body written to {}", dump_to.display());
+            } else {
+                info!("migrating address {address}");
+
+                let (tx_hash, _migrate_response) = ctx
                     .tx(msg, "", gas_config.simulate)
                     .await
                     .context("migrate")?;
 
                 info!(%tx_hash, "migrated");
-
-                Ok(())
-            };
-
-            let access_managed_init_msg = access_manager_types::managed::msg::InitMsg {
-                initial_authority: Addr::unchecked(manager.to_string()),
-            };
-
-            do_migrate(
-                addresses.core.clone(),
-                &contracts.core,
-                to_value(ibc_union::contract::MigrateMsg {
-                    access_managed_init_msg: access_managed_init_msg.clone(),
-                })
-                .unwrap(),
-            )
-            .await?;
-
-            for (salt, path) in &contracts.lightclient {
-                do_migrate(
-                    addresses.lightclient[salt].clone(),
-                    path,
-                    to_value(ibc_union_light_client::msg::MigrateMsg {
-                        access_managed_init_msg: access_managed_init_msg.clone(),
-                    })
-                    .unwrap(),
-                )
-                .await?;
             }
-
-            if let Some(address) = addresses.app.ucs03.clone() {
-                do_migrate(
-                    address,
-                    &contracts.app.ucs03.as_ref().unwrap().path,
-                    to_value(ucs03_zkgm::msg::MigrateMsg {
-                        access_managed_init_msg: access_managed_init_msg.clone(),
-                    })
-                    .unwrap(),
-                )
-                .await?;
-            }
-
-            if let Some(address) = addresses.escrow_vault.clone() {
-                do_migrate(
-                    address,
-                    &contracts.escrow_vault.unwrap(),
-                    to_value(cw_escrow_vault::msg::MigrateMsg {
-                        access_managed_init_msg: access_managed_init_msg.clone(),
-                    })
-                    .unwrap(),
-                )
-                .await?;
-            }
-
-            info!("migrated contracts");
-            info!("roles have not been set up, use `cosmwasm-deployer setup-roles`");
         }
-        App::Migrate {
+        App::Upgrade {
             rpc_url,
             private_key,
             address,
@@ -795,7 +773,7 @@ async fn do_main() -> Result<()> {
         } => {
             let new_bytecode = std::fs::read(new_bytecode).context("reading new bytecode")?;
 
-            let ctx = Deployer::new(rpc_url, private_key.unwrap_or(sha2("")), &gas_config).await?;
+            let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
 
             let contract_info = ctx
                 .contract_info(&address)
@@ -819,26 +797,41 @@ async fn do_main() -> Result<()> {
                 }
             }
 
-            let message = json!({ "migrate": message });
+            info!("storing code for {address}");
 
-            info!("migrate message: {message}");
+            let (tx_hash, MsgStoreCodeResponse { code_id, .. }) = ctx
+                .tx(
+                    MsgStoreCode {
+                        sender: ctx.wallet().address().map_data(Into::into),
+                        wasm_byte_code: new_bytecode.clone().into(),
+                        instantiate_permission: None,
+                    },
+                    "",
+                    gas_config.simulate,
+                )
+                .await
+                .context("migrate")?;
 
-            let msg = MsgStoreAndMigrateContract {
-                sender: sender
-                    .unwrap_or_else(|| ctx.wallet().address())
-                    .map_data(Into::into),
-                wasm_byte_code: new_bytecode.into(),
-                instantiate_permission: None,
-                contract: address.clone(),
-                msg: message.to_string().into_bytes().into(),
-            };
+            info!(%tx_hash, "migrated");
+
+            let message = serde_json::to_string(&Upgradable::Upgrade {
+                new_code_id: code_id,
+                msg: message,
+            })?;
+
+            info!("upgrade message: {message}");
 
             if let Some(dump_to) = dump_to {
                 write_output(
                     Some(dump_to.clone()),
                     json!({
                         "body": {
-                            "messages": [Any(msg)],
+                            "messages": [Any(MsgExecuteContract {
+                                sender: sender.unwrap().map_data(Into::into),
+                                contract: address,
+                                msg: message.into_bytes().into(),
+                                funds: vec![],
+                            })],
                         },
                     }),
                 )?;
@@ -847,8 +840,17 @@ async fn do_main() -> Result<()> {
             } else {
                 info!("migrating address {address}");
 
-                let (tx_hash, _migrate_response) = ctx
-                    .tx(msg, "", gas_config.simulate)
+                let (tx_hash, _) = ctx
+                    .tx(
+                        MsgExecuteContract {
+                            sender: ctx.wallet().address().map_data(Into::into),
+                            contract: address,
+                            msg: message.into_bytes().into(),
+                            funds: vec![],
+                        },
+                        "",
+                        gas_config.simulate,
+                    )
                     .await
                     .context("migrate")?;
 
@@ -956,7 +958,7 @@ async fn do_main() -> Result<()> {
             gas_config,
             output,
         } => {
-            let bytecode = std::fs::read(bytecode).context("reading bytecode path")?;
+            let (_, bytecode) = read_bytecode(bytecode)?;
 
             let deployer = Deployer::new(rpc_url.clone(), private_key, &gas_config).await?;
 
@@ -964,7 +966,7 @@ async fn do_main() -> Result<()> {
                 .tx(
                     MsgStoreCode {
                         sender: deployer.wallet().address().map_data(Into::into),
-                        wasm_byte_code: bytecode.into(),
+                        wasm_byte_code: bytecode.into_encoding(),
                         // TODO: Support permissions
                         instantiate_permission: None,
                     },
@@ -990,7 +992,7 @@ async fn do_main() -> Result<()> {
             salt_hex,
             gas_config,
         } => {
-            let bytecode = std::fs::read(bytecode).context("reading bytecode path")?;
+            let (_, bytecode) = read_bytecode(bytecode)?;
 
             let deployer = Deployer::new(rpc_url.clone(), private_key, &gas_config).await?;
 
@@ -1016,7 +1018,7 @@ async fn do_main() -> Result<()> {
             output,
             gas_config,
         } => {
-            let bytecode = std::fs::read(bytecode).context("reading bytecode path")?;
+            let (_, bytecode) = read_bytecode(bytecode)?;
 
             let deployer = Deployer::new(rpc_url.clone(), private_key, &gas_config).await?;
 
@@ -1313,6 +1315,18 @@ async fn do_main() -> Result<()> {
     Ok(())
 }
 
+fn read_bytecode(bytecode: PathBuf) -> Result<(H256, Bytes)> {
+    let bytecode = std::fs::read(bytecode).context("reading bytecode path")?;
+
+    let checksum = sha2(&bytecode);
+
+    let mut gz = GzEncoder::new(vec![], Compression::best());
+    gz.write_all(&bytecode)?;
+    let bytecode = gz.finish()?;
+
+    Ok((checksum, bytecode.into()))
+}
+
 async fn deploy_full(
     rpc_url: String,
     private_key: H256,
@@ -1332,7 +1346,7 @@ async fn deploy_full(
 
     let manager = ctx
         .deploy_and_initiate(
-            std::fs::read(contracts.manager)?,
+            read_bytecode(contracts.manager)?.1,
             bytecode_base_code_id,
             access_manager_types::manager::msg::InitMsg {
                 initial_admin: Addr::unchecked(manager_admin.to_string()),
@@ -1348,7 +1362,7 @@ async fn deploy_full(
 
     let core_address = ctx
         .deploy_and_initiate(
-            std::fs::read(contracts.core)?,
+            read_bytecode(contracts.core)?.1,
             bytecode_base_code_id,
             ibc_union_msg::msg::InitMsg {
                 access_managed_init_msg: access_managed_init_msg.clone(),
@@ -1379,7 +1393,7 @@ async fn deploy_full(
     for (client_type, path) in contracts.lightclient {
         let address = ctx
             .deploy_and_initiate(
-                std::fs::read(path)?,
+                read_bytecode(path)?.1,
                 bytecode_base_code_id,
                 ibc_union_light_client::msg::InitMsg {
                     ibc_host: core_address.to_string(),
@@ -1610,7 +1624,7 @@ async fn deploy_full(
             }
 
             ctx.deploy_and_initiate(
-                std::fs::read(ucs03_config.path)?,
+                read_bytecode(ucs03_config.path)?.1,
                 bytecode_base_code_id,
                 ucs03_zkgm::msg::InitMsg {
                     config: ucs03_zkgm::msg::Config {
@@ -1633,7 +1647,7 @@ async fn deploy_full(
         if let Some(escrow_vault_path) = contracts.escrow_vault {
             let escrow_vault_address = ctx
                 .deploy_and_initiate(
-                    std::fs::read(escrow_vault_path)?,
+                    read_bytecode(escrow_vault_path)?.1,
                     bytecode_base_code_id,
                     cw_escrow_vault::msg::InstantiateMsg {
                         zkgm: Addr::unchecked(ucs03_address.to_string()),
@@ -1650,7 +1664,7 @@ async fn deploy_full(
         }
 
         ctx.deploy_and_initiate(
-            std::fs::read(contracts.on_zkgm_call_proxy)?,
+            read_bytecode(contracts.on_zkgm_call_proxy)?.1,
             bytecode_base_code_id,
             on_zkgm_call_proxy::InitMsg {
                 zkgm: Addr::unchecked(ucs03_address.to_string()),
@@ -2107,7 +2121,7 @@ impl Deployer {
     #[instrument(skip_all, fields(%salt))]
     async fn deploy_and_initiate(
         &self,
-        wasm_byte_code: Vec<u8>,
+        wasm_byte_code: Bytes,
         bytecode_base_code_id: NonZeroU64,
         msg: impl Serialize,
         salt: &Salt,
@@ -2153,7 +2167,7 @@ impl Deployer {
             .tx(
                 MsgStoreCode {
                     sender: self.wallet().address().map_data(Into::into),
-                    wasm_byte_code: wasm_byte_code.into(),
+                    wasm_byte_code: wasm_byte_code.into_encoding(),
                     instantiate_permission: None,
                 },
                 "",
@@ -2211,7 +2225,7 @@ impl Deployer {
                     std::cmp::Ordering::Less => panic!("impossible"),
                     std::cmp::Ordering::Equal => {
                         info!(
-                            "contract {address} has already been instantaited with the base bytecode but not yet initiated"
+                            "contract {address} has already been instantiated with the base bytecode but not yet initiated"
                         );
                         Ok(ContractDeployState::Instantiated)
                     }

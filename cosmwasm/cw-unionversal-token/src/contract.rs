@@ -20,8 +20,7 @@ use crate::{
     error::ContractError,
     msg::{Cw20InstantiateMsg, ExecuteMsg, InitMsg, QueryMsg, RestrictedExecuteMsg},
     state::{
-        Admin, Cw20ImplType, Cw20Type, FungibleCounterparty, FungibleLane, IntentWhitelist,
-        Minters, Zkgm,
+        Cw20ImplType, Cw20Type, FungibleCounterparty, FungibleLane, IntentWhitelist, Minters, Zkgm,
     },
 };
 
@@ -49,9 +48,7 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct MigrateMsg {
-    pub access_managed_init_msg: access_managed::InitMsg,
-}
+pub struct MigrateMsg {}
 
 #[entry_point]
 pub fn migrate(
@@ -93,14 +90,8 @@ pub fn migrate(
             }?;
             Ok((res, Some(version::LATEST)))
         },
-        |mut deps, msg, version| match version {
-            version::INIT => {
-                access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
-
-                deps.storage.delete_item::<Admin>();
-
-                Ok((Response::default(), Some(version::MANAGED)))
-            }
+        |_, _, version| match version {
+            version::INIT => Err(StdError::generic_err("unsupported version: INIT").into()),
             version::MANAGED => Ok((Response::default(), None)),
             _ => Err(UpgradeError::UnknownStateVersion(version).into()),
         },

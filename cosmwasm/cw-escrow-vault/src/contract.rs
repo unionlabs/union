@@ -20,7 +20,7 @@ use crate::{
     msg::{
         ExecuteMsg, FungibleLaneConfig, InstantiateMsg, MigrateMsg, QueryMsg, RestrictedExecuteMsg,
     },
-    state::{Admin, FungibleCounterparty, FungibleLane, IntentWhitelist, Zkgm},
+    state::{FungibleCounterparty, FungibleLane, IntentWhitelist, Zkgm},
 };
 
 /// Major state versions of this contract, used in the [`frissitheto`] migrations.
@@ -61,12 +61,8 @@ pub fn migrate(
 
             Ok((Response::new(), Some(version::LATEST)))
         },
-        |mut deps, msg, version| match version {
-            version::INIT => {
-                access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
-                deps.storage.delete_item::<Admin>();
-                Ok((Response::default(), Some(version::MANAGED)))
-            }
+        |_, _, version| match version {
+            version::INIT => Err(StdError::generic_err("unsupported version: INIT").into()),
             version::MANAGED => Ok((Response::default(), None)),
             _ => Err(UpgradeError::UnknownStateVersion(version).into()),
         },

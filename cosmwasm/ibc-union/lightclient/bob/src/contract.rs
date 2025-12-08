@@ -1,15 +1,11 @@
 use cosmwasm_std::{DepsMut, Env, MessageInfo, Response, StdError, wasm_execute};
 use depolama::StorageExt;
-use frissitheto::UpgradeMsg;
 use ibc_union_light_client::{
     IbcClientError,
     access_managed::{EnsureCanCallResult, Restricted, state::Authority},
-    default_query, default_reply,
-    msg::{InitMsg, MigrateMsg},
-    read_client_state, read_consensus_state,
+    default_migrate, default_query, default_reply, read_client_state, read_consensus_state,
     spec::ClientId,
     state::IbcHost,
-    version,
 };
 use ibc_union_msg::msg::MsgMigrateState;
 use serde::{Deserialize, Serialize};
@@ -22,6 +18,7 @@ use crate::client::BobLightClient;
 
 default_query!(BobLightClient);
 default_reply!();
+default_migrate!(BobLightClient);
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -125,37 +122,4 @@ pub fn execute(
             }
         }
     }
-}
-
-#[cosmwasm_std::entry_point]
-pub fn migrate(
-    deps: DepsMut,
-    _: Env,
-    msg: UpgradeMsg<InitMsg, MigrateMsg>,
-) -> Result<Response, IbcClientError<BobLightClient>> {
-    msg.run(
-        deps,
-        |deps, init_msg| {
-            let res = ibc_union_light_client::init(deps, init_msg)?;
-            Ok((res, Some(version::LATEST)))
-        },
-        |mut deps, msg, version| match version {
-            version::INIT => {
-                ibc_union_light_client::access_managed::init(
-                    deps.branch(),
-                    msg.access_managed_init_msg,
-                )?;
-                Ok((Response::default(), Some(version::MANAGED)))
-            }
-            // NOTE: We messed with the state version previously, this is required to standardize it between all of the contracts
-            version::MANAGED => {
-                ibc_union_light_client::access_managed::init(
-                    deps.branch(),
-                    msg.access_managed_init_msg,
-                )?;
-                Ok((Response::default(), None))
-            }
-            _ => Err(::frissitheto::UpgradeError::UnknownStateVersion(version).into()),
-        },
-    )
 }

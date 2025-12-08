@@ -797,6 +797,7 @@ _: {
           lightclients,
           apps,
           private_key,
+          ucs04-chain-id,
           rpc_url,
           bech32_prefix,
           gas_config,
@@ -817,26 +818,14 @@ _: {
                   cosmwasm-deployer
                 ];
                 text = ''
-                  DEPLOYER=$(
-                    PRIVATE_KEY=${private_key} \
-                      cosmwasm-deployer \
-                      address-of-private-key \
-                      --bech32-prefix ${bech32_prefix}
-                  )
-                  echo "deployer address: $DEPLOYER"
-                  ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
-
                   PRIVATE_KEY=${private_key} \
                   RUST_LOG=info \
                     cosmwasm-deployer \
-                    migrate \
+                    upgrade \
                     --rpc-url ${rpc_url} \
-                    --address "$(echo "$ADDRESSES" | jq '.lightclient."${
-                      (get-lightclient (l: l.name == lc)).client-type
-                    }"' -r)" \
+                    --address ${(getDeployment ucs04-chain-id).lightclient.${lc}.address} \
                     --new-bytecode ${(mk-lightclient lc).release} \
-                    ${mk-gas-args gas_config} \
-                    "$@"
+                      ${mk-gas-args gas_config} "$@"
                 '';
               };
             }
@@ -947,27 +936,17 @@ _: {
             ${name} = pkgs.writeShellApplication {
               name = "${args.name}-${name}";
               runtimeInputs = [
-                ibc-union-contract-addresses
                 cosmwasm-deployer
               ];
               text = ''
-                DEPLOYER=$(
-                  PRIVATE_KEY=${private_key} \
-                    cosmwasm-deployer \
-                    address-of-private-key \
-                    --bech32-prefix ${bech32_prefix}
-                )
-                echo "deployer address: $DEPLOYER"
-                ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
-
                 PRIVATE_KEY=${private_key} \
                 RUST_LOG=info \
                   cosmwasm-deployer \
-                  migrate \
+                  upgrade \
                   --rpc-url ${rpc_url} \
-                  --address "$(echo "$ADDRESSES" | jq '.core' -r)" \
+                  --address ${(getDeployment ucs04-chain-id).core.address} \
                   --new-bytecode ${ibc-union.release} \
-                  ${mk-gas-args gas_config}
+                  ${mk-gas-args gas_config} "$@"
               '';
             };
           }

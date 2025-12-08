@@ -20,9 +20,7 @@ pub struct InitMsg {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct MigrateMsg {
-    pub access_managed_init_msg: access_managed::InitMsg,
-}
+pub struct MigrateMsg {}
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
