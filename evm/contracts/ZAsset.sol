@@ -36,6 +36,10 @@ contract ZAsset is UnionversalToken {
         bytes32 indexed attestedMessage, uint256 indexed redeemAmount
     );
 
+    event Deposited(address indexed account, uint256 amount);
+
+    event Withdrawn(address indexed account, uint256 amount);
+
     struct LightClientSource {
         uint32 clientId;
         uint64 height;
@@ -176,22 +180,32 @@ contract ZAsset is UnionversalToken {
         $.chainId = chainId;
     }
 
+    function _deposit(address account, uint256 amount) internal {
+        ZAssetStorage storage $ = _getZAssetStorage();
+        if ($.underlying == address(0)) revert NotWrapped();
+        IERC20($.underlying).safeTransferFrom(account, address(this), amount);
+        _mint(account, amount);
+        emit Deposited(account, amount);
+    }
+
     function deposit(
         uint256 amount
     ) external {
+        _deposit(msg.sender, amount);
+    }
+
+    function _withdraw(address account, uint256 amount) internal {
         ZAssetStorage storage $ = _getZAssetStorage();
         if ($.underlying == address(0)) revert NotWrapped();
-        IERC20($.underlying).safeTransferFrom(msg.sender, address(this), amount);
-        _mint(msg.sender, amount);
+        _burn(account, amount);
+        IERC20($.underlying).transfer(account, amount);
+        emit Withdrawn(account, amount);
     }
 
     function withdraw(
         uint256 amount
     ) external {
-        ZAssetStorage storage $ = _getZAssetStorage();
-        if ($.underlying == address(0)) revert NotWrapped();
-        _burn(msg.sender, amount);
-        IERC20($.underlying).transfer(msg.sender, amount);
+        _withdraw(msg.sender, amount);
     }
 
     function redeem(
@@ -273,13 +287,10 @@ contract ZAsset is UnionversalToken {
             proof, commitments, commitmentPok, [uint256(inputsHash)]
         );
 
+        _mint(beneficiary, redeemAmount);
+
         if (unwrap) {
-            if ($.underlying == address(0)) {
-                revert NotWrapped();
-            }
-            IERC20($.underlying).transfer(beneficiary, redeemAmount);
-        } else {
-            _mint(beneficiary, redeemAmount);
+            _withdraw(beneficiary, redeemAmount);
         }
 
         emit Redeemed(nullifier, redeemAmount, beneficiary);
