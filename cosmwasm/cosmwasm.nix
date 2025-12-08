@@ -2,14 +2,21 @@ _: {
   perSystem =
     {
       self',
-      crane,
+      mkCrane,
       pkgs,
       dbg,
       system,
+      gitRev,
       ensureAtRepositoryRoot,
       ...
     }:
     let
+      crane = mkCrane {
+        root = ../.;
+        # gitRev = "1b172ff9247e5eedcddc6665c856b0bf4427035d";
+        inherit gitRev;
+      };
+
       getDeployment =
         ucs04-chain-id:
         (builtins.fromJSON (builtins.readFile ../deployments/deployments.json)).${ucs04-chain-id};
@@ -624,6 +631,39 @@ _: {
           '';
         };
 
+      deploy-manager =
+        {
+          name,
+          rpc_url,
+          gas_config,
+          private_key,
+          bech32_prefix,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "deploy-contract-${name}";
+          runtimeInputs = [
+            cosmwasm-deployer
+          ];
+          text = ''
+            DEPLOYER=$(
+              PRIVATE_KEY=${private_key} \
+                cosmwasm-deployer \
+                address-of-private-key \
+                --bech32-prefix ${bech32_prefix}
+            )
+            echo "deployer address: $DEPLOYER"
+
+            PRIVATE_KEY=${private_key} \
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              deploy-manager \
+              --bytecode ${manager.release} \
+              --rpc-url ${rpc_url} \
+              ${mk-gas-args gas_config} "$@"
+          '';
+        };
+
       whitelist-relayers =
         {
           name,
@@ -1006,7 +1046,7 @@ _: {
           ];
           text = ''
             PRIVATE_KEY=${private_key} \
-            RUST_LOG=info \
+            RUST_LOG="info,''${RUST_LOG:-}" \
               cosmwasm-deployer \
               migrate-to-access-managed \
               --rpc-url ${rpc_url} \
@@ -1216,6 +1256,7 @@ _: {
                       chain-contracts-config-json = chain-contracts-config-json chain;
                       chain-deployed-contracts-json = chain-deployed-contracts-json chain;
                       deploy = deploy chain;
+                      deploy-manager = deploy-manager chain;
                       update-deployments-json = update-deployments-json chain;
                       get-git-rev = get-git-rev chain;
                       whitelist-relayers = whitelist-relayers chain;
