@@ -293,7 +293,8 @@ contract ZAssetTest is Test {
             value,
             BENEFICIARY,
             attestedMessage,
-            signature
+            signature,
+            true
         );
     }
 
@@ -320,7 +321,8 @@ contract ZAssetTest is Test {
             value,
             BENEFICIARY,
             attestedMessage,
-            signature
+            signature,
+            true
         );
     }
 
@@ -345,7 +347,8 @@ contract ZAssetTest is Test {
             value,
             BENEFICIARY,
             attestedMessage,
-            signature
+            signature,
+            true
         );
     }
 
@@ -371,7 +374,8 @@ contract ZAssetTest is Test {
             value,
             BENEFICIARY,
             attestedMessage,
-            signature
+            signature,
+            true
         );
     }
 
@@ -397,7 +401,8 @@ contract ZAssetTest is Test {
             value,
             BENEFICIARY,
             attestedMessage,
-            signature
+            signature,
+            true
         );
     }
 

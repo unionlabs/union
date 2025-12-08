@@ -203,7 +203,8 @@ contract ZAsset is UnionversalToken {
         uint256 redeemAmount,
         address beneficiary,
         bytes32 attestedMessage,
-        bytes calldata signature
+        bytes calldata signature,
+        bool unwrap
     ) external {
         if (lightClients.length > 4) revert TooManyLightClients();
 
@@ -272,7 +273,14 @@ contract ZAsset is UnionversalToken {
             proof, commitments, commitmentPok, [uint256(inputsHash)]
         );
 
-        _mint(beneficiary, redeemAmount);
+        if (unwrap) {
+            if ($.underlying == address(0)) {
+                revert NotWrapped();
+            }
+            IERC20($.underlying).transfer(beneficiary, redeemAmount);
+        } else {
+            _mint(beneficiary, redeemAmount);
+        }
 
         emit Redeemed(nullifier, redeemAmount, beneficiary);
         emit Attested(attestedMessage, redeemAmount);
