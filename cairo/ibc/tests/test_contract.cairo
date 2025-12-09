@@ -354,7 +354,7 @@ mod connection_handshake {
                 counterparty_connection_id: match *data[3] {
                     0 => None,
                     1 => {
-                        let connection_id: u32 = (*data[5]).try_into().unwrap();
+                        let connection_id: u32 = (*data[4]).try_into().unwrap();
 
                         Some(ConnectionIdImpl::new(connection_id.try_into().unwrap()))
                     },

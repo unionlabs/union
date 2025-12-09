@@ -185,6 +185,21 @@ pub trait IIbcHandler<TContractState> {
         proof_init: ByteArray,
         proof_height: u64,
     ) -> ConnectionId;
+
+    fn connection_open_ack(
+        ref self: TContractState,
+        connection_id: ConnectionId,
+        counterparty_connection_id: ConnectionId,
+        proof_try: ByteArray,
+        proof_height: u64,
+    );
+
+    fn connection_open_confirm(
+        ref self: TContractState,
+        connection_id: ConnectionId,
+        proof_ack: ByteArray,
+        proof_height: u64,
+    );
 }
 
 #[starknet::contract]
@@ -435,28 +450,30 @@ pub mod IbcHandler {
 
             connection_id
         }
-    }
 
-    #[generate_trait]
-    impl IbcHandlerUtilsImpl of IbcHandlerUtilsTrait {
-        fn connection_open_ack(ref self: ContractState, msg: MsgConnectionOpenAck) {
-            let mut connection = self
-                .ensure_connection_state(msg.connection_id, ConnectionState::Init);
+        fn connection_open_ack(
+            ref self: ContractState,
+            connection_id: ConnectionId,
+            counterparty_connection_id: ConnectionId,
+            proof_try: ByteArray,
+            proof_height: u64,
+        ) {
+            let mut connection = self.ensure_connection_state(connection_id, ConnectionState::Init);
 
             let expected_connection = Connection {
                 state: ConnectionState::Init,
                 client_id: connection.counterparty_client_id,
                 counterparty_client_id: connection.client_id,
-                counterparty_connection_id: Some(msg.connection_id),
+                counterparty_connection_id: Some(connection_id),
             };
 
             assert(
                 self
                     .verify_connection_state(
                         connection.client_id,
-                        msg.proof_height,
-                        msg.proof_try,
-                        msg.counterparty_connection_id,
+                        proof_height,
+                        proof_try,
+                        counterparty_connection_id,
                         expected_connection,
                     ),
                 Error::INVALID_PROOF,
@@ -467,33 +484,38 @@ pub mod IbcHandler {
             self
                 .emit(
                     ConnectionOpenAck {
-                        connection_id: msg.connection_id,
+                        connection_id,
                         client_id: connection.client_id,
                         counterparty_client_id: connection.counterparty_client_id,
-                        counterparty_connection_id: msg.counterparty_connection_id,
+                        counterparty_connection_id,
                     },
                 );
 
-            self.save_and_commit_connection(msg.connection_id, connection);
+            self.save_and_commit_connection(connection_id, connection);
         }
 
-        fn connection_open_confirm(ref self: ContractState, msg: MsgConnectionOpenConfirm) {
+        fn connection_open_confirm(
+            ref self: ContractState,
+            connection_id: ConnectionId,
+            proof_ack: ByteArray,
+            proof_height: u64,
+        ) {
             let mut connection = self
-                .ensure_connection_state(msg.connection_id, ConnectionState::TryOpen);
+                .ensure_connection_state(connection_id, ConnectionState::TryOpen);
 
             let expected_connection = Connection {
                 state: ConnectionState::TryOpen,
                 client_id: connection.counterparty_client_id,
                 counterparty_client_id: connection.client_id,
-                counterparty_connection_id: Some(msg.connection_id),
+                counterparty_connection_id: Some(connection_id),
             };
 
             assert(
                 self
                     .verify_connection_state(
                         connection.client_id,
-                        msg.proof_height,
-                        msg.proof_ack,
+                        proof_height,
+                        proof_ack,
                         connection.counterparty_connection_id.expect('must be set'),
                         expected_connection,
                     ),
@@ -505,7 +527,7 @@ pub mod IbcHandler {
             self
                 .emit(
                     ConnectionOpenConfirm {
-                        connection_id: msg.connection_id,
+                        connection_id,
                         client_id: connection.client_id,
                         counterparty_client_id: connection.counterparty_client_id,
                         counterparty_connection_id: connection
@@ -514,9 +536,12 @@ pub mod IbcHandler {
                     },
                 );
 
-            self.save_and_commit_connection(msg.connection_id, connection);
+            self.save_and_commit_connection(connection_id, connection);
         }
+    }
 
+    #[generate_trait]
+    impl IbcHandlerUtilsImpl of IbcHandlerUtilsTrait {
         // fn channel_open_init(ref self: ContractState, msg: MsgChannelOpenInit) -> ChannelId {
         //     let channel_id = self.get_next_channel_id();
 
