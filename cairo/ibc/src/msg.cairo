@@ -116,43 +116,6 @@ pub struct MsgConnectionOpenConfirm {
 }
 
 #[derive(Drop, Serde)]
-pub struct MsgChannelOpenInit {
-    pub port_id: ContractAddress,
-    pub counterparty_port_id: ByteArray,
-    pub connection_id: ConnectionId,
-    pub version: ByteArray,
-    pub relayer: ContractAddress,
-}
-
-#[derive(Drop, Serde)]
-pub struct MsgChannelOpenTry {
-    pub port_id: ContractAddress,
-    pub channel: Channel,
-    pub counterparty_version: ByteArray,
-    pub proof_init: ByteArray,
-    pub proof_height: u64,
-    pub relayer: ContractAddress,
-}
-
-#[derive(Drop, Serde)]
-pub struct MsgChannelOpenAck {
-    pub channel_id: ChannelId,
-    pub counterparty_version: ByteArray,
-    pub counterparty_channel_id: ChannelId,
-    pub proof_try: ByteArray,
-    pub proof_height: u64,
-    pub relayer: ContractAddress,
-}
-
-#[derive(Drop, Serde)]
-pub struct MsgChannelOpenConfirm {
-    pub channel_id: ChannelId,
-    pub proof_ack: ByteArray,
-    pub proof_height: u64,
-    pub relayer: ContractAddress,
-}
-
-#[derive(Drop, Serde)]
 pub struct MsgChannelCloseInit {
     pub channel_id: ChannelId,
     pub relayer: ContractAddress,

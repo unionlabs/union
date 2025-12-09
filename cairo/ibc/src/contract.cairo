@@ -61,10 +61,11 @@
 use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
 use core::hash::{Hash, HashStateExTrait, HashStateTrait};
 use starknet::ContractAddress;
+use crate::app::IIbcModule;
 use crate::event::*;
 use crate::lightclient::ILightClient;
 use crate::path::*;
-use crate::types::{ClientId, ConnectionId};
+use crate::types::{Channel, ChannelId, ClientId, ConnectionId};
 
 pub mod Error {
     pub const CLIENT_TYPE_ALREADY_REGISTERED: felt252 = 'CLIENT_TYPE_ALREADY_REGISTERED';
@@ -178,7 +179,7 @@ pub trait IIbcHandler<TContractState> {
     ///
     /// #### Params
     ///
-    /// - `client_id`: The light client that will verify the counterparty chain
+    /// - `client_id`: The light client that will verify the counterparty chain.
     /// - `counterparty_client_id`: The light client on the counterparty chain that will verify
     /// state of this chain.
     ///
@@ -208,7 +209,7 @@ pub trait IIbcHandler<TContractState> {
     ///
     /// #### Params
     ///
-    /// - `client_id`: The light client that will verify the counterparty chain
+    /// - `client_id`: The light client that will verify the counterparty chain.
     /// - `counterparty_client_id`: the light client on the counterparty chain that will verify
     /// state of this chain.
     /// - `proof_init`: The proof of the counterparty connection commitment, as stored under the
@@ -256,7 +257,7 @@ pub trait IIbcHandler<TContractState> {
     /// - `counterparty_connection_id`: the ID of the connection on the counterparty chain.
     /// - `proof_try`: The proof of the counterparty connection commitment, as stored under the
     /// [`ConnectionPath`] path in the counterparty's commitment store.
-    /// - `proof_height`: The height that the `proof_init` proof is verifiable at.
+    /// - `proof_height`: The height that the `proof_try` proof is verifiable at.
     ///
     /// #### Events
     ///
@@ -328,6 +329,118 @@ pub trait IIbcHandler<TContractState> {
         proof_ack: ByteArray,
         proof_height: u64,
     );
+
+    /// Start the channel handshake.
+    ///
+    /// #### Params
+    ///
+    /// - `port_id`: The contract on this chain that implements [`IIbcModule`].
+    /// - `counterparty_port_id`: The port on the counterparty chain that implements the same IBC
+    /// app protocol as `port_id`. Note that this is arbitrary bytes from the perspective of this
+    /// chain, since this is only needed to uniquely identify the port id on the counterparty chain.
+    /// - `connection_id`: The connection on this chain to create the channel over.
+    /// - `version`: The channel version for this protocol.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    ///
+    /// The [`ChannelId`] of the newly created channel is returned upon success.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`ChannelOpenInit`].
+    ///
+    /// #### Panics
+    ///
+    /// This function will panic with a storage read error if the provided connection cannot be
+    /// found.
+    ///
+    /// Additionally, the module may panic during the open init callback. In this case, this
+    /// function will either panic with the full panic message from the failed call, or exit
+    /// directly if the error cannot be caught. See the cairo documentation for more information on
+    /// what errors can be caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed channel will be committed under [`ChannelPath`].
+    fn channel_open_init(
+        ref self: TContractState,
+        port_id: ContractAddress,
+        counterparty_port_id: ByteArray,
+        connection_id: ConnectionId,
+        version: ByteArray,
+        relayer: ContractAddress,
+    ) -> ChannelId;
+
+    /// The second step of the channel handshake, after the `channel_open_init` on the counterpaty
+    /// chain.
+    ///
+    /// #### Params
+    ///
+    /// - `port_id`: The contract on this chain that implements [`IIbcModule`].
+    /// - `connection_id`: The connection on this chain to create the channel over.
+    /// - `counterparty_channel_id`: The ID of the channel on the counterparty chain.
+    /// - `counterparty_port_id`: The port id of the channel on the counterparty chain.
+    /// - `counterparty_version`: The channel version as committed on the counterparty chain.
+    /// - `proof_init`: The proof of the counterparty channel commitment, as stored under the
+    /// [`ChannelPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_init` proof is verifiable at.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    ///
+    /// The [`ChannelId`] of the newly created channel is returned upon success.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`ChannelOpenTry`].
+    ///
+    /// #### Panics
+    ///
+    /// This function will panic with a storage read error if the provided connection
+    /// (`channel.connection_id`) cannot be found.
+    ///
+    /// This function may also panic with the following well-known error codes:
+    ///
+    /// - [`Error::INVALID_CONNECTION_STATE`]: The provided connection is not open
+    /// ([`ConnectionState::Open`]).
+    /// - [`Error::INVALID_PROOF`]: The `proof_init` cannot be verified by the light client.
+    ///
+    /// Additionally, the module may panic during the open init callback. In this case, this
+    /// function will either panic with the full panic message from the failed call, or exit
+    /// directly if the error cannot be caught. See the cairo documentation for more information on
+    /// what errors can be caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed channel will be committed under [`ChannelPath`].
+    fn channel_open_try(
+        ref self: TContractState,
+        port_id: ContractAddress,
+        connection_id: ConnectionId,
+        counterparty_channel_id: ChannelId,
+        counterparty_port_id: ByteArray,
+        counterparty_version: ByteArray,
+        proof_init: ByteArray,
+        proof_height: u64,
+        relayer: ContractAddress,
+    ) -> ChannelId;
+
+    fn channel_open_ack(
+        ref self: TContractState,
+        channel_id: ChannelId,
+        counterparty_version: ByteArray,
+        counterparty_channel_id: ChannelId,
+        proof_try: ByteArray,
+        proof_height: u64,
+        relayer: ContractAddress,
+    );
+
+    fn channel_open_confirm(
+        ref self: TContractState,
+        channel_id: ChannelId,
+        proof_ack: ByteArray,
+        proof_height: u64,
+        relayer: ContractAddress,
+    );
 }
 
 #[starknet::contract]
@@ -342,6 +455,7 @@ pub mod IbcHandler {
     use starknet::storage_access::{storage_address_from_base, storage_base_address_from_felt252};
     use starknet::syscalls::storage_write_syscall;
     use starknet::{ContractAddress, SyscallResultTrait, get_execution_info};
+    use crate::app::{IIbcModuleDispatcher, IIbcModuleSafeDispatcher, IIbcModuleSafeDispatcherTrait};
     use crate::event::{
         ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
         ChannelOpenTry, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
@@ -350,12 +464,14 @@ pub mod IbcHandler {
     use crate::lightclient::{
         ConsensusStateUpdate, ILightClientSafeDispatcher, ILightClientSafeDispatcherTrait,
     };
-    use crate::path::{ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait};
-    use crate::types::{
-        Channel, ChannelId, ClientId, ClientIdImpl, Connection, ConnectionId, ConnectionIdImpl,
-        ConnectionImpl, ConnectionState, ConnectionTrait,
+    use crate::path::{
+        ChannelPath, ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait,
     };
-    use super::{Error, to_byte_array};
+    use crate::types::{
+        Channel, ChannelId, ChannelImpl, ChannelState, ClientId, ClientIdImpl, Connection,
+        ConnectionId, ConnectionIdImpl, ConnectionImpl, ConnectionState, ConnectionTrait,
+    };
+    use super::{ByteArrayTraitExt, Error, to_byte_array};
 
     #[storage]
     struct Storage {
@@ -368,6 +484,7 @@ pub mod IbcHandler {
         next_channel_id: ChannelId,
         connections: Map<ConnectionId, Connection>,
         channels: Map<ChannelId, Channel>,
+        channel_owners: Map<ChannelId, ContractAddress>,
     }
 
     #[event]
@@ -455,7 +572,7 @@ pub mod IbcHandler {
 
                     client_id
                 },
-                Err(err) => { panic!("error when creating client: {err:?}"); },
+                Err(err) => panic!("error creating client: {err:?}"),
             }
         }
 
@@ -486,7 +603,7 @@ pub mod IbcHandler {
 
                     self.emit(UpdateClient { client_id, height });
                 },
-                Err(err) => { panic!("error when updating client: {err:?}"); },
+                Err(err) => panic!("error updating client: {err:?}"),
             }
         }
 
@@ -672,158 +789,277 @@ pub mod IbcHandler {
 
             self.save_and_commit_connection(connection_id, connection);
         }
+
+        fn channel_open_init(
+            ref self: ContractState,
+            port_id: ContractAddress,
+            counterparty_port_id: ByteArray,
+            connection_id: ConnectionId,
+            version: ByteArray,
+            relayer: ContractAddress,
+        ) -> ChannelId {
+            // assert that the connection exists and is open
+            let _ = self.ensure_connection_state(connection_id, ConnectionState::Open);
+
+            let channel_id = self.get_next_channel_id();
+
+            let channel = Channel {
+                state: ChannelState::Init,
+                connection_id,
+                counterparty_channel_id: None,
+                counterparty_port_id: counterparty_port_id.clone(),
+                version: version.clone(),
+            };
+
+            self.save_and_commit_channel(channel_id, channel);
+
+            self.channel_owners.write(channel_id, port_id);
+
+            let res = IIbcModuleSafeDispatcher { contract_address: port_id }
+                .on_chan_open_init(
+                    get_execution_info().caller_address,
+                    connection_id,
+                    channel_id,
+                    version.clone(),
+                    relayer,
+                );
+
+            match res {
+                Ok(()) => {},
+                Err(err) => panic!("error in channel open init callback: {err:?}"),
+            }
+
+            self
+                .emit(
+                    ChannelOpenInit {
+                        port_id, channel_id, counterparty_port_id, connection_id, version,
+                    },
+                );
+
+            channel_id
+        }
+
+        fn channel_open_try(
+            ref self: ContractState,
+            port_id: ContractAddress,
+            connection_id: ConnectionId,
+            counterparty_channel_id: ChannelId,
+            counterparty_port_id: ByteArray,
+            counterparty_version: ByteArray,
+            proof_init: ByteArray,
+            proof_height: u64,
+            relayer: ContractAddress,
+        ) -> ChannelId {
+            let connection = self.ensure_connection_state(connection_id, ConnectionState::Open);
+
+            assert(
+                self
+                    .verify_channel_state(
+                        connection.client_id,
+                        proof_height,
+                        proof_init,
+                        counterparty_channel_id,
+                        Channel {
+                            state: ChannelState::Init,
+                            // connection is open, counterparty connection id will exist; qed;
+                            connection_id: connection.counterparty_connection_id.unwrap(),
+                            counterparty_channel_id: None,
+                            counterparty_port_id: {
+                                let mut bz = "";
+                                bz.append_address(port_id);
+                                bz
+                            },
+                            version: counterparty_version.clone(),
+                        },
+                    ),
+                Error::INVALID_PROOF,
+            );
+
+            let channel_id = self.get_next_channel_id();
+
+            let channel = Channel {
+                state: ChannelState::TryOpen,
+                connection_id,
+                counterparty_channel_id: Some(counterparty_channel_id),
+                counterparty_port_id: counterparty_port_id.clone(),
+                version: counterparty_version.clone(),
+            };
+
+            self.save_and_commit_channel(channel_id, channel.clone());
+
+            self.channel_owners.write(channel_id, port_id);
+
+            let res = IIbcModuleSafeDispatcher { contract_address: port_id }
+                .on_chan_open_try(
+                    get_execution_info().caller_address,
+                    channel.connection_id,
+                    channel_id,
+                    counterparty_channel_id,
+                    channel.version,
+                    counterparty_version.clone(),
+                    relayer,
+                );
+
+            match res {
+                Ok(()) => {},
+                Err(err) => panic!("error in channel open try callback: {err:?}"),
+            }
+
+            self
+                .emit(
+                    ChannelOpenTry {
+                        port_id,
+                        channel_id,
+                        counterparty_port_id: channel.counterparty_port_id,
+                        counterparty_channel_id,
+                        connection_id: channel.connection_id,
+                        counterparty_version,
+                    },
+                );
+
+            channel_id
+        }
+
+        fn channel_open_ack(
+            ref self: ContractState,
+            channel_id: ChannelId,
+            counterparty_version: ByteArray,
+            counterparty_channel_id: ChannelId,
+            proof_try: ByteArray,
+            proof_height: u64,
+            relayer: ContractAddress,
+        ) {
+            let mut channel = self.ensure_channel_state(channel_id, ChannelState::Init);
+
+            let connection = self
+                .ensure_connection_state(channel.connection_id, ConnectionState::Open);
+
+            let port_id = self.channel_owners.read(channel_id);
+
+            assert!(!port_id.is_zero(), "channel owner is set in init; qed;");
+
+            assert(
+                self
+                    .verify_channel_state(
+                        connection.client_id,
+                        proof_height,
+                        proof_try,
+                        counterparty_channel_id,
+                        Channel {
+                            state: ChannelState::TryOpen,
+                            // connection is open, counterparty connection id will exist; qed;
+                            connection_id: connection.counterparty_connection_id.unwrap(),
+                            counterparty_channel_id: Some(channel_id),
+                            counterparty_port_id: {
+                                let mut bz = "";
+                                bz.append_address(port_id);
+                                bz
+                            },
+                            version: counterparty_version.clone(),
+                        },
+                    ),
+                Error::INVALID_PROOF,
+            );
+
+            channel.state = ChannelState::Open;
+
+            self.save_and_commit_channel(channel_id, channel.clone());
+
+            let res = IIbcModuleSafeDispatcher { contract_address: port_id }
+                .on_chan_open_ack(
+                    get_execution_info().caller_address,
+                    channel_id,
+                    counterparty_channel_id,
+                    counterparty_version,
+                    relayer,
+                );
+
+            match res {
+                Ok(()) => {},
+                Err(err) => panic!("error in channel open ack callback: {err:?}"),
+            }
+
+            self
+                .emit(
+                    ChannelOpenAck {
+                        channel_id,
+                        port_id,
+                        connection_id: channel.connection_id,
+                        counterparty_channel_id: counterparty_channel_id,
+                        counterparty_port_id: channel.counterparty_port_id,
+                    },
+                );
+        }
+
+        fn channel_open_confirm(
+            ref self: ContractState,
+            channel_id: ChannelId,
+            proof_ack: ByteArray,
+            proof_height: u64,
+            relayer: ContractAddress,
+        ) {
+            let mut channel = self.ensure_channel_state(channel_id, ChannelState::TryOpen);
+
+            let connection = self.connections.read(channel.connection_id);
+
+            let port_id = self.channel_owners.read(channel_id);
+
+            assert!(!port_id.is_zero(), "channel owner is set in init; qed;");
+
+            let counterparty_channel_id = channel
+                .counterparty_channel_id
+                .expect(Error::INVALID_CHANNEL_STATE);
+
+            assert(
+                self
+                    .verify_channel_state(
+                        connection.client_id,
+                        proof_height,
+                        proof_ack,
+                        counterparty_channel_id,
+                        Channel {
+                            state: ChannelState::Open,
+                            // connection is open, counterparty connection id will exist; qed;
+                            connection_id: connection.counterparty_connection_id.unwrap(),
+                            counterparty_channel_id: Some(counterparty_channel_id),
+                            counterparty_port_id: {
+                                let mut bz = "";
+                                bz.append_address(port_id);
+                                bz
+                            },
+                            version: channel.version.clone(),
+                        },
+                    ),
+                Error::INVALID_PROOF,
+            );
+
+            channel.state = ChannelState::Open;
+
+            self.save_and_commit_channel(channel_id, channel.clone());
+
+            let res = IIbcModuleSafeDispatcher { contract_address: port_id }
+                .on_chan_open_confirm(get_execution_info().caller_address, channel_id, relayer);
+
+            match res {
+                Ok(()) => {},
+                Err(err) => panic!("error in channel open confirm callback: {err:?}"),
+            }
+
+            self
+                .emit(
+                    ChannelOpenAck {
+                        channel_id,
+                        port_id,
+                        connection_id: channel.connection_id,
+                        counterparty_channel_id,
+                        counterparty_port_id: channel.counterparty_port_id,
+                    },
+                );
+        }
     }
 
     #[generate_trait]
     impl IbcHandlerUtilsImpl of IbcHandlerUtilsTrait {
-        // fn channel_open_init(ref self: ContractState, msg: MsgChannelOpenInit) -> ChannelId {
-        //     let channel_id = self.get_next_channel_id();
-
-        //     let channel = Channel {
-        //         state: ChannelState::Init,
-        //         connection_id: msg.connection_id,
-        //         counterparty_channel_id: None,
-        //         counterparty_port_id: msg.counterparty_port_id.clone(),
-        //         version: msg.version.clone(),
-        //     };
-
-        //     self.commit(@ChannelPath { channel_id }, channel.commit());
-
-        //     self
-        //         .emit(
-        //             ChannelOpenInit {
-        //                 port_id: msg.port_id,
-        //                 channel_id,
-        //                 counterparty_port_id: msg.counterparty_port_id,
-        //                 connection_id: msg.connection_id,
-        //                 version: msg.version,
-        //             },
-        //         );
-
-        //     channel_id
-        // }
-
-        // fn channel_open_try(ref self: ContractState, msg: MsgChannelOpenTry) -> ChannelId {
-        //     let expected_Channel = Channel {
-        //         state: ChannelState::Init,
-        //         connection_id: msg.,
-        //         counterparty_channel_id: (),
-        //         counterparty_port_id: (),
-        //         version: (),
-        //     };
-
-        //     assert(
-        //         self
-        //             .verify_channel_state(
-        //                 msg.client_id,
-        //                 msg.proof_height,
-        //                 msg.proof_init,
-        //                 msg.counterparty_channel_id,
-        //                 expected_Channel,
-        //             ),
-        //         Error::INVALID_PROOF,
-        //     );
-
-        //     let channel_id = self.get_next_channel_id();
-
-        //     let Channel = Channel {
-        //         state: ChannelState::TryOpen,
-        //         client_id: msg.client_id,
-        //         counterparty_client_id: msg.counterparty_client_id,
-        //         counterparty_channel_id: Some(msg.counterparty_channel_id),
-        //     };
-
-        //     self.save_Channel(channel_id, Channel);
-
-        //     self
-        //         .emit(
-        //             ChannelOpenTry {
-        //                 channel_id,
-        //                 client_id: msg.client_id,
-        //                 counterparty_client_id: msg.counterparty_client_id,
-        //                 counterparty_channel_id: msg.counterparty_channel_id,
-        //             },
-        //         );
-
-        //     channel_id
-        // }
-
-        // fn channel_open_ack(ref self: ContractState, msg: MsgChannelOpenAck) {
-        //     let mut Channel = self.ensure_channel_state(msg.channel_id, ChannelState::Init);
-
-        //     let expected_Channel = Channel {
-        //         state: ChannelState::Init,
-        //         client_id: Channel.counterparty_client_id,
-        //         counterparty_client_id: Channel.client_id,
-        //         counterparty_channel_id: Some(msg.channel_id),
-        //     };
-
-        //     assert(
-        //         self
-        //             .verify_channel_state(
-        //                 Channel.client_id,
-        //                 msg.proof_height,
-        //                 msg.proof_try,
-        //                 msg.counterparty_channel_id,
-        //                 expected_Channel,
-        //             ),
-        //         Error::INVALID_PROOF,
-        //     );
-
-        //     Channel.state = ChannelState::Open;
-
-        //     self
-        //         .emit(
-        //             ChannelOpenAck {
-        //                 channel_id: msg.channel_id,
-        //                 client_id: Channel.client_id,
-        //                 counterparty_client_id: Channel.counterparty_client_id,
-        //                 counterparty_channel_id: msg.counterparty_channel_id,
-        //             },
-        //         );
-
-        //     self.save_Channel(msg.channel_id, Channel);
-        // }
-
-        // fn channel_open_confirm(ref self: ContractState, msg: MsgChannelOpenConfirm) {
-        //     let mut Channel = self.ensure_channel_state(msg.channel_id, ChannelState::TryOpen);
-
-        //     let expected_Channel = Channel {
-        //         state: ChannelState::TryOpen,
-        //         client_id: Channel.counterparty_client_id,
-        //         counterparty_client_id: Channel.client_id,
-        //         counterparty_channel_id: Some(msg.channel_id),
-        //     };
-
-        //     assert(
-        //         self
-        //             .verify_channel_state(
-        //                 Channel.client_id,
-        //                 msg.proof_height,
-        //                 msg.proof_ack,
-        //                 Channel.counterparty_channel_id.expect('must be set'),
-        //                 expected_Channel,
-        //             ),
-        //         Error::INVALID_PROOF,
-        //     );
-
-        //     Channel.state = ChannelState::Open;
-
-        //     self
-        //         .emit(
-        //             ChannelOpenConfirm {
-        //                 channel_id: msg.channel_id,
-        //                 client_id: Channel.client_id,
-        //                 counterparty_client_id: Channel.counterparty_client_id,
-        //                 counterparty_channel_id: Channel
-        //                     .counterparty_channel_id
-        //                     .expect('must be set'),
-        //             },
-        //         );
-
-        //     self.save_Channel(msg.channel_id, Channel);
-        // }
-
         fn ensure_connection_state(
             self: @ContractState, connection_id: ConnectionId, state: ConnectionState,
         ) -> Connection {
@@ -832,11 +1068,26 @@ pub mod IbcHandler {
             connection
         }
 
+        fn ensure_channel_state(
+            self: @ContractState, channel_id: ChannelId, state: ChannelState,
+        ) -> Channel {
+            let channel = self.channels.read(channel_id);
+            assert(channel.state == state, Error::INVALID_CHANNEL_STATE);
+            channel
+        }
+
         fn save_and_commit_connection(
             ref self: ContractState, connection_id: ConnectionId, connection: Connection,
         ) {
             self.commit(@ConnectionPath { connection_id }, connection.commit());
             self.connections.write(connection_id, connection);
+        }
+
+        fn save_and_commit_channel(
+            ref self: ContractState, channel_id: ChannelId, channel: Channel,
+        ) {
+            self.commit(@ChannelPath { channel_id }, channel.commit());
+            self.channels.write(channel_id, channel);
         }
 
         fn verify_connection_state(
@@ -855,6 +1106,26 @@ pub mod IbcHandler {
                     proof,
                     to_byte_array(ConnectionPath { connection_id }.key()),
                     to_byte_array(counterparty_connection.commit()),
+                )
+                .unwrap_or(false)
+        }
+
+        fn verify_channel_state(
+            self: @ContractState,
+            client_id: ClientId,
+            height: u64,
+            proof: ByteArray,
+            channel_id: ChannelId,
+            counterparty_channel: Channel,
+        ) -> bool {
+            self
+                .client_impl(client_id)
+                .verify_membership(
+                    client_id,
+                    height,
+                    proof,
+                    to_byte_array(ChannelPath { channel_id }.key()),
+                    to_byte_array(counterparty_channel.commit()),
                 )
                 .unwrap_or(false)
         }

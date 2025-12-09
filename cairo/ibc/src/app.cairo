@@ -100,7 +100,7 @@ pub trait IIbcModule<TContractState> {
         channel_id: ChannelId,
         version: ByteArray,
         relayer: ContractAddress,
-    ) -> ByteArray;
+    );
 
     fn on_chan_open_try(
         ref self: TContractState,
@@ -111,7 +111,7 @@ pub trait IIbcModule<TContractState> {
         version: ByteArray,
         counterparty_version: ByteArray,
         relayer: ContractAddress,
-    ) -> ByteArray;
+    );
 
     fn on_chan_open_ack(
         ref self: TContractState,
@@ -120,28 +120,28 @@ pub trait IIbcModule<TContractState> {
         counterparty_channel_id: ChannelId,
         counterparty_version: ByteArray,
         relayer: ContractAddress,
-    ) -> ByteArray;
+    );
 
     fn on_chan_open_confirm(
         ref self: TContractState,
         caller: ContractAddress,
         channel_id: ChannelId,
         relayer: ContractAddress,
-    ) -> ByteArray;
+    );
 
     fn on_chan_close_init(
         ref self: TContractState,
         caller: ContractAddress,
         channel_id: ChannelId,
         relayer: ContractAddress,
-    ) -> ByteArray;
+    );
 
     fn on_chan_close_confirm(
         ref self: TContractState,
         caller: ContractAddress,
         channel_id: ChannelId,
         relayer: ContractAddress,
-    ) -> ByteArray;
+    );
 
     fn on_acknowledge_packet(
         ref self: TContractState,
@@ -149,9 +149,9 @@ pub trait IIbcModule<TContractState> {
         packet: Packet,
         acknowledgement: ByteArray,
         relayer: ContractAddress,
-    ) -> ByteArray;
+    );
 
     fn on_timeout_packet(
         ref self: TContractState, caller: ContractAddress, packet: Packet, relayer: ContractAddress,
-    ) -> ByteArray;
+    );
 }

@@ -176,7 +176,7 @@ pub impl ConnectionImpl of ConnectionTrait {
     }
 }
 
-#[derive(Debug, Drop, PartialEq, Clone, Copy, Serde, starknet::Store)]
+#[derive(Debug, Drop, PartialEq, Copy, Serde, starknet::Store)]
 #[allow(starknet::store_no_default_variant)] // uninitialized is not a valid state
 pub enum ConnectionState {
     Init,
@@ -195,7 +195,7 @@ pub impl ConnectionStateImpl of ConnectionStateTrait {
     }
 }
 
-#[derive(Drop, Serde, starknet::Store)]
+#[derive(Drop, Serde, starknet::Store, Clone)]
 pub struct Channel {
     pub state: ChannelState,
     pub connection_id: ConnectionId,
@@ -243,7 +243,7 @@ pub impl ChannelImpl of ChannelTrait {
     }
 }
 
-#[derive(Drop, Serde, starknet::Store)]
+#[derive(Debug, Drop, PartialEq, Copy, Serde, starknet::Store)]
 #[allow(starknet::store_no_default_variant)] // uninitialized is not a valid state
 pub enum ChannelState {
     Init,
