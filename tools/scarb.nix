@@ -15,6 +15,14 @@ _: {
 
       pyPkgs = pkgsUnstable.python312Packages;
 
+      scarb-src = pkgs.fetchFromGitHub {
+        name = "scarb-src";
+        owner = "software-mansion";
+        repo = "scarb";
+        rev = cairoVersion;
+        sha256 = "sha256-cX4sDoPpn7Wr1lcR3BsGWOMIUGK+G7BHwqiGJumDbsQ=";
+      };
+
       cairo-src = pkgs.fetchFromGitHub {
         name = "cairo-src";
         owner = "starkware-libs";
@@ -37,6 +45,15 @@ _: {
         doCheck = false;
         meta.mainProgram = "scarb";
         SCARB_CORELIB_LOCAL_PATH = "${cairo-src}/corelib";
+      };
+
+      scarb-doc = craneLib.buildPackage {
+        pname = "scarb-doc";
+        version = cairoVersion;
+        src = scarb-src;
+        cargoExtraArgs = "-p scarb-doc";
+        doCheck = false;
+        meta.mainProgram = "scarb-doc";
       };
 
       universal-sierra-compiler = craneLib.buildPackage rec {
@@ -393,6 +410,8 @@ _: {
         scarb = pkgs.writeShellApplication {
           name = "scarb";
           runtimeInputs = [
+            scarb-doc
+            pkgs.mdbook
             scarb
             starknet-foundry
             universal-sierra-compiler
