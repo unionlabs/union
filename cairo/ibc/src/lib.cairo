@@ -59,7 +59,7 @@
 // TITLE.
 
 pub mod app;
-
+#[feature("safe_dispatcher")]
 pub mod contract;
 pub mod event;
 pub mod lightclient;

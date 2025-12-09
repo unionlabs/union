@@ -56,6 +56,15 @@ _: {
         meta.mainProgram = "scarb-doc";
       };
 
+      scarb-mdbook = craneLib.buildPackage {
+        pname = "scarb-mdbook";
+        version = cairoVersion;
+        src = scarb-src;
+        cargoExtraArgs = "-p scarb-mdbook";
+        doCheck = false;
+        meta.mainProgram = "scarb-mdbook";
+      };
+
       universal-sierra-compiler = craneLib.buildPackage rec {
         pname = "universal-sierra-compiler";
         version = "v2.6.0";
@@ -411,12 +420,13 @@ _: {
           name = "scarb";
           runtimeInputs = [
             scarb-doc
-            pkgs.mdbook
+            scarb-mdbook
             scarb
             starknet-foundry
             universal-sierra-compiler
           ];
           text = ''
+            # mdbook
             scarb "$@"
           '';
         };

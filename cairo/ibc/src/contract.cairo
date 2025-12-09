@@ -61,6 +61,9 @@
 use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
 use core::hash::{Hash, HashStateExTrait, HashStateTrait};
 use starknet::ContractAddress;
+use crate::event::*;
+use crate::lightclient::ILightClient;
+use crate::path::*;
 use crate::types::{ClientId, ConnectionId};
 
 pub mod Error {
@@ -77,33 +80,57 @@ pub trait IIbcHandler<TContractState> {
     /// Register a client implementation at `client_address` with a client type. This
     /// `client_type` will be used later to call the correct client implementation.
     ///
-    /// ## Panics
+    /// #### Params
     ///
-    /// This function will panic if the `client_type` is already registered
-    /// (CLIENT_TYPE_ALREADY_REGISTERED).
+    /// - `client_type`: The human-readable label for the client implementation. This will be used
+    /// when creating a client of this type.
+    /// - `client_address`: The address of the client implementation. This is expected to implement
+    /// [`ILightClient`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CLIENT_TYPE_ALREADY_REGISTERED`]: The specified `client_type` is already
+    /// registered.
     fn register_client(
         ref self: TContractState, client_type: ByteArray, client_address: ContractAddress,
     );
 
-    /// Create a light client instance
+    /// Create a light client instance from a previously registered client type.
     ///
-    /// The light client must be registered with `client_type` before. The `client_state_bytes`
-    /// and the `consensus_state_bytes` will be provided as the initial state to the client. But
-    /// the client is free to return a different data to be saved. `relayer` IS PROVIDED BY THE
-    /// USER, hence DO NOT USE it for authentication.
+    /// #### Params
     ///
-    /// Returns the ID of the client.
+    /// - `client_type`: The light client implementation to create a client of. The implementation
+    /// must have already been registered with [`IIbcHandler::register_client()`].
+    /// - `client_state_bytes`: Arbitrary bytes to be interpreted by the light client upon client
+    /// creation.
+    /// - `consensus_state_bytes`: Arbitrary bytes to be interpreted by the light client upon
+    /// client creation. Note that this may not be the exact state committed, since the client may
+    /// return a different client state to save after creation. See [`ILightClient::create_client`]
+    /// for more information.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    ///
+    /// The [`ClientId`] of the newly created client is returned upon success.
+    ///
+    /// #### Events
     ///
     /// Emits [`CreateClient`].
     ///
-    /// ## Panics
-    /// This function will panic if:
-    /// 1. the `client_type` is not registered (CLIENT_TYPE_NOT_FOUND),
-    /// 2. the light client returns an error (custom error)
+    /// #### Panics
     ///
-    /// ## Commitments
-    /// 1. Client state commitment is written under `ClientStatePath`
-    /// 2. Consensus state commitment is written under `ConsensusStatePath`
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CLIENT_TYPE_NOT_FOUND`]: The specified `client_type` is not registered.
+    ///
+    /// Additionally, the light client may panic while creating the client. In this case, this
+    /// function will panic with the full panic message from the failed call.
+    ///
+    /// #### Commitments
+    ///
+    /// - Client state commitment is saved under [`ClientStatePath`].
+    /// - Consensus state commitment is saved under [`ConsensusStatePath`].
     fn create_client(
         ref self: TContractState,
         client_type: ByteArray,
@@ -112,22 +139,33 @@ pub trait IIbcHandler<TContractState> {
         relayer: ContractAddress,
     ) -> ClientId;
 
-    /// Updates a light client to a new state. This state transition MUST be verified by the
-    /// light client.
+    /// Updates a light client to a new state. This state transition must be verified by the
+    /// specified light client.
     ///
-    /// The light client has the full control over the `client_message`. There is no assumption
-    /// over the encoding by the core protocol. `relayer` IS PROVIDED BY THE USER, hence DO NOT
-    /// USE it for authentication.
+    /// #### Params
+    ///
+    /// - `client_message`: Arbitrary bytes to be interpreted by the light client. There is no
+    /// assumption on the type or encoding of the client message by the core protocol.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    ///
+    /// #### Events
     ///
     /// Emits [`UpdateClient`].
     ///
-    /// ## Panics
-    /// 1. Client with `client_id` is not found. (CLIENT_NOT_FOUND)
-    /// 2. The light client returns an error. (custom error)
+    /// #### Panics
     ///
-    /// ## Commitments
-    /// 1. Client state commitment is updated with the commitment returned by the client.
-    /// 2. Consensus state commitent is added or updated with the commitment returned by the
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CLIENT_NOT_FOUND`]: Client with `client_id` is not found.
+    ///
+    /// Additionally, the light client may panic while updating the client. In this case, this
+    /// function will panic with the full panic message from the failed call.
+    ///
+    /// #### Commitments
+    ///
+    /// - The [`ClientStatePath`] is updated with the commitment returned by the client.
+    /// - The [`ConsensusStatePath`] is added or updated with the commitment returned by the
     /// client.
     fn update_client(
         ref self: TContractState,
@@ -136,46 +174,68 @@ pub trait IIbcHandler<TContractState> {
         relayer: ContractAddress,
     );
 
-    /// Starts the connection handshake.
+    /// Start the connection handshake.
     ///
-    /// `client_id` will be the verifier of the packets on this
-    /// chain using this connection, and the `counterparty_client_id` is the same for the
-    /// counterparty chain.
+    /// #### Params
     ///
-    /// Returns the ID of the connection.
+    /// - `client_id`:  The light client that will verify the counterparty chain
+    /// - `counterparty_client_id`: The light client on the counterparty chain that will verify
+    /// state of this chain.
     ///
-    /// Emits [`ConnectionOpenInit`]
+    /// The [`ConnectionId`] of the newly created connection is returned upon success.
     ///
-    /// ## Panics
-    /// 1. Client with `client_id` is not found. (CLIENT_NOT_FOUND)
+    /// #### Events
     ///
-    /// ## Commitments
-    /// 1. The ethabi encoded and keccak hashed connection will be committed under `ConnectionPath`
+    /// Emits [`ConnectionOpenInit`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CLIENT_NOT_FOUND`]: Client with `client_id` is not found.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed connection will be committed under
+    /// [`ConnectionPath`].
     fn connection_open_init(
         ref self: TContractState, client_id: ClientId, counterparty_client_id: ClientId,
     ) -> ConnectionId;
 
 
-    /// Second step of the connection handshake meant to run after the `connection_open_init` runs
-    /// on the counterparty chain.
-    ///
-    /// `client_id` will be the verifier of the packets on this
-    /// chain using this connection, and the `counterparty_client_id` is the same for the
+    /// The second step of the connection handshake, after the `connection_open_init` on the
     /// counterparty chain.
     ///
-    /// The `proof_init` is the proof of the `Connection` commitment, created at height
-    /// `proof_height`. The commitment is expected to be done under `ConnectionPath`.
+    /// #### Params
     ///
-    /// Returns the ID of the connection.
+    /// - `client_id`: The light client that will verify the counterparty chain
+    /// - `counterparty_client_id`: the light client on the counterparty chain that will verify
+    /// state of this chain.
+    /// - `proof_init`: The proof of the counterparty connection commitment, as stored under the
+    /// [`ConnectionPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_init` proof is verifiable at.
     ///
-    /// Emits [`ConnectionOpenTry`]
+    /// The [`ConnectionId`] of the newly created connection is returned upon success.
     ///
-    /// ## Panics
-    /// 1. Client with `client_id` is not found. (CLIENT_NOT_FOUND)
-    /// 2. The `proof_init` cannot be verified by the light client. (INVALID_PROOF)
+    /// #### Events
     ///
-    /// ## Commitments
-    /// 1. The ethabi encoded and keccak hashed connection will be committed under `ConnectionPath`
+    /// Emits [`ConnectionOpenTry`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CLIENT_NOT_FOUND`]: The client `client_id` is not found.
+    /// - [`Error::INVALID_PROOF`]: The `proof_init` cannot be verified by the light client.
+    ///
+    /// Additionally, the call to the light client may exit with an error that cannot be handled by
+    /// the safe dispatcher. See the cairo documentation for more information on what errors can be
+    /// caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed connection will be committed under
+    /// [`ConnectionPath`].
     fn connection_open_try(
         ref self: TContractState,
         counterparty_client_id: ClientId,
@@ -185,27 +245,42 @@ pub trait IIbcHandler<TContractState> {
         proof_height: u64,
     ) -> ConnectionId;
 
-    /// Third step of the connection handshake meant to run after the `connection_open_try` runs on
-    /// the counterparty chain. This is the final step of the handshake on this chain but
-    /// `connection_open_confirm` needs to run on the counterparty still.
+    /// The second step of the connection handshake, after the `connection_open_try` on the
+    /// counterparty chain. This is the final step of the connection handshake on this chain, and
+    /// the `connection_open_confirm` must still be sent to the counterparty after this call to
+    /// complete the handshake.
     ///
-    /// The connection with the `connection_id` on this chain and `counterparty_connection_id` on
-    /// the counterparty chain will be opened (only on this chain).
+    /// #### Params
     ///
-    /// The `proof_try` is the proof of the `Connection` commitment, created at height
-    /// `proof_height`. The commitment is expected to be done under `ConnectionPath`.
+    /// - `connection_id`: The ID of the connection on this chain.
+    /// - `counterparty_connection_id`: the ID of the connection on the counterparty chain.
+    /// - `proof_try`: The proof of the counterparty connection commitment, as stored under the
+    /// [`ConnectionPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_init` proof is verifiable at.
     ///
-    /// Emits [`ConnectionOpenAck`]
+    /// #### Events
     ///
-    /// ## Panics
-    /// 1. Connection with `connection_id` is not found.
-    /// 2. Connection with `connection_id` has an invalid state. This happens due to either the
-    /// `connection_open_ack/confirm` is already run on this connection or `connection_open_ack` is
-    /// executed after `connection_open_try` but not `init`. (INVALID_CONNECTION_STATE)
-    /// 3. The `proof_try` cannot be verified by the light client. (INVALID_PROOF)
+    /// Emits [`ConnectionOpenAck`].
     ///
-    /// ## Commitments
-    /// 1. The ethabi encoded and keccak hashed connection will be committed under `ConnectionPath`
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CONNECTION_NOT_FOUND`]: Connection `connection_id` is not found.
+    /// - [`Error::INVALID_CONNECTION_STATE`]: Connection `connection_id` is in an invalid state.
+    /// This can occur either because the `connection_open_ack/confirm` has already been run for
+    /// this connection, or `connection_open_ack` is executed after `connection_open_try` but not
+    /// `init`.
+    /// - [`Error::INVALID_PROOF`]: The `proof_try` cannot be verified by the light client.
+    ///
+    /// Additionally, the call to the light client may exit with an error that cannot be handled by
+    /// the safe dispatcher. See the cairo documentation for more information on what errors can be
+    /// caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed connection will be committed under
+    /// [`ConnectionPath`].
     fn connection_open_ack(
         ref self: TContractState,
         connection_id: ConnectionId,
@@ -214,25 +289,39 @@ pub trait IIbcHandler<TContractState> {
         proof_height: u64,
     );
 
-    /// The final step of the connection handshake meant to run after the `connection_open_ack` runs
-    /// on the counterparty chain.
+    /// The final step of the connection handshake, after the `connection_open_ack` on the
+    /// counterparty chain.
     ///
-    /// The connection with the `connection_id` on this chain will be fully opened.
+    /// The connection `connection_id` on this chain will be fully opened.
     ///
-    /// The `proof_ack` is the proof of the `Connection` commitment, created at height
-    /// `proof_height`. The commitment is expected to be done under `ConnectionPath`.
+    /// #### Params
+    ///
+    /// - `connection_id`:  The ID of the connection on this chain.
+    /// - `proof_ack`:  The proof of the counterparty connection commitment, as stored under the
+    /// [`ConnectionPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_ack` proof is verifiable at.
     ///
     /// Emits [`ConnectionOpenConfirm`]
     ///
-    /// ## Panics
-    /// 1. Connection with `connection_id` is not found.
-    /// 2. Connection with `connection_id` has an invalid state. This happens due to either the
-    /// `connection_open_ack/confirm` is already run on this connection or `connection_open_confirm`
-    /// is executed after `connection_open_init` but not `try`. (INVALID_CONNECTION_STATE)
-    /// 3. The `proof_ack` cannot be verified by the light client. (INVALID_PROOF)
+    /// #### Panics
     ///
-    /// ## Commitments
-    /// 1. The ethabi encoded and keccak hashed connection will be committed under `ConnectionPath`
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CONNECTION_NOT_FOUND`]: Connection `connection_id` is not found.
+    /// - [`Error::INVALID_CONNECTION_STATE`]: Connection `connection_id` is in an invalid state.
+    /// This can occur either because the `connection_open_ack/confirm` has already been run for
+    /// this connection, or `connection_open_ack` is executed after `connection_open_try` but not
+    /// `init`.
+    /// - [`Error::INVALID_PROOF`]: The `proof_ack` cannot be verified by the light client.
+    ///
+    /// Additionally, the call to the light client may exit with an error that cannot be handled by
+    /// the safe dispatcher. See the cairo documentation for more information on what errors can be
+    /// caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed connection will be committed under
+    /// [`ConnectionPath`].
     fn connection_open_confirm(
         ref self: TContractState,
         connection_id: ConnectionId,
@@ -335,8 +424,6 @@ pub mod IbcHandler {
 
             let client_id = self.get_next_client_id();
 
-            // TODO(aeryz): this code depends on this feature, we should remove this? (cc: @bonlulu)
-            #[feature("safe_dispatcher")]
             let res = ILightClientSafeDispatcher { contract_address: client_address }
                 .create_client(
                     get_execution_info().caller_address,
@@ -380,8 +467,6 @@ pub mod IbcHandler {
         ) {
             // TODO(aeryz): check the client status
 
-            // TODO(aeryz): this code depends on this feature, we should remove this? (cc: @bonlulu)
-            #[feature("safe_dispatcher")]
             let res = self
                 .client_impl(client_id)
                 .update_client(
@@ -762,7 +847,6 @@ pub mod IbcHandler {
             connection_id: ConnectionId,
             counterparty_connection: Connection,
         ) -> bool {
-            #[feature("safe_dispatcher")]
             self
                 .client_impl(client_id)
                 .verify_membership(
