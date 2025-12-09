@@ -138,7 +138,7 @@ pub trait IIbcHandler<TContractState> {
     );
 
     /// Starts the connection handshake.
-    //
+    ///
     /// `client_id` will be the verifier of the packets on this
     /// chain using this connection, and the `counterparty_client_id` is the same for the
     /// counterparty chain.
@@ -147,10 +147,43 @@ pub trait IIbcHandler<TContractState> {
     ///
     /// Emits [`ConnectionOpenInit`]
     ///
+    /// ## Panics
+    /// 1. Client with `client_id` is not found. (CLIENT_NOT_FOUND)
+    ///
     /// ## Commitments
     /// 1. The ethabi encoded and keccak hashed connection will be committed under `ConnectionPath`
     fn connection_open_init(
         ref self: TContractState, client_id: ClientId, counterparty_client_id: ClientId,
+    ) -> ConnectionId;
+
+
+    /// Second step of the connection handshake meant to run after the `connection_open_init` runs
+    /// on the counterparty chain.
+    ///
+    /// `client_id` will be the verifier of the packets on this
+    /// chain using this connection, and the `counterparty_client_id` is the same for the
+    /// counterparty chain.
+    ///
+    /// The `proof_init` is the proof of the `Connection` commitment, created at height
+    /// `proof_height`. The commitment is expected to be done under `ConnectionPath`.
+    ///
+    /// Returns the ID of the connection.
+    ///
+    /// Emits [`ConnectionOpenTry`]
+    ///
+    /// ## Panics
+    /// 1. Client with `client_id` is not found. (CLIENT_NOT_FOUND)
+    /// 2. The `proof_init` cannot be verified by the light client. (INVALID_PROOF)
+    ///
+    /// ## Commitments
+    /// 1. The ethabi encoded and keccak hashed connection will be committed under `ConnectionPath`
+    fn connection_open_try(
+        ref self: TContractState,
+        counterparty_client_id: ClientId,
+        counterparty_connection_id: ConnectionId,
+        client_id: ClientId,
+        proof_init: ByteArray,
+        proof_height: u64,
     ) -> ConnectionId;
 }
 
@@ -325,6 +358,9 @@ pub mod IbcHandler {
         fn connection_open_init(
             ref self: ContractState, client_id: ClientId, counterparty_client_id: ClientId,
         ) -> ConnectionId {
+            // Acts as an assertion that the client exists.
+            let _ = self.client_impl(client_id);
+
             // We get the next connection ID, and increment it.
             let connection_id = self.get_next_connection_id();
 
@@ -337,35 +373,40 @@ pub mod IbcHandler {
                 counterparty_connection_id: None,
             };
 
-            self.commit(@ConnectionPath { connection_id }, connection.commit());
-
-            // The commitment is the hashed connection, hence we save the full connection
-            // seperately.
-            self.connections.write(connection_id, connection);
+            self.save_and_commit_connection(connection_id, connection);
 
             self.emit(ConnectionOpenInit { connection_id, client_id, counterparty_client_id });
 
             connection_id
         }
-    }
 
-    #[generate_trait]
-    impl IbcHandlerUtilsImpl of IbcHandlerUtilsTrait {
-        fn connection_open_try(ref self: ContractState, msg: MsgConnectionOpenTry) -> ConnectionId {
+        fn connection_open_try(
+            ref self: ContractState,
+            counterparty_client_id: ClientId,
+            counterparty_connection_id: ConnectionId,
+            client_id: ClientId,
+            proof_init: ByteArray,
+            proof_height: u64,
+        ) -> ConnectionId {
+            // The expected state of the connection after `connection_open_init` is run on the
+            // counterparty chain. That's the reason why `client_id` and `counterparty_client_id` is
+            // flipped.
             let expected_connection = Connection {
                 state: ConnectionState::Init,
-                client_id: msg.counterparty_client_id,
-                counterparty_client_id: msg.client_id,
+                client_id: counterparty_client_id,
+                counterparty_client_id: client_id,
                 counterparty_connection_id: None,
             };
 
+            // Verify that the counterparty chain actually performed the `connection_open_init` and
+            // properly did the commitment
             assert(
                 self
                     .verify_connection_state(
-                        msg.client_id,
-                        msg.proof_height,
-                        msg.proof_init,
-                        msg.counterparty_connection_id,
+                        client_id,
+                        proof_height,
+                        proof_init,
+                        counterparty_connection_id,
                         expected_connection,
                     ),
                 Error::INVALID_PROOF,
@@ -375,26 +416,29 @@ pub mod IbcHandler {
 
             let connection = Connection {
                 state: ConnectionState::TryOpen,
-                client_id: msg.client_id,
-                counterparty_client_id: msg.counterparty_client_id,
-                counterparty_connection_id: Some(msg.counterparty_connection_id),
+                client_id,
+                counterparty_client_id,
+                counterparty_connection_id: Some(counterparty_connection_id),
             };
 
-            self.save_connection(connection_id, connection);
+            self.save_and_commit_connection(connection_id, connection);
 
             self
                 .emit(
                     ConnectionOpenTry {
                         connection_id,
-                        client_id: msg.client_id,
-                        counterparty_client_id: msg.counterparty_client_id,
-                        counterparty_connection_id: msg.counterparty_connection_id,
+                        client_id,
+                        counterparty_client_id,
+                        counterparty_connection_id,
                     },
                 );
 
             connection_id
         }
+    }
 
+    #[generate_trait]
+    impl IbcHandlerUtilsImpl of IbcHandlerUtilsTrait {
         fn connection_open_ack(ref self: ContractState, msg: MsgConnectionOpenAck) {
             let mut connection = self
                 .ensure_connection_state(msg.connection_id, ConnectionState::Init);
@@ -430,7 +474,7 @@ pub mod IbcHandler {
                     },
                 );
 
-            self.save_connection(msg.connection_id, connection);
+            self.save_and_commit_connection(msg.connection_id, connection);
         }
 
         fn connection_open_confirm(ref self: ContractState, msg: MsgConnectionOpenConfirm) {
@@ -470,7 +514,7 @@ pub mod IbcHandler {
                     },
                 );
 
-            self.save_connection(msg.connection_id, connection);
+            self.save_and_commit_connection(msg.connection_id, connection);
         }
 
         // fn channel_open_init(ref self: ContractState, msg: MsgChannelOpenInit) -> ChannelId {
@@ -629,7 +673,7 @@ pub mod IbcHandler {
             connection
         }
 
-        fn save_connection(
+        fn save_and_commit_connection(
             ref self: ContractState, connection_id: ConnectionId, connection: Connection,
         ) {
             self.commit(@ConnectionPath { connection_id }, connection.commit());

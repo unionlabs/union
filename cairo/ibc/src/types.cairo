@@ -73,7 +73,7 @@ pub trait Id<T, +Copy<T>> {
     fn raw(self: @T) -> u32;
 }
 
-#[derive(Debug, Copy, Drop, Serde, starknet::Store)]
+#[derive(Debug, Copy, Drop, Serde, starknet::Store, PartialEq)]
 pub struct ClientId {
     raw: NonZero<u32>,
 }
@@ -99,7 +99,7 @@ impl ClientIdHashImpl<S, +HashStateTrait<S>, +Drop<S>> of Hash<ClientId, S> {
     }
 }
 
-#[derive(Debug, Copy, Drop, Serde, starknet::Store)]
+#[derive(Debug, Copy, Drop, Serde, starknet::Store, PartialEq)]
 pub struct ConnectionId {
     raw: NonZero<u32>,
 }
@@ -151,7 +151,7 @@ impl ChannelIdHashImpl<S, +HashStateTrait<S>, +Drop<S>> of Hash<ChannelId, S> {
     }
 }
 
-#[derive(Debug, Drop, Serde, starknet::Store)]
+#[derive(Debug, Drop, Serde, starknet::Store, PartialEq)]
 pub struct Connection {
     pub state: ConnectionState,
     pub client_id: ClientId,

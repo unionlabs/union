@@ -4,8 +4,8 @@ use core::keccak::compute_keccak_byte_array;
 use ibc::contract::IbcHandler::Event;
 use ibc::contract::{IIbcHandlerDispatcher, IIbcHandlerDispatcherTrait};
 use ibc::event::*;
-use ibc::path::{ClientStatePath, ConsensusStatePath, StorePathKeyTrait};
-use ibc::types::{ClientIdImpl, ConnectionIdImpl, ConnectionState};
+use ibc::path::{ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait};
+use ibc::types::{ClientIdImpl, Connection, ConnectionIdImpl, ConnectionState, ConnectionTrait};
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, EventSpyAssertionsTrait, declare, load,
     map_entry_address, spy_events,
@@ -112,12 +112,10 @@ fn load_byte_array_map_value<K, +Serde<K>, +Drop<K>>(
 fn load_map_value<K, +Serde<K>, +Drop<K>, V, +Serde<V>>(
     contract_address: ContractAddress, map_selector: felt252, key: K, size: felt252,
 ) -> Option<V> {
-    println!("befoesadfn");
     let mut serialized_key = Default::default();
     key.serialize(ref serialized_key);
     let key = map_entry_address(map_selector, serialized_key.span());
     let mut out = load(contract_address, key, size).span();
-    println!("out: {out:?}");
     Serde::deserialize(ref out)
 }
 
@@ -133,7 +131,6 @@ fn load_map_value_custom<
 >(
     contract_address: ContractAddress, map_selector: felt252, key: K, size: felt252, decode_fn: F,
 ) -> Option<V> {
-    println!("befoesadfn");
     let mut serialized_key = Default::default();
     key.serialize(ref serialized_key);
     let key = map_entry_address(map_selector, serialized_key.span());
@@ -337,9 +334,35 @@ mod update_client {
 }
 
 mod connection_handshake {
-    use ibc::path::ConnectionPath;
-    use ibc::types::{Connection, ConnectionTrait};
-    use super::{*, ClientIdImpl, IIbcHandlerDispatcherTrait};
+    use super::{*, ConnectionState};
+
+    pub(crate) fn decode_connection(data: Array<felt252>) -> Option<Connection> {
+        let client_id: u32 = (*data[1]).try_into().unwrap();
+        let counterparty_client_id: u32 = (*data[2]).try_into().unwrap();
+        Some(
+            Connection {
+                state: match *data[0] {
+                    1 => ConnectionState::Init,
+                    2 => ConnectionState::TryOpen,
+                    3 => ConnectionState::Open,
+                    _ => panic!("non existent"),
+                },
+                client_id: ClientIdImpl::new(client_id.try_into().unwrap()),
+                counterparty_client_id: ClientIdImpl::new(
+                    counterparty_client_id.try_into().unwrap(),
+                ),
+                counterparty_connection_id: match *data[3] {
+                    0 => None,
+                    1 => {
+                        let connection_id: u32 = (*data[5]).try_into().unwrap();
+
+                        Some(ConnectionIdImpl::new(connection_id.try_into().unwrap()))
+                    },
+                    _ => panic!("non existent"),
+                },
+            },
+        )
+    }
 
     #[test]
     fn test_connection_open_init_works() {
@@ -357,7 +380,7 @@ mod connection_handshake {
         let connection_id = ibc_dispatcher.connection_open_init(client_id, counterparty_client_id);
 
         // connections start from 1
-        assert!(connection_id.raw() == 1);
+        assert_eq!(connection_id.raw(), 1);
 
         let expected_connection = Connection {
             state: ConnectionState::Init,
@@ -366,44 +389,132 @@ mod connection_handshake {
             counterparty_connection_id: None,
         };
 
-        assert!(
-            load_commitment(ibc_contract, ConnectionPath { connection_id })
-                .unwrap() == truncate(expected_connection.commit()),
+        assert_eq!(
+            load_commitment(ibc_contract, ConnectionPath { connection_id }).unwrap(),
+            truncate(expected_connection.commit()),
         );
 
-        let out: Connection = load_map_value_custom(
-            ibc_contract,
-            selector!("connections"),
-            connection_id,
-            5,
-            |out| {
-                let client_id: u32 = (*out[1]).try_into().unwrap();
-                let counterparty_client_id: u32 = (*out[2]).try_into().unwrap();
-                Some(
-                    Connection {
-                        state: match *out[0] {
-                            1 => ConnectionState::Init,
-                            2 => ConnectionState::TryOpen,
-                            3 => ConnectionState::Open,
-                            _ => panic!("non existent"),
-                        },
-                        client_id: ClientIdImpl::new(client_id.try_into().unwrap()),
-                        counterparty_client_id: ClientIdImpl::new(
-                            counterparty_client_id.try_into().unwrap(),
-                        ),
-                        counterparty_connection_id: match *out[3] {
-                            0 => None,
-                            1 => {
-                                let connection_id: u32 = (*out[5]).try_into().unwrap();
-
-                                Some(ConnectionIdImpl::new(connection_id.try_into().unwrap()))
-                            },
-                            _ => panic!("non existent"),
-                        },
-                    },
-                )
-            },
+        let connection: Connection = load_map_value_custom(
+            ibc_contract, selector!("connections"), connection_id, 5, |out| decode_connection(out),
         )
             .unwrap();
+
+        assert_eq!(connection, expected_connection);
+
+        spy
+            .assert_emitted(
+                @array![
+                    (
+                        ibc_contract,
+                        Event::ConnectionOpenInit(
+                            ConnectionOpenInit { connection_id, client_id, counterparty_client_id },
+                        ),
+                    ),
+                ],
+            );
+
+        let new_connection_id = ibc_dispatcher
+            .connection_open_init(client_id, counterparty_client_id);
+        assert_eq!(connection_id.increment(), new_connection_id);
+    }
+
+    #[test]
+    #[should_panic(expected: 'CLIENT_NOT_FOUND')]
+    fn test_connection_open_init_fails_client_not_found() {
+        let (ibc_dispatcher, _, _) = deploy_ibc_and_client();
+
+        ibc_dispatcher.connection_open_init(ClientIdImpl::new(1), ClientIdImpl::new(2));
+    }
+
+    #[test]
+    fn test_connection_open_try_works() {
+        let (ibc_dispatcher, ibc_contract, light_client) = deploy_ibc_and_client();
+
+        let mut spy = spy_events();
+
+        ibc_dispatcher.register_client("cometbls", light_client);
+
+        let client_id = ibc_dispatcher
+            .create_client("cometbls", "client_state_bytes", "consensus_state_bytes", ibc_contract);
+
+        let counterparty_client_id = ClientIdImpl::new(2);
+        let counterparty_connection_id = ConnectionIdImpl::new(3);
+
+        println!("asdnefelasdf22");
+        let connection_id = ibc_dispatcher
+            .connection_open_try(
+                counterparty_client_id,
+                counterparty_connection_id,
+                client_id,
+                // We don't care about the proof part as it's the job of the respective unit tests
+                // of the clients
+                // TODO(aeryz): although we don't care, we still have to assert whether the calling
+                // of the membership verification is done correctly. We can do that by putting the
+                // key and the value to the `proof` and assert that the key and value given by the
+                // protocol to the client is correct
+                Default::default(),
+                10,
+            );
+
+        // connections start from 1
+        assert_eq!(connection_id.raw(), 1);
+
+        let expected_connection = Connection {
+            state: ConnectionState::TryOpen,
+            client_id,
+            counterparty_client_id,
+            counterparty_connection_id: Some(counterparty_connection_id),
+        };
+
+        assert_eq!(
+            load_commitment(ibc_contract, ConnectionPath { connection_id }).unwrap(),
+            truncate(expected_connection.commit()),
+        );
+        println!("asdnefelasdf");
+        let connection: Connection = load_map_value_custom(
+            ibc_contract, selector!("connections"), connection_id, 5, |out| decode_connection(out),
+        )
+            .unwrap();
+        println!("asdnefelasdf2387");
+
+        assert_eq!(connection, expected_connection);
+
+        spy
+            .assert_emitted(
+                @array![
+                    (
+                        ibc_contract,
+                        Event::ConnectionOpenTry(
+                            ConnectionOpenTry {
+                                connection_id,
+                                client_id,
+                                counterparty_client_id,
+                                counterparty_connection_id,
+                            },
+                        ),
+                    ),
+                ],
+            );
+
+        let new_connection_id = ibc_dispatcher
+            .connection_open_init(client_id, counterparty_client_id);
+        assert_eq!(connection_id.increment(), new_connection_id);
+    }
+
+    #[test]
+    #[should_panic(expected: 'CLIENT_NOT_FOUND')]
+    fn test_connection_open_try_fails_client_not_found() {
+        let (ibc_dispatcher, _, _) = deploy_ibc_and_client();
+
+        ibc_dispatcher
+            .connection_open_try(
+                ClientIdImpl::new(1),
+                ConnectionIdImpl::new(2),
+                ClientIdImpl::new(3),
+                Default::default(),
+                10,
+            );
+        // TODO(aeryz): I mentioned this previously but if we make membership proof verification
+    // controllable, we can also assert `INVALID_PROOF`
     }
 }
