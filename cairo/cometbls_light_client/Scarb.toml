@@ -1,31 +1,20 @@
 [package]
-edition = "2024_07"
-experimental-features = [
-  "associated_item_constraints",
-  "safe_dispatcher",
-  "user_defined_inline_macros",
-]
-name = "ibc"
+name = "cometbls_light_client"
 version = "0.1.0"
+edition = "2024_07"
 
 # See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
-[lib]
 
 [dependencies]
-alexandria_bytes    = { workspace = true }
-alexandria_encoding = { workspace = true }
-alexandria_evm      = { workspace = true }
-starknet            = { workspace = true }
+ibc = { workspace = true }
+starknet = { workspace = true }
 
 [dev-dependencies]
-alexandria_math = { workspace = true }
-assert_macros = "2.12.2"
-snforge_std   = { workspace = true }
-mock_client = { path = "../mock_client" }
+snforge_std = { workspace = true }
+assert_macros = "2.13.1"
 
 [[target.starknet-contract]]
 sierra = true
-build-external-contracts = ["mock_client::MockClient"]
 
 [scripts]
 test = "snforge test"
