@@ -276,7 +276,6 @@ mod create_client {
 }
 
 mod update_client {
-    use ibc::msg::MsgUpdateClient;
     use super::*;
 
     #[test]
@@ -440,7 +439,6 @@ mod connection_handshake {
         let counterparty_client_id = ClientIdImpl::new(2);
         let counterparty_connection_id = ConnectionIdImpl::new(3);
 
-        println!("asdnefelasdf22");
         let connection_id = ibc_dispatcher
             .connection_open_try(
                 counterparty_client_id,
@@ -470,12 +468,10 @@ mod connection_handshake {
             load_commitment(ibc_contract, ConnectionPath { connection_id }).unwrap(),
             truncate(expected_connection.commit()),
         );
-        println!("asdnefelasdf");
         let connection: Connection = load_map_value_custom(
             ibc_contract, selector!("connections"), connection_id, 5, |out| decode_connection(out),
         )
             .unwrap();
-        println!("asdnefelasdf2387");
 
         assert_eq!(connection, expected_connection);
 
@@ -516,5 +512,237 @@ mod connection_handshake {
             );
         // TODO(aeryz): I mentioned this previously but if we make membership proof verification
     // controllable, we can also assert `INVALID_PROOF`
+    }
+
+    #[test]
+    fn test_connection_open_ack_works() {
+        let (ibc_dispatcher, ibc_contract, light_client) = deploy_ibc_and_client();
+
+        let mut spy = spy_events();
+
+        ibc_dispatcher.register_client("cometbls", light_client);
+
+        let client_id = ibc_dispatcher
+            .create_client("cometbls", "client_state_bytes", "consensus_state_bytes", ibc_contract);
+
+        let counterparty_client_id = ClientIdImpl::new(2);
+
+        let counterparty_connection_id = ConnectionIdImpl::new(10);
+
+        let connection_id = ibc_dispatcher.connection_open_init(client_id, counterparty_client_id);
+
+        ibc_dispatcher
+            .connection_open_ack(connection_id, counterparty_connection_id, Default::default(), 10);
+
+        let expected_connection = Connection {
+            state: ConnectionState::Open,
+            client_id,
+            counterparty_client_id,
+            counterparty_connection_id: Some(counterparty_connection_id),
+        };
+
+        assert_eq!(
+            load_commitment(ibc_contract, ConnectionPath { connection_id }).unwrap(),
+            truncate(expected_connection.commit()),
+        );
+        let connection: Connection = load_map_value_custom(
+            ibc_contract, selector!("connections"), connection_id, 5, |out| decode_connection(out),
+        )
+            .unwrap();
+
+        assert_eq!(connection, expected_connection);
+
+        spy
+            .assert_emitted(
+                @array![
+                    (
+                        ibc_contract,
+                        Event::ConnectionOpenAck(
+                            ConnectionOpenAck {
+                                connection_id,
+                                client_id,
+                                counterparty_client_id,
+                                counterparty_connection_id,
+                            },
+                        ),
+                    ),
+                ],
+            );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_connection_open_ack_fails_connection_not_found() {
+        let (ibc_dispatcher, _, _) = deploy_ibc_and_client();
+
+        ibc_dispatcher
+            .connection_open_ack(
+                ConnectionIdImpl::new(1), ConnectionIdImpl::new(2), Default::default(), 10,
+            );
+    }
+
+    #[test]
+    #[should_panic(expected: 'INVALID_CONNECTION_STATE')]
+    fn test_connection_open_ack_fails_invalid_connection_state() {
+        let (ibc_dispatcher, ibc_contract, light_client) = deploy_ibc_and_client();
+
+        ibc_dispatcher.register_client("cometbls", light_client);
+
+        let client_id = ibc_dispatcher
+            .create_client("cometbls", "client_state_bytes", "consensus_state_bytes", ibc_contract);
+        let counterparty_client_id = ClientIdImpl::new(2);
+
+        let counterparty_connection_id = ConnectionIdImpl::new(10);
+
+        let connection_id = ibc_dispatcher
+            .connection_open_try(
+                counterparty_client_id,
+                counterparty_connection_id,
+                client_id,
+                Default::default(),
+                10,
+            );
+
+        ibc_dispatcher
+            .connection_open_ack(connection_id, counterparty_connection_id, Default::default(), 10);
+    }
+
+    #[test]
+    #[should_panic(expected: 'INVALID_CONNECTION_STATE')]
+    fn test_connection_open_ack_fails_invalid_connection_state2() {
+        let (ibc_dispatcher, ibc_contract, light_client) = deploy_ibc_and_client();
+
+        ibc_dispatcher.register_client("cometbls", light_client);
+
+        let client_id = ibc_dispatcher
+            .create_client("cometbls", "client_state_bytes", "consensus_state_bytes", ibc_contract);
+
+        let counterparty_client_id = ClientIdImpl::new(2);
+
+        let counterparty_connection_id = ConnectionIdImpl::new(10);
+
+        let connection_id = ibc_dispatcher.connection_open_init(client_id, counterparty_client_id);
+
+        ibc_dispatcher
+            .connection_open_ack(connection_id, counterparty_connection_id, Default::default(), 10);
+
+        ibc_dispatcher
+            .connection_open_ack(connection_id, counterparty_connection_id, Default::default(), 10);
+    }
+
+
+    #[test]
+    fn test_connection_open_confirm_works() {
+        let (ibc_dispatcher, ibc_contract, light_client) = deploy_ibc_and_client();
+
+        let mut spy = spy_events();
+
+        ibc_dispatcher.register_client("cometbls", light_client);
+
+        let client_id = ibc_dispatcher
+            .create_client("cometbls", "client_state_bytes", "consensus_state_bytes", ibc_contract);
+
+        let counterparty_client_id = ClientIdImpl::new(2);
+
+        let counterparty_connection_id = ConnectionIdImpl::new(10);
+
+        let connection_id = ibc_dispatcher
+            .connection_open_try(
+                counterparty_client_id,
+                counterparty_connection_id,
+                client_id,
+                Default::default(),
+                10,
+            );
+
+        ibc_dispatcher.connection_open_confirm(connection_id, Default::default(), 10);
+
+        let expected_connection = Connection {
+            state: ConnectionState::Open,
+            client_id,
+            counterparty_client_id,
+            counterparty_connection_id: Some(counterparty_connection_id),
+        };
+
+        assert_eq!(
+            load_commitment(ibc_contract, ConnectionPath { connection_id }).unwrap(),
+            truncate(expected_connection.commit()),
+        );
+        let connection: Connection = load_map_value_custom(
+            ibc_contract, selector!("connections"), connection_id, 5, |out| decode_connection(out),
+        )
+            .unwrap();
+
+        assert_eq!(connection, expected_connection);
+
+        spy
+            .assert_emitted(
+                @array![
+                    (
+                        ibc_contract,
+                        Event::ConnectionOpenConfirm(
+                            ConnectionOpenConfirm {
+                                connection_id,
+                                client_id,
+                                counterparty_client_id,
+                                counterparty_connection_id,
+                            },
+                        ),
+                    ),
+                ],
+            );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_connection_open_confirm_fails_connection_not_found() {
+        let (ibc_dispatcher, _, _) = deploy_ibc_and_client();
+
+        ibc_dispatcher.connection_open_confirm(ConnectionIdImpl::new(1), Default::default(), 10);
+    }
+
+    #[test]
+    #[should_panic(expected: 'INVALID_CONNECTION_STATE')]
+    fn test_connection_open_confirm_fails_invalid_connection_state() {
+        let (ibc_dispatcher, ibc_contract, light_client) = deploy_ibc_and_client();
+
+        ibc_dispatcher.register_client("cometbls", light_client);
+
+        let client_id = ibc_dispatcher
+            .create_client("cometbls", "client_state_bytes", "consensus_state_bytes", ibc_contract);
+
+        let counterparty_client_id = ClientIdImpl::new(2);
+
+        let connection_id = ibc_dispatcher.connection_open_init(client_id, counterparty_client_id);
+
+        ibc_dispatcher.connection_open_confirm(connection_id, Default::default(), 10);
+    }
+
+    #[test]
+    #[should_panic(expected: 'INVALID_CONNECTION_STATE')]
+    fn test_connection_open_confirm_fails_invalid_connection_state2() {
+        let (ibc_dispatcher, ibc_contract, light_client) = deploy_ibc_and_client();
+
+        ibc_dispatcher.register_client("cometbls", light_client);
+
+        let client_id = ibc_dispatcher
+            .create_client("cometbls", "client_state_bytes", "consensus_state_bytes", ibc_contract);
+
+        let counterparty_client_id = ClientIdImpl::new(2);
+
+        let counterparty_connection_id = ConnectionIdImpl::new(10);
+
+        let connection_id = ibc_dispatcher
+            .connection_open_try(
+                counterparty_client_id,
+                counterparty_connection_id,
+                client_id,
+                Default::default(),
+                10,
+            );
+
+        ibc_dispatcher.connection_open_confirm(connection_id, Default::default(), 10);
+
+        ibc_dispatcher.connection_open_confirm(connection_id, Default::default(), 10);
     }
 }

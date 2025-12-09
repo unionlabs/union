@@ -61,7 +61,6 @@
 use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
 use core::hash::{Hash, HashStateExTrait, HashStateTrait};
 use starknet::ContractAddress;
-use crate::msg::{MsgCreateClient, MsgRegisterClient, MsgUpdateClient};
 use crate::types::{ClientId, ConnectionId};
 
 pub mod Error {
@@ -186,6 +185,27 @@ pub trait IIbcHandler<TContractState> {
         proof_height: u64,
     ) -> ConnectionId;
 
+    /// Third step of the connection handshake meant to run after the `connection_open_try` runs on
+    /// the counterparty chain. This is the final step of the handshake on this chain but
+    /// `connection_open_confirm` needs to run on the counterparty still.
+    ///
+    /// The connection with the `connection_id` on this chain and `counterparty_connection_id` on
+    /// the counterparty chain will be opened (only on this chain).
+    ///
+    /// The `proof_try` is the proof of the `Connection` commitment, created at height
+    /// `proof_height`. The commitment is expected to be done under `ConnectionPath`.
+    ///
+    /// Emits [`ConnectionOpenAck`]
+    ///
+    /// ## Panics
+    /// 1. Connection with `connection_id` is not found.
+    /// 2. Connection with `connection_id` has an invalid state. This happens due to either the
+    /// `connection_open_ack/confirm` is already run on this connection or `connection_open_ack` is
+    /// executed after `connection_open_try` but not `init`. (INVALID_CONNECTION_STATE)
+    /// 3. The `proof_try` cannot be verified by the light client. (INVALID_PROOF)
+    ///
+    /// ## Commitments
+    /// 1. The ethabi encoded and keccak hashed connection will be committed under `ConnectionPath`
     fn connection_open_ack(
         ref self: TContractState,
         connection_id: ConnectionId,
@@ -194,6 +214,25 @@ pub trait IIbcHandler<TContractState> {
         proof_height: u64,
     );
 
+    /// The final step of the connection handshake meant to run after the `connection_open_ack` runs
+    /// on the counterparty chain.
+    ///
+    /// The connection with the `connection_id` on this chain will be fully opened.
+    ///
+    /// The `proof_ack` is the proof of the `Connection` commitment, created at height
+    /// `proof_height`. The commitment is expected to be done under `ConnectionPath`.
+    ///
+    /// Emits [`ConnectionOpenConfirm`]
+    ///
+    /// ## Panics
+    /// 1. Connection with `connection_id` is not found.
+    /// 2. Connection with `connection_id` has an invalid state. This happens due to either the
+    /// `connection_open_ack/confirm` is already run on this connection or `connection_open_confirm`
+    /// is executed after `connection_open_init` but not `try`. (INVALID_CONNECTION_STATE)
+    /// 3. The `proof_ack` cannot be verified by the light client. (INVALID_PROOF)
+    ///
+    /// ## Commitments
+    /// 1. The ethabi encoded and keccak hashed connection will be committed under `ConnectionPath`
     fn connection_open_confirm(
         ref self: TContractState,
         connection_id: ConnectionId,
@@ -221,10 +260,6 @@ pub mod IbcHandler {
     };
     use crate::lightclient::{
         ConsensusStateUpdate, ILightClientSafeDispatcher, ILightClientSafeDispatcherTrait,
-    };
-    use crate::msg::{
-        MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit, MsgConnectionOpenTry,
-        MsgCreateClient, MsgRegisterClient, MsgUpdateClient,
     };
     use crate::path::{ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait};
     use crate::types::{
@@ -458,10 +493,15 @@ pub mod IbcHandler {
             proof_try: ByteArray,
             proof_height: u64,
         ) {
+            // We are at the ack phase, meaning we should be at the state where only the
+            // `connection_open_init` ran on this chain.
             let mut connection = self.ensure_connection_state(connection_id, ConnectionState::Init);
 
+            // The expected state of the connection after `connection_open_try` is run on the
+            // counterparty chain. That's the reason why `client_id` and `counterparty_client_id` is
+            // flipped.
             let expected_connection = Connection {
-                state: ConnectionState::Init,
+                state: ConnectionState::TryOpen,
                 client_id: connection.counterparty_client_id,
                 counterparty_client_id: connection.client_id,
                 counterparty_connection_id: Some(connection_id),
@@ -479,7 +519,11 @@ pub mod IbcHandler {
                 Error::INVALID_PROOF,
             );
 
+            // We mark this connection as open since it's the last step on this chain but it won't
+            // matter until `confirm` runs on the other chain.
             connection.state = ConnectionState::Open;
+            // We previously didn't have this info in the `init` phase, hence we set it now.
+            connection.counterparty_connection_id = Some(counterparty_connection_id);
 
             self
                 .emit(
@@ -500,9 +544,14 @@ pub mod IbcHandler {
             proof_ack: ByteArray,
             proof_height: u64,
         ) {
+            // We are at the confirm phase, meaning we should be at the state where only the
+            // `connection_open_try` ran on this chain.
             let mut connection = self
                 .ensure_connection_state(connection_id, ConnectionState::TryOpen);
 
+            // The expected state of the connection after `connection_open_ack` is run on the
+            // counterparty chain. That's the reason why `client_id` and `counterparty_client_id` is
+            // flipped.
             let expected_connection = Connection {
                 state: ConnectionState::TryOpen,
                 client_id: connection.counterparty_client_id,
@@ -694,7 +743,7 @@ pub mod IbcHandler {
             self: @ContractState, connection_id: ConnectionId, state: ConnectionState,
         ) -> Connection {
             let connection = self.connections.read(connection_id);
-            assert(connection.state != state, Error::INVALID_CONNECTION_STATE);
+            assert(connection.state == state, Error::INVALID_CONNECTION_STATE);
             connection
         }
 
