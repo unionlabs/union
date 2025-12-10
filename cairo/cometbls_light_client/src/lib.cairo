@@ -58,6 +58,8 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
+pub mod ics23;
+
 #[starknet::contract]
 mod CometblsLightClient {
     use ibc::lightclient::ConsensusStateUpdate;

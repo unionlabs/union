@@ -70,6 +70,29 @@ pub struct ConsensusStateUpdate {
 
 #[starknet::interface]
 pub trait ILightClient<TContractState> {
+    /// Create a light client with the `client_id`.
+    ///
+    /// #### Params
+    ///
+    /// - `caller`: TODO(aeryz): why not make this get_caller_address()?
+    /// - `client_id`: The unique identifier of the client that is going to be created.
+    /// - `client_state_bytes`: The client-defined state of the client. Note that there's only a
+    /// single client state which usually contains the configuration of the client, info and the
+    /// latest known state of the counterparty chain.
+    /// - `consensus_state_bytes`: The client-defined state of the counterparty chain per height.
+    /// This usually contains the state root at a certain height.
+    /// - `relayer`: A user-defined address. CANNOT BE USED for authentication as it's set by the
+    /// caller. It does not have to be the signer of this transaction. Use `get_caller_address` for
+    /// that.
+    ///
+    /// #### Return
+    ///
+    /// Return the client and consensus state commitments. The `consensus_state_commitments` will be
+    /// written under the `height`. The `height` is generally parsed from the `client_state_bytes`
+    /// form. Check the `cometbls_light_client` implementation to see an example.
+    ///
+    /// The second return argument (`ByteArray`) is the counterparty chain ID which is again
+    /// generally be parsed from the `client_state_bytes`.
     fn create_client(
         ref self: TContractState,
         caller: ContractAddress,
@@ -79,6 +102,20 @@ pub trait ILightClient<TContractState> {
         relayer: ContractAddress,
     ) -> (ConsensusStateUpdate, ByteArray);
 
+    /// Update the client `client_id` to a new state.
+    ///
+    /// Update the client and save whatever information is needed for the verification to be
+    /// successful. This can be a state root, a header, it depends on the counterparty chain
+    /// implementation. Clients are free to specify their update data however they want and it will
+    /// be passed as is in the `client_message`.
+    //
+    /// `relayer` CANNOT BE USED for authentication as it's set by the caller. It does not have to
+    /// be the signer of this transaction. Use `get_caller_address` for that.
+    ///
+    /// Return the client and consensus state commitments. The `consensus_state_commitments` will be
+    /// written under the `height`. The meaning of the `height` changes based on the counterparty
+    /// chain implementation. Check the `cometbls_light_client` implementation to see an example.
+    //
     fn update_client(
         ref self: TContractState,
         caller: ContractAddress,
@@ -87,6 +124,18 @@ pub trait ILightClient<TContractState> {
         relayer: ContractAddress,
     ) -> ConsensusStateUpdate;
 
+    /// Verify the existence of `key/value` pair on the counterparty chain using `client_id`.
+    ///
+    /// Verify that the client-defined `proof` - generated at `height` - confirms that the
+    /// `key/value` pair exists on the counterparty chain. The existence proof is totally up-to the
+    /// counterparty chain. Hence the `proof` is defined by the clients and be passed in as is by
+    /// the protocol.
+    ///
+    /// The clients need the state at the `height` to be able to verify the `proof`. Hence, the flow
+    /// is usually an `update_client` call updates the client to the state at the `height` and then
+    /// arbitrary number of verifications can be done by using that state at the `height`.
+    ///
+    /// Return `true` if the proof verification passes.
     fn verify_membership(
         self: @TContractState,
         client_id: ClientId,
