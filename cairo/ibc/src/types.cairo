@@ -73,6 +73,36 @@ pub trait Id<T, +Copy<T>> {
     fn raw(self: @T) -> u32;
 }
 
+/// Chain identifier with the max length of 31.
+#[derive(Debug, Drop, starknet::Store, PartialEq)]
+pub struct ChainId {
+    id: ByteArray,
+}
+
+impl ChainIdSerde of Serde<ChainId> {
+    fn serialize(self: @ChainId, ref output: Array<felt252>) {
+        self.id.serialize(ref output);
+    }
+
+    fn deserialize(ref serialized: Span<felt252>) -> Option<ChainId> {
+        let id: ByteArray = Serde::deserialize(ref serialized)?;
+
+        ChainIdImpl::try_from_bytes(id)
+    }
+}
+
+#[generate_trait]
+pub impl ChainIdImpl of ChainIdTrait {
+    fn try_from_bytes(id: ByteArray) -> Option<ChainId> {
+        if id.len() > 31 {
+            None
+        } else {
+            Some(ChainId { id })
+        }
+    }
+}
+
+
 #[derive(Debug, Copy, Drop, Serde, starknet::Store, PartialEq)]
 pub struct ClientId {
     raw: NonZero<u32>,

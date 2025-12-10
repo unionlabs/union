@@ -162,7 +162,6 @@ impl ExistenceProofImpl of ExistenceProofTrait {
         key: @ByteArray,
         value: @ByteArray,
     ) -> Result<(), Error> {
-        println!("oh boy: {}", self.leaf_prefix);
         self.verify_no_root_check(proof_spec, key, value)?;
 
         let root = self.calculate_root()?;

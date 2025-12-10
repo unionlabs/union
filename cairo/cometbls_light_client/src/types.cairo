@@ -58,61 +58,6 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-pub mod ics23;
-pub mod types;
+pub struct ClientState {}
 
-#[starknet::contract]
-mod CometblsLightClient {
-    use ibc::lightclient::ConsensusStateUpdate;
-    use ibc::types::ClientId;
-    use starknet::ContractAddress;
-
-    #[storage]
-    struct Storage {}
-
-    #[abi(embed_v0)]
-    impl CometblsLightClientIbcImpl of ibc::lightclient::ILightClient<ContractState> {
-        fn create_client(
-            ref self: ContractState,
-            caller: ContractAddress,
-            client_id: ClientId,
-            client_state_bytes: ByteArray,
-            consensus_state_bytes: ByteArray,
-            relayer: ContractAddress,
-        ) -> (ConsensusStateUpdate, ByteArray) {
-            (
-                ConsensusStateUpdate {
-                    client_state_commitment: Default::default(),
-                    consensus_state_commitment: Default::default(),
-                    height: 10,
-                },
-                Default::default(),
-            )
-        }
-
-        fn update_client(
-            ref self: ContractState,
-            caller: ContractAddress,
-            client_id: ClientId,
-            client_message: ByteArray,
-            relayer: ContractAddress,
-        ) -> ConsensusStateUpdate {
-            ConsensusStateUpdate {
-                client_state_commitment: Default::default(),
-                consensus_state_commitment: Default::default(),
-                height: 10,
-            }
-        }
-
-        fn verify_membership(
-            self: @ContractState,
-            client_id: ClientId,
-            height: u64,
-            proof: ByteArray,
-            key: ByteArray,
-            value: ByteArray,
-        ) -> bool {
-            false
-        }
-    }
-}
+pub struct ConsensusState {}
