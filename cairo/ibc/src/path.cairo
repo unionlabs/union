@@ -61,7 +61,7 @@
 use alexandria_bytes::BytesTrait;
 use alexandria_encoding::sol_abi::encode::SolAbiEncodeTrait;
 use core::keccak::compute_keccak_byte_array;
-use crate::types::{ChannelId, ClientId, ClientIdImpl, ConnectionId, Id};
+use crate::types::{ChannelId, ClientId, ClientIdImpl, ConnectionId, Id, Packet};
 
 pub const CLIENT_STATE: u256 = 0;
 pub const CONSENSUS_STATE: u256 = 1;
@@ -72,6 +72,12 @@ pub const PACKET_ACKS: u256 = 5;
 pub const MEMBERSHIP_PROOF: u256 = 6;
 pub const NON_MEMBERSHIP_PROOF: u256 = 7;
 pub const PACKET_TIMEOUTS: u256 = 8;
+
+#[must_use]
+pub fn commit_packets(packets: Span<Packet>) -> u256 {
+    // TODO: Implement
+    0
+}
 
 pub enum StorePath {
     ClientState: ClientStatePath,
@@ -181,6 +187,13 @@ impl BatchReceiptsPathKeyImpl of StorePathKeyTrait<BatchReceiptsPath> {
 #[derive(Drop)]
 pub struct BatchPacketsPath {
     pub batch_hash: u256,
+}
+
+#[generate_trait]
+pub impl BatchPacketsPathImpl of BatchPacketsPathTrait {
+    fn from_packets(packets: Span<Packet>) -> BatchPacketsPath {
+        BatchPacketsPath { batch_hash: commit_packets(packets) }
+    }
 }
 
 impl BatchPacketsPathKeyImpl of StorePathKeyTrait<BatchPacketsPath> {

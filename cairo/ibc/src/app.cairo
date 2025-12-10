@@ -73,7 +73,7 @@ pub trait IIbcModuleSend<TContractState> {
 }
 
 #[starknet::interface]
-pub trait IIbcModuleRecv<TContractState> {
+pub trait IIbcModule<TContractState> {
     fn on_recv_packet(
         ref self: TContractState,
         caller: ContractAddress,
@@ -89,10 +89,7 @@ pub trait IIbcModuleRecv<TContractState> {
         market_maker: ContractAddress,
         market_maker_msg: ByteArray,
     ) -> ByteArray;
-}
 
-#[starknet::interface]
-pub trait IIbcModule<TContractState> {
     fn on_chan_open_init(
         ref self: TContractState,
         caller: ContractAddress,

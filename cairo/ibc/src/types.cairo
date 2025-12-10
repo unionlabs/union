@@ -76,6 +76,7 @@ pub trait Id<T, +Copy<T>> {
 }
 
 /// Chain identifier with the max length of 31.
+// TODO: Use bytes31
 #[derive(Debug, Drop, starknet::Store, PartialEq)]
 pub struct ChainId {
     id: ByteArray,
@@ -323,9 +324,22 @@ pub impl PacketImpl of PacketTrait {
     }
 }
 
-#[derive(Debug, Drop, PartialEq, Clone, Serde)]
+#[derive(Debug, Drop, PartialEq, Copy, Serde)]
 pub struct Timestamp {
     raw: u64,
+}
+
+#[generate_trait]
+pub impl TimestampImpl of TimestampTrait {
+    fn from_secs(secs: u64) -> Timestamp {
+        Timestamp { raw: secs * 1_000_000_000 }
+    }
+}
+
+pub impl TimestampPartialOrd of PartialOrd<Timestamp> {
+    fn lt(lhs: Timestamp, rhs: Timestamp) -> bool {
+        lhs.raw < rhs.raw
+    }
 }
 
 impl TimestampZero of core::num::traits::Zero<Timestamp> {

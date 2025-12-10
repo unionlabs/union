@@ -79,6 +79,11 @@ pub mod Error {
     pub const TIMESTAMP_MUST_BE_SET: felt252 = 'TIMESTAMP_MUST_BE_SET';
     pub const NOT_CHANNEL_OWNER: felt252 = 'NOT_CHANNEL_OWNER';
     pub const PACKET_ALREADY_EXISTS: felt252 = 'PACKET_ALREADY_EXISTS';
+    pub const NOT_ENOUGH_PACKETS: felt252 = 'NOT_ENOUGH_PACKETS';
+    pub const INVALID_RELAYER_MSGS: felt252 = 'INVALID_RELAYER_MSGS';
+    pub const BATCH_SAME_CHANNEL_ONLY: felt252 = 'BATCH_SAME_CHANNEL_ONLY';
+    pub const TIMESTAMP_TIMEOUT: felt252 = 'TIMESTAMP_TIMEOUT';
+    pub const ACKNOWLEDGEMENT_ALREADY_EXISTS: felt252 = 'ACKNOWLEDGEMENT_ALREADY_EXISTS';
 }
 
 #[starknet::interface]
@@ -580,6 +585,7 @@ pub trait IIbcHandler<TContractState> {
 pub mod IbcHandler {
     use core::keccak::compute_keccak_byte_array;
     use core::num::traits::Zero;
+    use snforge_std::cheatcodes::execution_info;
     use starknet::event::EventEmitter;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
@@ -592,19 +598,20 @@ pub mod IbcHandler {
     use crate::event::{
         ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
         ChannelOpenTry, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-        ConnectionOpenTry, CreateClient, RegisterClient, UpdateClient,
+        ConnectionOpenTry, CreateClient, PacketAck, PacketRecv, PacketSend, RegisterClient,
+        UpdateClient, WriteAck,
     };
     use crate::lightclient::{
         ConsensusStateUpdate, ILightClientSafeDispatcher, ILightClientSafeDispatcherTrait,
     };
     use crate::path::{
-        BatchPacketsPath, ChannelPath, ClientStatePath, ConnectionPath, ConsensusStatePath,
-        StorePathKeyTrait,
+        BatchPacketsPath, BatchPacketsPathImpl, BatchReceiptsPath, ChannelPath, ClientStatePath,
+        ConnectionPath, ConsensusStatePath, StorePathKeyTrait,
     };
     use crate::types::{
-        Channel, ChannelId, ChannelImpl, ChannelState, ClientId, ClientIdImpl, Connection,
-        ConnectionId, ConnectionIdImpl, ConnectionImpl, ConnectionState, ConnectionTrait,
-        PacketTrait, Timestamp,
+        Channel, ChannelId, ChannelIdImpl, ChannelImpl, ChannelState, ClientId, ClientIdImpl,
+        Connection, ConnectionId, ConnectionIdImpl, ConnectionImpl, ConnectionState,
+        ConnectionTrait, PacketTrait, Timestamp, TimestampImpl,
     };
     use super::{ByteArrayTraitExt, Error, Packet, to_byte_array};
 
@@ -641,12 +648,17 @@ pub mod IbcHandler {
         ChannelOpenConfirm: ChannelOpenConfirm,
         ChannelCloseInit: ChannelCloseInit,
         ChannelCloseConfirm: ChannelCloseConfirm,
+        PacketSend: PacketSend,
+        PacketRecv: PacketRecv,
+        WriteAck: WriteAck,
+        PacketAck: PacketAck,
     }
 
     #[constructor]
     fn constructor(ref self: ContractState) {
         self.next_client_id.write(ClientIdImpl::new(1));
         self.next_connection_id.write(ConnectionIdImpl::new(1));
+        self.next_channel_id.write(ChannelIdImpl::new(1));
     }
 
     #[abi(embed_v0)]
@@ -1221,19 +1233,96 @@ pub mod IbcHandler {
 
             self.commit(commitment_key, COMMITMENT_MAGIC);
 
+            self.emit(PacketSend { channel_id, packet_hash, packet: packet.clone() });
+
             packet
         }
-
 
         fn recv_packet(
             ref self: ContractState,
             packets: Array<Packet>,
-            relayer_msgs: Array<ByteArray>,
+            mut relayer_msgs: Array<ByteArray>,
             relayer: ContractAddress,
             proof: ByteArray,
             proof_height: u64,
-        ) {}
+        ) {
+            assert(packets.len() > 0, Error::NOT_ENOUGH_PACKETS);
+            assert(packets.len() == relayer_msgs.len(), Error::INVALID_RELAYER_MSGS);
 
+            let destination_channel_id = *packets[0].destination_channel_id;
+            let channel = self.ensure_channel_state(destination_channel_id, ChannelState::Open);
+            let connection = self
+                .ensure_connection_state(channel.connection_id, ConnectionState::Open);
+            let proof_commitment_key = BatchPacketsPathImpl::from_packets(packets.span());
+            assert(
+                self
+                    .verify_commitment(
+                        connection.client_id,
+                        proof_height,
+                        proof,
+                        proof_commitment_key.key(),
+                        COMMITMENT_MAGIC,
+                    ),
+                Error::INVALID_PROOF,
+            );
+
+            let module = self.lookup_module_by_channel_id(destination_channel_id);
+
+            let execution_info = get_execution_info();
+
+            let current_timestamp = TimestampImpl::from_secs(
+                execution_info.block_info.block_timestamp,
+            );
+
+            for packet in packets {
+                assert(
+                    packet.destination_channel_id == destination_channel_id,
+                    Error::BATCH_SAME_CHANNEL_ONLY,
+                );
+
+                assert(packet.timeout_timestamp > current_timestamp, Error::TIMESTAMP_TIMEOUT);
+
+                let maker_msg = relayer_msgs.pop_front().unwrap();
+
+                let packet_hash = packet.hash();
+
+                let commitment_key = BatchReceiptsPath { batch_hash: packet_hash }.key();
+
+                let res = module
+                    .on_recv_packet(
+                        execution_info.caller_address, packet, relayer, maker_msg.clone(),
+                    );
+
+                let acknowledgement = match res {
+                    Ok(acknowledgement) => { acknowledgement },
+                    Err(err) => panic!("error in recv packet callback: {err:?}"),
+                };
+
+                let commitment = self.get_commitment(commitment_key);
+                assert(commitment == COMMITMENT_MAGIC, Error::ACKNOWLEDGEMENT_ALREADY_EXISTS);
+                self.commit(commitment_key, commit_ack(ack));
+
+                self
+                    .emit(
+                        PacketRecv {
+                            channel_id: destination_channel_id,
+                            packet_hash,
+                            maker: execution_info.caller_address,
+                            maker_msg,
+                        },
+                    );
+
+                self
+                    .emit(
+                        WriteAck {
+                            channel_id: destination_channel_id,
+                            packet_hash,
+                            acknowledgement,
+                            maker: execution_info.caller_address,
+                        },
+                    );
+            }
+        }
 
         fn recv_intent_packet(
             ref self: ContractState,
@@ -1241,7 +1330,6 @@ pub mod IbcHandler {
             market_maker_msgs: Array<ByteArray>,
             market_maker: ContractAddress,
         ) {}
-
 
         fn write_acknowledgement(
             ref self: ContractState, packet: Packet, acknowledgement: ByteArray,
@@ -1255,7 +1343,6 @@ pub mod IbcHandler {
             proof_height: u64,
             relayer: ContractAddress,
         ) {}
-
 
         fn timeout_packet(
             ref self: ContractState,
@@ -1347,6 +1434,21 @@ pub mod IbcHandler {
                 .unwrap_or(false)
         }
 
+        fn verify_commitment(
+            self: @ContractState,
+            client_id: ClientId,
+            height: u64,
+            proof: ByteArray,
+            path: u256,
+            commitment: u256,
+        ) -> bool {
+            self
+                .client_impl(client_id)
+                .verify_membership(
+                    client_id, height, proof, to_byte_array(path), to_byte_array(commitment),
+                )
+                .unwrap_or(false)
+        }
 
         fn get_next_client_id(ref self: ContractState) -> ClientId {
             let client_id = self.next_client_id.read();
@@ -1390,6 +1492,16 @@ pub mod IbcHandler {
             )
         }
 
+        fn lookup_module_by_channel_id(
+            self: @ContractState, channel_id: ChannelId,
+        ) -> IIbcModuleSafeDispatcher {
+            let contract_address = self.channel_owners.read(channel_id);
+
+            assert(!contract_address.is_zero(), Error::CHANNEL_NOT_FOUND);
+
+            IIbcModuleSafeDispatcher { contract_address }
+        }
+
         fn commit(ref self: ContractState, key: u256, value: u256) {
             // https://docs.starknet.io/learn/protocol/cryptography#starknet-keccak
             let truncate = |n: u256| -> felt252 {
@@ -1420,6 +1532,20 @@ pub mod IbcHandler {
                 .unwrap_syscall()
                 .into()
         }
+    }
+
+    fn commit_ack(ack: ByteArray) -> u256 {
+        commit_acks([ack].span())
+    }
+
+    fn commit_acks(acks: Span<ByteArray>) -> u256 {
+        // TODO: Implement (ethabi(bytes[]))
+        merge_ack(compute_keccak_byte_array(0))
+    }
+
+    fn merge_ack(ack: u256) -> u256 {
+        COMMITMENT_MAGIC
+            | (ack & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
     }
 }
 

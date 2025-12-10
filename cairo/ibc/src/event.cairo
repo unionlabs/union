@@ -59,7 +59,7 @@
 // TITLE.
 
 use starknet::ContractAddress;
-use crate::types::{ChannelId, ClientId, ConnectionId};
+use crate::types::{ChannelId, ClientId, ConnectionId, Packet};
 
 #[derive(Drop, starknet::Event)]
 pub struct RegisterClient {
@@ -192,3 +192,42 @@ pub struct ChannelCloseConfirm {
     pub counterparty_channel_id: ChannelId,
 }
 
+#[derive(Drop, starknet::Event)]
+pub struct PacketSend {
+    #[key]
+    pub channel_id: ChannelId,
+    #[key]
+    pub packet_hash: u256,
+    pub packet: Packet,
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct PacketRecv {
+    #[key]
+    pub channel_id: ChannelId,
+    #[key]
+    pub packet_hash: u256,
+    #[key]
+    pub maker: ContractAddress,
+    pub maker_msg: ByteArray,
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct WriteAck {
+    #[key]
+    pub channel_id: ChannelId,
+    #[key]
+    pub packet_hash: u256,
+    pub acknowledgement: ByteArray,
+}
+
+#[derive(Drop, starknet::Event)]
+pub struct PacketAck {
+    #[key]
+    pub channel_id: ChannelId,
+    #[key]
+    pub packet_hash: u256,
+    pub acknowledgement: ByteArray,
+    #[key]
+    pub maker: ContractAddress,
+}
