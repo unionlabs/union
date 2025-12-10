@@ -71,6 +71,8 @@ pub mod Error {
     pub const CLIENT_TYPE_ALREADY_REGISTERED: felt252 = 'CLIENT_TYPE_ALREADY_REGISTERED';
     pub const CLIENT_TYPE_NOT_FOUND: felt252 = 'CLIENT_TYPE_NOT_FOUND';
     pub const CLIENT_NOT_FOUND: felt252 = 'CLIENT_NOT_FOUND';
+    pub const CONNECTION_NOT_FOUND: felt252 = 'CONNECTION_NOT_FOUND';
+    pub const CHANNEL_NOT_FOUND: felt252 = 'CHANNEL_NOT_FOUND';
     pub const INVALID_PROOF: felt252 = 'INVALID_PROOF';
     pub const INVALID_CONNECTION_STATE: felt252 = 'INVALID_CONNECTION_STATE';
     pub const INVALID_CHANNEL_STATE: felt252 = 'INVALID_CHANNEL_STATE';
@@ -246,10 +248,10 @@ pub trait IIbcHandler<TContractState> {
         proof_height: u64,
     ) -> ConnectionId;
 
-    /// The second step of the connection handshake, after the `connection_open_try` on the
-    /// counterparty chain. This is the final step of the connection handshake on this chain, and
-    /// the `connection_open_confirm` must still be sent to the counterparty after this call to
-    /// complete the handshake.
+    /// The third step of the connection handshake, after the `connection_open_try` on the
+    /// counterparty chain. This is the second and final step of the connection handshake on this
+    /// chain, and the `connection_open_confirm` must still be sent to the counterparty after this
+    /// call to complete the handshake.
     ///
     /// #### Params
     ///
@@ -272,7 +274,7 @@ pub trait IIbcHandler<TContractState> {
     /// This can occur either because the `connection_open_ack/confirm` has already been run for
     /// this connection, or `connection_open_ack` is executed after `connection_open_try` but not
     /// `init`.
-    /// - [`Error::INVALID_PROOF`]: The `proof_try` cannot be verified by the light client.
+    /// - [`Error::INVALID_PROOF`]: The `proof_try` proof cannot be verified by the light client.
     ///
     /// Additionally, the call to the light client may exit with an error that cannot be handled by
     /// the safe dispatcher. See the cairo documentation for more information on what errors can be
@@ -311,9 +313,9 @@ pub trait IIbcHandler<TContractState> {
     /// - [`Error::CONNECTION_NOT_FOUND`]: Connection `connection_id` is not found.
     /// - [`Error::INVALID_CONNECTION_STATE`]: Connection `connection_id` is in an invalid state.
     /// This can occur either because the `connection_open_ack/confirm` has already been run for
-    /// this connection, or `connection_open_ack` is executed after `connection_open_try` but not
-    /// `init`.
-    /// - [`Error::INVALID_PROOF`]: The `proof_ack` cannot be verified by the light client.
+    /// this connection, or `connection_open_confirm` is executed after `connection_open_try` but
+    /// not `init`.
+    /// - [`Error::INVALID_PROOF`]: The `proof_ack` proof cannot be verified by the light client.
     ///
     /// Additionally, the call to the light client may exit with an error that cannot be handled by
     /// the safe dispatcher. See the cairo documentation for more information on what errors can be
@@ -395,17 +397,15 @@ pub trait IIbcHandler<TContractState> {
     ///
     /// #### Panics
     ///
-    /// This function will panic with a storage read error if the provided connection
-    /// (`channel.connection_id`) cannot be found.
+    /// This function may panic with the following well-known error codes:
     ///
-    /// This function may also panic with the following well-known error codes:
-    ///
+    /// - [`Error::CONNECTION_NOT_FOUND`]: The provided connection does not exist.
     /// - [`Error::INVALID_CONNECTION_STATE`]: The provided connection is not open
     /// ([`ConnectionState::Open`]).
-    /// - [`Error::INVALID_PROOF`]: The `proof_init` cannot be verified by the light client.
+    /// - [`Error::INVALID_PROOF`]: The `proof_init` proof cannot be verified by the light client.
     ///
-    /// Additionally, the module may panic during the open init callback. In this case, this
-    /// function will either panic with the full panic message from the failed call, or exit
+    /// Additionally, the both the client and module may panic while being called. In this case,
+    /// this function will either panic with the full panic message from the failed call, or exit
     /// directly if the error cannot be caught. See the cairo documentation for more information on
     /// what errors can be caught.
     ///
@@ -424,6 +424,46 @@ pub trait IIbcHandler<TContractState> {
         relayer: ContractAddress,
     ) -> ChannelId;
 
+    /// The third step of the channel handshake, after the `channel_open_try` on the
+    /// counterparty chain. This is the second and final step of the channel handshake on this
+    /// chain, and the `channel_open_confirm` must still be sent to the counterparty after this
+    /// call to complete the handshake.
+    ///
+    /// #### Params
+    ///
+    /// - `channel_id`: The ID of the channel on this chain, as returned from `channel_open_init`.
+    /// - `counterparty_version`: The channel version as committed on the counterparty chain.
+    /// - `counterparty_channel_id`: The ID of the channel on the counterparty chain.
+    /// - `proof_try`: The proof of the counterparty channel commitment, as stored under the
+    /// [`ChannelPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_try` proof is verifiable at.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    ///
+    /// The [`ChannelId`] of the newly created channel is returned upon success.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`ChannelOpenTry`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::INVALID_CHANNEL_STATE`]: The channel `channel_id` is in an invalid state.
+    /// This can occur either because the `channel_open_ack/confirm` has already been run for
+    /// this channel, or `channel_open_ack` is executed after `channel_open_try` but not
+    /// `init`.
+    /// - [`Error::INVALID_PROOF`]: The `proof_try` proof cannot be verified by the light client.
+    ///
+    /// Additionally, the both the client and module may panic while being called. In this case,
+    /// this function will either panic with the full panic message from the failed call, or exit
+    /// directly if the error cannot be caught. See the cairo documentation for more information on
+    /// what errors can be caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed channel will be committed under [`ChannelPath`].
     fn channel_open_ack(
         ref self: TContractState,
         channel_id: ChannelId,
@@ -434,6 +474,44 @@ pub trait IIbcHandler<TContractState> {
         relayer: ContractAddress,
     );
 
+    /// The third step of the channel handshake, after the `channel_open_try` on the
+    /// counterparty chain. This is the second and final step of the channel handshake on this
+    /// chain, and the `channel_open_confirm` must still be sent to the counterparty after this
+    /// call to complete the handshake.
+    ///
+    /// #### Params
+    ///
+    /// - `channel_id`: The ID of the channel on this chain, as returned from `channel_open_try`.
+    /// - `proof_ack`: The proof of the counterparty channel commitment, as stored under the
+    /// [`ChannelPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_ack` proof is verifiable at.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    ///
+    /// The [`ChannelId`] of the newly created channel is returned upon success.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`ChannelOpenTry`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::INVALID_CHANNEL_STATE`]: The channel `channel_id` is in an invalid state.
+    /// This can occur either because the `channel_open_ack/confirm` has already been run for
+    /// this channel, or `channel_open_confirm` is executed after `channel_open_try` but not
+    /// `init`.
+    /// - [`Error::INVALID_PROOF`]: The `proof_ack` proof cannot be verified by the light client.
+    ///
+    /// Additionally, the both the client and module may panic while being called. In this case,
+    /// this function will either panic with the full panic message from the failed call, or exit
+    /// directly if the error cannot be caught. See the cairo documentation for more information on
+    /// what errors can be caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed channel will be committed under [`ChannelPath`].
     fn channel_open_confirm(
         ref self: TContractState,
         channel_id: ChannelId,
@@ -482,8 +560,8 @@ pub mod IbcHandler {
         next_client_id: ClientId,
         next_connection_id: ConnectionId,
         next_channel_id: ChannelId,
-        connections: Map<ConnectionId, Connection>,
-        channels: Map<ChannelId, Channel>,
+        connections: Map<ConnectionId, Option<Connection>>,
+        channels: Map<ChannelId, Option<Channel>>,
         channel_owners: Map<ChannelId, ContractAddress>,
     }
 
@@ -640,16 +718,6 @@ pub mod IbcHandler {
             proof_init: ByteArray,
             proof_height: u64,
         ) -> ConnectionId {
-            // The expected state of the connection after `connection_open_init` is run on the
-            // counterparty chain. That's the reason why `client_id` and `counterparty_client_id` is
-            // flipped.
-            let expected_connection = Connection {
-                state: ConnectionState::Init,
-                client_id: counterparty_client_id,
-                counterparty_client_id: client_id,
-                counterparty_connection_id: None,
-            };
-
             // Verify that the counterparty chain actually performed the `connection_open_init` and
             // properly did the commitment
             assert(
@@ -659,21 +727,31 @@ pub mod IbcHandler {
                         proof_height,
                         proof_init,
                         counterparty_connection_id,
-                        expected_connection,
+                        // The expected state of the connection after `connection_open_init` is run
+                        // on the counterparty chain. That's the reason why `client_id` and
+                        // `counterparty_client_id` is flipped.
+                        Connection {
+                            state: ConnectionState::Init,
+                            client_id: counterparty_client_id,
+                            counterparty_client_id: client_id,
+                            counterparty_connection_id: None,
+                        },
                     ),
                 Error::INVALID_PROOF,
             );
 
             let connection_id = self.get_next_connection_id();
 
-            let connection = Connection {
-                state: ConnectionState::TryOpen,
-                client_id,
-                counterparty_client_id,
-                counterparty_connection_id: Some(counterparty_connection_id),
-            };
-
-            self.save_and_commit_connection(connection_id, connection);
+            self
+                .save_and_commit_connection(
+                    connection_id,
+                    Connection {
+                        state: ConnectionState::TryOpen,
+                        client_id,
+                        counterparty_client_id,
+                        counterparty_connection_id: Some(counterparty_connection_id),
+                    },
+                );
 
             self
                 .emit(
@@ -699,16 +777,6 @@ pub mod IbcHandler {
             // `connection_open_init` ran on this chain.
             let mut connection = self.ensure_connection_state(connection_id, ConnectionState::Init);
 
-            // The expected state of the connection after `connection_open_try` is run on the
-            // counterparty chain. That's the reason why `client_id` and `counterparty_client_id` is
-            // flipped.
-            let expected_connection = Connection {
-                state: ConnectionState::TryOpen,
-                client_id: connection.counterparty_client_id,
-                counterparty_client_id: connection.client_id,
-                counterparty_connection_id: Some(connection_id),
-            };
-
             assert(
                 self
                     .verify_connection_state(
@@ -716,7 +784,15 @@ pub mod IbcHandler {
                         proof_height,
                         proof_try,
                         counterparty_connection_id,
-                        expected_connection,
+                        // The expected state of the connection after `connection_open_try` is run
+                        // on the counterparty chain. That's the reason why `client_id` and
+                        // `counterparty_client_id` is flipped.
+                        Connection {
+                            state: ConnectionState::TryOpen,
+                            client_id: connection.counterparty_client_id,
+                            counterparty_client_id: connection.client_id,
+                            counterparty_connection_id: Some(connection_id),
+                        },
                     ),
                 Error::INVALID_PROOF,
             );
@@ -751,16 +827,6 @@ pub mod IbcHandler {
             let mut connection = self
                 .ensure_connection_state(connection_id, ConnectionState::TryOpen);
 
-            // The expected state of the connection after `connection_open_ack` is run on the
-            // counterparty chain. That's the reason why `client_id` and `counterparty_client_id` is
-            // flipped.
-            let expected_connection = Connection {
-                state: ConnectionState::TryOpen,
-                client_id: connection.counterparty_client_id,
-                counterparty_client_id: connection.client_id,
-                counterparty_connection_id: Some(connection_id),
-            };
-
             assert(
                 self
                     .verify_connection_state(
@@ -768,7 +834,15 @@ pub mod IbcHandler {
                         proof_height,
                         proof_ack,
                         connection.counterparty_connection_id.expect('must be set'),
-                        expected_connection,
+                        // The expected state of the connection after `connection_open_ack` is run
+                        // on the counterparty chain. That's the reason why `client_id` and
+                        // `counterparty_client_id` is flipped.
+                        Connection {
+                            state: ConnectionState::TryOpen,
+                            client_id: connection.counterparty_client_id,
+                            counterparty_client_id: connection.client_id,
+                            counterparty_connection_id: Some(connection_id),
+                        },
                     ),
                 Error::INVALID_PROOF,
             );
@@ -1000,7 +1074,8 @@ pub mod IbcHandler {
         ) {
             let mut channel = self.ensure_channel_state(channel_id, ChannelState::TryOpen);
 
-            let connection = self.connections.read(channel.connection_id);
+            let connection = self
+                .ensure_connection_state(channel.connection_id, ConnectionState::Open);
 
             let port_id = self.channel_owners.read(channel_id);
 
@@ -1063,7 +1138,10 @@ pub mod IbcHandler {
         fn ensure_connection_state(
             self: @ContractState, connection_id: ConnectionId, state: ConnectionState,
         ) -> Connection {
-            let connection = self.connections.read(connection_id);
+            let connection = self
+                .connections
+                .read(connection_id)
+                .expect(Error::CONNECTION_NOT_FOUND);
             assert(connection.state == state, Error::INVALID_CONNECTION_STATE);
             connection
         }
@@ -1071,7 +1149,7 @@ pub mod IbcHandler {
         fn ensure_channel_state(
             self: @ContractState, channel_id: ChannelId, state: ChannelState,
         ) -> Channel {
-            let channel = self.channels.read(channel_id);
+            let channel = self.channels.read(channel_id).expect(Error::CHANNEL_NOT_FOUND);
             assert(channel.state == state, Error::INVALID_CHANNEL_STATE);
             channel
         }
@@ -1080,14 +1158,14 @@ pub mod IbcHandler {
             ref self: ContractState, connection_id: ConnectionId, connection: Connection,
         ) {
             self.commit(@ConnectionPath { connection_id }, connection.commit());
-            self.connections.write(connection_id, connection);
+            self.connections.write(connection_id, Some(connection));
         }
 
         fn save_and_commit_channel(
             ref self: ContractState, channel_id: ChannelId, channel: Channel,
         ) {
             self.commit(@ChannelPath { channel_id }, channel.commit());
-            self.channels.write(channel_id, channel);
+            self.channels.write(channel_id, Some(channel));
         }
 
         fn verify_connection_state(
