@@ -39,8 +39,11 @@ impl IbcClient for AttestedLightClient {
         StorageProof {}: Self::StorageProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
+        let ClientState::V1(client_state) = ctx.read_self_client_state()?;
+
         verify_attestation(
             ctx.deps,
+            client_state.chain_id,
             height,
             key.into(),
             AttestationValue::Existence(value.into()),
@@ -54,8 +57,16 @@ impl IbcClient for AttestedLightClient {
         key: Vec<u8>,
         StorageProof {}: Self::StorageProof,
     ) -> Result<(), IbcClientError<Self>> {
-        verify_attestation(ctx.deps, height, key.into(), AttestationValue::NonExistence)
-            .map_err(Into::into)
+        let ClientState::V1(client_state) = ctx.read_self_client_state()?;
+
+        verify_attestation(
+            ctx.deps,
+            client_state.chain_id,
+            height,
+            key.into(),
+            AttestationValue::NonExistence,
+        )
+        .map_err(Into::into)
     }
 
     fn verify_header(
@@ -108,18 +119,17 @@ impl IbcClient for AttestedLightClient {
 
 pub fn verify_header(
     deps: Deps,
-    client_state: ClientState,
-    header: Header,
+    ClientState::V1(mut client_state): ClientState,
+    Header { height, timestamp }: Header,
 ) -> Result<StateUpdate<AttestedLightClient>, Error> {
-    let ClientState::V1(mut client_state) = client_state;
-
-    let Header { height, timestamp } = header;
-
-    let attested_timestamp = deps.storage.read::<HeightTimestamps>(&height)?;
+    let attested_timestamp = deps
+        .storage
+        .read::<HeightTimestamps>(&(client_state.chain_id.clone(), height))?;
 
     ensure!(
         attested_timestamp == timestamp,
         Error::InvalidTimestamp {
+            chain_id: client_state.chain_id,
             height,
             attested_timestamp,
             timestamp
@@ -128,8 +138,8 @@ pub fn verify_header(
 
     let mut update = StateUpdate::new(height, ConsensusState { timestamp });
 
-    if header.height > client_state.latest_height {
-        client_state.latest_height = header.height;
+    if height > client_state.latest_height {
+        client_state.latest_height = height;
         update = update.overwrite_client_state(ClientState::V1(client_state));
     }
 
@@ -138,6 +148,7 @@ pub fn verify_header(
 
 pub fn verify_attestation(
     deps: Deps,
+    chain_id: String,
     height: u64,
     key: Bytes,
     value: AttestationValue,
@@ -147,10 +158,12 @@ pub fn verify_attestation(
     let attested = deps
         .storage
         .maybe_read::<Attestations>(&AttestationKey {
+            chain_id: chain_id.clone(),
             height,
             key: key.clone(),
         })?
         .ok_or_else(|| Error::AttestationNotFound {
+            chain_id: chain_id.clone(),
             height,
             key: key.clone(),
         })?;
@@ -161,6 +174,7 @@ pub fn verify_attestation(
             ensure!(
                 value == attested,
                 Error::InvalidAttestedValue {
+                    chain_id,
                     height,
                     key,
                     attested: Existence(attested),
@@ -177,6 +191,7 @@ pub fn verify_attestation(
         // invalid
         (attested @ Existence(_), value @ NonExistence)
         | (attested @ NonExistence, value @ Existence(_)) => Err(Error::InvalidAttestedValue {
+            chain_id,
             height,
             key,
             attested,
