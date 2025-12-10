@@ -69,6 +69,7 @@ pub const TM_PROOF_SPEC: ProofSpec = ProofSpec {
     child_size: 32, min_prefix_length: 1, max_prefix_length: 1,
 };
 
+#[derive(Copy, Debug, Drop, PartialEq)]
 pub enum Error {
     EmptyInnerKey,
     EmptyInnerValue,
@@ -81,11 +82,13 @@ pub enum Error {
     InvalidLeafPrefix,
 }
 
+#[derive(Drop)]
 pub struct MembershipProof {
     sub_proof: ExistenceProof,
     top_level_proof: ExistenceProof,
 }
 
+#[derive(Drop)]
 pub struct ExistenceProof {
     key: ByteArray,
     value: ByteArray,
@@ -93,11 +96,13 @@ pub struct ExistenceProof {
     path: Array<InnerOp>,
 }
 
+#[derive(Drop)]
 pub struct InnerOp {
     prefix: ByteArray,
     suffix: ByteArray,
 }
 
+#[derive(Drop)]
 pub struct NonExistenceProof {
     key: ByteArray,
     left: Option<ExistenceProof>,
@@ -157,6 +162,7 @@ impl ExistenceProofImpl of ExistenceProofTrait {
         key: @ByteArray,
         value: @ByteArray,
     ) -> Result<(), Error> {
+        println!("oh boy: {}", self.leaf_prefix);
         self.verify_no_root_check(proof_spec, key, value)?;
 
         let root = self.calculate_root()?;
@@ -173,7 +179,7 @@ impl ExistenceProofImpl of ExistenceProofTrait {
             return Err(Error::EmptyLeafPrefix);
         }
 
-        if self.leaf_prefix[0] == 0 {
+        if self.leaf_prefix[0] != 0 {
             return Err(Error::InvalidLeafPrefix);
         }
 
@@ -250,7 +256,7 @@ fn apply_leaf_op(
 fn encode_varint(mut value: u64) -> ByteArray {
     let mut buf = Default::default();
 
-    for _ in 0_64..10_u64 {
+    for _ in 0..10_u64 {
         if value < 0x80 {
             buf.append_byte(value.try_into().expect('it fits'));
             break;
@@ -261,4 +267,94 @@ fn encode_varint(mut value: u64) -> ByteArray {
     }
 
     buf
+}
+
+#[cfg(test)]
+mod tests {
+    use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
+    use core::to_byte_array::AppendFormattedToByteArray;
+    use super::{*, ExistenceProof};
+
+    fn hex(data: u256) -> ByteArray {
+        let mut byte_array = Default::default();
+        data.append_formatted_to_byte_array(ref byte_array, 16);
+
+        let mut data_bytes: ByteArray = Default::default();
+
+        let len = byte_array.len() / 2 + (byte_array.len() % 2);
+
+        if len == 32 {
+            data_bytes.append_u256(data);
+        } else {
+            data_bytes.append_word(data.try_into().unwrap(), len);
+        }
+
+        data_bytes
+    }
+
+
+    #[test]
+    fn test_verify_membership_left() {
+        let proof = ExistenceProof {
+            key: hex(0x303142424373615a55715146735259436c6a5767),
+            value: hex(0x76616c75655f666f725f303142424373615a55715146735259436c6a5767),
+            leaf_prefix: hex(0x00),
+            path: array![
+                InnerOp {
+                    prefix: hex(0x01),
+                    suffix: hex(0xcb3131cd98b069efcc0e8c7e68da47370adbff32266d7fcd1b0580fdf3961266),
+                },
+                InnerOp {
+                    prefix: hex(0x01),
+                    suffix: hex(0x21d1205c1f8537205e8fb4b176f960b459d9131669968d59c456442f7673b68b),
+                },
+                InnerOp {
+                    prefix: hex(0x01),
+                    suffix: hex(0xb82a0e7f4434b3cedb87ea83eb5a70c7dc664c77b2fe21c6245f315e58fdf745),
+                },
+                InnerOp {
+                    prefix: hex(0x01),
+                    suffix: hex(0xbf0657a0e6fbd8f2043eb2cf751561adcf50547d16201224133eeb8d38145229),
+                },
+                InnerOp {
+                    prefix: hex(0x01),
+                    suffix: hex(0x6d47c03df91a4a0252055d116439d34b5b73f3a24d5cb3cf0d4b08caa540cac4),
+                },
+                InnerOp {
+                    prefix: hex(0x01),
+                    suffix: hex(0xd5d2926993fa15c7410ac4ee1f1d81afddfb0ab5f6f4706b05f407bc01638149),
+                },
+                InnerOp {
+                    prefix: hex(0x01),
+                    suffix: hex(0x540719b26a7301ad012ac45ebe716679e5595e5570d78be9b6da8d8591afb374),
+                },
+                InnerOp {
+                    prefix: hex(0x01),
+                    suffix: hex(0xfccaaa9950730e80b9ccf75ad2cfeab26ae750b8bd6ac1ff1c7a7502f3c64be2),
+                },
+                InnerOp {
+                    prefix: hex(0x01),
+                    suffix: hex(0xecb61a6d70accb79c2325fb0b51677ed1561c91af5e10578c8294002fbb3c21e),
+                },
+                InnerOp {
+                    prefix: hex(0x01),
+                    suffix: hex(0x1b3bc1bd8d08af9f6199de84e95d646570cbd9b306a632a5acf617cbd7d1ab0a),
+                },
+            ],
+        };
+
+        assert_eq!(
+            proof
+                .verify(
+                    @TM_PROOF_SPEC,
+                    [
+                        0xc569a38a, 0x5775bbda, 0x2051c34a, 0xe0089418, 0x6f837c39, 0xd11dca55,
+                        0x495b9aed, 0x14f17ddf,
+                    ],
+                    @hex(0x303142424373615a55715146735259436c6a5767),
+                    @hex(0x76616c75655f666f725f303142424373615a55715146735259436c6a5767),
+                ),
+            Ok(()),
+        );
+    }
 }

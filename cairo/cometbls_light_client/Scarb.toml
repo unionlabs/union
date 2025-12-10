@@ -9,6 +9,7 @@ edition = "2024_07"
 ibc = { workspace = true }
 starknet = { workspace = true }
 alexandria_math = { workspace = true }
+alexandria_bytes    = { workspace = true }
 
 [dev-dependencies]
 snforge_std = { workspace = true }
