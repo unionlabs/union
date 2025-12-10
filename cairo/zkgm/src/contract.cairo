@@ -133,15 +133,15 @@ mod Ucs03Zkgm {
     fn constructor(ref self: ContractState, _name: ByteArray, _symbol: ByteArray, _decimals: u8) {}
 
     #[abi(embed_v0)]
-    impl Ucs03ZkgmIbcImpl of ibc::app::IIbcModuleRecv<ContractState> {
+    impl Ucs03ZkgmIbcImpl of ibc::app::IIbcModule<ContractState> {
         fn on_recv_packet(
             ref self: ContractState,
             caller: ContractAddress,
             packet: Packet,
             relayer: ContractAddress,
             relayer_msg: ByteArray,
-        ) -> ByteArray {
-            self.process_receive(packet, relayer, relayer_msg, false)
+        ) -> Option<ByteArray> {
+            Some(self.process_receive(packet, relayer, relayer_msg, false))
         }
 
         fn on_recv_intent_packet(
@@ -153,6 +153,71 @@ mod Ucs03Zkgm {
         ) -> ByteArray {
             self.process_receive(packet, market_maker, market_maker_msg, true)
         }
+
+        fn on_chan_open_init(
+            ref self: ContractState,
+            caller: ContractAddress,
+            connection_id: ibc::types::ConnectionId,
+            channel_id: ChannelId,
+            version: ByteArray,
+            relayer: ContractAddress,
+        ) {}
+
+        fn on_chan_open_try(
+            ref self: ContractState,
+            caller: ContractAddress,
+            connection_id: ibc::types::ConnectionId,
+            channel_id: ChannelId,
+            counterparty_channel_id: ChannelId,
+            version: ByteArray,
+            counterparty_version: ByteArray,
+            relayer: ContractAddress,
+        ) {}
+
+        fn on_chan_open_ack(
+            ref self: ContractState,
+            caller: ContractAddress,
+            channel_id: ChannelId,
+            counterparty_channel_id: ChannelId,
+            counterparty_version: ByteArray,
+            relayer: ContractAddress,
+        ) {}
+
+        fn on_chan_open_confirm(
+            ref self: ContractState,
+            caller: ContractAddress,
+            channel_id: ChannelId,
+            relayer: ContractAddress,
+        ) {}
+
+        fn on_chan_close_init(
+            ref self: ContractState,
+            caller: ContractAddress,
+            channel_id: ChannelId,
+            relayer: ContractAddress,
+        ) {}
+
+        fn on_chan_close_confirm(
+            ref self: ContractState,
+            caller: ContractAddress,
+            channel_id: ChannelId,
+            relayer: ContractAddress,
+        ) {}
+
+        fn on_acknowledge_packet(
+            ref self: ContractState,
+            caller: ContractAddress,
+            packet: Packet,
+            acknowledgement: ByteArray,
+            relayer: ContractAddress,
+        ) {}
+
+        fn on_timeout_packet(
+            ref self: ContractState,
+            caller: ContractAddress,
+            packet: Packet,
+            relayer: ContractAddress,
+        ) {}
     }
 
     #[generate_trait]

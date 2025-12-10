@@ -84,6 +84,11 @@ pub mod Error {
     pub const BATCH_SAME_CHANNEL_ONLY: felt252 = 'BATCH_SAME_CHANNEL_ONLY';
     pub const TIMESTAMP_TIMEOUT: felt252 = 'TIMESTAMP_TIMEOUT';
     pub const ACKNOWLEDGEMENT_ALREADY_EXISTS: felt252 = 'ACKNOWLEDGEMENT_ALREADY_EXISTS';
+    pub const PACKET_ALREADY_ACKNOWLEDGED: felt252 = 'PACKET_ALREADY_ACKNOWLEDGED';
+    pub const PACKET_COMMITMENT_NOT_FOUND: felt252 = 'PACKET_COMMITMENT_NOT_FOUND';
+    pub const INVALID_ACKNOWLEDGEMENTS: felt252 = 'INVALID_ACKNOWLEDGEMENTS';
+
+    pub const UNIMPLEMENTED: felt252 = 'UNIMPLEMENTED';
 }
 
 #[starknet::interface]
@@ -585,6 +590,7 @@ pub trait IIbcHandler<TContractState> {
 pub mod IbcHandler {
     use core::keccak::compute_keccak_byte_array;
     use core::num::traits::Zero;
+    use core::panic_with_felt252;
     use snforge_std::cheatcodes::execution_info;
     use starknet::event::EventEmitter;
     use starknet::storage::{
@@ -605,8 +611,8 @@ pub mod IbcHandler {
         ConsensusStateUpdate, ILightClientSafeDispatcher, ILightClientSafeDispatcherTrait,
     };
     use crate::path::{
-        BatchPacketsPath, BatchPacketsPathImpl, BatchReceiptsPath, ChannelPath, ClientStatePath,
-        ConnectionPath, ConsensusStatePath, StorePathKeyTrait,
+        BatchPacketsPath, BatchPacketsPathImpl, BatchReceiptsPath, BatchReceiptsPathImpl,
+        ChannelPath, ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait,
     };
     use crate::types::{
         Channel, ChannelId, ChannelIdImpl, ChannelImpl, ChannelState, ClientId, ClientIdImpl,
@@ -617,6 +623,8 @@ pub mod IbcHandler {
 
     const COMMITMENT_MAGIC: u256 =
         0x0100000000000000000000000000000000000000000000000000000000000000;
+    const COMMITMENT_MAGIC_ACK: u256 =
+        0x0200000000000000000000000000000000000000000000000000000000000000;
 
     #[storage]
     struct Storage {
@@ -907,7 +915,7 @@ pub mod IbcHandler {
                         connection.client_id,
                         proof_height,
                         proof_ack,
-                        connection.counterparty_connection_id.expect('must be set'),
+                        connection.counterparty_connection_id.unwrap(),
                         // The expected state of the connection after `connection_open_ack` is run
                         // on the counterparty chain. That's the reason why `client_id` and
                         // `counterparty_client_id` is flipped.
@@ -929,9 +937,7 @@ pub mod IbcHandler {
                         connection_id,
                         client_id: connection.client_id,
                         counterparty_client_id: connection.counterparty_client_id,
-                        counterparty_connection_id: connection
-                            .counterparty_connection_id
-                            .expect('must be set'),
+                        counterparty_connection_id: connection.counterparty_connection_id.unwrap(),
                     },
                 );
 
@@ -1294,13 +1300,24 @@ pub mod IbcHandler {
                     );
 
                 let acknowledgement = match res {
-                    Ok(acknowledgement) => { acknowledgement },
+                    Ok(acknowledgement) => acknowledgement,
                     Err(err) => panic!("error in recv packet callback: {err:?}"),
                 };
 
-                let commitment = self.get_commitment(commitment_key);
-                assert(commitment == COMMITMENT_MAGIC, Error::ACKNOWLEDGEMENT_ALREADY_EXISTS);
-                self.commit(commitment_key, commit_ack(ack));
+                if let Some(acknowledgement) = acknowledgement {
+                    let commitment = self.get_commitment(commitment_key);
+
+                    assert(commitment != COMMITMENT_MAGIC, Error::ACKNOWLEDGEMENT_ALREADY_EXISTS);
+
+                    self.commit(commitment_key, commit_ack(acknowledgement.clone()));
+
+                    self
+                        .emit(
+                            WriteAck {
+                                channel_id: destination_channel_id, packet_hash, acknowledgement,
+                            },
+                        );
+                }
 
                 self
                     .emit(
@@ -1311,16 +1328,6 @@ pub mod IbcHandler {
                             maker_msg,
                         },
                     );
-
-                self
-                    .emit(
-                        WriteAck {
-                            channel_id: destination_channel_id,
-                            packet_hash,
-                            acknowledgement,
-                            maker: execution_info.caller_address,
-                        },
-                    );
             }
         }
 
@@ -1329,20 +1336,116 @@ pub mod IbcHandler {
             packets: Array<Packet>,
             market_maker_msgs: Array<ByteArray>,
             market_maker: ContractAddress,
-        ) {}
+        ) {
+            panic_with_felt252(Error::UNIMPLEMENTED)
+        }
 
         fn write_acknowledgement(
             ref self: ContractState, packet: Packet, acknowledgement: ByteArray,
-        ) {}
+        ) {
+            panic_with_felt252(Error::UNIMPLEMENTED)
+        }
 
         fn acknowledge_packet(
             ref self: ContractState,
             packets: Array<Packet>,
-            acknowledgements: Array<ByteArray>,
+            mut acknowledgements: Array<ByteArray>,
             proof: ByteArray,
             proof_height: u64,
             relayer: ContractAddress,
-        ) {}
+        ) {
+            assert(packets.len() > 0, Error::NOT_ENOUGH_PACKETS);
+            assert(packets.len() == acknowledgements.len(), Error::INVALID_ACKNOWLEDGEMENTS);
+            let source_channel_id = *packets[0].source_channel_id;
+            let channel = self.ensure_channel_state(source_channel_id, ChannelState::Open);
+            let connection = self
+                .ensure_connection_state(channel.connection_id, ConnectionState::Open);
+            let proof_commitment_key = BatchReceiptsPathImpl::from_packets(packets.span());
+
+            assert(
+                self
+                    .verify_commitment(
+                        connection.client_id,
+                        proof_height,
+                        proof,
+                        proof_commitment_key.key(),
+                        commit_acks(acknowledgements.span()),
+                    ),
+                Error::INVALID_PROOF,
+            );
+
+            let module = self.lookup_module_by_channel_id(source_channel_id);
+
+            let execution_info = get_execution_info();
+
+            for packet in packets {
+                assert(
+                    packet.source_channel_id == source_channel_id, Error::BATCH_SAME_CHANNEL_ONLY,
+                );
+
+                let packet_hash = packet.hash();
+
+                self.mark_packet_as_acknowledged(packet_hash);
+
+                let acknowledgement = acknowledgements.pop_front().unwrap();
+
+                let res = module
+                    .on_acknowledge_packet(
+                        execution_info.caller_address, packet, acknowledgement.clone(), relayer,
+                    );
+
+                match res {
+                    Ok(()) => {},
+                    Err(err) => panic!("error in acknowledge packet callback: {err:?}"),
+                }
+
+                self
+                    .emit(
+                        PacketAck {
+                            channel_id: source_channel_id,
+                            packet_hash,
+                            maker: execution_info.caller_address,
+                            acknowledgement,
+                        },
+                    );
+            }
+            // uint32 sourceChannelId = msg_.packets[0].sourceChannelId;
+        // IBCChannel storage channel = ensureChannelState(sourceChannelId);
+        // uint32 clientId = ensureConnectionState(channel.connectionId);
+        // bytes32 commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
+        //     IBCPacketLib.commitPackets(msg_.packets)
+        // );
+        // bytes32 commitmentValue = IBCPacketLib.commitAcks(msg_.acknowledgements);
+        // if (
+        //     !_verifyCommitment(
+        //         clientId,
+        //         msg_.proofHeight,
+        //         msg_.proof,
+        //         commitmentKey,
+        //         commitmentValue
+        //     )
+        // ) {
+        //     revert IBCErrors.ErrInvalidProof();
+        // }
+        // IIBCModule module = lookupModuleByChannel(sourceChannelId);
+        // for (uint256 i = 0; i < l; i++) {
+        //     IBCPacket calldata packet = msg_.packets[i];
+        //     if (packet.sourceChannelId != sourceChannelId) {
+        //         revert IBCErrors.ErrBatchSameChannelOnly();
+        //     }
+        //     _markPacketAsAcknowledged(packet);
+        //     bytes calldata acknowledgement = msg_.acknowledgements[i];
+        //     module.onAcknowledgementPacket(
+        //         msg.sender, packet, acknowledgement, msg_.relayer
+        //     );
+        //     emit IBCPacketLib.PacketAck(
+        //         sourceChannelId,
+        //         IBCPacketLib.commitPacket(packet),
+        //         acknowledgement,
+        //         msg_.relayer
+        //     );
+        // }
+        }
 
         fn timeout_packet(
             ref self: ContractState,
@@ -1352,11 +1455,14 @@ pub mod IbcHandler {
             relayer: ContractAddress,
         ) {}
 
+        fn batch_send(ref self: ContractState, packets: Array<Packet>) {
+            panic_with_felt252(Error::UNIMPLEMENTED)
+        }
 
-        fn batch_send(ref self: ContractState, packets: Array<Packet>) {}
 
-
-        fn batch_acks(ref self: ContractState, packets: Array<Packet>, acks: Array<ByteArray>) {}
+        fn batch_acks(ref self: ContractState, packets: Array<Packet>, acks: Array<ByteArray>) {
+            panic_with_felt252(Error::UNIMPLEMENTED)
+        }
     }
 
     #[generate_trait]
@@ -1502,6 +1608,16 @@ pub mod IbcHandler {
             IIbcModuleSafeDispatcher { contract_address }
         }
 
+        fn mark_packet_as_acknowledged(ref self: ContractState, packet_hash: u256) {
+            let commitment_key = BatchPacketsPath { batch_hash: packet_hash }.key();
+            let commitment = self.get_commitment(commitment_key);
+
+            assert(commitment != COMMITMENT_MAGIC_ACK, Error::PACKET_ALREADY_ACKNOWLEDGED);
+            assert(commitment == COMMITMENT_MAGIC, Error::PACKET_COMMITMENT_NOT_FOUND);
+
+            self.commit(commitment_key, COMMITMENT_MAGIC_ACK);
+        }
+
         fn commit(ref self: ContractState, key: u256, value: u256) {
             // https://docs.starknet.io/learn/protocol/cryptography#starknet-keccak
             let truncate = |n: u256| -> felt252 {
@@ -1540,7 +1656,7 @@ pub mod IbcHandler {
 
     fn commit_acks(acks: Span<ByteArray>) -> u256 {
         // TODO: Implement (ethabi(bytes[]))
-        merge_ack(compute_keccak_byte_array(0))
+        merge_ack(compute_keccak_byte_array(@""))
     }
 
     fn merge_ack(ack: u256) -> u256 {

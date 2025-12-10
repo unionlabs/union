@@ -176,6 +176,13 @@ pub struct BatchReceiptsPath {
     pub batch_hash: u256,
 }
 
+#[generate_trait]
+pub impl BatchReceiptsPathImpl of BatchReceiptsPathTrait {
+    fn from_packets(packets: Span<Packet>) -> BatchReceiptsPath {
+        BatchReceiptsPath { batch_hash: commit_packets(packets) }
+    }
+}
+
 impl BatchReceiptsPathKeyImpl of StorePathKeyTrait<BatchReceiptsPath> {
     fn key(self: @BatchReceiptsPath) -> u256 {
         compute_keccak_byte_array(

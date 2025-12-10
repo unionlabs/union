@@ -80,7 +80,7 @@ pub trait IIbcModule<TContractState> {
         packet: Packet,
         relayer: ContractAddress,
         relayer_msg: ByteArray,
-    ) -> ByteArray;
+    ) -> Option<ByteArray>;
 
     fn on_recv_intent_packet(
         ref self: TContractState,
