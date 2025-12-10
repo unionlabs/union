@@ -59,7 +59,7 @@
 // TITLE.
 
 use starknet::ContractAddress;
-use crate::types::ClientId;
+use crate::types::{ClientId, Timestamp};
 
 #[derive(Drop, Serde)]
 pub struct ConsensusStateUpdate {
@@ -144,4 +144,12 @@ pub trait ILightClient<TContractState> {
         key: ByteArray,
         value: ByteArray,
     ) -> bool;
+
+    fn verify_non_membership(
+        self: @TContractState, client_id: ClientId, height: u64, proof: ByteArray, key: ByteArray,
+    ) -> bool;
+
+    fn get_timestamp_at_height(self: @TContractState, height: u64) -> Timestamp;
+
+    fn get_latest_height(self: @TContractState, client_id: ClientId) -> u64;
 }

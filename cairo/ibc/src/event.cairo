@@ -231,3 +231,13 @@ pub struct PacketAck {
     #[key]
     pub maker: ContractAddress,
 }
+
+#[derive(Drop, starknet::Event)]
+pub struct PacketTimeout {
+    #[key]
+    pub channel_id: ChannelId,
+    #[key]
+    pub packet_hash: u256,
+    #[key]
+    pub maker: ContractAddress,
+}

@@ -87,6 +87,7 @@ pub mod Error {
     pub const PACKET_ALREADY_ACKNOWLEDGED: felt252 = 'PACKET_ALREADY_ACKNOWLEDGED';
     pub const PACKET_COMMITMENT_NOT_FOUND: felt252 = 'PACKET_COMMITMENT_NOT_FOUND';
     pub const INVALID_ACKNOWLEDGEMENTS: felt252 = 'INVALID_ACKNOWLEDGEMENTS';
+    pub const TIMEOUT_TIMESTAMP_NOT_REACHED: felt252 = 'TIMEOUT_TIMESTAMP_NOT_REACHED';
 
     pub const UNIMPLEMENTED: felt252 = 'UNIMPLEMENTED';
 }
@@ -678,7 +679,7 @@ pub trait IIbcHandler<TContractState> {
         ref self: TContractState,
         packets: Array<Packet>,
         acknowledgements: Array<ByteArray>,
-        proof_send: ByteArray,
+        proof_recv: ByteArray,
         proof_height: u64,
         relayer: ContractAddress,
     );
@@ -714,8 +715,8 @@ pub mod IbcHandler {
     use crate::event::{
         ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
         ChannelOpenTry, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-        ConnectionOpenTry, CreateClient, PacketAck, PacketRecv, PacketSend, RegisterClient,
-        UpdateClient, WriteAck,
+        ConnectionOpenTry, CreateClient, PacketAck, PacketRecv, PacketSend, PacketTimeout,
+        RegisterClient, UpdateClient, WriteAck,
     };
     use crate::lightclient::{
         ConsensusStateUpdate, ILightClientSafeDispatcher, ILightClientSafeDispatcherTrait,
@@ -770,6 +771,7 @@ pub mod IbcHandler {
         PacketRecv: PacketRecv,
         WriteAck: WriteAck,
         PacketAck: PacketAck,
+        PacketTimeout: PacketTimeout,
     }
 
     #[constructor]
@@ -1466,7 +1468,7 @@ pub mod IbcHandler {
             ref self: ContractState,
             packets: Array<Packet>,
             mut acknowledgements: Array<ByteArray>,
-            proof: ByteArray,
+            proof_recv: ByteArray,
             proof_height: u64,
             relayer: ContractAddress,
         ) {
@@ -1525,51 +1527,63 @@ pub mod IbcHandler {
                         },
                     );
             }
-            // uint32 sourceChannelId = msg_.packets[0].sourceChannelId;
-        // IBCChannel storage channel = ensureChannelState(sourceChannelId);
-        // uint32 clientId = ensureConnectionState(channel.connectionId);
-        // bytes32 commitmentKey = IBCCommitment.batchReceiptsCommitmentKey(
-        //     IBCPacketLib.commitPackets(msg_.packets)
-        // );
-        // bytes32 commitmentValue = IBCPacketLib.commitAcks(msg_.acknowledgements);
-        // if (
-        //     !_verifyCommitment(
-        //         clientId,
-        //         msg_.proofHeight,
-        //         msg_.proof,
-        //         commitmentKey,
-        //         commitmentValue
-        //     )
-        // ) {
-        //     revert IBCErrors.ErrInvalidProof();
-        // }
-        // IIBCModule module = lookupModuleByChannel(sourceChannelId);
-        // for (uint256 i = 0; i < l; i++) {
-        //     IBCPacket calldata packet = msg_.packets[i];
-        //     if (packet.sourceChannelId != sourceChannelId) {
-        //         revert IBCErrors.ErrBatchSameChannelOnly();
-        //     }
-        //     _markPacketAsAcknowledged(packet);
-        //     bytes calldata acknowledgement = msg_.acknowledgements[i];
-        //     module.onAcknowledgementPacket(
-        //         msg.sender, packet, acknowledgement, msg_.relayer
-        //     );
-        //     emit IBCPacketLib.PacketAck(
-        //         sourceChannelId,
-        //         IBCPacketLib.commitPacket(packet),
-        //         acknowledgement,
-        //         msg_.relayer
-        //     );
-        // }
         }
 
         fn timeout_packet(
             ref self: ContractState,
             packet: Packet,
-            proof: ByteArray,
+            proof_not_recv: ByteArray,
             proof_height: u64,
             relayer: ContractAddress,
-        ) {}
+        ) {
+            let source_channel_id = packet.source_channel_id;
+            let channel = self.ensure_channel_state(source_channel_id, ChannelState::Open);
+            let connection = self
+                .ensure_connection_state(channel.connection_id, ConnectionState::Open);
+            let client = self.client_impl(connection.client_id);
+
+            let proof_timestamp = match client.get_timestamp_at_height(proof_height) {
+                Ok(proof_timestamp) => proof_timestamp,
+                Err(err) => panic!("error querying timestamp at height: {err:?}"),
+            };
+
+            assert(
+                packet.timeout_timestamp >= proof_timestamp, Error::TIMEOUT_TIMESTAMP_NOT_REACHED,
+            );
+
+            // TODO: Figure out how we want to handle this
+            // if (proofTimestamp == 0) {
+            //     revert IBCErrors.ErrLatestTimestampNotFound();
+            // }
+
+            let packet_hash = packet.hash();
+
+            let commitment_key = BatchReceiptsPath { batch_hash: packet_hash }.key();
+
+            assert(
+                client
+                    .verify_non_membership(
+                        connection.client_id,
+                        proof_height,
+                        proof_not_recv,
+                        to_byte_array(commitment_key),
+                    )
+                    .unwrap_or(false),
+                Error::INVALID_PROOF,
+            );
+
+            let module = self.lookup_module_by_channel_id(source_channel_id);
+
+            let res = module
+                .on_timeout_packet(get_execution_info().caller_address, packet, relayer);
+
+            match res {
+                Ok(()) => {},
+                Err(err) => panic!("error in timeout packet callback: {err:?}"),
+            }
+
+            self.emit(PacketTimeout { channel_id: source_channel_id, packet_hash, maker: relayer });
+        }
 
         fn batch_send(ref self: ContractState, packets: Array<Packet>) {
             panic_with_felt252(Error::UNIMPLEMENTED)
