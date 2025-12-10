@@ -1304,7 +1304,7 @@ pub mod IbcHandler {
                     Err(err) => panic!("error in recv packet callback: {err:?}"),
                 };
 
-                if let Some(acknowledgement) = acknowledgement {
+                if acknowledgement.len().is_zero() {
                     let commitment = self.get_commitment(commitment_key);
 
                     assert(commitment != COMMITMENT_MAGIC, Error::ACKNOWLEDGEMENT_ALREADY_EXISTS);

@@ -140,8 +140,8 @@ mod Ucs03Zkgm {
             packet: Packet,
             relayer: ContractAddress,
             relayer_msg: ByteArray,
-        ) -> Option<ByteArray> {
-            Some(self.process_receive(packet, relayer, relayer_msg, false))
+        ) -> ByteArray {
+            self.process_receive(packet, relayer, relayer_msg, false)
         }
 
         fn on_recv_intent_packet(
