@@ -242,7 +242,7 @@ pub trait IIbcHandler<TContractState> {
     /// This function may panic with the following well-known error codes:
     ///
     /// - [`Error::CLIENT_NOT_FOUND`]: The client `client_id` is not found.
-    /// - [`Error::INVALID_PROOF`]: The `proof_init` cannot be verified by the light client.
+    /// - [`Error::INVALID_PROOF`]: The `proof_init` could not be verified by the light client.
     ///
     /// Additionally, the call to the light client may exit with an error that cannot be handled by
     /// the safe dispatcher. See the cairo documentation for more information on what errors can be
@@ -287,7 +287,7 @@ pub trait IIbcHandler<TContractState> {
     /// This can occur either because the `connection_open_ack/confirm` has already been run for
     /// this connection, or `connection_open_ack` is executed after `connection_open_try` but not
     /// `init`.
-    /// - [`Error::INVALID_PROOF`]: The `proof_try` proof cannot be verified by the light client.
+    /// - [`Error::INVALID_PROOF`]: The `proof_try` proof could not be verified by the light client.
     ///
     /// Additionally, the call to the light client may exit with an error that cannot be handled by
     /// the safe dispatcher. See the cairo documentation for more information on what errors can be
@@ -328,7 +328,7 @@ pub trait IIbcHandler<TContractState> {
     /// This can occur either because the `connection_open_ack/confirm` has already been run for
     /// this connection, or `connection_open_confirm` is executed after `connection_open_try` but
     /// not `init`.
-    /// - [`Error::INVALID_PROOF`]: The `proof_ack` proof cannot be verified by the light client.
+    /// - [`Error::INVALID_PROOF`]: The `proof_ack` proof could not be verified by the light client.
     ///
     /// Additionally, the call to the light client may exit with an error that cannot be handled by
     /// the safe dispatcher. See the cairo documentation for more information on what errors can be
@@ -415,7 +415,8 @@ pub trait IIbcHandler<TContractState> {
     /// - [`Error::CONNECTION_NOT_FOUND`]: The provided connection does not exist.
     /// - [`Error::INVALID_CONNECTION_STATE`]: The provided connection is not open
     /// ([`ConnectionState::Open`]).
-    /// - [`Error::INVALID_PROOF`]: The `proof_init` proof cannot be verified by the light client.
+    /// - [`Error::INVALID_PROOF`]: The `proof_init` proof could not be verified by the light
+    /// client.
     ///
     /// Additionally, the both the client and module may panic while being called. In this case,
     /// this function will either panic with the full panic message from the failed call, or exit
@@ -467,7 +468,7 @@ pub trait IIbcHandler<TContractState> {
     /// This can occur either because the `channel_open_ack/confirm` has already been run for
     /// this channel, or `channel_open_ack` is executed after `channel_open_try` but not
     /// `init`.
-    /// - [`Error::INVALID_PROOF`]: The `proof_try` proof cannot be verified by the light client.
+    /// - [`Error::INVALID_PROOF`]: The `proof_try` proof could not be verified by the light client.
     ///
     /// Additionally, the both the client and module may panic while being called. In this case,
     /// this function will either panic with the full panic message from the failed call, or exit
@@ -515,7 +516,7 @@ pub trait IIbcHandler<TContractState> {
     /// This can occur either because the `channel_open_ack/confirm` has already been run for
     /// this channel, or `channel_open_confirm` is executed after `channel_open_try` but not
     /// `init`.
-    /// - [`Error::INVALID_PROOF`]: The `proof_ack` proof cannot be verified by the light client.
+    /// - [`Error::INVALID_PROOF`]: The `proof_ack` proof could not be verified by the light client.
     ///
     /// Additionally, the both the client and module may panic while being called. In this case,
     /// this function will either panic with the full panic message from the failed call, or exit
@@ -533,6 +534,38 @@ pub trait IIbcHandler<TContractState> {
         relayer: ContractAddress,
     );
 
+    /// Send a packet across a channel on this chain.
+    ///
+    /// This is only callable by the module that owns this channel. A user that wants to send a
+    /// packet must interact with that module, which should in turn call this method.
+    ///
+    /// Since packets are identified by their hash, it is up to the protocol to ensure that the
+    /// packet data + metadata is unique.
+    ///
+    /// #### Params
+    ///
+    /// - `channel_id`: The ID of the channel to send the packet over.
+    /// - `timeout_timestamp`: The timeout timestamp for this packet. This must be non-zero.
+    /// - `data`: The packet data. This is opaque bytes from the perspective of the ibc handler, and
+    /// is only intended to be interpreted in the context of the protocol sending the packet.
+    ///
+    /// The constructed [`Packet`] is returned.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`PacketSend`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::TIMESTAMP_MUST_BE_SET`]: The timeout timestamp is zero.
+    /// - [`Error::NOT_CHANNEL_OWNER`]: The caller is not the owner of the channel.
+    /// - [`Error::PACKET_ALREADY_EXISTS`]: The provided packet has already been sent.
+    ///
+    /// #### Commitments
+    ///
+    /// - The packet is committed under [`BatchPacketsPath`].
     fn send_packet(
         ref self: TContractState,
         channel_id: ChannelId,
@@ -540,16 +573,54 @@ pub trait IIbcHandler<TContractState> {
         data: ByteArray,
     ) -> Packet;
 
-
+    /// Recieve one or more packets on this chain that were sent from another chain.
+    ///
+    /// #### Params
+    ///
+    /// - `packets`: The list of packets to receive. If this contains more than one packet, they
+    /// will be checked to have been batch committed on the counterparty chain.
+    /// - `relayer_msgs`: Arbitrary data to forward to the protocol per-packet. This must be the
+    /// same length as the `packets` list.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    /// - `proof_send`: The proof that the packets were sent on the source chain, committed under
+    /// the [`BatchPacketsPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_send` proof is verifiable at.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`PacketRecv`] per packet that has not already been received, as well as
+    /// [`WriteAcknowledgement`] per packet per unreceived packet if the module responds with an
+    /// acknowledgement from it's `on_recv_packet` callback.
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::NOT_ENOUGH_PACKETS`]: No packets were provided in the `packets` list.
+    /// - [`Error::INVALID_RELAYER_MSGS`]: The `relayer_msgs` list was not the same length as the
+    /// `packets` list.
+    /// - [`Error::INVALID_PROOF`]: The `proof_send` proof could not be verified by the light
+    /// client.
+    /// - [`Error::BATCH_SAME_CHANNEL_ONLY`]: All of the packets are not for the same channel.
+    /// - [`Error::TIMESTAMP_TIMEOUT`]: One (or more) of the packets has timed out, and cannot be
+    /// received.
+    /// - [`Error::ACKNOWLEDGEMENT_ALREADY_EXISTS`]: One (or more) of the packets has already been
+    /// received.
+    ///
+    /// #### Commitments
+    ///
+    /// - Each newly received packet is stored under [`BatchReceiptsPath`], either with the
+    /// [`COMMITMENT_MAGIC`] if no acknowledgement is returned from the module, or with the
+    /// acknowledgement commitment otherwise.
     fn recv_packet(
         ref self: TContractState,
         packets: Array<Packet>,
         relayer_msgs: Array<ByteArray>,
         relayer: ContractAddress,
-        proof: ByteArray,
+        proof_send: ByteArray,
         proof_height: u64,
     );
-
 
     fn recv_intent_packet(
         ref self: TContractState,
@@ -561,27 +632,32 @@ pub trait IIbcHandler<TContractState> {
 
     fn write_acknowledgement(ref self: TContractState, packet: Packet, acknowledgement: ByteArray);
 
+    ///
+    /// #### Params
+    ///
+    /// #### Events
+    ///
+    /// #### Panics
+    ///
+    /// #### Commitments
     fn acknowledge_packet(
         ref self: TContractState,
         packets: Array<Packet>,
         acknowledgements: Array<ByteArray>,
-        proof: ByteArray,
+        proof_send: ByteArray,
         proof_height: u64,
         relayer: ContractAddress,
     );
-
 
     fn timeout_packet(
         ref self: TContractState,
         packet: Packet,
-        proof: ByteArray,
+        proof_not_recv: ByteArray,
         proof_height: u64,
         relayer: ContractAddress,
     );
 
-
     fn batch_send(ref self: TContractState, packets: Array<Packet>);
-
 
     fn batch_acks(ref self: TContractState, packets: Array<Packet>, acks: Array<ByteArray>);
 }
@@ -1249,7 +1325,7 @@ pub mod IbcHandler {
             packets: Array<Packet>,
             mut relayer_msgs: Array<ByteArray>,
             relayer: ContractAddress,
-            proof: ByteArray,
+            proof_send: ByteArray,
             proof_height: u64,
         ) {
             assert(packets.len() > 0, Error::NOT_ENOUGH_PACKETS);
@@ -1265,7 +1341,7 @@ pub mod IbcHandler {
                     .verify_commitment(
                         connection.client_id,
                         proof_height,
-                        proof,
+                        proof_send,
                         proof_commitment_key.key(),
                         COMMITMENT_MAGIC,
                     ),
@@ -1288,46 +1364,52 @@ pub mod IbcHandler {
 
                 assert(packet.timeout_timestamp > current_timestamp, Error::TIMESTAMP_TIMEOUT);
 
-                let maker_msg = relayer_msgs.pop_front().unwrap();
-
                 let packet_hash = packet.hash();
 
                 let commitment_key = BatchReceiptsPath { batch_hash: packet_hash }.key();
 
-                let res = module
-                    .on_recv_packet(
-                        execution_info.caller_address, packet, relayer, maker_msg.clone(),
-                    );
+                if !self.mark_packet_as_received(commitment_key) {
+                    let maker_msg = relayer_msgs.pop_front().unwrap();
 
-                let acknowledgement = match res {
-                    Ok(acknowledgement) => acknowledgement,
-                    Err(err) => panic!("error in recv packet callback: {err:?}"),
-                };
+                    let res = module
+                        .on_recv_packet(
+                            execution_info.caller_address, packet, relayer, maker_msg.clone(),
+                        );
 
-                if acknowledgement.len().is_zero() {
-                    let commitment = self.get_commitment(commitment_key);
+                    let acknowledgement = match res {
+                        Ok(acknowledgement) => acknowledgement,
+                        Err(err) => panic!("error in recv packet callback: {err:?}"),
+                    };
 
-                    assert(commitment != COMMITMENT_MAGIC, Error::ACKNOWLEDGEMENT_ALREADY_EXISTS);
+                    if acknowledgement.len().is_zero() {
+                        let commitment = self.get_commitment(commitment_key);
 
-                    self.commit(commitment_key, commit_ack(acknowledgement.clone()));
+                        assert(
+                            commitment == COMMITMENT_MAGIC, Error::ACKNOWLEDGEMENT_ALREADY_EXISTS,
+                        );
+
+                        self.commit(commitment_key, commit_ack(acknowledgement.clone()));
+
+                        self
+                            .emit(
+                                WriteAck {
+                                    channel_id: destination_channel_id,
+                                    packet_hash,
+                                    acknowledgement,
+                                },
+                            );
+                    }
 
                     self
                         .emit(
-                            WriteAck {
-                                channel_id: destination_channel_id, packet_hash, acknowledgement,
+                            PacketRecv {
+                                channel_id: destination_channel_id,
+                                packet_hash,
+                                maker: execution_info.caller_address,
+                                maker_msg,
                             },
                         );
                 }
-
-                self
-                    .emit(
-                        PacketRecv {
-                            channel_id: destination_channel_id,
-                            packet_hash,
-                            maker: execution_info.caller_address,
-                            maker_msg,
-                        },
-                    );
             }
         }
 
@@ -1606,6 +1688,18 @@ pub mod IbcHandler {
             assert(!contract_address.is_zero(), Error::CHANNEL_NOT_FOUND);
 
             IIbcModuleSafeDispatcher { contract_address }
+        }
+
+        fn mark_packet_as_received(mut self: ContractState, commitment_key: u256) -> bool {
+            let commitment = self.get_commitment(commitment_key);
+
+            let already_received = commitment != 0;
+
+            if !already_received {
+                self.commit(commitment_key, COMMITMENT_MAGIC);
+            }
+
+            already_received
         }
 
         fn mark_packet_as_acknowledged(ref self: ContractState, packet_hash: u256) {

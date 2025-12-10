@@ -304,7 +304,7 @@ abstract contract IBCPacketImpl is IBCStore, IIBCPacket {
                     );
                 }
                 if (acknowledgement.length > 0) {
-                    _writeAcknowledgement(commitmentKey, acknowledgement);
+                    _writeacknowledgement(commitmentKey, acknowledgement);
                     emit IBCPacketLib.WriteAck(
                         packet.destinationChannelId, packetHash, acknowledgement
                     );
