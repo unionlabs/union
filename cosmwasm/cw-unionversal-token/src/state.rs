@@ -45,17 +45,6 @@ impl ValueCodecViaEncoding for FungibleCounterparty {
     type Encoding = Bincode;
 }
 
-pub enum Admin {}
-impl Store for Admin {
-    const PREFIX: Prefix = Prefix::new(b"admin");
-
-    type Key = ();
-    type Value = Addr;
-}
-impl ValueCodecViaEncoding for Admin {
-    type Encoding = RawAddrEncoding;
-}
-
 pub enum Zkgm {}
 impl Store for Zkgm {
     const PREFIX: Prefix = Prefix::new(b"zkgm");

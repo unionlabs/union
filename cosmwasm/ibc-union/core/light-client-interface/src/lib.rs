@@ -145,12 +145,8 @@ macro_rules! default_migrate {
 
                     Ok((res, Some($crate::version::LATEST)))
                 },
-                |mut deps, msg, version| match version {
-                    $crate::version::INIT => {
-                        $crate::access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
-
-                        Ok((::cosmwasm_std::Response::default(), Some($crate::version::MANAGED)))
-                    }
+                |_, _, version| match version {
+                    $crate::version::INIT => Err(::cosmwasm_std::StdError::generic_err("unsupported version: INIT").into()),
                     $crate::version::MANAGED => Ok((::cosmwasm_std::Response::default(), None)),
                     _ => Err(::frissitheto::UpgradeError::UnknownStateVersion(version).into()),
                 },

@@ -50,7 +50,7 @@ use crate::{
     state::{
         ChannelOwner, Channels, ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates,
         ClientStore, ClientTypes, Commitments, Connections, ContractChannels, NextChannelId,
-        NextClientId, NextConnectionId, QueryStore, WhitelistedRelayers, WhitelistedRelayersAdmin,
+        NextClientId, NextConnectionId, QueryStore,
     },
 };
 
@@ -646,9 +646,7 @@ pub fn instantiate(_: DepsMut, _: Env, _: MessageInfo, _: ()) -> StdResult<Respo
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
-pub struct MigrateMsg {
-    pub access_managed_init_msg: access_managed::InitMsg,
-}
+pub struct MigrateMsg {}
 
 /// Major state versions of this contract, used in the [`frissitheto`] migrations.
 pub mod version {
@@ -672,22 +670,9 @@ pub fn migrate(
     _env: Env,
     msg: UpgradeMsg<InitMsg, MigrateMsg>,
 ) -> Result<Response, ContractError> {
-    msg.run(deps, init, |mut deps, msg, version| match version {
-        version::INIT => {
-            access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
+    msg.run(deps, init, |_, _, version| match version {
+        version::INIT => Err(StdError::generic_err("unsupported version: INIT").into()),
 
-            deps.storage.delete_item::<WhitelistedRelayersAdmin>();
-
-            for (k, ()) in deps
-                .storage
-                .iter::<WhitelistedRelayers>(cosmwasm_std::Order::Ascending)
-                .collect::<Result<Vec<_>, _>>()?
-            {
-                deps.storage.delete::<WhitelistedRelayers>(&k);
-            }
-
-            Ok((Response::new(), Some(version::MANAGED)))
-        }
         version::MANAGED => Ok((Response::new(), None)),
         _ => Err(UpgradeError::UnknownStateVersion(version).into()),
     })

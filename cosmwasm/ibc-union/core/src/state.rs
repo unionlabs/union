@@ -1,10 +1,7 @@
 use std::{collections::BTreeSet, marker::PhantomData};
 
 use cosmwasm_std::{Addr, StdError, StdResult};
-use depolama::{
-    KeyCodec, Prefix, Store, ValueCodec,
-    value::{ValueCodecViaEncoding, ValueUnitEncoding},
-};
+use depolama::{KeyCodec, Prefix, Store, ValueCodec, value::ValueCodecViaEncoding};
 use ibc_union_spec::{Channel, ChannelId, ClientId, Connection, ConnectionId};
 use unionlabs::{
     encoding::Bincode,
@@ -359,38 +356,6 @@ impl ValueCodec<H256> for Commitments {
     fn decode_value(raw: &Bytes) -> StdResult<H256> {
         read_fixed_bytes(raw).map(H256::new)
     }
-}
-
-pub enum WhitelistedRelayersAdmin {}
-impl Store for WhitelistedRelayersAdmin {
-    const PREFIX: Prefix = Prefix::new(b"whitelisted_relayers_admin");
-
-    type Key = ();
-    type Value = Addr;
-}
-addr_value!(WhitelistedRelayersAdmin);
-
-pub enum WhitelistedRelayers {}
-impl Store for WhitelistedRelayers {
-    const PREFIX: Prefix = Prefix::new(b"whitelisted_relayers");
-
-    type Key = Addr;
-    type Value = ();
-}
-
-impl KeyCodec<Addr> for WhitelistedRelayers {
-    fn encode_key(key: &Addr) -> Bytes {
-        key.as_bytes().into()
-    }
-
-    fn decode_key(raw: &Bytes) -> StdResult<Addr> {
-        String::from_utf8(raw.to_vec())
-            .map(Addr::unchecked)
-            .map_err(|e| StdError::generic_err(format!("invalid key: {e}")))
-    }
-}
-impl ValueCodecViaEncoding for WhitelistedRelayers {
-    type Encoding = ValueUnitEncoding;
 }
 
 fn read_fixed_bytes<const N: usize>(raw: &Bytes) -> StdResult<[u8; N]> {
