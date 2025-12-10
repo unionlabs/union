@@ -130,48 +130,22 @@ pub struct MsgChannelCloseConfirm {
 }
 
 #[derive(Drop, Serde)]
-pub struct MsgPacketRecv {
-    pub packets: Array<Packet>,
-    pub relayer_msgs: Array<ByteArray>,
-    pub relayer: ContractAddress,
-    pub proof: ByteArray,
-    pub proof_height: u64,
-}
+pub struct MsgPacketRecv {}
 
 #[derive(Drop, Serde)]
-pub struct MsgPacketAcknowledgement {
-    pub packets: Array<Packet>,
-    pub acknowledgements: Array<ByteArray>,
-    pub proof: ByteArray,
-    pub proof_height: u64,
-    pub relayer: ContractAddress,
-}
+pub struct MsgPacketAcknowledgement {}
 
 #[derive(Drop, Serde)]
-pub struct MsgPacketTimeout {
-    pub packet: Packet,
-    pub proof: ByteArray,
-    pub proof_height: u64,
-    pub relayer: ContractAddress,
-}
+pub struct MsgPacketTimeout {}
 
 #[derive(Drop, Serde)]
-pub struct MsgIntentPacketRecv {
-    pub packets: Array<Packet>,
-    pub market_maker_msgs: Array<ByteArray>,
-    pub market_maker: ContractAddress,
-}
+pub struct MsgIntentPacketRecv {}
 
 #[derive(Drop, Serde)]
-pub struct MsgBatchSend {
-    pub packets: Array<Packet>,
-}
+pub struct MsgBatchSend {}
 
 #[derive(Drop, Serde)]
-pub struct MsgBatchAcks {
-    pub packets: Array<Packet>,
-    pub acks: Array<ByteArray>,
-}
+pub struct MsgBatchAcks {}
 
 #[derive(Drop, Serde)]
 pub struct MsgWriteAcknowledgement {

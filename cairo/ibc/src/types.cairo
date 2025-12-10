@@ -59,11 +59,13 @@
 // TITLE.
 
 use alexandria_bytes::BytesTrait;
+use alexandria_bytes::byte_array_ext::{ByteArrayTraitExt, ByteArrayTraitExtImpl};
 use alexandria_encoding::sol_abi::encode::SolAbiEncodeU8;
 use alexandria_evm::encoder::{AbiEncodeTrait, EVMCalldata};
 use alexandria_evm::evm_enum::EVMTypes;
 use core::hash::{Hash, HashStateTrait};
 use core::keccak::compute_keccak_byte_array;
+use core::num::traits::Zero;
 
 pub trait Id<T, +Copy<T>> {
     fn new(id: NonZero<u32>) -> T;
@@ -129,7 +131,7 @@ impl ClientIdHashImpl<S, +HashStateTrait<S>, +Drop<S>> of Hash<ClientId, S> {
     }
 }
 
-#[derive(Debug, Copy, Drop, Serde, starknet::Store, PartialEq)]
+#[derive(Debug, Copy, Drop, PartialEq, Serde, starknet::Store)]
 pub struct ConnectionId {
     raw: NonZero<u32>,
 }
@@ -155,7 +157,7 @@ impl ConnectionIdHashImpl<S, +HashStateTrait<S>, +Drop<S>> of Hash<ConnectionId,
     }
 }
 
-#[derive(Copy, Drop, Serde, starknet::Store)]
+#[derive(Debug, Copy, Drop, PartialEq, Serde, starknet::Store)]
 pub struct ChannelId {
     raw: NonZero<u32>,
 }
@@ -294,7 +296,7 @@ pub impl ChannelStateImpl of ChannelStateTrait {
     }
 }
 
-#[derive(Drop, Serde)]
+#[derive(Debug, Drop, PartialEq, Clone, Serde)]
 pub struct Packet {
     pub source_channel_id: ChannelId,
     pub destination_channel_id: ChannelId,
@@ -303,7 +305,39 @@ pub struct Packet {
     pub timeout_timestamp: Timestamp,
 }
 
-#[derive(Drop, Serde)]
+#[generate_trait]
+pub impl PacketImpl of PacketTrait {
+    fn encode(self: @Packet) -> ByteArray {
+        let mut buf = ByteArrayTraitExtImpl::new_empty();
+        buf.append_u256(self.source_channel_id.raw().into());
+        buf.append_u256(self.destination_channel_id.raw().into());
+        buf.append_u256(0x20 * 4);
+        buf.append_u256((*self.timeout_timestamp.raw).into());
+        buf.append_u256(self.data.len().into());
+        buf.append(self.data);
+        buf
+    }
+
+    fn hash(self: @Packet) -> u256 {
+        compute_keccak_byte_array(@self.encode())
+    }
+}
+
+#[derive(Debug, Drop, PartialEq, Clone, Serde)]
 pub struct Timestamp {
     raw: u64,
+}
+
+impl TimestampZero of core::num::traits::Zero<Timestamp> {
+    fn zero() -> Timestamp {
+        Timestamp { raw: 0 }
+    }
+
+    fn is_zero(self: @Timestamp) -> bool {
+        self.raw.is_zero()
+    }
+
+    fn is_non_zero(self: @Timestamp) -> bool {
+        self.raw.is_non_zero()
+    }
 }

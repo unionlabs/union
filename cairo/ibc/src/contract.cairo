@@ -65,7 +65,7 @@ use crate::app::IIbcModule;
 use crate::event::*;
 use crate::lightclient::ILightClient;
 use crate::path::*;
-use crate::types::{Channel, ChannelId, ClientId, ConnectionId};
+use crate::types::{ChannelId, ClientId, ConnectionId, Packet, Timestamp};
 
 pub mod Error {
     pub const CLIENT_TYPE_ALREADY_REGISTERED: felt252 = 'CLIENT_TYPE_ALREADY_REGISTERED';
@@ -76,6 +76,9 @@ pub mod Error {
     pub const INVALID_PROOF: felt252 = 'INVALID_PROOF';
     pub const INVALID_CONNECTION_STATE: felt252 = 'INVALID_CONNECTION_STATE';
     pub const INVALID_CHANNEL_STATE: felt252 = 'INVALID_CHANNEL_STATE';
+    pub const TIMESTAMP_MUST_BE_SET: felt252 = 'TIMESTAMP_MUST_BE_SET';
+    pub const NOT_CHANNEL_OWNER: felt252 = 'NOT_CHANNEL_OWNER';
+    pub const PACKET_ALREADY_EXISTS: felt252 = 'PACKET_ALREADY_EXISTS';
 }
 
 #[starknet::interface]
@@ -519,6 +522,58 @@ pub trait IIbcHandler<TContractState> {
         proof_height: u64,
         relayer: ContractAddress,
     );
+
+    fn send_packet(
+        ref self: TContractState,
+        channel_id: ChannelId,
+        timeout_timestamp: Timestamp,
+        data: ByteArray,
+    ) -> Packet;
+
+
+    fn recv_packet(
+        ref self: TContractState,
+        packets: Array<Packet>,
+        relayer_msgs: Array<ByteArray>,
+        relayer: ContractAddress,
+        proof: ByteArray,
+        proof_height: u64,
+    );
+
+
+    fn recv_intent_packet(
+        ref self: TContractState,
+        packets: Array<Packet>,
+        market_maker_msgs: Array<ByteArray>,
+        market_maker: ContractAddress,
+    );
+
+
+    fn write_acknowledgement(ref self: TContractState, packet: Packet, acknowledgement: ByteArray);
+
+    fn acknowledge_packet(
+        ref self: TContractState,
+        packets: Array<Packet>,
+        acknowledgements: Array<ByteArray>,
+        proof: ByteArray,
+        proof_height: u64,
+        relayer: ContractAddress,
+    );
+
+
+    fn timeout_packet(
+        ref self: TContractState,
+        packet: Packet,
+        proof: ByteArray,
+        proof_height: u64,
+        relayer: ContractAddress,
+    );
+
+
+    fn batch_send(ref self: TContractState, packets: Array<Packet>);
+
+
+    fn batch_acks(ref self: TContractState, packets: Array<Packet>, acks: Array<ByteArray>);
 }
 
 #[starknet::contract]
@@ -531,7 +586,7 @@ pub mod IbcHandler {
         StoragePointerWriteAccess,
     };
     use starknet::storage_access::{storage_address_from_base, storage_base_address_from_felt252};
-    use starknet::syscalls::storage_write_syscall;
+    use starknet::syscalls::{storage_read_syscall, storage_write_syscall};
     use starknet::{ContractAddress, SyscallResultTrait, get_execution_info};
     use crate::app::{IIbcModuleDispatcher, IIbcModuleSafeDispatcher, IIbcModuleSafeDispatcherTrait};
     use crate::event::{
@@ -543,13 +598,18 @@ pub mod IbcHandler {
         ConsensusStateUpdate, ILightClientSafeDispatcher, ILightClientSafeDispatcherTrait,
     };
     use crate::path::{
-        ChannelPath, ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait,
+        BatchPacketsPath, ChannelPath, ClientStatePath, ConnectionPath, ConsensusStatePath,
+        StorePathKeyTrait,
     };
     use crate::types::{
         Channel, ChannelId, ChannelImpl, ChannelState, ClientId, ClientIdImpl, Connection,
         ConnectionId, ConnectionIdImpl, ConnectionImpl, ConnectionState, ConnectionTrait,
+        PacketTrait, Timestamp,
     };
-    use super::{ByteArrayTraitExt, Error, to_byte_array};
+    use super::{ByteArrayTraitExt, Error, Packet, to_byte_array};
+
+    const COMMITMENT_MAGIC: u256 =
+        0x0100000000000000000000000000000000000000000000000000000000000000;
 
     #[storage]
     struct Storage {
@@ -637,10 +697,11 @@ pub mod IbcHandler {
                     // Note that the light clients define how the commitment should be since the
                     // commitments are verified on the counterparty chains which might not natively
                     // support certain encoding schemes.
-                    self.commit(@ClientStatePath { client_id }, client_state_commitment);
+                    self.commit(ClientStatePath { client_id }.key(), client_state_commitment);
                     self
                         .commit(
-                            @ConsensusStatePath { client_id, height }, consensus_state_commitment,
+                            ConsensusStatePath { client_id, height }.key(),
+                            consensus_state_commitment,
                         );
 
                     self.client_impls.write(client_id, client_address);
@@ -673,10 +734,11 @@ pub mod IbcHandler {
                     client_state_commitment, consensus_state_commitment, height,
                 }) => {
                     // Update or add the commitments.
-                    self.commit(@ClientStatePath { client_id }, client_state_commitment);
+                    self.commit(ClientStatePath { client_id }.key(), client_state_commitment);
                     self
                         .commit(
-                            @ConsensusStatePath { client_id, height }, consensus_state_commitment,
+                            ConsensusStatePath { client_id, height }.key(),
+                            consensus_state_commitment,
                         );
 
                     self.emit(UpdateClient { client_id, height });
@@ -1131,6 +1193,83 @@ pub mod IbcHandler {
                     },
                 );
         }
+
+        fn send_packet(
+            ref self: ContractState,
+            channel_id: ChannelId,
+            timeout_timestamp: Timestamp,
+            data: ByteArray,
+        ) -> Packet {
+            assert(!timeout_timestamp.is_zero(), Error::TIMESTAMP_MUST_BE_SET);
+
+            self.ensure_channel_owner(channel_id);
+
+            let channel = self.ensure_channel_state(channel_id, ChannelState::Open);
+
+            let packet = Packet {
+                source_channel_id: channel_id,
+                destination_channel_id: channel.counterparty_channel_id.unwrap(),
+                data,
+                timeout_timestamp,
+            };
+
+            let packet_hash = packet.hash();
+
+            let commitment_key = BatchPacketsPath { batch_hash: packet_hash }.key();
+
+            assert(self.get_commitment(commitment_key) == 0, Error::PACKET_ALREADY_EXISTS);
+
+            self.commit(commitment_key, COMMITMENT_MAGIC);
+
+            packet
+        }
+
+
+        fn recv_packet(
+            ref self: ContractState,
+            packets: Array<Packet>,
+            relayer_msgs: Array<ByteArray>,
+            relayer: ContractAddress,
+            proof: ByteArray,
+            proof_height: u64,
+        ) {}
+
+
+        fn recv_intent_packet(
+            ref self: ContractState,
+            packets: Array<Packet>,
+            market_maker_msgs: Array<ByteArray>,
+            market_maker: ContractAddress,
+        ) {}
+
+
+        fn write_acknowledgement(
+            ref self: ContractState, packet: Packet, acknowledgement: ByteArray,
+        ) {}
+
+        fn acknowledge_packet(
+            ref self: ContractState,
+            packets: Array<Packet>,
+            acknowledgements: Array<ByteArray>,
+            proof: ByteArray,
+            proof_height: u64,
+            relayer: ContractAddress,
+        ) {}
+
+
+        fn timeout_packet(
+            ref self: ContractState,
+            packet: Packet,
+            proof: ByteArray,
+            proof_height: u64,
+            relayer: ContractAddress,
+        ) {}
+
+
+        fn batch_send(ref self: ContractState, packets: Array<Packet>) {}
+
+
+        fn batch_acks(ref self: ContractState, packets: Array<Packet>, acks: Array<ByteArray>) {}
     }
 
     #[generate_trait]
@@ -1157,14 +1296,14 @@ pub mod IbcHandler {
         fn save_and_commit_connection(
             ref self: ContractState, connection_id: ConnectionId, connection: Connection,
         ) {
-            self.commit(@ConnectionPath { connection_id }, connection.commit());
+            self.commit(ConnectionPath { connection_id }.key(), connection.commit());
             self.connections.write(connection_id, Some(connection));
         }
 
         fn save_and_commit_channel(
             ref self: ContractState, channel_id: ChannelId, channel: Channel,
         ) {
-            self.commit(@ChannelPath { channel_id }, channel.commit());
+            self.commit(ChannelPath { channel_id }.key(), channel.commit());
             self.channels.write(channel_id, Some(channel));
         }
 
@@ -1244,7 +1383,14 @@ pub mod IbcHandler {
             ILightClientSafeDispatcher { contract_address }
         }
 
-        fn commit<T, +StorePathKeyTrait<T>>(ref self: ContractState, key: @T, value: u256) {
+        fn ensure_channel_owner(self: @ContractState, channel_id: ChannelId) {
+            assert(
+                get_execution_info().caller_address == self.channel_owners.read(channel_id),
+                Error::NOT_CHANNEL_OWNER,
+            )
+        }
+
+        fn commit(ref self: ContractState, key: u256, value: u256) {
             // https://docs.starknet.io/learn/protocol/cryptography#starknet-keccak
             let truncate = |n: u256| -> felt252 {
                 // u250(u256::MAX);
@@ -1254,10 +1400,25 @@ pub mod IbcHandler {
 
             storage_write_syscall(
                 0,
-                storage_address_from_base(storage_base_address_from_felt252(truncate(key.key()))),
+                storage_address_from_base(storage_base_address_from_felt252(truncate(key))),
                 truncate(value),
             )
                 .unwrap_syscall();
+        }
+
+        fn get_commitment(self: @ContractState, key: u256) -> u256 {
+            // https://docs.starknet.io/learn/protocol/cryptography#starknet-keccak
+            let truncate = |n: u256| -> felt252 {
+                // u250(u256::MAX);
+                let mask = 0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256;
+                (n & mask).try_into().expect('value is <= 250 bits')
+            };
+
+            storage_read_syscall(
+                0, storage_address_from_base(storage_base_address_from_felt252(truncate(key))),
+            )
+                .unwrap_syscall()
+                .into()
         }
     }
 }
