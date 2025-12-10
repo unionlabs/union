@@ -1,3 +1,8 @@
+(DO NOT SHARE YET!): List of yapper reward distribution:
+
+https://images.cdn.union.build/yapper-rewards.png
+
+
 <div align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./.github/images/union-logo-white.svg">
