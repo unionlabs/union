@@ -608,6 +608,11 @@ pub trait IIbcHandler<TContractState> {
     /// - [`Error::ACKNOWLEDGEMENT_ALREADY_EXISTS`]: One (or more) of the packets has already been
     /// received.
     ///
+    /// Additionally, the both the client and module may panic while being called. In this case,
+    /// this function will either panic with the full panic message from the failed call, or exit
+    /// directly if the error cannot be caught. See the cairo documentation for more information on
+    /// what errors can be caught.
+    ///
     /// #### Commitments
     ///
     /// - Each newly received packet is stored under [`BatchReceiptsPath`], either with the
@@ -632,14 +637,43 @@ pub trait IIbcHandler<TContractState> {
 
     fn write_acknowledgement(ref self: TContractState, packet: Packet, acknowledgement: ByteArray);
 
+    /// Receive acknowledgements for packets that were sent from this chain and received on the
+    /// counterparty chain.
     ///
     /// #### Params
+    /// - `packets`: The packets to process acknowledgements for. If this contains more than one
+    /// packet, they will be checked to have been batch committed on the counterparty chain.
+    /// - `acknowledgements`: The acknowledgements that were written on the counterparty chain. This
+    /// must be the same length as the `packets` list.
+    /// - `proof_recv`: The proof that the packets were received on the source chain, committed
+    /// under the [`BatchReceiptsPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_recv` proof is verifiable at.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
     ///
     /// #### Events
     ///
+    /// Emits [`PacketAck`] per packet.
+    ///
     /// #### Panics
     ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::NOT_ENOUGH_PACKETS`]: No packets were provided in the `packets` list.
+    /// - [`Error::INVALID_ACKNOWLEDGEMENTS`]: The `acknowledgements` list was not the same length
+    /// as the `packets` list.
+    /// - [`Error::INVALID_PROOF`]: The `proof_send` proof could not be verified by the light
+    /// client.
+    /// - [`Error::BATCH_SAME_CHANNEL_ONLY`]: All of the packets are not for the same channel.
+    ///
+    /// Additionally, the both the client and module may panic while being called. In this case,
+    /// this function will either panic with the full panic message from the failed call, or exit
+    /// directly if the error cannot be caught. See the cairo documentation for more information on
+    /// what errors can be caught.
+    ///
     /// #### Commitments
+    ///
+    /// - Each received packet is marked as acknowledged under the [`BatchPacketsPath`].
     fn acknowledge_packet(
         ref self: TContractState,
         packets: Array<Packet>,
