@@ -139,7 +139,7 @@ pub trait ILightClient<TContractState> {
         self: @TContractState,
         client_id: ClientId,
         height: u64,
-        proof: ByteArray,
+        proof: Array<felt252>,
         key: ByteArray,
         value: ByteArray,
     ) -> bool;

@@ -1628,7 +1628,7 @@ pub mod IbcHandler {
             self: @ContractState,
             client_id: ClientId,
             height: u64,
-            proof: ByteArray,
+            proof: Array<felt252>,
             connection_id: ConnectionId,
             counterparty_connection: Connection,
         ) -> bool {
@@ -1648,7 +1648,7 @@ pub mod IbcHandler {
             self: @ContractState,
             client_id: ClientId,
             height: u64,
-            proof: ByteArray,
+            proof: Array<felt252>,
             channel_id: ChannelId,
             counterparty_channel: Channel,
         ) -> bool {
@@ -1668,7 +1668,7 @@ pub mod IbcHandler {
             self: @ContractState,
             client_id: ClientId,
             height: u64,
-            proof: ByteArray,
+            proof: Array<felt252>,
             path: u256,
             commitment: u256,
         ) -> bool {

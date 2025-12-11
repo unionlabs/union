@@ -69,12 +69,13 @@ mod CometblsLightClient {
     use ibc::types::{ClientId, Timestamp, TimestampImpl};
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry};
     use starknet::{ContractAddress, get_execution_info};
-    use crate::CometblsLightClient;
+    use crate::ics23::{MembershipProof, MembershipProofTrait};
     use crate::types::{ClientState, ConsensusState, Header};
 
     pub const CLIENT_STATE_NOT_FOUND: felt252 = 'CLIENT_STATE_NOT_FOUND';
     pub const CONSENSUS_STATE_NOT_FOUND: felt252 = 'CONSENSUS_STATE_NOT_FOUND';
     pub const INVALID_HEADER: felt252 = 'INVALID_HEADER';
+    pub const INVALID_PROOF: felt252 = 'INVALID_PROOF';
 
     #[storage]
     struct Storage {
@@ -168,12 +169,37 @@ mod CometblsLightClient {
             self: @ContractState,
             client_id: ClientId,
             height: u64,
-            proof: ByteArray,
+            proof: Array<felt252>,
             key: ByteArray,
             value: ByteArray,
         ) -> bool {
-            false
+            let client_state = self.client_states.read(client_id).expect(CLIENT_STATE_NOT_FOUND);
+
+            assert!(client_state.frozen_height == 0, "frozen client");
+
+            let consensus_state = self
+                .consensus_states
+                .entry(client_id)
+                .read(height)
+                .expect(CONSENSUS_STATE_NOT_FOUND);
+
+            let mut proof = proof.span();
+            let proof: MembershipProof = Serde::deserialize(ref proof).expect(INVALID_PROOF);
+
+            let mut full_key = Default::default();
+
+            // WASMD_CONTRACT_STORE_PREFIX
+            full_key.append_u8(0x03);
+            full_key.append_u256(client_state.contract_address);
+            // IBC_UNION_COSMWASM_COMMITMENT_PREFIX
+            full_key.append_u8(0x00);
+            full_key.append(@key);
+
+            let app_hash = u256_to_u32_array(consensus_state.app_hash);
+
+            proof.verify(app_hash, "wasm", full_key, value).is_ok()
         }
+
         fn verify_non_membership(
             self: @ContractState,
             client_id: ClientId,
@@ -236,6 +262,21 @@ mod CometblsLightClient {
 
     fn is_expired(header_time: u64, trusting_period: u64, current_time: u64) -> bool {
         current_time > (header_time + trusting_period)
+    }
+
+    /// Convert a u256 into [u32; 8] (LE).
+    fn u256_to_u32_array(n: u256) -> [u32; 8] {
+        const MASK: u128 = 0xFFFFFFFF;
+        [
+            (n.low ^ MASK).try_into().unwrap(),
+            (OptBitShift::shr(n.low, 32) ^ MASK).try_into().unwrap(),
+            (OptBitShift::shr(n.low, 32 * 2) ^ MASK).try_into().unwrap(),
+            (OptBitShift::shr(n.low, 32 * 3) ^ MASK).try_into().unwrap(),
+            (n.high ^ MASK).try_into().unwrap(),
+            (OptBitShift::shr(n.high, 32) ^ MASK).try_into().unwrap(),
+            (OptBitShift::shr(n.high, 32 * 2) ^ MASK).try_into().unwrap(),
+            (OptBitShift::shr(n.high, 32 * 3) ^ MASK).try_into().unwrap(),
+        ]
     }
 
     pub fn chain_id_to_string(source: felt252) -> ByteArray {

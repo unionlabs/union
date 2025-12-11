@@ -82,13 +82,13 @@ pub enum Error {
     InvalidLeafPrefix,
 }
 
-#[derive(Drop)]
+#[derive(Drop, Serde)]
 pub struct MembershipProof {
     sub_proof: ExistenceProof,
     top_level_proof: ExistenceProof,
 }
 
-#[derive(Drop)]
+#[derive(Drop, Serde)]
 pub struct ExistenceProof {
     key: ByteArray,
     value: ByteArray,
@@ -96,7 +96,7 @@ pub struct ExistenceProof {
     path: Array<InnerOp>,
 }
 
-#[derive(Drop)]
+#[derive(Drop, Serde)]
 pub struct InnerOp {
     prefix: ByteArray,
     suffix: ByteArray,
@@ -117,8 +117,8 @@ pub struct ProofSpec {
 }
 
 #[generate_trait]
-impl MembershipProofImpl of MembershipProofTrait {
-    fn verify_membership(
+pub impl MembershipProofImpl of MembershipProofTrait {
+    fn verify(
         self: @MembershipProof, root: [u32; 8], prefix: ByteArray, key: ByteArray, value: ByteArray,
     ) -> Result<(), Error> {
         let subroot = self.sub_proof.calculate_root()?;
