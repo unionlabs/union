@@ -1,11 +1,11 @@
-use ethereum_light_client_types::StorageProof as L1StorageProof;
-use starknet_types_core::{
-    felt::Felt,
-    hash::{Poseidon, StarkHash as _},
+pub use ethereum_light_client_types::AccountProof;
+use pathfinder_crypto::{
+    Felt,
+    hash::{pedersen_hash, poseidon_hash_many},
 };
-use unionlabs::primitives::H256;
+use unionlabs::primitives::{Bytes, H256, U256};
 
-use crate::StorageProof;
+use crate::storage_proof::MerkleNode;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(
@@ -16,9 +16,10 @@ use crate::StorageProof;
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Header {
     pub l1_height: u64,
-    pub l1_block_hash_proof: L1StorageProof,
+    pub l1_contract_account_proof: AccountProof,
+    pub l1_block_hash_proof: Vec<Bytes>,
     pub l2_block: L2Block,
-    pub l2_ibc_contract_proof: StorageProof,
+    pub l2_ibc_contract_proof: ContractProof,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -29,24 +30,25 @@ pub struct Header {
 )]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct L2Block {
-    block_number: u64,
-    parent_block_hash: H256,
-    global_state_root: H256,
-    sequencer_address: H256,
+    pub block_number: u64,
+    pub parent_block_hash: Felt,
+    pub contracts_trie_root: Felt,
+    pub classes_trie_root: Felt,
+    pub sequencer_address: Felt,
     // SECONDS
-    block_timestamp: u64,
-    transaction_count: u32,
-    events_count: u32,
-    state_diff_length: u32,
-    state_diff_commitment: H256,
-    transactions_commitment: H256,
-    events_commitment: H256,
-    receipts_commitment: H256,
-    l1_gas_price: (u128, u128),
-    l1_data_gas_price: (u128, u128),
-    l2_gas_price: (u128, u128),
-    l1_da_mode: L1DaMode,
-    protocol_version: String,
+    pub block_timestamp: u64,
+    pub transaction_count: u32,
+    pub events_count: u32,
+    pub state_diff_length: u32,
+    pub state_diff_commitment: Felt,
+    pub transactions_commitment: Felt,
+    pub events_commitment: Felt,
+    pub receipts_commitment: Felt,
+    pub l1_gas_price: (u128, u128),
+    pub l1_data_gas_price: (u128, u128),
+    pub l2_gas_price: (u128, u128),
+    pub l1_da_mode: L1DaMode,
+    pub protocol_version: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -61,59 +63,113 @@ pub enum L1DaMode {
     Calldata,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct ContractProof {
+    /// The nodes in the union of the paths from the contracts tree root to the requested leaves
+    pub nodes: Vec<MerkleNode>,
+    pub contract_leaf_data: ContractLeafData,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct ContractLeafData {
+    pub nonce: Felt,
+    pub class_hash: Felt,
+    pub storage_root: Felt,
+}
+
+impl ContractLeafData {
+    pub fn hash(&self) -> Felt {
+        pedersen_hash(
+            pedersen_hash(
+                pedersen_hash(self.class_hash, self.storage_root),
+                self.nonce,
+            ),
+            Felt::ZERO,
+        )
+    }
+}
+
 impl L2Block {
     /// <https://docs.starknet.io/learn/protocol/blocks#block-hash>
     /// <https://github.com/starkware-libs/sequencer/blob/079ed26ce95b3b10de40c9916ffa332aaecd9f06/crates/starknet_api/src/block_hash/block_hash_calculator.rs#L134>
     // TODO: Handle different versions
-    pub fn hash(&self) -> H256 {
-        Poseidon::hash_array(&[
-            // hex(b"STARKNET_BLOCK_HASH1")
-            const { Felt::from_hex_unwrap("0x535441524b4e45545f424c4f434b5f4841534831") },
-            self.block_number.into(),
-            Felt::from_bytes_be(self.global_state_root.get()),
-            Felt::from_bytes_be(self.sequencer_address.get()),
-            self.block_timestamp.into(),
-            // https://github.com/starkware-libs/sequencer/blob/079ed26ce95b3b10de40c9916ffa332aaecd9f06/crates/starknet_api/src/block_hash/block_hash_calculator.rs#L230
-            Felt::from_bytes_be_slice(
-                [
-                    (self.transaction_count as u64),
-                    (self.events_count as u64),
-                    (self.state_diff_length as u64),
-                    match self.l1_da_mode {
-                        // 0b0000_0000 ++ 7 bytes 0 padding
-                        L1DaMode::Calldata => 0_u64,
-                        // 0b1000_0000 ++ 7 bytes 0 padding
-                        L1DaMode::Blob => 1 << 63,
-                    },
-                ]
-                .map(u64::to_be_bytes)
-                .as_flattened(),
-            ),
-            Felt::from_bytes_be(self.state_diff_commitment.get()),
-            Felt::from_bytes_be(self.transactions_commitment.get()),
-            Felt::from_bytes_be(self.events_commitment.get()),
-            Felt::from_bytes_be(self.receipts_commitment.get()),
-            Poseidon::hash_array(&[
-                // hex(b"STARKNET_GAS_PRICES0")
-                const { Felt::from_hex_unwrap("0x535441524b4e45545f4741535f50524943455330") },
-                self.l1_gas_price.0.into(),
-                self.l1_gas_price.1.into(),
-                self.l1_data_gas_price.0.into(),
-                self.l1_data_gas_price.1.into(),
-                self.l2_gas_price.0.into(),
-                self.l2_gas_price.1.into(),
-            ]),
-            Felt::from_bytes_be_slice(self.protocol_version.as_bytes()),
-            Felt::ZERO,
-            Felt::from_bytes_be(self.parent_block_hash.get()),
-        ])
-        .to_bytes_be()
+    pub fn hash(&self) -> Felt {
+        poseidon_hash_many(
+            &[
+                // hex(b"STARKNET_BLOCK_HASH1")
+                Felt::from_hex_str("0x535441524b4e45545f424c4f434b5f4841534831").unwrap(),
+                self.block_number.into(),
+                poseidon_hash_many(
+                    &[
+                        // hex(b"STARKNET_STATE_V0")
+                        Felt::from_hex_str("0x535441524b4e45545f53544154455f5630").unwrap(),
+                        self.contracts_trie_root,
+                        self.classes_trie_root,
+                    ]
+                    .map(Into::into),
+                )
+                .into(),
+                self.sequencer_address,
+                self.block_timestamp.into(),
+                // https://github.com/starkware-libs/sequencer/blob/079ed26ce95b3b10de40c9916ffa332aaecd9f06/crates/starknet_api/src/block_hash/block_hash_calculator.rs#L230
+                Felt::from_be_slice(
+                    [
+                        (self.transaction_count as u64),
+                        (self.events_count as u64),
+                        (self.state_diff_length as u64),
+                        match self.l1_da_mode {
+                            // 0b0000_0000 ++ 7 bytes 0 padding
+                            L1DaMode::Calldata => 0_u64,
+                            // 0b1000_0000 ++ 7 bytes 0 padding
+                            L1DaMode::Blob => 1 << 63,
+                        },
+                    ]
+                    .map(u64::to_be_bytes)
+                    .as_flattened(),
+                )
+                .unwrap(),
+                self.state_diff_commitment,
+                self.transactions_commitment,
+                self.events_commitment,
+                self.receipts_commitment,
+                poseidon_hash_many(
+                    &[
+                        // hex(b"STARKNET_GAS_PRICES0")
+                        Felt::from_hex_str("0x535441524b4e45545f4741535f50524943455330").unwrap(),
+                        self.l1_gas_price.0.into(),
+                        self.l1_gas_price.1.into(),
+                        self.l1_data_gas_price.0.into(),
+                        self.l1_data_gas_price.1.into(),
+                        self.l2_gas_price.0.into(),
+                        self.l2_gas_price.1.into(),
+                    ]
+                    .map(Into::into),
+                )
+                .into(),
+                Felt::from_be_slice(self.protocol_version.as_bytes()).unwrap(),
+                Felt::ZERO,
+                self.parent_block_hash,
+            ]
+            .map(Into::into),
+        )
         .into()
     }
 }
 
 #[test]
-fn l2_block_hash() {
+fn l2_block_hash_3996475() {
     use hex_literal::hex;
 
     // https://feeder.alpha-mainnet.starknet.io/feeder_gateway/get_block?blockNumber=3996475
@@ -121,8 +177,12 @@ fn l2_block_hash() {
         block_number: 3996475,
         parent_block_hash: hex!("07488afa914e19281d6a859f1673d91f84b124576677bc90790954934bcf6a90")
             .into(),
-        global_state_root: hex!("000b977d63eeb59fda732ff60c6b956a91bd1c30784b2a25829f3a5fd882b0f8")
+        classes_trie_root: hex!("052dedb4984ca5bde1fa31f46bdedd2462779d7a6db3039be87eb0c532d79470")
             .into(),
+        contracts_trie_root: hex!(
+            "02c6e3ddcdcf9bcd4b9e01c4b94408b6cf8b82ca9a1b40d808612483278b5afb"
+        )
+        .into(),
         sequencer_address: hex!("01176a1bd84444c89232ec27754698e5d2e7e1a7f1539f12027f28b23ec9f3d8")
             .into(),
         block_timestamp: 1764693045,
@@ -154,8 +214,7 @@ fn l2_block_hash() {
 
     assert_eq!(
         block.hash(),
-        <H256>::new(hex!(
-            "0366cae7718ded291ef9c5f4c2aba8c3c27baa0e563fd64ba72fe51c2abc4675"
-        ))
+        Felt::from_hex_str("0x366cae7718ded291ef9c5f4c2aba8c3c27baa0e563fd64ba72fe51c2abc4675")
+            .unwrap()
     );
 }

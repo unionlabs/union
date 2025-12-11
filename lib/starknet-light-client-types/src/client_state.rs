@@ -1,5 +1,5 @@
-use starknet_core::types::Felt;
-use unionlabs::primitives::H160;
+use pathfinder_crypto::Felt;
+use unionlabs::primitives::{H160, H256};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(

@@ -12,9 +12,10 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-bitvec            = { workspace = true }
-pathfinder-crypto = "0.21.3"
-serde             = { workspace = true, optional = true, features = ["derive"] }
+bitvec              = { workspace = true }
+pathfinder-crypto   = "0.21.3"
+serde               = { workspace = true, optional = true, features = ["derive"] }
+thiserror.workspace = true
 
 [dev-dependencies]
 serde_json                = { workspace = true }

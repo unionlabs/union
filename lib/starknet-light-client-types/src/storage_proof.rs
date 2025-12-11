@@ -8,7 +8,8 @@ use unionlabs::primitives::H256;
 )]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct StorageProof {
-    nodes: Vec<MerkleNode>,
+    pub nodes: Vec<MerkleNode>,
+    pub root: H256,
 }
 
 #[derive(Debug, Clone, PartialEq)]

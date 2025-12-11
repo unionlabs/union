@@ -8177,6 +8177,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "keccak-const"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57d8d8ce877200136358e0bbff3a77965875db3af755a11e1fa6b1b3e2df13ea"
+
+[[package]]
 name = "lalrpop"
 version = "0.19.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13566,6 +13572,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "starknet-light-client"
+version = "0.0.0"
+
+[[package]]
 name = "starknet-light-client-types"
 version = "0.0.0"
 dependencies = [
@@ -13574,6 +13584,7 @@ dependencies = [
  "ethereum-light-client-types",
  "hex-literal 0.4.1",
  "ibc-union-spec",
+ "pathfinder-crypto",
  "serde",
  "starknet-core",
  "starknet-types-core 1.0.0",
@@ -13637,6 +13648,7 @@ dependencies = [
  "serde",
  "serde_json",
  "starknet-storage-verifier",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -13673,6 +13685,20 @@ dependencies = [
  "rand 0.9.2",
  "serde",
  "zeroize",
+]
+
+[[package]]
+name = "starknet-verifier"
+version = "0.0.0"
+dependencies = [
+ "evm-storage-verifier",
+ "hex-literal 0.4.1",
+ "keccak-const",
+ "rlp",
+ "starknet-light-client-types",
+ "starknet-storage-verifier",
+ "thiserror 2.0.12",
+ "unionlabs-primitives",
 ]
 
 [[package]]

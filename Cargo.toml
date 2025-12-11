@@ -297,6 +297,8 @@ members = [
   "cosmwasm/gatekeeper",
   "cosmwasm/proxy-account-factory",
   "lib/starknet-light-client-types",
+  "lib/starknet-verifier",
+  "lib/starknet-light-client",
 ]
 
 [workspace.package]
@@ -534,7 +536,6 @@ sha3                     = { version = "0.10.8", default-features = false }
 sqlx                     = { version = "0.7.4", default-features = false }
 starknet                 = { version = "0.17.0", default-features = false }
 starknet-core            = { version = "0.16.0", default-features = false }
-starknet-crypto          = { version = "0.8.1", default-features = false }
 static_assertions        = { git = "https://github.com/nvzqz/static-assertions" }                                # https://github.com/nvzqz/static-assertions/pull/28
 strum                    = { version = "0.27", default-features = false }
 subtle-encoding          = { version = "0.5.1", default-features = false }

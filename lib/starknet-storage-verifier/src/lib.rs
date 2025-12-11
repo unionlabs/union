@@ -1,9 +1,8 @@
 use std::collections::BTreeMap;
 
-use pathfinder_crypto::{
-    Felt,
-    hash::{pedersen_hash, poseidon_hash},
-};
+pub use pathfinder_crypto::Felt;
+use pathfinder_crypto::hash::{pedersen_hash, poseidon_hash};
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 pub trait FeltHash {
@@ -70,6 +69,7 @@ impl MerkleNode {
     }
 }
 
+#[cfg(feature = "serde")]
 pub mod felt {
     use pathfinder_crypto::Felt;
     use serde::{Deserializer, Serialize, Serializer, de::Deserialize};
@@ -105,17 +105,19 @@ pub enum Membership {
     NonMembership,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
+    #[error("unused extra nodes provided")]
     UnusedNodes,
+    #[error("value mismatch: expected {expected}, found {found}")]
     ValueMismatch { expected: Felt, found: Felt },
 }
 
 pub fn verify_proof<H: FeltHash>(
-    proof: impl IntoIterator<Item = MerkleNode>,
+    mut root: Felt,
     key: Felt,
     value: Felt,
-    mut expected_hash: Felt,
+    proof: impl IntoIterator<Item = MerkleNode>,
 ) -> Result<Membership, Error> {
     let mut proof = proof
         .into_iter()
@@ -125,13 +127,13 @@ pub fn verify_proof<H: FeltHash>(
     // https://github.com/eqlabs/pathfinder/blob/a34566b9a9f6ea6d7eb3889130d62c8f3fe6a499/crates/crypto/src/algebra/field/felt.rs#L176
     let mut remaining_path = key.view_bits();
 
-    while let Some(proof_node) = proof.remove(&expected_hash) {
+    while let Some(proof_node) = proof.remove(&root) {
         match proof_node {
             MerkleNode::BinaryNode { left, right } => {
                 // Set the next hash to be the left or right hash,
                 // depending on the direction
                 // https://github.com/eqlabs/pathfinder/blob/a34566b9a9f6ea6d7eb3889130d62c8f3fe6a499/crates/merkle-tree/src/merkle_node.rs#L81
-                expected_hash = match remaining_path[0] {
+                root = match remaining_path[0] {
                     false => left,
                     true => right,
                 };
@@ -164,7 +166,7 @@ pub fn verify_proof<H: FeltHash>(
                 }
 
                 // Set the next hash to the child's hash
-                expected_hash = child;
+                root = child;
 
                 // Advance by the whole edge path
                 remaining_path = &remaining_path[length as usize..];
@@ -172,10 +174,10 @@ pub fn verify_proof<H: FeltHash>(
         }
     }
 
-    if expected_hash != value {
+    if root != value {
         return Err(Error::ValueMismatch {
             expected: value,
-            found: expected_hash,
+            found: root,
         });
     }
 
@@ -324,11 +326,11 @@ fn contract_membership() {
     };
 
     // contracts_proof.contract_leaves_data.storage_root
-    let expected_hash =
+    let root =
         Felt::from_hex_str("0x2c6e3ddcdcf9bcd4b9e01c4b94408b6cf8b82ca9a1b40d808612483278b5afb")
             .unwrap();
 
-    let res = verify_proof::<PedersenHash>(proof, key, value, expected_hash).unwrap();
+    let res = verify_proof::<PedersenHash>(root, key, value, proof).unwrap();
 
     assert_eq!(res, Membership::Membership);
 }
@@ -379,11 +381,11 @@ fn contract_storage_membership() {
             .unwrap();
 
     // contracts_proof.contract_leaves_data.storage_root
-    let expected_hash =
+    let root =
         Felt::from_hex_str("0x2c8771df74e758b1fed285eef0cd07cb84b55abfabfb0d6a0f1b7b3aff761fa")
             .unwrap();
 
-    let res = verify_proof::<PedersenHash>(proof, key, value, expected_hash).unwrap();
+    let res = verify_proof::<PedersenHash>(root, key, value, proof).unwrap();
 
     assert_eq!(res, Membership::Membership);
 }
@@ -418,11 +420,11 @@ fn contract_storage_non_membership() {
     let value = Felt::from_hex_str("0x0").unwrap();
 
     // contracts_proof.contract_leaves_data.storage_root
-    let expected_hash =
+    let root =
         Felt::from_hex_str("0x2c8771df74e758b1fed285eef0cd07cb84b55abfabfb0d6a0f1b7b3aff761fa")
             .unwrap();
 
-    let res = verify_proof::<PedersenHash>(proof, key, value, expected_hash).unwrap();
+    let res = verify_proof::<PedersenHash>(root, key, value, proof).unwrap();
 
     assert_eq!(res, Membership::NonMembership);
 }

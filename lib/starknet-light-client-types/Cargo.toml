@@ -16,9 +16,10 @@ alloy                       = { workspace = true, features = ["sol-types"], opti
 bincode                     = { workspace = true, features = ["alloc", "derive"], optional = true }
 ethereum-light-client-types = { workspace = true }
 ibc-union-spec              = { workspace = true }
+pathfinder-crypto           = "0.21.3"
 serde                       = { workspace = true, optional = true, features = ["derive"] }
 starknet-core               = { workspace = true }                                                  # REVIEW: Do we want to use this crate in the public api of this client's types?
-starknet-types-core = { version = "1.0.0", features = ["hash"] }
+starknet-types-core         = { version = "1.0.0", features = ["hash"] }
 unionlabs                   = { workspace = true }
 
 [features]
