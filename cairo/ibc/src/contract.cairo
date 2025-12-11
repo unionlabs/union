@@ -1,57 +1,57 @@
 // License text copyright (c) 2020 MariaDB Corporation Ab, All Rights Reserved.
 // "Business Source License" is a trademark of MariaDB Corporation Ab.
-
+//
 // Parameters
-
+//
 // Licensor:             Union.fi, Labs Inc.
 // Licensed Work:        All files under https://github.com/unionlabs/union's cairo subdirectory
 //                       The Licensed Work is (c) 2025 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
 //
-
+//
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
-
+//
 // Notice
-
+//
 // Business Source License 1.1
-
+//
 // Terms
-
+//
 // The Licensor hereby grants you the right to copy, modify, create derivative
 // works, redistribute, and make non-production use of the Licensed Work. The
 // Licensor may make an Additional Use Grant, above, permitting limited production use.
-
+//
 // Effective on the Change Date, or the fourth anniversary of the first publicly
 // available distribution of a specific version of the Licensed Work under this
 // License, whichever comes first, the Licensor hereby grants you rights under
 // the terms of the Change License, and the rights granted in the paragraph
 // above terminate.
-
+//
 // If your use of the Licensed Work does not comply with the requirements
 // currently in effect as described in this License, you must purchase a
 // commercial license from the Licensor, its affiliated entities, or authorized
 // resellers, or you must refrain from using the Licensed Work.
-
+//
 // All copies of the original and modified Licensed Work, and derivative works
 // of the Licensed Work, are subject to this License. This License applies
 // separately for each version of the Licensed Work and the Change Date may vary
 // for each version of the Licensed Work released by Licensor.
-
+//
 // You must conspicuously display this License on each original or modified copy
 // of the Licensed Work. If you receive the Licensed Work in original or
 // modified form from a third party, the terms and conditions set forth in this
 // License apply to your use of that work.
-
+//
 // Any use of the Licensed Work in violation of this License will automatically
 // terminate your rights under this License for the current and all other
 // versions of the Licensed Work.
-
+//
 // This License does not grant you any right in any trademark or logo of
 // Licensor or its affiliates (provided that you may use a trademark or logo of
 // Licensor as expressly required by this License).
-
+//
 // TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSED WORK IS PROVIDED ON
 // AN "AS IS" BASIS. LICENSOR HEREBY DISCLAIMS ALL WARRANTIES AND CONDITIONS,
 // EXPRESS OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF
@@ -60,61 +60,679 @@
 
 use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
 use core::hash::{Hash, HashStateExTrait, HashStateTrait};
-use crate::msg::{MsgCreateClient, MsgRegisterClient, MsgUpdateClient};
-use crate::types::ClientId;
+use starknet::ContractAddress;
+use crate::event::*;
+use crate::path::*;
+use crate::types::{ChannelId, ClientId, ConnectionId, Packet, Timestamp};
 
 pub mod Error {
     pub const CLIENT_TYPE_ALREADY_REGISTERED: felt252 = 'CLIENT_TYPE_ALREADY_REGISTERED';
     pub const CLIENT_TYPE_NOT_FOUND: felt252 = 'CLIENT_TYPE_NOT_FOUND';
     pub const CLIENT_NOT_FOUND: felt252 = 'CLIENT_NOT_FOUND';
+    pub const CONNECTION_NOT_FOUND: felt252 = 'CONNECTION_NOT_FOUND';
+    pub const CHANNEL_NOT_FOUND: felt252 = 'CHANNEL_NOT_FOUND';
     pub const INVALID_PROOF: felt252 = 'INVALID_PROOF';
     pub const INVALID_CONNECTION_STATE: felt252 = 'INVALID_CONNECTION_STATE';
     pub const INVALID_CHANNEL_STATE: felt252 = 'INVALID_CHANNEL_STATE';
+    pub const TIMESTAMP_MUST_BE_SET: felt252 = 'TIMESTAMP_MUST_BE_SET';
+    pub const NOT_CHANNEL_OWNER: felt252 = 'NOT_CHANNEL_OWNER';
+    pub const PACKET_ALREADY_EXISTS: felt252 = 'PACKET_ALREADY_EXISTS';
+    pub const NOT_ENOUGH_PACKETS: felt252 = 'NOT_ENOUGH_PACKETS';
+    pub const INVALID_RELAYER_MSGS: felt252 = 'INVALID_RELAYER_MSGS';
+    pub const BATCH_SAME_CHANNEL_ONLY: felt252 = 'BATCH_SAME_CHANNEL_ONLY';
+    pub const TIMESTAMP_TIMEOUT: felt252 = 'TIMESTAMP_TIMEOUT';
+    pub const ACKNOWLEDGEMENT_ALREADY_EXISTS: felt252 = 'ACKNOWLEDGEMENT_ALREADY_EXISTS';
+    pub const PACKET_ALREADY_ACKNOWLEDGED: felt252 = 'PACKET_ALREADY_ACKNOWLEDGED';
+    pub const PACKET_COMMITMENT_NOT_FOUND: felt252 = 'PACKET_COMMITMENT_NOT_FOUND';
+    pub const INVALID_ACKNOWLEDGEMENTS: felt252 = 'INVALID_ACKNOWLEDGEMENTS';
+    pub const TIMEOUT_TIMESTAMP_NOT_REACHED: felt252 = 'TIMEOUT_TIMESTAMP_NOT_REACHED';
+
+    pub const UNIMPLEMENTED: felt252 = 'UNIMPLEMENTED';
 }
 
 #[starknet::interface]
 pub trait IIbcHandler<TContractState> {
-    fn register_client(ref self: TContractState, msg: MsgRegisterClient);
+    /// Register a client implementation at `client_address` with a client type. This
+    /// `client_type` will be used later to call the correct client implementation.
+    ///
+    /// #### Params
+    ///
+    /// - `client_type`: The human-readable label for the client implementation. This will be used
+    /// when creating a client of this type.
+    /// - `client_address`: The address of the client implementation. This is expected to implement
+    /// [`ILightClient`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CLIENT_TYPE_ALREADY_REGISTERED`]: The specified `client_type` is already
+    /// registered.
+    fn register_client(
+        ref self: TContractState, client_type: ByteArray, client_address: ContractAddress,
+    );
 
-    fn create_client(ref self: TContractState, msg: MsgCreateClient) -> ClientId;
+    /// Create a light client instance from a previously registered client type.
+    ///
+    /// #### Params
+    ///
+    /// - `client_type`: The light client implementation to create a client of. The implementation
+    /// must have already been registered with [`IIbcHandler::register_client()`].
+    /// - `client_state_bytes`: Arbitrary bytes to be interpreted by the light client upon client
+    /// creation.
+    /// - `consensus_state_bytes`: Arbitrary bytes to be interpreted by the light client upon
+    /// client creation. Note that this may not be the exact state committed, since the client may
+    /// return a different client state to save after creation. See [`ILightClient::create_client`]
+    /// for more information.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    ///
+    /// The [`ClientId`] of the newly created client is returned upon success.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`CreateClient`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CLIENT_TYPE_NOT_FOUND`]: The specified `client_type` is not registered.
+    ///
+    /// Additionally, the light client may panic while creating the client. In this case, this
+    /// function will panic with the full panic message from the failed call.
+    ///
+    /// #### Commitments
+    ///
+    /// - Client state commitment is saved under [`ClientStatePath`].
+    /// - Consensus state commitment is saved under [`ConsensusStatePath`].
+    fn create_client(
+        ref self: TContractState,
+        client_type: ByteArray,
+        client_state_bytes: Array<felt252>,
+        consensus_state_bytes: Array<felt252>,
+        relayer: ContractAddress,
+    ) -> ClientId;
 
-    fn update_client(ref self: TContractState, msg: MsgUpdateClient);
+    /// Updates a light client to a new state. This state transition must be verified by the
+    /// specified light client.
+    ///
+    /// #### Params
+    ///
+    /// - `client_message`: Arbitrary bytes to be interpreted by the light client. There is no
+    /// assumption on the type or encoding of the client message by the core protocol.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`UpdateClient`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CLIENT_NOT_FOUND`]: Client with `client_id` is not found.
+    ///
+    /// Additionally, the light client may panic while updating the client. In this case, this
+    /// function will panic with the full panic message from the failed call.
+    ///
+    /// #### Commitments
+    ///
+    /// - The [`ClientStatePath`] is updated with the commitment returned by the client.
+    /// - The [`ConsensusStatePath`] is added or updated with the commitment returned by the
+    /// client.
+    fn update_client(
+        ref self: TContractState,
+        client_id: ClientId,
+        client_message: Array<felt252>,
+        relayer: ContractAddress,
+    );
+
+    /// Start the connection handshake.
+    ///
+    /// #### Params
+    ///
+    /// - `client_id`: The light client that will verify the counterparty chain.
+    /// - `counterparty_client_id`: The light client on the counterparty chain that will verify
+    /// state of this chain.
+    ///
+    /// The [`ConnectionId`] of the newly created connection is returned upon success.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`ConnectionOpenInit`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CLIENT_NOT_FOUND`]: Client with `client_id` is not found.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed connection will be committed under
+    /// [`ConnectionPath`].
+    fn connection_open_init(
+        ref self: TContractState, client_id: ClientId, counterparty_client_id: ClientId,
+    ) -> ConnectionId;
+
+
+    /// The second step of the connection handshake, after the `connection_open_init` on the
+    /// counterparty chain.
+    ///
+    /// #### Params
+    ///
+    /// - `client_id`: The light client that will verify the counterparty chain.
+    /// - `counterparty_client_id`: the light client on the counterparty chain that will verify
+    /// state of this chain.
+    /// - `proof_init`: The proof of the counterparty connection commitment, as stored under the
+    /// [`ConnectionPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_init` proof is verifiable at.
+    ///
+    /// The [`ConnectionId`] of the newly created connection is returned upon success.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`ConnectionOpenTry`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CLIENT_NOT_FOUND`]: The client `client_id` is not found.
+    /// - [`Error::INVALID_PROOF`]: The `proof_init` could not be verified by the light client.
+    ///
+    /// Additionally, the call to the light client may exit with an error that cannot be handled by
+    /// the safe dispatcher. See the cairo documentation for more information on what errors can be
+    /// caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed connection will be committed under
+    /// [`ConnectionPath`].
+    fn connection_open_try(
+        ref self: TContractState,
+        counterparty_client_id: ClientId,
+        counterparty_connection_id: ConnectionId,
+        client_id: ClientId,
+        proof_init: Array<felt252>,
+        proof_height: u64,
+    ) -> ConnectionId;
+
+    /// The third step of the connection handshake, after the `connection_open_try` on the
+    /// counterparty chain. This is the second and final step of the connection handshake on this
+    /// chain, and the `connection_open_confirm` must still be sent to the counterparty after this
+    /// call to complete the handshake.
+    ///
+    /// #### Params
+    ///
+    /// - `connection_id`: The ID of the connection on this chain.
+    /// - `counterparty_connection_id`: the ID of the connection on the counterparty chain.
+    /// - `proof_try`: The proof of the counterparty connection commitment, as stored under the
+    /// [`ConnectionPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_try` proof is verifiable at.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`ConnectionOpenAck`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CONNECTION_NOT_FOUND`]: Connection `connection_id` is not found.
+    /// - [`Error::INVALID_CONNECTION_STATE`]: Connection `connection_id` is in an invalid state.
+    /// This can occur either because the `connection_open_ack/confirm` has already been run for
+    /// this connection, or `connection_open_ack` is executed after `connection_open_try` but not
+    /// `init`.
+    /// - [`Error::INVALID_PROOF`]: The `proof_try` proof could not be verified by the light client.
+    ///
+    /// Additionally, the call to the light client may exit with an error that cannot be handled by
+    /// the safe dispatcher. See the cairo documentation for more information on what errors can be
+    /// caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed connection will be committed under
+    /// [`ConnectionPath`].
+    fn connection_open_ack(
+        ref self: TContractState,
+        connection_id: ConnectionId,
+        counterparty_connection_id: ConnectionId,
+        proof_try: Array<felt252>,
+        proof_height: u64,
+    );
+
+    /// The final step of the connection handshake, after the `connection_open_ack` on the
+    /// counterparty chain.
+    ///
+    /// The connection `connection_id` on this chain will be fully opened.
+    ///
+    /// #### Params
+    ///
+    /// - `connection_id`: The ID of the connection on this chain.
+    /// - `proof_ack`: The proof of the counterparty connection commitment, as stored under the
+    /// [`ConnectionPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_ack` proof is verifiable at.
+    ///
+    /// Emits [`ConnectionOpenConfirm`]
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CONNECTION_NOT_FOUND`]: Connection `connection_id` is not found.
+    /// - [`Error::INVALID_CONNECTION_STATE`]: Connection `connection_id` is in an invalid state.
+    /// This can occur either because the `connection_open_ack/confirm` has already been run for
+    /// this connection, or `connection_open_confirm` is executed after `connection_open_try` but
+    /// not `init`.
+    /// - [`Error::INVALID_PROOF`]: The `proof_ack` proof could not be verified by the light client.
+    ///
+    /// Additionally, the call to the light client may exit with an error that cannot be handled by
+    /// the safe dispatcher. See the cairo documentation for more information on what errors can be
+    /// caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed connection will be committed under
+    /// [`ConnectionPath`].
+    fn connection_open_confirm(
+        ref self: TContractState,
+        connection_id: ConnectionId,
+        proof_ack: Array<felt252>,
+        proof_height: u64,
+    );
+
+    /// Start the channel handshake.
+    ///
+    /// #### Params
+    ///
+    /// - `port_id`: The contract on this chain that implements [`IIbcModule`].
+    /// - `counterparty_port_id`: The port on the counterparty chain that implements the same IBC
+    /// app protocol as `port_id`. Note that this is arbitrary bytes from the perspective of this
+    /// chain, since this is only needed to uniquely identify the port id on the counterparty chain.
+    /// - `connection_id`: The connection on this chain to create the channel over.
+    /// - `version`: The channel version for this protocol.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    ///
+    /// The [`ChannelId`] of the newly created channel is returned upon success.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`ChannelOpenInit`].
+    ///
+    /// #### Panics
+    ///
+    /// This function will panic with a storage read error if the provided connection cannot be
+    /// found.
+    ///
+    /// Additionally, the module may panic during the open init callback. In this case, this
+    /// function will either panic with the full panic message from the failed call, or exit
+    /// directly if the error cannot be caught. See the cairo documentation for more information on
+    /// what errors can be caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed channel will be committed under [`ChannelPath`].
+    fn channel_open_init(
+        ref self: TContractState,
+        port_id: ContractAddress,
+        counterparty_port_id: ByteArray,
+        connection_id: ConnectionId,
+        version: ByteArray,
+        relayer: ContractAddress,
+    ) -> ChannelId;
+
+    /// The second step of the channel handshake, after the `channel_open_init` on the counterpaty
+    /// chain.
+    ///
+    /// #### Params
+    ///
+    /// - `port_id`: The contract on this chain that implements [`IIbcModule`].
+    /// - `connection_id`: The connection on this chain to create the channel over.
+    /// - `counterparty_channel_id`: The ID of the channel on the counterparty chain.
+    /// - `counterparty_port_id`: The port id of the channel on the counterparty chain.
+    /// - `counterparty_version`: The channel version as committed on the counterparty chain.
+    /// - `proof_init`: The proof of the counterparty channel commitment, as stored under the
+    /// [`ChannelPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_init` proof is verifiable at.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    ///
+    /// The [`ChannelId`] of the newly created channel is returned upon success.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`ChannelOpenTry`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::CONNECTION_NOT_FOUND`]: The provided connection does not exist.
+    /// - [`Error::INVALID_CONNECTION_STATE`]: The provided connection is not open
+    /// ([`ConnectionState::Open`]).
+    /// - [`Error::INVALID_PROOF`]: The `proof_init` proof could not be verified by the light
+    /// client.
+    ///
+    /// Additionally, the both the client and module may panic while being called. In this case,
+    /// this function will either panic with the full panic message from the failed call, or exit
+    /// directly if the error cannot be caught. See the cairo documentation for more information on
+    /// what errors can be caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed channel will be committed under [`ChannelPath`].
+    fn channel_open_try(
+        ref self: TContractState,
+        port_id: ContractAddress,
+        connection_id: ConnectionId,
+        counterparty_channel_id: ChannelId,
+        counterparty_port_id: ByteArray,
+        counterparty_version: ByteArray,
+        proof_init: Array<felt252>,
+        proof_height: u64,
+        relayer: ContractAddress,
+    ) -> ChannelId;
+
+    /// The third step of the channel handshake, after the `channel_open_try` on the
+    /// counterparty chain. This is the second and final step of the channel handshake on this
+    /// chain, and the `channel_open_confirm` must still be sent to the counterparty after this
+    /// call to complete the handshake.
+    ///
+    /// #### Params
+    ///
+    /// - `channel_id`: The ID of the channel on this chain, as returned from `channel_open_init`.
+    /// - `counterparty_version`: The channel version as committed on the counterparty chain.
+    /// - `counterparty_channel_id`: The ID of the channel on the counterparty chain.
+    /// - `proof_try`: The proof of the counterparty channel commitment, as stored under the
+    /// [`ChannelPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_try` proof is verifiable at.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    ///
+    /// The [`ChannelId`] of the newly created channel is returned upon success.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`ChannelOpenTry`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::INVALID_CHANNEL_STATE`]: The channel `channel_id` is in an invalid state.
+    /// This can occur either because the `channel_open_ack/confirm` has already been run for
+    /// this channel, or `channel_open_ack` is executed after `channel_open_try` but not
+    /// `init`.
+    /// - [`Error::INVALID_PROOF`]: The `proof_try` proof could not be verified by the light client.
+    ///
+    /// Additionally, the both the client and module may panic while being called. In this case,
+    /// this function will either panic with the full panic message from the failed call, or exit
+    /// directly if the error cannot be caught. See the cairo documentation for more information on
+    /// what errors can be caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed channel will be committed under [`ChannelPath`].
+    fn channel_open_ack(
+        ref self: TContractState,
+        channel_id: ChannelId,
+        counterparty_version: ByteArray,
+        counterparty_channel_id: ChannelId,
+        proof_try: Array<felt252>,
+        proof_height: u64,
+        relayer: ContractAddress,
+    );
+
+    /// The third step of the channel handshake, after the `channel_open_try` on the
+    /// counterparty chain. This is the second and final step of the channel handshake on this
+    /// chain, and the `channel_open_confirm` must still be sent to the counterparty after this
+    /// call to complete the handshake.
+    ///
+    /// #### Params
+    ///
+    /// - `channel_id`: The ID of the channel on this chain, as returned from `channel_open_try`.
+    /// - `proof_ack`: The proof of the counterparty channel commitment, as stored under the
+    /// [`ChannelPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_ack` proof is verifiable at.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    ///
+    /// The [`ChannelId`] of the newly created channel is returned upon success.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`ChannelOpenTry`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::INVALID_CHANNEL_STATE`]: The channel `channel_id` is in an invalid state.
+    /// This can occur either because the `channel_open_ack/confirm` has already been run for
+    /// this channel, or `channel_open_confirm` is executed after `channel_open_try` but not
+    /// `init`.
+    /// - [`Error::INVALID_PROOF`]: The `proof_ack` proof could not be verified by the light client.
+    ///
+    /// Additionally, the both the client and module may panic while being called. In this case,
+    /// this function will either panic with the full panic message from the failed call, or exit
+    /// directly if the error cannot be caught. See the cairo documentation for more information on
+    /// what errors can be caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - The ethabi encoded and keccak hashed channel will be committed under [`ChannelPath`].
+    fn channel_open_confirm(
+        ref self: TContractState,
+        channel_id: ChannelId,
+        proof_ack: Array<felt252>,
+        proof_height: u64,
+        relayer: ContractAddress,
+    );
+
+    /// Send a packet across a channel on this chain.
+    ///
+    /// This is only callable by the module that owns this channel. A user that wants to send a
+    /// packet must interact with that module, which should in turn call this method.
+    ///
+    /// Since packets are identified by their hash, it is up to the protocol to ensure that the
+    /// packet data + metadata is unique.
+    ///
+    /// #### Params
+    ///
+    /// - `channel_id`: The ID of the channel to send the packet over.
+    /// - `timeout_timestamp`: The timeout timestamp for this packet. This must be non-zero.
+    /// - `data`: The packet data. This is opaque bytes from the perspective of the ibc handler, and
+    /// is only intended to be interpreted in the context of the protocol sending the packet.
+    ///
+    /// The constructed [`Packet`] is returned.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`PacketSend`].
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::TIMESTAMP_MUST_BE_SET`]: The timeout timestamp is zero.
+    /// - [`Error::NOT_CHANNEL_OWNER`]: The caller is not the owner of the channel.
+    /// - [`Error::PACKET_ALREADY_EXISTS`]: The provided packet has already been sent.
+    ///
+    /// #### Commitments
+    ///
+    /// - The packet is committed under [`BatchPacketsPath`].
+    fn send_packet(
+        ref self: TContractState,
+        channel_id: ChannelId,
+        timeout_timestamp: Timestamp,
+        data: ByteArray,
+    ) -> Packet;
+
+    /// Receive one or more packets on this chain that were sent from another chain.
+    ///
+    /// #### Params
+    ///
+    /// - `packets`: The list of packets to receive. If this contains more than one packet, they
+    /// will be checked to have been batch committed on the counterparty chain.
+    /// - `relayer_msgs`: Arbitrary data to forward to the protocol per-packet. This must be the
+    /// same length as the `packets` list.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    /// - `proof_send`: The proof that the packets were sent on the source chain, committed under
+    /// the [`BatchPacketsPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_send` proof is verifiable at.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`PacketRecv`] per packet that has not already been received, as well as
+    /// [`WriteAcknowledgement`] per packet per unreceived packet if the module responds with an
+    /// acknowledgement from it's `on_recv_packet` callback.
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::NOT_ENOUGH_PACKETS`]: No packets were provided in the `packets` list.
+    /// - [`Error::INVALID_RELAYER_MSGS`]: The `relayer_msgs` list was not the same length as the
+    /// `packets` list.
+    /// - [`Error::INVALID_PROOF`]: The `proof_send` proof could not be verified by the light
+    /// client.
+    /// - [`Error::BATCH_SAME_CHANNEL_ONLY`]: All of the packets are not for the same channel.
+    /// - [`Error::TIMESTAMP_TIMEOUT`]: One (or more) of the packets has timed out, and cannot be
+    /// received.
+    /// - [`Error::ACKNOWLEDGEMENT_ALREADY_EXISTS`]: One (or more) of the packets has already been
+    /// received.
+    ///
+    /// Additionally, the both the client and module may panic while being called. In this case,
+    /// this function will either panic with the full panic message from the failed call, or exit
+    /// directly if the error cannot be caught. See the cairo documentation for more information on
+    /// what errors can be caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - Each newly received packet is stored under [`BatchReceiptsPath`], either with the
+    /// [`COMMITMENT_MAGIC`] if no acknowledgement is returned from the module, or with the
+    /// acknowledgement commitment otherwise.
+    fn recv_packet(
+        ref self: TContractState,
+        packets: Array<Packet>,
+        relayer_msgs: Array<ByteArray>,
+        relayer: ContractAddress,
+        proof_send: Array<felt252>,
+        proof_height: u64,
+    );
+
+    fn recv_intent_packet(
+        ref self: TContractState,
+        packets: Array<Packet>,
+        market_maker_msgs: Array<ByteArray>,
+        market_maker: ContractAddress,
+    );
+
+
+    fn write_acknowledgement(ref self: TContractState, packet: Packet, acknowledgement: ByteArray);
+
+    /// Receive acknowledgements for packets that were sent from this chain and received on the
+    /// counterparty chain.
+    ///
+    /// #### Params
+    /// - `packets`: The packets to process acknowledgements for. If this contains more than one
+    /// packet, they will be checked to have been batch committed on the counterparty chain.
+    /// - `acknowledgements`: The acknowledgements that were written on the counterparty chain. This
+    /// must be the same length as the `packets` list.
+    /// - `proof_recv`: The proof that the packets were received on the source chain, committed
+    /// under the [`BatchReceiptsPath`] path in the counterparty's commitment store.
+    /// - `proof_height`: The height that the `proof_recv` proof is verifiable at.
+    /// - `relayer`: An arbitrary address provided by the caller. This must not be used for any kind
+    /// of authentication.
+    ///
+    /// #### Events
+    ///
+    /// Emits [`PacketAck`] per packet.
+    ///
+    /// #### Panics
+    ///
+    /// This function may panic with the following well-known error codes:
+    ///
+    /// - [`Error::NOT_ENOUGH_PACKETS`]: No packets were provided in the `packets` list.
+    /// - [`Error::INVALID_ACKNOWLEDGEMENTS`]: The `acknowledgements` list was not the same length
+    /// as the `packets` list.
+    /// - [`Error::INVALID_PROOF`]: The `proof_send` proof could not be verified by the light
+    /// client.
+    /// - [`Error::BATCH_SAME_CHANNEL_ONLY`]: All of the packets are not for the same channel.
+    ///
+    /// Additionally, the both the client and module may panic while being called. In this case,
+    /// this function will either panic with the full panic message from the failed call, or exit
+    /// directly if the error cannot be caught. See the cairo documentation for more information on
+    /// what errors can be caught.
+    ///
+    /// #### Commitments
+    ///
+    /// - Each received packet is marked as acknowledged under the [`BatchPacketsPath`].
+    fn acknowledge_packet(
+        ref self: TContractState,
+        packets: Array<Packet>,
+        acknowledgements: Array<ByteArray>,
+        proof_recv: Array<felt252>,
+        proof_height: u64,
+        relayer: ContractAddress,
+    );
+
+    fn timeout_packet(
+        ref self: TContractState,
+        packet: Packet,
+        proof_not_recv: Array<felt252>,
+        proof_height: u64,
+        relayer: ContractAddress,
+    );
+
+    fn batch_send(ref self: TContractState, packets: Array<Packet>);
+
+    fn batch_acks(ref self: TContractState, packets: Array<Packet>, acks: Array<ByteArray>);
 }
 
 #[starknet::contract]
-mod IbcHandler {
+pub mod IbcHandler {
     use core::keccak::compute_keccak_byte_array;
-    use core::num::traits::{Pow, Zero};
+    use core::num::traits::Zero;
+    use core::panic_with_felt252;
     use starknet::event::EventEmitter;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess,
     };
     use starknet::storage_access::{storage_address_from_base, storage_base_address_from_felt252};
-    use starknet::syscalls::storage_write_syscall;
+    use starknet::syscalls::{storage_read_syscall, storage_write_syscall};
     use starknet::{ContractAddress, SyscallResultTrait, get_execution_info};
+    use crate::app::{IIbcModuleSafeDispatcher, IIbcModuleSafeDispatcherTrait};
     use crate::event::{
         ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
         ChannelOpenTry, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-        ConnectionOpenTry, CreateClient, RegisterClient, UpdateClient,
+        ConnectionOpenTry, CreateClient, PacketAck, PacketRecv, PacketSend, PacketTimeout,
+        RegisterClient, UpdateClient, WriteAck,
     };
     use crate::lightclient::{
-        ConsensusStateUpdate, ILightClient, ILightClientDispatcher, ILightClientSafeDispatcher,
-        ILightClientSafeDispatcherTrait,
-    };
-    use crate::msg::{
-        MsgChannelOpenInit, MsgChannelOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm,
-        MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgRegisterClient,
-        MsgUpdateClient,
+        ConsensusStateUpdate, ILightClientSafeDispatcher, ILightClientSafeDispatcherTrait,
     };
     use crate::path::{
-        ChannelPath, ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait,
+        BatchPacketsPath, BatchPacketsPathImpl, BatchReceiptsPath, BatchReceiptsPathImpl,
+        ChannelPath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait,
     };
     use crate::types::{
-        Channel, ChannelId, ChannelState, ChannelTrait, ClientId, ClientIdImpl, Connection,
-        ConnectionId, ConnectionImpl, ConnectionState, ConnectionTrait,
+        Channel, ChannelId, ChannelIdImpl, ChannelImpl, ChannelState, ClientId, ClientIdImpl,
+        Connection, ConnectionId, ConnectionIdImpl, ConnectionImpl, ConnectionState,
+        ConnectionTrait, PacketTrait, Timestamp, TimestampImpl,
     };
-    use super::{Error, to_byte_array};
+    use super::{ByteArrayTraitExt, Error, Packet, to_byte_array};
+
+    const COMMITMENT_MAGIC: u256 =
+        0x0100000000000000000000000000000000000000000000000000000000000000;
+    const COMMITMENT_MAGIC_ACK: u256 =
+        0x0200000000000000000000000000000000000000000000000000000000000000;
 
     #[storage]
     struct Storage {
@@ -125,8 +743,9 @@ mod IbcHandler {
         next_client_id: ClientId,
         next_connection_id: ConnectionId,
         next_channel_id: ChannelId,
-        connections: Map<ConnectionId, Connection>,
-        channels: Map<ChannelId, Channel>,
+        connections: Map<ConnectionId, Option<Connection>>,
+        channels: Map<ChannelId, Option<Channel>>,
+        channel_owners: Map<ChannelId, ContractAddress>,
     }
 
     #[event]
@@ -145,238 +764,271 @@ mod IbcHandler {
         ChannelOpenConfirm: ChannelOpenConfirm,
         ChannelCloseInit: ChannelCloseInit,
         ChannelCloseConfirm: ChannelCloseConfirm,
+        PacketSend: PacketSend,
+        PacketRecv: PacketRecv,
+        WriteAck: WriteAck,
+        PacketAck: PacketAck,
+        PacketTimeout: PacketTimeout,
     }
 
     #[constructor]
     fn constructor(ref self: ContractState) {
-        let t = ClientIdImpl::new(1);
-        self.next_client_id.write(t);
+        self.next_client_id.write(ClientIdImpl::new(1));
+        self.next_connection_id.write(ConnectionIdImpl::new(1));
+        self.next_channel_id.write(ChannelIdImpl::new(1));
     }
 
     #[abi(embed_v0)]
-    impl IbcHandlerImpl of super::IIbcHandler<ContractState> {
-        fn register_client(ref self: ContractState, msg: MsgRegisterClient) {
-            let key = compute_keccak_byte_array(@msg.client_type);
+    pub impl IbcHandlerImpl of super::IIbcHandler<ContractState> {
+        fn register_client(
+            ref self: ContractState, client_type: ByteArray, client_address: ContractAddress,
+        ) {
+            let key = compute_keccak_byte_array(@client_type);
 
             assert(
                 self.client_type_registry.read(key).is_zero(),
                 Error::CLIENT_TYPE_ALREADY_REGISTERED,
             );
 
-            self.client_type_registry.write(key, msg.client_address);
+            self.client_type_registry.write(key, client_address);
 
-            self
-                .emit(
-                    RegisterClient {
-                        client_type: msg.client_type, client_address: msg.client_address,
-                    },
-                );
+            self.emit(RegisterClient { client_type, client_address });
         }
 
-        fn create_client(ref self: ContractState, msg: MsgCreateClient) -> ClientId {
-            let client_address = self.client_type_impl(@msg.client_type);
+        fn create_client(
+            ref self: ContractState,
+            client_type: ByteArray,
+            client_state_bytes: Array<felt252>,
+            consensus_state_bytes: Array<felt252>,
+            relayer: ContractAddress,
+        ) -> ClientId {
+            // TODO(aeryz): check the client status and revert if its already non-active
+
+            let client_address = self.client_type_impl(@client_type);
 
             let client_id = self.get_next_client_id();
 
-            #[feature("safe_dispatcher")]
             let res = ILightClientSafeDispatcher { contract_address: client_address }
                 .create_client(
                     get_execution_info().caller_address,
                     client_id,
-                    msg.client_state_bytes,
-                    msg.consensus_state_bytes,
-                    msg.relayer,
+                    client_state_bytes,
+                    consensus_state_bytes,
+                    relayer,
                 );
 
             match res {
                 Ok((
                     ConsensusStateUpdate {
-                        client_state_commitment, consensus_state_commitment, height,
+                        consensus_state_commitment, height,
                     }, counterparty_chain_id,
                 )) => {
-                    self.commit(@ClientStatePath { client_id }, client_state_commitment);
                     self
                         .commit(
-                            @ConsensusStatePath { client_id, height }, consensus_state_commitment,
+                            ConsensusStatePath { client_id, height }.key(),
+                            consensus_state_commitment,
                         );
 
                     self.client_impls.write(client_id, client_address);
-                    self.client_types.write(client_id, msg.client_type.clone());
+                    self.client_types.write(client_id, client_type.clone());
 
-                    self
-                        .emit(
-                            CreateClient {
-                                client_type: msg.client_type, client_id, counterparty_chain_id,
-                            },
-                        );
+                    self.emit(CreateClient { client_type, client_id, counterparty_chain_id });
 
                     client_id
                 },
-                Err(err) => { panic!("error when creating client: {err:?}"); },
+                Err(err) => panic!("error creating client: {err:?}"),
             }
         }
 
-        fn update_client(ref self: ContractState, msg: MsgUpdateClient) {
-            #[feature("safe_dispatcher")]
+        fn update_client(
+            ref self: ContractState,
+            client_id: ClientId,
+            client_message: Array<felt252>,
+            relayer: ContractAddress,
+        ) {
+            // TODO(aeryz): check the client status
+
             let res = self
-                .client_impl(msg.client_id)
+                .client_impl(client_id)
                 .update_client(
-                    get_execution_info().caller_address,
-                    msg.client_id,
-                    msg.client_message,
-                    msg.relayer,
+                    get_execution_info().caller_address, client_id, client_message, relayer,
                 );
 
             match res {
                 Ok(ConsensusStateUpdate {
-                    client_state_commitment, consensus_state_commitment, height,
+                    consensus_state_commitment, height,
                 }) => {
+                    // Update or add the commitments.
                     self
                         .commit(
-                            @ClientStatePath { client_id: msg.client_id }, client_state_commitment,
-                        );
-                    self
-                        .commit(
-                            @ConsensusStatePath { client_id: msg.client_id, height },
+                            ConsensusStatePath { client_id, height }.key(),
                             consensus_state_commitment,
                         );
 
-                    self.emit(UpdateClient { client_id: msg.client_id, height });
+                    self.emit(UpdateClient { client_id, height });
                 },
-                Err(err) => { panic!("error when updating client: {err:?}"); },
+                Err(err) => panic!("error updating client: {err:?}"),
             }
         }
-    }
 
-    #[generate_trait]
-    impl IbcHandlerUtilsImpl of IbcHandlerUtilsTrait {
         fn connection_open_init(
-            ref self: ContractState, msg: MsgConnectionOpenInit,
+            ref self: ContractState, client_id: ClientId, counterparty_client_id: ClientId,
         ) -> ConnectionId {
+            // Acts as an assertion that the client exists.
+            let _ = self.client_impl(client_id);
+
+            // We get the next connection ID, and increment it.
             let connection_id = self.get_next_connection_id();
 
             let connection = Connection {
                 state: ConnectionState::Init,
-                client_id: msg.client_id,
-                counterparty_client_id: msg.counterparty_client_id,
+                client_id,
+                counterparty_client_id,
+                // This is `None` because we don't know it yet. It will be filled by the
+                // counterparty chain on `connection_open_ack`.
                 counterparty_connection_id: None,
             };
 
-            self.commit(@ConnectionPath { connection_id }, connection.commit());
+            self.save_and_commit_connection(connection_id, connection);
 
-            self
-                .emit(
-                    ConnectionOpenInit {
-                        connection_id,
-                        client_id: msg.client_id,
-                        counterparty_client_id: msg.counterparty_client_id,
-                    },
-                );
+            self.emit(ConnectionOpenInit { connection_id, client_id, counterparty_client_id });
 
             connection_id
         }
 
-        fn connection_open_try(ref self: ContractState, msg: MsgConnectionOpenTry) -> ConnectionId {
-            let expected_connection = Connection {
-                state: ConnectionState::Init,
-                client_id: msg.counterparty_client_id,
-                counterparty_client_id: msg.client_id,
-                counterparty_connection_id: None,
-            };
-
+        fn connection_open_try(
+            ref self: ContractState,
+            counterparty_client_id: ClientId,
+            counterparty_connection_id: ConnectionId,
+            client_id: ClientId,
+            proof_init: Array<felt252>,
+            proof_height: u64,
+        ) -> ConnectionId {
+            // Verify that the counterparty chain actually performed the `connection_open_init` and
+            // properly did the commitment
             assert(
                 self
                     .verify_connection_state(
-                        msg.client_id,
-                        msg.proof_height,
-                        msg.proof_init,
-                        msg.counterparty_connection_id,
-                        expected_connection,
+                        client_id,
+                        proof_height,
+                        proof_init,
+                        counterparty_connection_id,
+                        // The expected state of the connection after `connection_open_init` is run
+                        // on the counterparty chain. That's the reason why `client_id` and
+                        // `counterparty_client_id` is flipped.
+                        Connection {
+                            state: ConnectionState::Init,
+                            client_id: counterparty_client_id,
+                            counterparty_client_id: client_id,
+                            counterparty_connection_id: None,
+                        },
                     ),
                 Error::INVALID_PROOF,
             );
 
             let connection_id = self.get_next_connection_id();
 
-            let connection = Connection {
-                state: ConnectionState::TryOpen,
-                client_id: msg.client_id,
-                counterparty_client_id: msg.counterparty_client_id,
-                counterparty_connection_id: Some(msg.counterparty_connection_id),
-            };
-
-            self.save_connection(connection_id, connection);
+            self
+                .save_and_commit_connection(
+                    connection_id,
+                    Connection {
+                        state: ConnectionState::TryOpen,
+                        client_id,
+                        counterparty_client_id,
+                        counterparty_connection_id: Some(counterparty_connection_id),
+                    },
+                );
 
             self
                 .emit(
                     ConnectionOpenTry {
                         connection_id,
-                        client_id: msg.client_id,
-                        counterparty_client_id: msg.counterparty_client_id,
-                        counterparty_connection_id: msg.counterparty_connection_id,
+                        client_id,
+                        counterparty_client_id,
+                        counterparty_connection_id,
                     },
                 );
 
             connection_id
         }
 
-        fn connection_open_ack(ref self: ContractState, msg: MsgConnectionOpenAck) {
-            let mut connection = self
-                .ensure_connection_state(msg.connection_id, ConnectionState::Init);
-
-            let expected_connection = Connection {
-                state: ConnectionState::Init,
-                client_id: connection.counterparty_client_id,
-                counterparty_client_id: connection.client_id,
-                counterparty_connection_id: Some(msg.connection_id),
-            };
+        fn connection_open_ack(
+            ref self: ContractState,
+            connection_id: ConnectionId,
+            counterparty_connection_id: ConnectionId,
+            proof_try: Array<felt252>,
+            proof_height: u64,
+        ) {
+            // We are at the ack phase, meaning we should be at the state where only the
+            // `connection_open_init` ran on this chain.
+            let mut connection = self.ensure_connection_state(connection_id, ConnectionState::Init);
 
             assert(
                 self
                     .verify_connection_state(
                         connection.client_id,
-                        msg.proof_height,
-                        msg.proof_try,
-                        msg.counterparty_connection_id,
-                        expected_connection,
+                        proof_height,
+                        proof_try,
+                        counterparty_connection_id,
+                        // The expected state of the connection after `connection_open_try` is run
+                        // on the counterparty chain. That's the reason why `client_id` and
+                        // `counterparty_client_id` is flipped.
+                        Connection {
+                            state: ConnectionState::TryOpen,
+                            client_id: connection.counterparty_client_id,
+                            counterparty_client_id: connection.client_id,
+                            counterparty_connection_id: Some(connection_id),
+                        },
                     ),
                 Error::INVALID_PROOF,
             );
 
+            // We mark this connection as open since it's the last step on this chain but it won't
+            // matter until `confirm` runs on the other chain.
             connection.state = ConnectionState::Open;
+            // We previously didn't have this info in the `init` phase, hence we set it now.
+            connection.counterparty_connection_id = Some(counterparty_connection_id);
 
             self
                 .emit(
                     ConnectionOpenAck {
-                        connection_id: msg.connection_id,
+                        connection_id,
                         client_id: connection.client_id,
                         counterparty_client_id: connection.counterparty_client_id,
-                        counterparty_connection_id: msg.counterparty_connection_id,
+                        counterparty_connection_id,
                     },
                 );
 
-            self.save_connection(msg.connection_id, connection);
+            self.save_and_commit_connection(connection_id, connection);
         }
 
-        fn connection_open_confirm(ref self: ContractState, msg: MsgConnectionOpenConfirm) {
+        fn connection_open_confirm(
+            ref self: ContractState,
+            connection_id: ConnectionId,
+            proof_ack: Array<felt252>,
+            proof_height: u64,
+        ) {
+            // We are at the confirm phase, meaning we should be at the state where only the
+            // `connection_open_try` ran on this chain.
             let mut connection = self
-                .ensure_connection_state(msg.connection_id, ConnectionState::TryOpen);
-
-            let expected_connection = Connection {
-                state: ConnectionState::TryOpen,
-                client_id: connection.counterparty_client_id,
-                counterparty_client_id: connection.client_id,
-                counterparty_connection_id: Some(msg.connection_id),
-            };
+                .ensure_connection_state(connection_id, ConnectionState::TryOpen);
 
             assert(
                 self
                     .verify_connection_state(
                         connection.client_id,
-                        msg.proof_height,
-                        msg.proof_ack,
-                        connection.counterparty_connection_id.expect('must be set'),
-                        expected_connection,
+                        proof_height,
+                        proof_ack,
+                        connection.counterparty_connection_id.unwrap(),
+                        // The expected state of the connection after `connection_open_ack` is run
+                        // on the counterparty chain. That's the reason why `client_id` and
+                        // `counterparty_client_id` is flipped.
+                        Connection {
+                            state: ConnectionState::TryOpen,
+                            client_id: connection.counterparty_client_id,
+                            counterparty_client_id: connection.client_id,
+                            counterparty_connection_id: Some(connection_id),
+                        },
                     ),
                 Error::INVALID_PROOF,
             );
@@ -386,190 +1038,599 @@ mod IbcHandler {
             self
                 .emit(
                     ConnectionOpenConfirm {
-                        connection_id: msg.connection_id,
+                        connection_id,
                         client_id: connection.client_id,
                         counterparty_client_id: connection.counterparty_client_id,
-                        counterparty_connection_id: connection
-                            .counterparty_connection_id
-                            .expect('must be set'),
+                        counterparty_connection_id: connection.counterparty_connection_id.unwrap(),
                     },
                 );
 
-            self.save_connection(msg.connection_id, connection);
+            self.save_and_commit_connection(connection_id, connection);
         }
 
-        // fn channel_open_init(ref self: ContractState, msg: MsgChannelOpenInit) -> ChannelId {
-        //     let channel_id = self.get_next_channel_id();
+        fn channel_open_init(
+            ref self: ContractState,
+            port_id: ContractAddress,
+            counterparty_port_id: ByteArray,
+            connection_id: ConnectionId,
+            version: ByteArray,
+            relayer: ContractAddress,
+        ) -> ChannelId {
+            // assert that the connection exists and is open
+            let _ = self.ensure_connection_state(connection_id, ConnectionState::Open);
 
-        //     let channel = Channel {
-        //         state: ChannelState::Init,
-        //         connection_id: msg.connection_id,
-        //         counterparty_channel_id: None,
-        //         counterparty_port_id: msg.counterparty_port_id.clone(),
-        //         version: msg.version.clone(),
-        //     };
+            let channel_id = self.get_next_channel_id();
 
-        //     self.commit(@ChannelPath { channel_id }, channel.commit());
+            let channel = Channel {
+                state: ChannelState::Init,
+                connection_id,
+                counterparty_channel_id: None,
+                counterparty_port_id: counterparty_port_id.clone(),
+                version: version.clone(),
+            };
 
-        //     self
-        //         .emit(
-        //             ChannelOpenInit {
-        //                 port_id: msg.port_id,
-        //                 channel_id,
-        //                 counterparty_port_id: msg.counterparty_port_id,
-        //                 connection_id: msg.connection_id,
-        //                 version: msg.version,
-        //             },
-        //         );
+            self.save_and_commit_channel(channel_id, channel);
 
-        //     channel_id
-        // }
+            self.channel_owners.write(channel_id, port_id);
 
-        // fn channel_open_try(ref self: ContractState, msg: MsgChannelOpenTry) -> ChannelId {
-        //     let expected_Channel = Channel {
-        //         state: ChannelState::Init,
-        //         connection_id: msg.,
-        //         counterparty_channel_id: (),
-        //         counterparty_port_id: (),
-        //         version: (),
-        //     };
+            let res = IIbcModuleSafeDispatcher { contract_address: port_id }
+                .on_chan_open_init(
+                    get_execution_info().caller_address,
+                    connection_id,
+                    channel_id,
+                    version.clone(),
+                    relayer,
+                );
 
-        //     assert(
-        //         self
-        //             .verify_channel_state(
-        //                 msg.client_id,
-        //                 msg.proof_height,
-        //                 msg.proof_init,
-        //                 msg.counterparty_channel_id,
-        //                 expected_Channel,
-        //             ),
-        //         Error::INVALID_PROOF,
-        //     );
+            match res {
+                Ok(()) => {},
+                Err(err) => panic!("error in channel open init callback: {err:?}"),
+            }
 
-        //     let channel_id = self.get_next_channel_id();
+            self
+                .emit(
+                    ChannelOpenInit {
+                        port_id, channel_id, counterparty_port_id, connection_id, version,
+                    },
+                );
 
-        //     let Channel = Channel {
-        //         state: ChannelState::TryOpen,
-        //         client_id: msg.client_id,
-        //         counterparty_client_id: msg.counterparty_client_id,
-        //         counterparty_channel_id: Some(msg.counterparty_channel_id),
-        //     };
+            channel_id
+        }
 
-        //     self.save_Channel(channel_id, Channel);
+        fn channel_open_try(
+            ref self: ContractState,
+            port_id: ContractAddress,
+            connection_id: ConnectionId,
+            counterparty_channel_id: ChannelId,
+            counterparty_port_id: ByteArray,
+            counterparty_version: ByteArray,
+            proof_init: Array<felt252>,
+            proof_height: u64,
+            relayer: ContractAddress,
+        ) -> ChannelId {
+            let connection = self.ensure_connection_state(connection_id, ConnectionState::Open);
 
-        //     self
-        //         .emit(
-        //             ChannelOpenTry {
-        //                 channel_id,
-        //                 client_id: msg.client_id,
-        //                 counterparty_client_id: msg.counterparty_client_id,
-        //                 counterparty_channel_id: msg.counterparty_channel_id,
-        //             },
-        //         );
+            assert(
+                self
+                    .verify_channel_state(
+                        connection.client_id,
+                        proof_height,
+                        proof_init,
+                        counterparty_channel_id,
+                        Channel {
+                            state: ChannelState::Init,
+                            // connection is open, counterparty connection id will exist; qed;
+                            connection_id: connection.counterparty_connection_id.unwrap(),
+                            counterparty_channel_id: None,
+                            counterparty_port_id: {
+                                let mut bz = "";
+                                bz.append_address(port_id);
+                                bz
+                            },
+                            version: counterparty_version.clone(),
+                        },
+                    ),
+                Error::INVALID_PROOF,
+            );
 
-        //     channel_id
-        // }
+            let channel_id = self.get_next_channel_id();
 
-        // fn channel_open_ack(ref self: ContractState, msg: MsgChannelOpenAck) {
-        //     let mut Channel = self.ensure_channel_state(msg.channel_id, ChannelState::Init);
+            let channel = Channel {
+                state: ChannelState::TryOpen,
+                connection_id,
+                counterparty_channel_id: Some(counterparty_channel_id),
+                counterparty_port_id: counterparty_port_id.clone(),
+                version: counterparty_version.clone(),
+            };
 
-        //     let expected_Channel = Channel {
-        //         state: ChannelState::Init,
-        //         client_id: Channel.counterparty_client_id,
-        //         counterparty_client_id: Channel.client_id,
-        //         counterparty_channel_id: Some(msg.channel_id),
-        //     };
+            self.save_and_commit_channel(channel_id, channel.clone());
 
-        //     assert(
-        //         self
-        //             .verify_channel_state(
-        //                 Channel.client_id,
-        //                 msg.proof_height,
-        //                 msg.proof_try,
-        //                 msg.counterparty_channel_id,
-        //                 expected_Channel,
-        //             ),
-        //         Error::INVALID_PROOF,
-        //     );
+            self.channel_owners.write(channel_id, port_id);
 
-        //     Channel.state = ChannelState::Open;
+            let res = IIbcModuleSafeDispatcher { contract_address: port_id }
+                .on_chan_open_try(
+                    get_execution_info().caller_address,
+                    channel.connection_id,
+                    channel_id,
+                    counterparty_channel_id,
+                    channel.version,
+                    counterparty_version.clone(),
+                    relayer,
+                );
 
-        //     self
-        //         .emit(
-        //             ChannelOpenAck {
-        //                 channel_id: msg.channel_id,
-        //                 client_id: Channel.client_id,
-        //                 counterparty_client_id: Channel.counterparty_client_id,
-        //                 counterparty_channel_id: msg.counterparty_channel_id,
-        //             },
-        //         );
+            match res {
+                Ok(()) => {},
+                Err(err) => panic!("error in channel open try callback: {err:?}"),
+            }
 
-        //     self.save_Channel(msg.channel_id, Channel);
-        // }
+            self
+                .emit(
+                    ChannelOpenTry {
+                        port_id,
+                        channel_id,
+                        counterparty_port_id: channel.counterparty_port_id,
+                        counterparty_channel_id,
+                        connection_id: channel.connection_id,
+                        counterparty_version,
+                    },
+                );
 
-        // fn channel_open_confirm(ref self: ContractState, msg: MsgChannelOpenConfirm) {
-        //     let mut Channel = self.ensure_channel_state(msg.channel_id, ChannelState::TryOpen);
+            channel_id
+        }
 
-        //     let expected_Channel = Channel {
-        //         state: ChannelState::TryOpen,
-        //         client_id: Channel.counterparty_client_id,
-        //         counterparty_client_id: Channel.client_id,
-        //         counterparty_channel_id: Some(msg.channel_id),
-        //     };
+        fn channel_open_ack(
+            ref self: ContractState,
+            channel_id: ChannelId,
+            counterparty_version: ByteArray,
+            counterparty_channel_id: ChannelId,
+            proof_try: Array<felt252>,
+            proof_height: u64,
+            relayer: ContractAddress,
+        ) {
+            let mut channel = self.ensure_channel_state(channel_id, ChannelState::Init);
 
-        //     assert(
-        //         self
-        //             .verify_channel_state(
-        //                 Channel.client_id,
-        //                 msg.proof_height,
-        //                 msg.proof_ack,
-        //                 Channel.counterparty_channel_id.expect('must be set'),
-        //                 expected_Channel,
-        //             ),
-        //         Error::INVALID_PROOF,
-        //     );
+            let connection = self
+                .ensure_connection_state(channel.connection_id, ConnectionState::Open);
 
-        //     Channel.state = ChannelState::Open;
+            let port_id = self.channel_owners.read(channel_id);
 
-        //     self
-        //         .emit(
-        //             ChannelOpenConfirm {
-        //                 channel_id: msg.channel_id,
-        //                 client_id: Channel.client_id,
-        //                 counterparty_client_id: Channel.counterparty_client_id,
-        //                 counterparty_channel_id: Channel
-        //                     .counterparty_channel_id
-        //                     .expect('must be set'),
-        //             },
-        //         );
+            assert!(!port_id.is_zero(), "channel owner is set in init; qed;");
 
-        //     self.save_Channel(msg.channel_id, Channel);
-        // }
+            assert(
+                self
+                    .verify_channel_state(
+                        connection.client_id,
+                        proof_height,
+                        proof_try,
+                        counterparty_channel_id,
+                        Channel {
+                            state: ChannelState::TryOpen,
+                            // connection is open, counterparty connection id will exist; qed;
+                            connection_id: connection.counterparty_connection_id.unwrap(),
+                            counterparty_channel_id: Some(channel_id),
+                            counterparty_port_id: {
+                                let mut bz = "";
+                                bz.append_address(port_id);
+                                bz
+                            },
+                            version: counterparty_version.clone(),
+                        },
+                    ),
+                Error::INVALID_PROOF,
+            );
 
+            channel.state = ChannelState::Open;
+
+            self.save_and_commit_channel(channel_id, channel.clone());
+
+            let res = IIbcModuleSafeDispatcher { contract_address: port_id }
+                .on_chan_open_ack(
+                    get_execution_info().caller_address,
+                    channel_id,
+                    counterparty_channel_id,
+                    counterparty_version,
+                    relayer,
+                );
+
+            match res {
+                Ok(()) => {},
+                Err(err) => panic!("error in channel open ack callback: {err:?}"),
+            }
+
+            self
+                .emit(
+                    ChannelOpenAck {
+                        channel_id,
+                        port_id,
+                        connection_id: channel.connection_id,
+                        counterparty_channel_id: counterparty_channel_id,
+                        counterparty_port_id: channel.counterparty_port_id,
+                    },
+                );
+        }
+
+        fn channel_open_confirm(
+            ref self: ContractState,
+            channel_id: ChannelId,
+            proof_ack: Array<felt252>,
+            proof_height: u64,
+            relayer: ContractAddress,
+        ) {
+            let mut channel = self.ensure_channel_state(channel_id, ChannelState::TryOpen);
+
+            let connection = self
+                .ensure_connection_state(channel.connection_id, ConnectionState::Open);
+
+            let port_id = self.channel_owners.read(channel_id);
+
+            assert!(!port_id.is_zero(), "channel owner is set in init; qed;");
+
+            let counterparty_channel_id = channel
+                .counterparty_channel_id
+                .expect(Error::INVALID_CHANNEL_STATE);
+
+            assert(
+                self
+                    .verify_channel_state(
+                        connection.client_id,
+                        proof_height,
+                        proof_ack,
+                        counterparty_channel_id,
+                        Channel {
+                            state: ChannelState::Open,
+                            // connection is open, counterparty connection id will exist; qed;
+                            connection_id: connection.counterparty_connection_id.unwrap(),
+                            counterparty_channel_id: Some(counterparty_channel_id),
+                            counterparty_port_id: {
+                                let mut bz = "";
+                                bz.append_address(port_id);
+                                bz
+                            },
+                            version: channel.version.clone(),
+                        },
+                    ),
+                Error::INVALID_PROOF,
+            );
+
+            channel.state = ChannelState::Open;
+
+            self.save_and_commit_channel(channel_id, channel.clone());
+
+            let res = IIbcModuleSafeDispatcher { contract_address: port_id }
+                .on_chan_open_confirm(get_execution_info().caller_address, channel_id, relayer);
+
+            match res {
+                Ok(()) => {},
+                Err(err) => panic!("error in channel open confirm callback: {err:?}"),
+            }
+
+            self
+                .emit(
+                    ChannelOpenAck {
+                        channel_id,
+                        port_id,
+                        connection_id: channel.connection_id,
+                        counterparty_channel_id,
+                        counterparty_port_id: channel.counterparty_port_id,
+                    },
+                );
+        }
+
+        fn send_packet(
+            ref self: ContractState,
+            channel_id: ChannelId,
+            timeout_timestamp: Timestamp,
+            data: ByteArray,
+        ) -> Packet {
+            assert(!timeout_timestamp.is_zero(), Error::TIMESTAMP_MUST_BE_SET);
+
+            self.ensure_channel_owner(channel_id);
+
+            let channel = self.ensure_channel_state(channel_id, ChannelState::Open);
+
+            let packet = Packet {
+                source_channel_id: channel_id,
+                destination_channel_id: channel.counterparty_channel_id.unwrap(),
+                data,
+                timeout_timestamp,
+            };
+
+            let packet_hash = packet.hash();
+
+            let commitment_key = BatchPacketsPath { batch_hash: packet_hash }.key();
+
+            assert(self.get_commitment(commitment_key) == 0, Error::PACKET_ALREADY_EXISTS);
+
+            self.commit(commitment_key, COMMITMENT_MAGIC);
+
+            self.emit(PacketSend { channel_id, packet_hash, packet: packet.clone() });
+
+            packet
+        }
+
+        fn recv_packet(
+            ref self: ContractState,
+            packets: Array<Packet>,
+            mut relayer_msgs: Array<ByteArray>,
+            relayer: ContractAddress,
+            proof_send: Array<felt252>,
+            proof_height: u64,
+        ) {
+            assert(packets.len() > 0, Error::NOT_ENOUGH_PACKETS);
+            assert(packets.len() == relayer_msgs.len(), Error::INVALID_RELAYER_MSGS);
+
+            let destination_channel_id = *packets[0].destination_channel_id;
+            let channel = self.ensure_channel_state(destination_channel_id, ChannelState::Open);
+            let connection = self
+                .ensure_connection_state(channel.connection_id, ConnectionState::Open);
+            let proof_commitment_key = BatchPacketsPathImpl::from_packets(packets.span());
+            assert(
+                self
+                    .verify_commitment(
+                        connection.client_id,
+                        proof_height,
+                        proof_send,
+                        proof_commitment_key.key(),
+                        COMMITMENT_MAGIC,
+                    ),
+                Error::INVALID_PROOF,
+            );
+
+            let module = self.lookup_module_by_channel_id(destination_channel_id);
+
+            let execution_info = get_execution_info();
+
+            let current_timestamp = TimestampImpl::from_secs(
+                execution_info.block_info.block_timestamp,
+            );
+
+            for packet in packets {
+                assert(
+                    packet.destination_channel_id == destination_channel_id,
+                    Error::BATCH_SAME_CHANNEL_ONLY,
+                );
+
+                assert(packet.timeout_timestamp > current_timestamp, Error::TIMESTAMP_TIMEOUT);
+
+                let packet_hash = packet.hash();
+
+                let commitment_key = BatchReceiptsPath { batch_hash: packet_hash }.key();
+
+                if !self.mark_packet_as_received(commitment_key) {
+                    let maker_msg = relayer_msgs.pop_front().unwrap();
+
+                    let res = module
+                        .on_recv_packet(
+                            execution_info.caller_address, packet, relayer, maker_msg.clone(),
+                        );
+
+                    let acknowledgement = match res {
+                        Ok(acknowledgement) => acknowledgement,
+                        Err(err) => panic!("error in recv packet callback: {err:?}"),
+                    };
+
+                    if acknowledgement.len().is_zero() {
+                        let commitment = self.get_commitment(commitment_key);
+
+                        assert(
+                            commitment == COMMITMENT_MAGIC, Error::ACKNOWLEDGEMENT_ALREADY_EXISTS,
+                        );
+
+                        self.commit(commitment_key, commit_ack(acknowledgement.clone()));
+
+                        self
+                            .emit(
+                                WriteAck {
+                                    channel_id: destination_channel_id,
+                                    packet_hash,
+                                    acknowledgement,
+                                },
+                            );
+                    }
+
+                    self
+                        .emit(
+                            PacketRecv {
+                                channel_id: destination_channel_id,
+                                packet_hash,
+                                maker: execution_info.caller_address,
+                                maker_msg,
+                            },
+                        );
+                }
+            }
+        }
+
+        fn recv_intent_packet(
+            ref self: ContractState,
+            packets: Array<Packet>,
+            market_maker_msgs: Array<ByteArray>,
+            market_maker: ContractAddress,
+        ) {
+            panic_with_felt252(Error::UNIMPLEMENTED)
+        }
+
+        fn write_acknowledgement(
+            ref self: ContractState, packet: Packet, acknowledgement: ByteArray,
+        ) {
+            panic_with_felt252(Error::UNIMPLEMENTED)
+        }
+
+        fn acknowledge_packet(
+            ref self: ContractState,
+            packets: Array<Packet>,
+            mut acknowledgements: Array<ByteArray>,
+            proof_recv: Array<felt252>,
+            proof_height: u64,
+            relayer: ContractAddress,
+        ) {
+            assert(packets.len() > 0, Error::NOT_ENOUGH_PACKETS);
+            assert(packets.len() == acknowledgements.len(), Error::INVALID_ACKNOWLEDGEMENTS);
+            let source_channel_id = *packets[0].source_channel_id;
+            let channel = self.ensure_channel_state(source_channel_id, ChannelState::Open);
+            let connection = self
+                .ensure_connection_state(channel.connection_id, ConnectionState::Open);
+            let proof_commitment_key = BatchReceiptsPathImpl::from_packets(packets.span());
+
+            assert(
+                self
+                    .verify_commitment(
+                        connection.client_id,
+                        proof_height,
+                        proof_recv,
+                        proof_commitment_key.key(),
+                        commit_acks(acknowledgements.span()),
+                    ),
+                Error::INVALID_PROOF,
+            );
+
+            let module = self.lookup_module_by_channel_id(source_channel_id);
+
+            let execution_info = get_execution_info();
+
+            for packet in packets {
+                assert(
+                    packet.source_channel_id == source_channel_id, Error::BATCH_SAME_CHANNEL_ONLY,
+                );
+
+                let packet_hash = packet.hash();
+
+                self.mark_packet_as_acknowledged(packet_hash);
+
+                let acknowledgement = acknowledgements.pop_front().unwrap();
+
+                let res = module
+                    .on_acknowledge_packet(
+                        execution_info.caller_address, packet, acknowledgement.clone(), relayer,
+                    );
+
+                match res {
+                    Ok(()) => {},
+                    Err(err) => panic!("error in acknowledge packet callback: {err:?}"),
+                }
+
+                self
+                    .emit(
+                        PacketAck {
+                            channel_id: source_channel_id,
+                            packet_hash,
+                            maker: execution_info.caller_address,
+                            acknowledgement,
+                        },
+                    );
+            }
+        }
+
+        fn timeout_packet(
+            ref self: ContractState,
+            packet: Packet,
+            proof_not_recv: Array<felt252>,
+            proof_height: u64,
+            relayer: ContractAddress,
+        ) {
+            let source_channel_id = packet.source_channel_id;
+            let channel = self.ensure_channel_state(source_channel_id, ChannelState::Open);
+            let connection = self
+                .ensure_connection_state(channel.connection_id, ConnectionState::Open);
+            let client = self.client_impl(connection.client_id);
+
+            let proof_timestamp =
+                match client.get_timestamp_at_height(connection.client_id, proof_height) {
+                Ok(proof_timestamp) => proof_timestamp,
+                Err(err) => panic!("error querying timestamp at height: {err:?}"),
+            };
+
+            assert(
+                packet.timeout_timestamp >= proof_timestamp, Error::TIMEOUT_TIMESTAMP_NOT_REACHED,
+            );
+
+            // TODO: Figure out how we want to handle this
+            // if (proofTimestamp == 0) {
+            //     revert IBCErrors.ErrLatestTimestampNotFound();
+            // }
+
+            let packet_hash = packet.hash();
+
+            let commitment_key = BatchReceiptsPath { batch_hash: packet_hash }.key();
+
+            assert(
+                client
+                    .verify_non_membership(
+                        connection.client_id,
+                        proof_height,
+                        proof_not_recv,
+                        to_byte_array(commitment_key),
+                    )
+                    .unwrap_or(false),
+                Error::INVALID_PROOF,
+            );
+
+            let module = self.lookup_module_by_channel_id(source_channel_id);
+
+            let res = module
+                .on_timeout_packet(get_execution_info().caller_address, packet, relayer);
+
+            match res {
+                Ok(()) => {},
+                Err(err) => panic!("error in timeout packet callback: {err:?}"),
+            }
+
+            self.emit(PacketTimeout { channel_id: source_channel_id, packet_hash, maker: relayer });
+        }
+
+        fn batch_send(ref self: ContractState, packets: Array<Packet>) {
+            panic_with_felt252(Error::UNIMPLEMENTED)
+        }
+
+
+        fn batch_acks(ref self: ContractState, packets: Array<Packet>, acks: Array<ByteArray>) {
+            panic_with_felt252(Error::UNIMPLEMENTED)
+        }
+    }
+
+    #[generate_trait]
+    impl IbcHandlerUtilsImpl of IbcHandlerUtilsTrait {
         fn ensure_connection_state(
             self: @ContractState, connection_id: ConnectionId, state: ConnectionState,
         ) -> Connection {
-            let connection = self.connections.read(connection_id);
-            assert(connection.state != state, Error::INVALID_CONNECTION_STATE);
+            let connection = self
+                .connections
+                .read(connection_id)
+                .expect(Error::CONNECTION_NOT_FOUND);
+            assert(connection.state == state, Error::INVALID_CONNECTION_STATE);
             connection
         }
 
-        fn save_connection(
+        fn ensure_channel_state(
+            self: @ContractState, channel_id: ChannelId, state: ChannelState,
+        ) -> Channel {
+            let channel = self.channels.read(channel_id).expect(Error::CHANNEL_NOT_FOUND);
+            assert(channel.state == state, Error::INVALID_CHANNEL_STATE);
+            channel
+        }
+
+        fn save_and_commit_connection(
             ref self: ContractState, connection_id: ConnectionId, connection: Connection,
         ) {
-            self.commit(@ConnectionPath { connection_id }, connection.commit());
-            self.connections.write(connection_id, connection);
+            self.commit(ConnectionPath { connection_id }.key(), connection.commit());
+            self.connections.write(connection_id, Some(connection));
+        }
+
+        fn save_and_commit_channel(
+            ref self: ContractState, channel_id: ChannelId, channel: Channel,
+        ) {
+            self.commit(ChannelPath { channel_id }.key(), channel.commit());
+            self.channels.write(channel_id, Some(channel));
         }
 
         fn verify_connection_state(
             self: @ContractState,
             client_id: ClientId,
             height: u64,
-            proof: ByteArray,
+            proof: Array<felt252>,
             connection_id: ConnectionId,
             counterparty_connection: Connection,
         ) -> bool {
-            #[feature("safe_dispatcher")]
             self
                 .client_impl(client_id)
                 .verify_membership(
@@ -582,6 +1643,41 @@ mod IbcHandler {
                 .unwrap_or(false)
         }
 
+        fn verify_channel_state(
+            self: @ContractState,
+            client_id: ClientId,
+            height: u64,
+            proof: Array<felt252>,
+            channel_id: ChannelId,
+            counterparty_channel: Channel,
+        ) -> bool {
+            self
+                .client_impl(client_id)
+                .verify_membership(
+                    client_id,
+                    height,
+                    proof,
+                    to_byte_array(ChannelPath { channel_id }.key()),
+                    to_byte_array(counterparty_channel.commit()),
+                )
+                .unwrap_or(false)
+        }
+
+        fn verify_commitment(
+            self: @ContractState,
+            client_id: ClientId,
+            height: u64,
+            proof: Array<felt252>,
+            path: u256,
+            commitment: u256,
+        ) -> bool {
+            self
+                .client_impl(client_id)
+                .verify_membership(
+                    client_id, height, proof, to_byte_array(path), to_byte_array(commitment),
+                )
+                .unwrap_or(false)
+        }
 
         fn get_next_client_id(ref self: ContractState) -> ClientId {
             let client_id = self.next_client_id.read();
@@ -618,21 +1714,89 @@ mod IbcHandler {
             ILightClientSafeDispatcher { contract_address }
         }
 
-        fn commit<T, +StorePathKeyTrait<T>>(ref self: ContractState, key: @T, value: u256) {
+        fn ensure_channel_owner(self: @ContractState, channel_id: ChannelId) {
+            assert(
+                get_execution_info().caller_address == self.channel_owners.read(channel_id),
+                Error::NOT_CHANNEL_OWNER,
+            )
+        }
+
+        fn lookup_module_by_channel_id(
+            self: @ContractState, channel_id: ChannelId,
+        ) -> IIbcModuleSafeDispatcher {
+            let contract_address = self.channel_owners.read(channel_id);
+
+            assert(!contract_address.is_zero(), Error::CHANNEL_NOT_FOUND);
+
+            IIbcModuleSafeDispatcher { contract_address }
+        }
+
+        fn mark_packet_as_received(ref self: ContractState, commitment_key: u256) -> bool {
+            let commitment = self.get_commitment(commitment_key);
+
+            let already_received = commitment != 0;
+
+            if !already_received {
+                self.commit(commitment_key, COMMITMENT_MAGIC);
+            }
+
+            already_received
+        }
+
+        fn mark_packet_as_acknowledged(ref self: ContractState, packet_hash: u256) {
+            let commitment_key = BatchPacketsPath { batch_hash: packet_hash }.key();
+            let commitment = self.get_commitment(commitment_key);
+
+            assert(commitment != COMMITMENT_MAGIC_ACK, Error::PACKET_ALREADY_ACKNOWLEDGED);
+            assert(commitment == COMMITMENT_MAGIC, Error::PACKET_COMMITMENT_NOT_FOUND);
+
+            self.commit(commitment_key, COMMITMENT_MAGIC_ACK);
+        }
+
+        fn commit(ref self: ContractState, key: u256, value: u256) {
             // https://docs.starknet.io/learn/protocol/cryptography#starknet-keccak
             let truncate = |n: u256| -> felt252 {
                 // u250(u256::MAX);
                 let mask = 0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256;
-                (n ^ mask).try_into().expect('value is <= 250 bits')
+                (n & mask).try_into().expect('value is <= 250 bits')
             };
 
             storage_write_syscall(
                 0,
-                storage_address_from_base(storage_base_address_from_felt252(truncate(key.key()))),
+                storage_address_from_base(storage_base_address_from_felt252(truncate(key))),
                 truncate(value),
             )
                 .unwrap_syscall();
         }
+
+        fn get_commitment(self: @ContractState, key: u256) -> u256 {
+            // https://docs.starknet.io/learn/protocol/cryptography#starknet-keccak
+            let truncate = |n: u256| -> felt252 {
+                // u250(u256::MAX);
+                let mask = 0x3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256;
+                (n & mask).try_into().expect('value is <= 250 bits')
+            };
+
+            storage_read_syscall(
+                0, storage_address_from_base(storage_base_address_from_felt252(truncate(key))),
+            )
+                .unwrap_syscall()
+                .into()
+        }
+    }
+
+    fn commit_ack(ack: ByteArray) -> u256 {
+        commit_acks([ack].span())
+    }
+
+    fn commit_acks(acks: Span<ByteArray>) -> u256 {
+        // TODO: Implement (ethabi(bytes[]))
+        merge_ack(compute_keccak_byte_array(@""))
+    }
+
+    fn merge_ack(ack: u256) -> u256 {
+        COMMITMENT_MAGIC
+            | (ack & 0x00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
     }
 }
 

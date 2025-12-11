@@ -59,11 +59,13 @@
 // TITLE.
 
 use alexandria_bytes::BytesTrait;
+use alexandria_bytes::byte_array_ext::{ByteArrayTraitExt, ByteArrayTraitExtImpl};
 use alexandria_encoding::sol_abi::encode::SolAbiEncodeU8;
 use alexandria_evm::encoder::{AbiEncodeTrait, EVMCalldata};
 use alexandria_evm::evm_enum::EVMTypes;
 use core::hash::{Hash, HashStateTrait};
 use core::keccak::compute_keccak_byte_array;
+use core::num::traits::Zero;
 
 pub trait Id<T, +Copy<T>> {
     fn new(id: NonZero<u32>) -> T;
@@ -73,7 +75,38 @@ pub trait Id<T, +Copy<T>> {
     fn raw(self: @T) -> u32;
 }
 
-#[derive(Copy, Drop, Serde, starknet::Store)]
+/// Chain identifier with the max length of 31.
+// TODO: Use bytes31
+#[derive(Debug, Drop, starknet::Store, PartialEq)]
+pub struct ChainId {
+    id: ByteArray,
+}
+
+impl ChainIdSerde of Serde<ChainId> {
+    fn serialize(self: @ChainId, ref output: Array<felt252>) {
+        self.id.serialize(ref output);
+    }
+
+    fn deserialize(ref serialized: Span<felt252>) -> Option<ChainId> {
+        let id: ByteArray = Serde::deserialize(ref serialized)?;
+
+        ChainIdImpl::try_from_bytes(id)
+    }
+}
+
+#[generate_trait]
+pub impl ChainIdImpl of ChainIdTrait {
+    fn try_from_bytes(id: ByteArray) -> Option<ChainId> {
+        if id.len() > 31 {
+            None
+        } else {
+            Some(ChainId { id })
+        }
+    }
+}
+
+
+#[derive(Debug, Copy, Drop, Serde, starknet::Store, PartialEq)]
 pub struct ClientId {
     raw: NonZero<u32>,
 }
@@ -99,7 +132,7 @@ impl ClientIdHashImpl<S, +HashStateTrait<S>, +Drop<S>> of Hash<ClientId, S> {
     }
 }
 
-#[derive(Copy, Drop, Serde, starknet::Store)]
+#[derive(Debug, Copy, Drop, PartialEq, Serde, starknet::Store)]
 pub struct ConnectionId {
     raw: NonZero<u32>,
 }
@@ -125,7 +158,7 @@ impl ConnectionIdHashImpl<S, +HashStateTrait<S>, +Drop<S>> of Hash<ConnectionId,
     }
 }
 
-#[derive(Copy, Drop, Serde, starknet::Store)]
+#[derive(Debug, Copy, Drop, PartialEq, Serde, starknet::Store)]
 pub struct ChannelId {
     raw: NonZero<u32>,
 }
@@ -151,7 +184,7 @@ impl ChannelIdHashImpl<S, +HashStateTrait<S>, +Drop<S>> of Hash<ChannelId, S> {
     }
 }
 
-#[derive(Drop, Serde, starknet::Store)]
+#[derive(Debug, Drop, Serde, starknet::Store, PartialEq)]
 pub struct Connection {
     pub state: ConnectionState,
     pub client_id: ClientId,
@@ -176,7 +209,7 @@ pub impl ConnectionImpl of ConnectionTrait {
     }
 }
 
-#[derive(Drop, PartialEq, Clone, Copy, Serde, starknet::Store)]
+#[derive(Debug, Drop, PartialEq, Copy, Serde, starknet::Store)]
 #[allow(starknet::store_no_default_variant)] // uninitialized is not a valid state
 pub enum ConnectionState {
     Init,
@@ -195,7 +228,7 @@ pub impl ConnectionStateImpl of ConnectionStateTrait {
     }
 }
 
-#[derive(Drop, Serde, starknet::Store)]
+#[derive(Drop, Serde, starknet::Store, Clone)]
 pub struct Channel {
     pub state: ChannelState,
     pub connection_id: ConnectionId,
@@ -243,7 +276,7 @@ pub impl ChannelImpl of ChannelTrait {
     }
 }
 
-#[derive(Drop, Serde, starknet::Store)]
+#[derive(Debug, Drop, PartialEq, Copy, Serde, starknet::Store)]
 #[allow(starknet::store_no_default_variant)] // uninitialized is not a valid state
 pub enum ChannelState {
     Init,
@@ -264,7 +297,7 @@ pub impl ChannelStateImpl of ChannelStateTrait {
     }
 }
 
-#[derive(Drop, Serde)]
+#[derive(Debug, Drop, PartialEq, Clone, Serde)]
 pub struct Packet {
     pub source_channel_id: ChannelId,
     pub destination_channel_id: ChannelId,
@@ -273,7 +306,60 @@ pub struct Packet {
     pub timeout_timestamp: Timestamp,
 }
 
-#[derive(Drop, Serde)]
+#[generate_trait]
+pub impl PacketImpl of PacketTrait {
+    fn encode(self: @Packet) -> ByteArray {
+        let mut buf = ByteArrayTraitExtImpl::new_empty();
+        buf.append_u256(self.source_channel_id.raw().into());
+        buf.append_u256(self.destination_channel_id.raw().into());
+        buf.append_u256(0x20 * 4);
+        buf.append_u256((*self.timeout_timestamp.raw).into());
+        buf.append_u256(self.data.len().into());
+        buf.append(self.data);
+        buf
+    }
+
+    fn hash(self: @Packet) -> u256 {
+        compute_keccak_byte_array(@self.encode())
+    }
+}
+
+#[derive(Debug, Drop, PartialEq, Copy, Serde, starknet::Store)]
 pub struct Timestamp {
     raw: u64,
+}
+
+#[generate_trait]
+pub impl TimestampImpl of TimestampTrait {
+    fn from_secs(secs: u64) -> Timestamp {
+        Timestamp { raw: secs * 1_000_000_000 }
+    }
+
+    fn from_nanos(nanos: u64) -> Timestamp {
+        Timestamp { raw: nanos }
+    }
+
+    fn nanos(self: @Timestamp) -> u64 {
+        *self.raw
+    }
+}
+
+pub impl TimestampPartialOrd of PartialOrd<Timestamp> {
+    fn lt(lhs: Timestamp, rhs: Timestamp) -> bool {
+        lhs.raw < rhs.raw
+    }
+}
+
+impl TimestampZero of core::num::traits::Zero<Timestamp> {
+    fn zero() -> Timestamp {
+        Timestamp { raw: 0 }
+    }
+
+    fn is_zero(self: @Timestamp) -> bool {
+        self.raw.is_zero()
+    }
+
+    fn is_non_zero(self: @Timestamp) -> bool {
+        self.raw.is_non_zero()
+    }
 }

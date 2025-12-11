@@ -16,7 +16,7 @@ starknet            = { workspace = true }
 
 [dev-dependencies]
 assert_macros = "2.13.1"
-snforge_std   = "0.51.1"
+snforge_std   = { workspace = true }
 
 [[target.starknet-contract]]
 sierra = true
