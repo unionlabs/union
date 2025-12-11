@@ -58,6 +58,56 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-pub struct ClientState {}
+#[derive(Debug, Drop, Serde, starknet::Store)]
+pub struct ClientState {
+    // TODO(aeryz): does this needs to be bytes31 or felt252 works too? (it probably works)
+    pub chain_id: felt252,
+    pub trusting_period: u64,
+    pub max_clock_drift: u64,
+    /// This field only ever has one of two values:
+    ///
+    /// - 0: client is not frozen
+    /// - 1: client is frozen
+    ///
+    /// Both the field name and type match the ICS07 Tendermint implementation.
+    ///
+    /// Note that the above bounds are not enforced at the type level, which also matches the
+    /// Tendermint specification.
+    pub frozen_height: u64,
+    pub latest_height: u64,
+    /// For clients that connect to the cosmwasm implementation of ibc-union, the contract address
+    /// of the IBC host is required in order to verify storage proofs. For clients connecting to IBC
+    /// classic, this field is not required and can be ignored during client creation and migration.
+    pub contract_address: u256,
+}
 
-pub struct ConsensusState {}
+#[derive(Debug, Drop, Serde, starknet::Store)]
+pub struct ConsensusState {
+    /// Block timestamp (in nanoseconds)
+    pub timestamp: u64,
+    /// App hash from the block header
+    pub app_hash: u256,
+    /// Next validators from the block header
+    pub next_validators_hash: u256,
+}
+
+#[derive(Debug, Drop, Serde)]
+pub struct Header {
+    pub signed_header: SignedHeader,
+    pub trusted_height: u64,
+    pub zkp: ZeroKnowledgeProof,
+}
+
+
+#[derive(Debug, Drop, Serde)]
+pub struct SignedHeader {
+    pub height: u64,
+    pub secs: u64,
+    pub nanos: u64,
+    pub validators_hash: u256,
+    pub next_validators_hash: u256,
+    pub app_hash: u256,
+}
+
+#[derive(Debug, Drop, Serde)]
+pub struct ZeroKnowledgeProof {}

@@ -63,12 +63,24 @@ pub mod types;
 
 #[starknet::contract]
 mod CometblsLightClient {
+    use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
+    use alexandria_math::opt_math::OptBitShift;
     use ibc::lightclient::ConsensusStateUpdate;
-    use ibc::types::ClientId;
-    use starknet::ContractAddress;
+    use ibc::types::{ClientId, Timestamp, TimestampImpl};
+    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry};
+    use starknet::{ContractAddress, get_execution_info};
+    use crate::CometblsLightClient;
+    use crate::types::{ClientState, ConsensusState, Header};
+
+    pub const CLIENT_STATE_NOT_FOUND: felt252 = 'CLIENT_STATE_NOT_FOUND';
+    pub const CONSENSUS_STATE_NOT_FOUND: felt252 = 'CONSENSUS_STATE_NOT_FOUND';
+    pub const INVALID_HEADER: felt252 = 'INVALID_HEADER';
 
     #[storage]
-    struct Storage {}
+    struct Storage {
+        client_states: Map<ClientId, Option<ClientState>>,
+        consensus_states: Map<ClientId, Map<u64, Option<ConsensusState>>>,
+    }
 
     #[abi(embed_v0)]
     impl CometblsLightClientIbcImpl of ibc::lightclient::ILightClient<ContractState> {
@@ -76,17 +88,30 @@ mod CometblsLightClient {
             ref self: ContractState,
             caller: ContractAddress,
             client_id: ClientId,
-            client_state_bytes: ByteArray,
-            consensus_state_bytes: ByteArray,
+            client_state_bytes: Array<felt252>,
+            consensus_state_bytes: Array<felt252>,
             relayer: ContractAddress,
         ) -> (ConsensusStateUpdate, ByteArray) {
+            let mut client_state_bytes = client_state_bytes.span();
+            let client_state: ClientState = Serde::deserialize(ref client_state_bytes).unwrap();
+            let mut consensus_state_bytes = consensus_state_bytes.span();
+            let consensus_state: ConsensusState = Serde::deserialize(ref consensus_state_bytes)
+                .unwrap();
+
+            assert!(
+                client_state.latest_height != 0 && consensus_state.timestamp != 0,
+                "invalid initial client/consensus state",
+            );
+
+            let counterparty_chain_id = chain_id_to_string(client_state.chain_id);
+            let height = client_state.latest_height;
+
+            self.client_states.write(client_id, Some(client_state));
+            self.consensus_states.entry(client_id).write(height, Some(consensus_state));
+
             (
-                ConsensusStateUpdate {
-                    client_state_commitment: Default::default(),
-                    consensus_state_commitment: Default::default(),
-                    height: 10,
-                },
-                Default::default(),
+                ConsensusStateUpdate { consensus_state_commitment: Default::default(), height },
+                counterparty_chain_id,
             )
         }
 
@@ -94,13 +119,48 @@ mod CometblsLightClient {
             ref self: ContractState,
             caller: ContractAddress,
             client_id: ClientId,
-            client_message: ByteArray,
+            client_message: Array<felt252>,
             relayer: ContractAddress,
         ) -> ConsensusStateUpdate {
+            let mut client_state = self
+                .client_states
+                .read(client_id)
+                .expect(CLIENT_STATE_NOT_FOUND);
+            assert!(client_state.frozen_height == 0, "frozen client");
+
+            let mut client_message = client_message.span();
+            let header: Header = Serde::deserialize(ref client_message).expect(INVALID_HEADER);
+
+            let mut consensus_state_entry = self.consensus_states.entry(client_id);
+            let consensus_state = consensus_state_entry
+                .read(header.trusted_height)
+                .expect(CONSENSUS_STATE_NOT_FOUND);
+
+            let (untrusted_height_number, untrusted_timestamp) = verify_header(
+                @header, @consensus_state, @client_state,
+            );
+
+            if untrusted_height_number > client_state.latest_height {
+                client_state.latest_height = untrusted_height_number;
+                self.client_states.write(client_id, Some(client_state));
+            }
+
+            // TODO(aeryz): check for misbehaviour
+            consensus_state_entry
+                .write(
+                    untrusted_height_number,
+                    Some(
+                        ConsensusState {
+                            timestamp: untrusted_timestamp,
+                            app_hash: header.signed_header.app_hash,
+                            next_validators_hash: header.signed_header.next_validators_hash,
+                        },
+                    ),
+                );
+
+            // TODO(aeryz): fix the commitment
             ConsensusStateUpdate {
-                client_state_commitment: Default::default(),
-                consensus_state_commitment: Default::default(),
-                height: 10,
+                consensus_state_commitment: Default::default(), height: untrusted_height_number,
             }
         }
 
@@ -114,5 +174,98 @@ mod CometblsLightClient {
         ) -> bool {
             false
         }
+        fn verify_non_membership(
+            self: @ContractState,
+            client_id: ClientId,
+            height: u64,
+            proof: ByteArray,
+            key: ByteArray,
+        ) -> bool {
+            false
+        }
+
+        fn get_timestamp_at_height(self: @ContractState, height: u64) -> Timestamp {
+            TimestampImpl::from_secs(0)
+        }
+
+        fn get_latest_height(self: @ContractState, client_id: ClientId) -> u64 {
+            0
+        }
+    }
+
+    fn verify_header(
+        header: @Header, consensus_state: @ConsensusState, client_state: @ClientState,
+    ) -> (u64, u64) {
+        let untrusted_height_number = *header.signed_header.height;
+        let trusted_height_number = *header.trusted_height;
+
+        // revert CometblsClientLib.ErrUntrustedHeightLTETrustedHeight();
+        assert!(untrusted_height_number > trusted_height_number, "untrusted height lte");
+
+        let trusted_timestamp = *consensus_state.timestamp;
+        // Normalize to nanosecond because ibc recvPacket expects nanos...
+        let untrusted_timestamp = *header.signed_header.secs * 1_000_000_000
+            + *header.signed_header.nanos;
+
+        // revert CometblsClientLib.ErrUntrustedTimestampLTETrustedTimestamp();
+        assert!(untrusted_timestamp > trusted_timestamp, "err")
+
+        let current_time = get_execution_info().block_info.block_timestamp * 1_000_000_000;
+
+        assert!(
+            is_expired(trusted_timestamp, *client_state.trusting_period, current_time), "expired",
+        );
+
+        let max_clock_drift = current_time + *client_state.max_clock_drift;
+        assert!(untrusted_timestamp < max_clock_drift, "max clock drift exceeded");
+
+        // We want to verify that 1/3 of trusted valset & 2/3 of untrusted valset signed.
+        // In adjacent verification, trusted vals = untrusted vals.
+        // In non adjacent verification, untrusted vals are coming from the untrusted header.
+        let trusted_validators_hash = consensus_state.next_validators_hash;
+        if untrusted_height_number == trusted_height_number + 1 {
+            assert!(
+                header.signed_header.validators_hash == trusted_validators_hash,
+                "invalid untrusted valhash",
+            );
+        }
+        // TODO(aeryz): verify_zkp
+
+        (untrusted_height_number, untrusted_timestamp)
+    }
+
+    fn is_expired(header_time: u64, trusting_period: u64, current_time: u64) -> bool {
+        current_time > (header_time + trusting_period)
+    }
+
+    pub fn chain_id_to_string(source: felt252) -> ByteArray {
+        let mut source_u256: u256 = source.into();
+
+        let mut chain_id = Default::default();
+
+        let mut i = 0;
+        while OptBitShift::shr(source_u256, i * 8) != 0 {
+            i += 1;
+        }
+
+        chain_id.append_word(source, i.into());
+
+        chain_id
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CometblsLightClient::*;
+    #[test]
+    fn test_chain_id_to_string() {
+        assert_eq!(chain_id_to_string('cometbls'), "cometbls");
+        assert_eq!(chain_id_to_string('cometbls-aseldfleasndf'), "cometbls-aseldfleasndf");
+        assert_eq!(
+            chain_id_to_string('3232323232323232323232323232323'),
+            "3232323232323232323232323232323",
+        );
+        assert_eq!(chain_id_to_string('1'), "1");
+        assert_eq!(chain_id_to_string(''), "");
     }
 }

@@ -63,7 +63,6 @@ use crate::types::{ClientId, Timestamp};
 
 #[derive(Drop, Serde)]
 pub struct ConsensusStateUpdate {
-    pub client_state_commitment: u256,
     pub consensus_state_commitment: u256,
     pub height: u64,
 }
@@ -97,8 +96,8 @@ pub trait ILightClient<TContractState> {
         ref self: TContractState,
         caller: ContractAddress,
         client_id: ClientId,
-        client_state_bytes: ByteArray,
-        consensus_state_bytes: ByteArray,
+        client_state_bytes: Array<felt252>,
+        consensus_state_bytes: Array<felt252>,
         relayer: ContractAddress,
     ) -> (ConsensusStateUpdate, ByteArray);
 
@@ -120,7 +119,7 @@ pub trait ILightClient<TContractState> {
         ref self: TContractState,
         caller: ContractAddress,
         client_id: ClientId,
-        client_message: ByteArray,
+        client_message: Array<felt252>,
         relayer: ContractAddress,
     ) -> ConsensusStateUpdate;
 

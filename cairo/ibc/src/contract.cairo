@@ -151,8 +151,8 @@ pub trait IIbcHandler<TContractState> {
     fn create_client(
         ref self: TContractState,
         client_type: ByteArray,
-        client_state_bytes: ByteArray,
-        consensus_state_bytes: ByteArray,
+        client_state_bytes: Array<felt252>,
+        consensus_state_bytes: Array<felt252>,
         relayer: ContractAddress,
     ) -> ClientId;
 
@@ -187,7 +187,7 @@ pub trait IIbcHandler<TContractState> {
     fn update_client(
         ref self: TContractState,
         client_id: ClientId,
-        client_message: ByteArray,
+        client_message: Array<felt252>,
         relayer: ContractAddress,
     );
 
@@ -702,7 +702,6 @@ pub mod IbcHandler {
     use core::keccak::compute_keccak_byte_array;
     use core::num::traits::Zero;
     use core::panic_with_felt252;
-    use snforge_std::cheatcodes::execution_info;
     use starknet::event::EventEmitter;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
@@ -801,8 +800,8 @@ pub mod IbcHandler {
         fn create_client(
             ref self: ContractState,
             client_type: ByteArray,
-            client_state_bytes: ByteArray,
-            consensus_state_bytes: ByteArray,
+            client_state_bytes: Array<felt252>,
+            consensus_state_bytes: Array<felt252>,
             relayer: ContractAddress,
         ) -> ClientId {
             // TODO(aeryz): check the client status and revert if its already non-active
@@ -823,13 +822,9 @@ pub mod IbcHandler {
             match res {
                 Ok((
                     ConsensusStateUpdate {
-                        client_state_commitment, consensus_state_commitment, height,
+                        consensus_state_commitment, height,
                     }, counterparty_chain_id,
                 )) => {
-                    // Note that the light clients define how the commitment should be since the
-                    // commitments are verified on the counterparty chains which might not natively
-                    // support certain encoding schemes.
-                    self.commit(ClientStatePath { client_id }.key(), client_state_commitment);
                     self
                         .commit(
                             ConsensusStatePath { client_id, height }.key(),
@@ -850,7 +845,7 @@ pub mod IbcHandler {
         fn update_client(
             ref self: ContractState,
             client_id: ClientId,
-            client_message: ByteArray,
+            client_message: Array<felt252>,
             relayer: ContractAddress,
         ) {
             // TODO(aeryz): check the client status
@@ -863,10 +858,9 @@ pub mod IbcHandler {
 
             match res {
                 Ok(ConsensusStateUpdate {
-                    client_state_commitment, consensus_state_commitment, height,
+                    consensus_state_commitment, height,
                 }) => {
                     // Update or add the commitments.
-                    self.commit(ClientStatePath { client_id }.key(), client_state_commitment);
                     self
                         .commit(
                             ConsensusStatePath { client_id, height }.key(),
@@ -1485,7 +1479,7 @@ pub mod IbcHandler {
                     .verify_commitment(
                         connection.client_id,
                         proof_height,
-                        proof,
+                        proof_recv,
                         proof_commitment_key.key(),
                         commit_acks(acknowledgements.span()),
                     ),
@@ -1738,7 +1732,7 @@ pub mod IbcHandler {
             IIbcModuleSafeDispatcher { contract_address }
         }
 
-        fn mark_packet_as_received(mut self: ContractState, commitment_key: u256) -> bool {
+        fn mark_packet_as_received(ref self: ContractState, commitment_key: u256) -> bool {
             let commitment = self.get_commitment(commitment_key);
 
             let already_received = commitment != 0;
