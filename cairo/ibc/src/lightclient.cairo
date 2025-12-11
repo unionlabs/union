@@ -145,10 +145,16 @@ pub trait ILightClient<TContractState> {
     ) -> bool;
 
     fn verify_non_membership(
-        self: @TContractState, client_id: ClientId, height: u64, proof: ByteArray, key: ByteArray,
+        self: @TContractState,
+        client_id: ClientId,
+        height: u64,
+        proof: Array<felt252>,
+        key: ByteArray,
     ) -> bool;
 
-    fn get_timestamp_at_height(self: @TContractState, height: u64) -> Timestamp;
+    fn get_timestamp_at_height(
+        self: @TContractState, client_id: ClientId, height: u64,
+    ) -> Timestamp;
 
     fn get_latest_height(self: @TContractState, client_id: ClientId) -> u64;
 }

@@ -324,7 +324,7 @@ pub impl PacketImpl of PacketTrait {
     }
 }
 
-#[derive(Debug, Drop, PartialEq, Copy, Serde)]
+#[derive(Debug, Drop, PartialEq, Copy, Serde, starknet::Store)]
 pub struct Timestamp {
     raw: u64,
 }
@@ -333,6 +333,14 @@ pub struct Timestamp {
 pub impl TimestampImpl of TimestampTrait {
     fn from_secs(secs: u64) -> Timestamp {
         Timestamp { raw: secs * 1_000_000_000 }
+    }
+
+    fn from_nanos(nanos: u64) -> Timestamp {
+        Timestamp { raw: nanos }
+    }
+
+    fn nanos(self: @Timestamp) -> u64 {
+        *self.raw
     }
 }
 

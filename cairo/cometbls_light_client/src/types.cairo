@@ -58,6 +58,8 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
+use ibc::types::Timestamp;
+
 #[derive(Debug, Drop, Serde, starknet::Store)]
 pub struct ClientState {
     // TODO(aeryz): does this needs to be bytes31 or felt252 works too? (it probably works)
@@ -84,7 +86,7 @@ pub struct ClientState {
 #[derive(Debug, Drop, Serde, starknet::Store)]
 pub struct ConsensusState {
     /// Block timestamp (in nanoseconds)
-    pub timestamp: u64,
+    pub timestamp: Timestamp,
     /// App hash from the block header
     pub app_hash: u256,
     /// Next validators from the block header

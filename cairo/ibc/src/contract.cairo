@@ -61,9 +61,7 @@
 use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
 use core::hash::{Hash, HashStateExTrait, HashStateTrait};
 use starknet::ContractAddress;
-use crate::app::IIbcModule;
 use crate::event::*;
-use crate::lightclient::ILightClient;
 use crate::path::*;
 use crate::types::{ChannelId, ClientId, ConnectionId, Packet, Timestamp};
 
@@ -258,7 +256,7 @@ pub trait IIbcHandler<TContractState> {
         counterparty_client_id: ClientId,
         counterparty_connection_id: ConnectionId,
         client_id: ClientId,
-        proof_init: ByteArray,
+        proof_init: Array<felt252>,
         proof_height: u64,
     ) -> ConnectionId;
 
@@ -302,7 +300,7 @@ pub trait IIbcHandler<TContractState> {
         ref self: TContractState,
         connection_id: ConnectionId,
         counterparty_connection_id: ConnectionId,
-        proof_try: ByteArray,
+        proof_try: Array<felt252>,
         proof_height: u64,
     );
 
@@ -342,7 +340,7 @@ pub trait IIbcHandler<TContractState> {
     fn connection_open_confirm(
         ref self: TContractState,
         connection_id: ConnectionId,
-        proof_ack: ByteArray,
+        proof_ack: Array<felt252>,
         proof_height: u64,
     );
 
@@ -434,7 +432,7 @@ pub trait IIbcHandler<TContractState> {
         counterparty_channel_id: ChannelId,
         counterparty_port_id: ByteArray,
         counterparty_version: ByteArray,
-        proof_init: ByteArray,
+        proof_init: Array<felt252>,
         proof_height: u64,
         relayer: ContractAddress,
     ) -> ChannelId;
@@ -484,7 +482,7 @@ pub trait IIbcHandler<TContractState> {
         channel_id: ChannelId,
         counterparty_version: ByteArray,
         counterparty_channel_id: ChannelId,
-        proof_try: ByteArray,
+        proof_try: Array<felt252>,
         proof_height: u64,
         relayer: ContractAddress,
     );
@@ -530,7 +528,7 @@ pub trait IIbcHandler<TContractState> {
     fn channel_open_confirm(
         ref self: TContractState,
         channel_id: ChannelId,
-        proof_ack: ByteArray,
+        proof_ack: Array<felt252>,
         proof_height: u64,
         relayer: ContractAddress,
     );
@@ -624,7 +622,7 @@ pub trait IIbcHandler<TContractState> {
         packets: Array<Packet>,
         relayer_msgs: Array<ByteArray>,
         relayer: ContractAddress,
-        proof_send: ByteArray,
+        proof_send: Array<felt252>,
         proof_height: u64,
     );
 
@@ -679,7 +677,7 @@ pub trait IIbcHandler<TContractState> {
         ref self: TContractState,
         packets: Array<Packet>,
         acknowledgements: Array<ByteArray>,
-        proof_recv: ByteArray,
+        proof_recv: Array<felt252>,
         proof_height: u64,
         relayer: ContractAddress,
     );
@@ -687,7 +685,7 @@ pub trait IIbcHandler<TContractState> {
     fn timeout_packet(
         ref self: TContractState,
         packet: Packet,
-        proof_not_recv: ByteArray,
+        proof_not_recv: Array<felt252>,
         proof_height: u64,
         relayer: ContractAddress,
     );
@@ -710,7 +708,7 @@ pub mod IbcHandler {
     use starknet::storage_access::{storage_address_from_base, storage_base_address_from_felt252};
     use starknet::syscalls::{storage_read_syscall, storage_write_syscall};
     use starknet::{ContractAddress, SyscallResultTrait, get_execution_info};
-    use crate::app::{IIbcModuleDispatcher, IIbcModuleSafeDispatcher, IIbcModuleSafeDispatcherTrait};
+    use crate::app::{IIbcModuleSafeDispatcher, IIbcModuleSafeDispatcherTrait};
     use crate::event::{
         ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit,
         ChannelOpenTry, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
@@ -722,7 +720,7 @@ pub mod IbcHandler {
     };
     use crate::path::{
         BatchPacketsPath, BatchPacketsPathImpl, BatchReceiptsPath, BatchReceiptsPathImpl,
-        ChannelPath, ClientStatePath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait,
+        ChannelPath, ConnectionPath, ConsensusStatePath, StorePathKeyTrait,
     };
     use crate::types::{
         Channel, ChannelId, ChannelIdImpl, ChannelImpl, ChannelState, ClientId, ClientIdImpl,
@@ -903,7 +901,7 @@ pub mod IbcHandler {
             counterparty_client_id: ClientId,
             counterparty_connection_id: ConnectionId,
             client_id: ClientId,
-            proof_init: ByteArray,
+            proof_init: Array<felt252>,
             proof_height: u64,
         ) -> ConnectionId {
             // Verify that the counterparty chain actually performed the `connection_open_init` and
@@ -958,7 +956,7 @@ pub mod IbcHandler {
             ref self: ContractState,
             connection_id: ConnectionId,
             counterparty_connection_id: ConnectionId,
-            proof_try: ByteArray,
+            proof_try: Array<felt252>,
             proof_height: u64,
         ) {
             // We are at the ack phase, meaning we should be at the state where only the
@@ -1007,7 +1005,7 @@ pub mod IbcHandler {
         fn connection_open_confirm(
             ref self: ContractState,
             connection_id: ConnectionId,
-            proof_ack: ByteArray,
+            proof_ack: Array<felt252>,
             proof_height: u64,
         ) {
             // We are at the confirm phase, meaning we should be at the state where only the
@@ -1106,7 +1104,7 @@ pub mod IbcHandler {
             counterparty_channel_id: ChannelId,
             counterparty_port_id: ByteArray,
             counterparty_version: ByteArray,
-            proof_init: ByteArray,
+            proof_init: Array<felt252>,
             proof_height: u64,
             relayer: ContractAddress,
         ) -> ChannelId {
@@ -1185,7 +1183,7 @@ pub mod IbcHandler {
             channel_id: ChannelId,
             counterparty_version: ByteArray,
             counterparty_channel_id: ChannelId,
-            proof_try: ByteArray,
+            proof_try: Array<felt252>,
             proof_height: u64,
             relayer: ContractAddress,
         ) {
@@ -1254,7 +1252,7 @@ pub mod IbcHandler {
         fn channel_open_confirm(
             ref self: ContractState,
             channel_id: ChannelId,
-            proof_ack: ByteArray,
+            proof_ack: Array<felt252>,
             proof_height: u64,
             relayer: ContractAddress,
         ) {
@@ -1355,7 +1353,7 @@ pub mod IbcHandler {
             packets: Array<Packet>,
             mut relayer_msgs: Array<ByteArray>,
             relayer: ContractAddress,
-            proof_send: ByteArray,
+            proof_send: Array<felt252>,
             proof_height: u64,
         ) {
             assert(packets.len() > 0, Error::NOT_ENOUGH_PACKETS);
@@ -1462,7 +1460,7 @@ pub mod IbcHandler {
             ref self: ContractState,
             packets: Array<Packet>,
             mut acknowledgements: Array<ByteArray>,
-            proof_recv: ByteArray,
+            proof_recv: Array<felt252>,
             proof_height: u64,
             relayer: ContractAddress,
         ) {
@@ -1526,7 +1524,7 @@ pub mod IbcHandler {
         fn timeout_packet(
             ref self: ContractState,
             packet: Packet,
-            proof_not_recv: ByteArray,
+            proof_not_recv: Array<felt252>,
             proof_height: u64,
             relayer: ContractAddress,
         ) {
@@ -1536,7 +1534,8 @@ pub mod IbcHandler {
                 .ensure_connection_state(channel.connection_id, ConnectionState::Open);
             let client = self.client_impl(connection.client_id);
 
-            let proof_timestamp = match client.get_timestamp_at_height(proof_height) {
+            let proof_timestamp =
+                match client.get_timestamp_at_height(connection.client_id, proof_height) {
                 Ok(proof_timestamp) => proof_timestamp,
                 Err(err) => panic!("error querying timestamp at height: {err:?}"),
             };

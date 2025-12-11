@@ -65,8 +65,9 @@ pub mod types;
 mod CometblsLightClient {
     use alexandria_bytes::byte_array_ext::ByteArrayTraitExt;
     use alexandria_math::opt_math::OptBitShift;
+    use core::num::traits::Zero;
     use ibc::lightclient::ConsensusStateUpdate;
-    use ibc::types::{ClientId, Timestamp, TimestampImpl};
+    use ibc::types::{ClientId, Timestamp, TimestampTrait};
     use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry};
     use starknet::{ContractAddress, get_execution_info};
     use crate::ics23::{MembershipProof, MembershipProofTrait};
@@ -100,7 +101,7 @@ mod CometblsLightClient {
                 .unwrap();
 
             assert!(
-                client_state.latest_height != 0 && consensus_state.timestamp != 0,
+                client_state.latest_height != 0 && consensus_state.timestamp.is_non_zero(),
                 "invalid initial client/consensus state",
             );
 
@@ -152,7 +153,7 @@ mod CometblsLightClient {
                     untrusted_height_number,
                     Some(
                         ConsensusState {
-                            timestamp: untrusted_timestamp,
+                            timestamp: TimestampTrait::from_nanos(untrusted_timestamp),
                             app_hash: header.signed_header.app_hash,
                             next_validators_hash: header.signed_header.next_validators_hash,
                         },
@@ -204,14 +205,21 @@ mod CometblsLightClient {
             self: @ContractState,
             client_id: ClientId,
             height: u64,
-            proof: ByteArray,
+            proof: Array<felt252>,
             key: ByteArray,
         ) -> bool {
             false
         }
 
-        fn get_timestamp_at_height(self: @ContractState, height: u64) -> Timestamp {
-            TimestampImpl::from_secs(0)
+        fn get_timestamp_at_height(
+            self: @ContractState, client_id: ClientId, height: u64,
+        ) -> Timestamp {
+            self
+                .consensus_states
+                .entry(client_id)
+                .read(height)
+                .expect(CONSENSUS_STATE_NOT_FOUND)
+                .timestamp
         }
 
         fn get_latest_height(self: @ContractState, client_id: ClientId) -> u64 {
@@ -234,12 +242,13 @@ mod CometblsLightClient {
             + *header.signed_header.nanos;
 
         // revert CometblsClientLib.ErrUntrustedTimestampLTETrustedTimestamp();
-        assert!(untrusted_timestamp > trusted_timestamp, "err")
+        assert!(untrusted_timestamp > trusted_timestamp.nanos(), "err")
 
         let current_time = get_execution_info().block_info.block_timestamp * 1_000_000_000;
 
         assert!(
-            is_expired(trusted_timestamp, *client_state.trusting_period, current_time), "expired",
+            is_expired(trusted_timestamp.nanos(), *client_state.trusting_period, current_time),
+            "expired",
         );
 
         let max_clock_drift = current_time + *client_state.max_clock_drift;
