@@ -572,7 +572,7 @@ pub trait IIbcHandler<TContractState> {
         data: ByteArray,
     ) -> Packet;
 
-    /// Recieve one or more packets on this chain that were sent from another chain.
+    /// Receive one or more packets on this chain that were sent from another chain.
     ///
     /// #### Params
     ///

@@ -19,13 +19,13 @@ starknet            = { workspace = true }
 
 [dev-dependencies]
 alexandria_math = { workspace = true }
-assert_macros = "2.12.2"
-snforge_std   = { workspace = true }
-mock_client = { path = "../mock_client" }
+assert_macros   = "2.12.2"
+mock_client     = { path = "../mock_client" }
+snforge_std     = { workspace = true }
 
 [[target.starknet-contract]]
-sierra = true
 build-external-contracts = ["mock_client::MockClient"]
+sierra                   = true
 
 [scripts]
 test = "snforge test"

@@ -66,7 +66,7 @@ fn load_byte_array_map_value<K, +Serde<K>, +Drop<K>>(
     // using `0` as the chunk index.
     let (chunk_base, _, _) = core::poseidon::hades_permutation(key, 0, 'ByteArray');
 
-    // We read `size / 31` + 1 subchunks from the memory because our `ByteArray` is splitted into
+    // We read `size / 31` + 1 subchunks from the memory because our `ByteArray` is split into
     // multiple `bytes31's`.
     let mut chunks = load(contract_address, chunk_base, (size / 31).into() + 1).span();
 
