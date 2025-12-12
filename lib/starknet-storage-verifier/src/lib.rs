@@ -1,102 +1,68 @@
 use std::collections::BTreeMap;
 
-pub use pathfinder_crypto::Felt;
-use pathfinder_crypto::hash::{pedersen_hash, poseidon_hash};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
+use bitvec::{order::Msb0, vec::BitVec};
+use starknet_crypto::{pedersen_hash, poseidon_hash};
+use starknet_types::{Felt, MerkleNode};
+
+type CryptoFelt = starknet_crypto::Felt;
+
+fn to_crypto_felt(felt: Felt) -> CryptoFelt {
+    starknet_crypto::Felt::from_bytes_be(&felt.to_be_bytes())
+}
 
 pub trait FeltHash {
-    fn hash(a: Felt, b: Felt) -> Felt;
+    fn hash(a: CryptoFelt, b: CryptoFelt) -> CryptoFelt;
 }
 
 pub enum PedersenHash {}
 
 impl FeltHash for PedersenHash {
-    fn hash(a: Felt, b: Felt) -> Felt {
-        pedersen_hash(a, b)
+    fn hash(a: CryptoFelt, b: CryptoFelt) -> CryptoFelt {
+        pedersen_hash(&a, &b)
     }
 }
 
 pub enum PoseidonHash {}
 
 impl FeltHash for PoseidonHash {
-    fn hash(a: Felt, b: Felt) -> Felt {
-        poseidon_hash(a.into(), b.into()).into()
+    fn hash(a: CryptoFelt, b: CryptoFelt) -> CryptoFelt {
+        poseidon_hash(a, b)
     }
 }
 
-/// A node in the Merkle-Patricia tree, can be a leaf, binary node, or an edge node.
+pub fn hash_node<H: FeltHash>(node: &CryptoMerkleNode) -> CryptoFelt {
+    match node {
+        CryptoMerkleNode::BinaryNode { left, right } => H::hash(*left, *right),
+        CryptoMerkleNode::EdgeNode {
+            path,
+            length,
+            child,
+        } => {
+            H::hash(*child, *path) + {
+                let mut length_ = [0; 32];
+                // Safe as len() is guaranteed to be <= 251
+                length_[31] = *length;
+                CryptoFelt::from_bytes_be(&length_)
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(untagged))]
-pub enum MerkleNode {
-    /// Binary/branch node.
-    ///
-    /// An internal node whose both children are non-zero.
+pub enum CryptoMerkleNode {
     BinaryNode {
-        /// The hash of the left child
-        #[cfg_attr(feature = "serde", serde(with = "felt"))]
-        left: Felt,
-        /// The hash of the right child
-        #[cfg_attr(feature = "serde", serde(with = "felt"))]
-        right: Felt,
+        left: CryptoFelt,
+        right: CryptoFelt,
     },
-    /// Edge/leaf node.
-    ///
-    /// Represents a path to the highest non-zero descendant node.
     EdgeNode {
-        /// An unsigned integer whose binary representation represents the path from the current node to
-        /// its highest non-zero descendant (bounded by 2^251)
-        #[cfg_attr(feature = "serde", serde(with = "felt"))]
-        path: Felt,
-        /// The length of the path (bounded by 251)
+        path: CryptoFelt,
         length: u8,
-        /// The hash of the unique non-zero maximal-height descendant node
-        #[cfg_attr(feature = "serde", serde(with = "felt"))]
-        child: Felt,
+        child: CryptoFelt,
     },
 }
 
-impl MerkleNode {
-    pub fn hash<H: FeltHash>(&self) -> Felt {
-        match self {
-            MerkleNode::BinaryNode { left, right } => H::hash(*left, *right),
-            MerkleNode::EdgeNode {
-                path,
-                length,
-                child,
-            } => H::hash(*child, *path) + Felt::from_u64((*length).into()),
-        }
-    }
-}
-
-#[cfg(feature = "serde")]
-pub mod felt {
-    use pathfinder_crypto::Felt;
-    use serde::{Deserializer, Serialize, Serializer, de::Deserialize};
-
-    pub fn serialize<S>(data: &Felt, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        if serializer.is_human_readable() {
-            serializer.collect_str(&data)
-        } else {
-            data.to_be_bytes().serialize(serializer)
-        }
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Felt, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        if deserializer.is_human_readable() {
-            String::deserialize(deserializer)
-                .and_then(|s| Felt::from_hex_str(&s).map_err(serde::de::Error::custom))
-        } else {
-            <[u8; 32]>::deserialize(deserializer)
-                .and_then(|bz| Felt::from_be_bytes(bz).map_err(serde::de::Error::custom))
-        }
-    }
+pub fn felt_bits(felt: CryptoFelt) -> BitVec<u8, Msb0> {
+    BitVec::from_slice(&felt.to_bytes_be())
 }
 
 #[derive(Debug, PartialEq)]
@@ -113,23 +79,40 @@ pub enum Error {
     ValueMismatch { expected: Felt, found: Felt },
 }
 
-pub fn verify_proof<H: FeltHash>(
-    mut root: Felt,
+pub fn verify_proof<'a, H: FeltHash>(
+    root: Felt,
     key: Felt,
     value: Felt,
-    proof: impl IntoIterator<Item = MerkleNode>,
+    proof: impl IntoIterator<Item = &'a MerkleNode>,
 ) -> Result<Membership, Error> {
+    let mut root = to_crypto_felt(root);
+
     let mut proof = proof
         .into_iter()
-        .map(|n| (n.hash::<H>(), n))
+        .map(|n| match n {
+            MerkleNode::BinaryNode { left, right } => CryptoMerkleNode::BinaryNode {
+                left: to_crypto_felt(*left),
+                right: to_crypto_felt(*right),
+            },
+            MerkleNode::EdgeNode {
+                path,
+                length,
+                child,
+            } => CryptoMerkleNode::EdgeNode {
+                path: to_crypto_felt(*path),
+                length: *length,
+                child: to_crypto_felt(*child),
+            },
+        })
+        .map(|n| (hash_node::<H>(&n), n))
         .collect::<BTreeMap<_, _>>();
 
     // https://github.com/eqlabs/pathfinder/blob/a34566b9a9f6ea6d7eb3889130d62c8f3fe6a499/crates/crypto/src/algebra/field/felt.rs#L176
-    let mut remaining_path = key.view_bits();
+    let mut remaining_path = &felt_bits(to_crypto_felt(key))[5..];
 
     while let Some(proof_node) = proof.remove(&root) {
         match proof_node {
-            MerkleNode::BinaryNode { left, right } => {
+            CryptoMerkleNode::BinaryNode { left, right } => {
                 // Set the next hash to be the left or right hash,
                 // depending on the direction
                 // https://github.com/eqlabs/pathfinder/blob/a34566b9a9f6ea6d7eb3889130d62c8f3fe6a499/crates/merkle-tree/src/merkle_node.rs#L81
@@ -141,18 +124,13 @@ pub fn verify_proof<H: FeltHash>(
                 // Advance by a single bit
                 remaining_path = &remaining_path[1..];
             }
-            MerkleNode::EdgeNode {
+            CryptoMerkleNode::EdgeNode {
                 path,
                 length,
                 child,
             } => {
-                let path_view = &path.view_bits()[(251 - length) as usize..251];
+                let path_view = &felt_bits(path)[5..][(251 - length) as usize..251];
                 let remaining_path_view = &remaining_path[..length as usize];
-
-                // eprintln!("length: {length}");
-                // eprintln!("path: {path:x}");
-                // eprintln!("path_view: {path_view:b}");
-                // eprintln!("remaining_path_view: {remaining_path_view:b}");
 
                 if path_view != remaining_path_view {
                     // If paths don't match, we've found a proof of non membership because
@@ -174,15 +152,17 @@ pub fn verify_proof<H: FeltHash>(
         }
     }
 
-    if root != value {
-        return Err(Error::ValueMismatch {
-            expected: value,
-            found: root,
-        });
+    if !proof.is_empty() {
+        dbg!(proof);
+
+        return Err(Error::UnusedNodes);
     }
 
-    if !proof.is_empty() {
-        return Err(Error::UnusedNodes);
+    if root.to_bytes_be() != value.to_be_bytes() {
+        return Err(Error::ValueMismatch {
+            expected: value,
+            found: Felt::from_be_bytes(root.to_bytes_be()),
+        });
     }
 
     Ok(Membership::Membership)
@@ -306,31 +286,32 @@ fn contract_membership() {
     )
     .unwrap();
 
-    let key =
-        Felt::from_hex_str("0x0712ae872c44ec2baee50a19191029e437811fb22de12afb3014642cbe33f09e")
-            .unwrap();
+    let key = Felt::from_hex("0x0712ae872c44ec2baee50a19191029e437811fb22de12afb3014642cbe33f09e")
+        .unwrap();
     let value = {
-        let class_hash =
-            Felt::from_hex_str("0x69b893a8b6e1bf94740e33d9584a01295510f3b51f024d9833b2acaf1be4045")
-                .unwrap();
-        let nonce = Felt::from_hex_str("0x0").unwrap();
-        let storage_root =
-            Felt::from_hex_str("0x2c8771df74e758b1fed285eef0cd07cb84b55abfabfb0d6a0f1b7b3aff761fa")
-                .unwrap();
+        let class_hash = CryptoFelt::from_hex_unchecked(
+            "0x69b893a8b6e1bf94740e33d9584a01295510f3b51f024d9833b2acaf1be4045",
+        );
+        let nonce = CryptoFelt::from_hex_unchecked("0x0");
+        let storage_root = CryptoFelt::from_hex_unchecked(
+            "0x2c8771df74e758b1fed285eef0cd07cb84b55abfabfb0d6a0f1b7b3aff761fa",
+        );
 
         // https://docs.starknet.io/learn/protocol/state#the-contract-trie
-        pedersen_hash(
-            pedersen_hash(pedersen_hash(class_hash, storage_root), nonce),
-            Felt::ZERO,
+        Felt::from_be_bytes(
+            pedersen_hash(
+                &pedersen_hash(&pedersen_hash(&class_hash, &storage_root), &nonce),
+                &CryptoFelt::ZERO,
+            )
+            .to_bytes_be(),
         )
     };
 
     // contracts_proof.contract_leaves_data.storage_root
-    let root =
-        Felt::from_hex_str("0x2c6e3ddcdcf9bcd4b9e01c4b94408b6cf8b82ca9a1b40d808612483278b5afb")
-            .unwrap();
+    let root = Felt::from_hex("0x2c6e3ddcdcf9bcd4b9e01c4b94408b6cf8b82ca9a1b40d808612483278b5afb")
+        .unwrap();
 
-    let res = verify_proof::<PedersenHash>(root, key, value, proof).unwrap();
+    let res = verify_proof::<PedersenHash>(root, key, value, &proof).unwrap();
 
     assert_eq!(res, Membership::Membership);
 }
@@ -373,19 +354,16 @@ fn contract_storage_membership() {
     )
     .unwrap();
 
-    let key =
-        Felt::from_hex_str("0x03d0f817b2e6b145a39886c95257e1bade33bc907b2125d2b4b93ced393d8e6b")
-            .unwrap();
-    let value =
-        Felt::from_hex_str("0x49ff5b3a7d38e2b50198f408fa8281635b5bc81ee49ab87ac36c8324c214427")
-            .unwrap();
+    let key = Felt::from_hex("0x03d0f817b2e6b145a39886c95257e1bade33bc907b2125d2b4b93ced393d8e6b")
+        .unwrap();
+    let value = Felt::from_hex("0x49ff5b3a7d38e2b50198f408fa8281635b5bc81ee49ab87ac36c8324c214427")
+        .unwrap();
 
     // contracts_proof.contract_leaves_data.storage_root
-    let root =
-        Felt::from_hex_str("0x2c8771df74e758b1fed285eef0cd07cb84b55abfabfb0d6a0f1b7b3aff761fa")
-            .unwrap();
+    let root = Felt::from_hex("0x2c8771df74e758b1fed285eef0cd07cb84b55abfabfb0d6a0f1b7b3aff761fa")
+        .unwrap();
 
-    let res = verify_proof::<PedersenHash>(root, key, value, proof).unwrap();
+    let res = verify_proof::<PedersenHash>(root, key, value, &proof).unwrap();
 
     assert_eq!(res, Membership::Membership);
 }
@@ -416,114 +394,14 @@ fn contract_storage_non_membership() {
     )
     .unwrap();
 
-    let key = Felt::from_hex_str("0x0").unwrap();
-    let value = Felt::from_hex_str("0x0").unwrap();
+    let key = Felt::from_hex("0x0").unwrap();
+    let value = Felt::from_hex("0x0").unwrap();
 
     // contracts_proof.contract_leaves_data.storage_root
-    let root =
-        Felt::from_hex_str("0x2c8771df74e758b1fed285eef0cd07cb84b55abfabfb0d6a0f1b7b3aff761fa")
-            .unwrap();
+    let root = Felt::from_hex("0x2c8771df74e758b1fed285eef0cd07cb84b55abfabfb0d6a0f1b7b3aff761fa")
+        .unwrap();
 
-    let res = verify_proof::<PedersenHash>(root, key, value, proof).unwrap();
+    let res = verify_proof::<PedersenHash>(root, key, value, &proof).unwrap();
 
     assert_eq!(res, Membership::NonMembership);
 }
-
-// #[test]
-// fn class_membership() {
-//     // {"jsonrpc":"2.0","method":"starknet_getStorageProof","params":[{"block_number":3996475}, [], ["0x0712ae872c44ec2baee50a19191029e437811fb22de12afb3014642cbe33f09e"], [{"contract_address":"0x0712ae872c44ec2baee50a19191029e437811fb22de12afb3014642cbe33f09e", "storage_keys":["0x0"]}]],"id":1}
-
-//     let proof: Vec<MerkleNode> = serde_json::from_str(
-//         r#"
-// [
-//   {
-//     "left": "0x26b2739055e4802a19ca4bccc676eb1915805b622840d80f2589e81b6242ece",
-//     "right": "0x3a433590778d3909e3e179e0c4cd0b4484c633dd8bdc37a185e2b9243ac2de5"
-//   },
-//   {
-//     "left": "0x16dc0a8f88330651d7f3715300c9e066fb71758a14d3373449cd02771975f0e",
-//     "right": "0x4d006e7521a809d5cbcdcd13478baf939bb2a045742300325928880a9c7d589"
-//   },
-//   {
-//     "child": "0x64a8b101389497ad8d3aa2a57cb929610fecf2a73e0c48b88945524299bd397",
-//     "length": 1,
-//     "path": "0x1"
-//   },
-//   {
-//     "left": "0x3a48d7fa71fbae5ec931ae9ee7bcc570509f3f57659c2c75ae9137519f5a2b",
-//     "right": "0x10eb67d6673d276714dc2dd57027cddb4d285c736a7a2bfa1d29ae8b0a89f67"
-//   },
-//   {
-//     "left": "0x611b50cdba393035653b6a1f57841f6d72ceafee9309747ef9bfcba94aef9d6",
-//     "right": "0x71df411506e7b929d96b7e8349e504fcf936ab3434065d9063e3c43817a428a"
-//   },
-//   {
-//     "left": "0x2d58a9c26903f33f15327e0e6282524cb5f0d07397484b762b655db6ab8f0d0",
-//     "right": "0x10d9f15ceec6d543775137f0ef6d38f263f5156d53bf8abd8bcb34655b14354"
-//   },
-//   {
-//     "left": "0x43a417180d30647875a1659c9e0a07545af75d2aef2621d919a9806eed86c37",
-//     "right": "0x75a9d7ff57564c2f562954d359be74d5e61d1976111da06ada132e93cc0709"
-//   },
-//   {
-//     "left": "0x42db20cc2e93142d8994ab403ab9994a704d1385cdf7852e8553611e134ac9c",
-//     "right": "0x3a9b7d4ce629aa371a610a023d96271aea2cb6f37c13b4522aa5a6c4d3f8656"
-//   },
-//   {
-//     "left": "0x748a8d8c1aa1e5b2e93651fc417eb5110965da145356e81aa7bbeeb66179797",
-//     "right": "0x3231d374fac2f62ae747f799cd7f93cea095dee0d41992f10f757bc146229d9"
-//   },
-//   {
-//     "left": "0x18679b940a8998d46ffcfbd99012e2cfdf2ec25ac211c40a678a7edcd5b679d",
-//     "right": "0x5510a179fedda3e54154d17010c9b41e103c90a41e434349bc234b23170291"
-//   },
-//   {
-//     "left": "0x4fdbbc8483c5847d9fc1254deda500218c5772eb3ac86e189c316b8efed176f",
-//     "right": "0x5546b5291fda84d8a05b7e00c4a329ae7b65360539a7f6f8be46351a01ac092"
-//   },
-//   {
-//     "left": "0x754ad9e6ac2d4251d68ba34e4e89dd40d68eaa820174f6123b496ed3a764551",
-//     "right": "0xd500b04c4d14b9370156c40c1ee43524d6b866a485b833b28a945eb71bfcb7"
-//   },
-//   {
-//     "left": "0x20493ddcc3e537c03cb85385fb21c513563abbd199f3a992dfb78513df7f5ae",
-//     "right": "0x3982ec392741d6b5cacc9dce89923712bbeef746c1a964b0e02277ddc1feba1"
-//   },
-//   {
-//     "left": "0x5aa872c5b3fddb2258cff2bf457b6df819a16db9d9526b2c04beb53ba864cb9",
-//     "right": "0x45ae2ba84e8feb6f552f4d16e099908327e48dc8c32da1d29b14e8cce3876ff"
-//   },
-//   {
-//     "left": "0x15da48a83f9b9f2062b7911aa22b4d67429b2eb0fc11d6ee27055c0023053a4",
-//     "right": "0x38a232e4222e5e9b764f022be0c90a5e81106efcdb0d9c4df58ec0ab19737ba"
-//   },
-//   {
-//     "left": "0x2dc76ef37ea85d5ff626b572b5a6eae1fdda7242a2eb4416a12c0350ee373d4",
-//     "right": "0x7e7126adac488ccdc1c6f12c4b5ba6cc9a7d66d1ec172802e25ca1b71b2965b"
-//   },
-//   {
-//     "child": "0x71e2a6ac164a33d38ff9bb07fef96bbef3ff82b9445ec51d64e4bf01581f268",
-//     "length": 234,
-//     "path": "0x13a8b6e1bf94740e33d9584a01295510f3b51f024d9833b2acaf1be4045"
-//   },
-//   {
-//     "left": "0x1bb32891b44fd0166003032b24e60ae4250d9e11f56367857b13cd1838811c1",
-//     "right": "0x694cd424f3be20d80a235f92e33c736af50646e39001b61144d1a9fdf477324"
-//   }
-// ]
-// "#,
-//     )
-//     .unwrap();
-
-//     let key =
-//         Felt::from_hex_str("0x69b893a8b6e1bf94740e33d9584a01295510f3b51f024d9833b2acaf1be4045")
-//             .unwrap();
-//     let value = Felt::from_hex_str("0x0").unwrap();
-
-//     // contracts_proof.contract_leaves_data.storage_root
-//     let expected_hash = Felt::from_hex_str("").unwrap();
-
-//     let res = verify_proof::<PoseidonHash>(proof, key, value, expected_hash).unwrap();
-
-//     assert_eq!(res, Membership::NonMembership);
-// }

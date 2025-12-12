@@ -12,11 +12,15 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-evm-storage-verifier.workspace = true
-hex-literal.workspace          = true
-keccak-const                   = "0.2.0"
-rlp.workspace                  = true
-starknet-light-client-types    = { workspace = true }
-starknet-storage-verifier      = { workspace = true }
-thiserror.workspace            = true
-unionlabs-primitives.workspace = true
+evm-storage-verifier        = { workspace = true }
+hex-literal                 = { workspace = true }
+keccak-const                = "0.2.0"
+rlp                         = { workspace = true }
+starknet-light-client-types = { workspace = true }
+starknet-storage-verifier   = { workspace = true }
+starknet-types              = { workspace = true }
+thiserror                   = { workspace = true }
+unionlabs-primitives        = { workspace = true }
+
+[dev-dependencies]
+ibc-union-spec = { workspace = true }

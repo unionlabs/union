@@ -1,23 +1,23 @@
 use ibc_union_spec::Timestamp;
-use unionlabs::primitives::H256;
+use starknet_types::Felt;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConsensusState {
-    pub global_root: H256,
-    pub ibc_storage_root: H256,
+    pub global_root: Felt,
+    pub ibc_storage_root: Felt,
     pub timestamp: Timestamp,
 }
 
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
-    use unionlabs::impl_ethabi_via_try_from_into;
+    use unionlabs_encoding::impl_ethabi_via_try_from_into;
 
     use super::*;
 
     impl_ethabi_via_try_from_into!(ConsensusState => SolConsensusState);
 
-    alloy::sol! {
+    alloy_sol_types::sol! {
         struct SolConsensusState {
             bytes32 global_root;
             bytes32 ibc_storage_root;
@@ -28,8 +28,8 @@ pub mod ethabi {
     impl From<ConsensusState> for SolConsensusState {
         fn from(value: ConsensusState) -> Self {
             Self {
-                global_root: value.global_root.get().into(),
-                ibc_storage_root: value.storage_root.get().into(),
+                global_root: value.global_root.to_be_bytes().into(),
+                ibc_storage_root: value.ibc_storage_root.to_be_bytes().into(),
                 timestamp: value.timestamp.as_nanos(),
             }
         }
@@ -38,8 +38,8 @@ pub mod ethabi {
     impl From<SolConsensusState> for ConsensusState {
         fn from(value: SolConsensusState) -> Self {
             Self {
-                global_root: H256::new(value.global_root.0),
-                storage_root: H256::new(value.ibc_storage_root.0),
+                global_root: Felt::from_be_bytes(value.global_root.0),
+                ibc_storage_root: Felt::from_be_bytes(value.ibc_storage_root.0),
                 timestamp: Timestamp::from_nanos(value.timestamp),
             }
         }

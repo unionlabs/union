@@ -1,5 +1,6 @@
-use pathfinder_crypto::Felt;
-use unionlabs::primitives::{H160, H256};
+use ibc_union_spec::ClientId;
+use starknet_types::Felt;
+use unionlabs_primitives::H160;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(
@@ -17,6 +18,7 @@ pub enum ClientState {
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ClientStateV1 {
     pub chain_id: Felt,
+    pub l1_client_id: ClientId,
     pub latest_height: u64,
     pub ibc_contract_address: Felt,
     /// https://docs.starknet.io/learn/cheatsheets/chain-info#important-addresses

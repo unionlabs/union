@@ -12,25 +12,32 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                       = { workspace = true, features = ["sol-types"], optional = true }
+alloy-sol-types             = { workspace = true, optional = true }
 bincode                     = { workspace = true, features = ["alloc", "derive"], optional = true }
 ethereum-light-client-types = { workspace = true }
 ibc-union-spec              = { workspace = true }
-pathfinder-crypto           = "0.21.3"
 serde                       = { workspace = true, optional = true, features = ["derive"] }
-starknet-core               = { workspace = true }                                                  # REVIEW: Do we want to use this crate in the public api of this client's types?
-starknet-types-core         = { version = "1.0.0", features = ["hash"] }
-unionlabs                   = { workspace = true }
+starknet-crypto             = { workspace = true }
+starknet-types              = { workspace = true }
+unionlabs-encoding          = { workspace = true }
+unionlabs-primitives        = { workspace = true }
 
 [features]
 bincode = [
   "dep:bincode",
-  "unionlabs/bincode",
+  "unionlabs-encoding/bincode",
+  "starknet-types/bincode",
+  "unionlabs-primitives/bincode",
   "ethereum-light-client-types/bincode",
   "ibc-union-spec/bincode",
 ]
-ethabi = ["dep:alloy", "ethereum-light-client-types/ethabi", "ibc-union-spec/ethabi"]
-serde = ["dep:serde", "ethereum-light-client-types/serde", "ibc-union-spec/serde"]
+ethabi = ["dep:alloy-sol-types", "unionlabs-encoding/ethabi"]
+serde = [
+  "dep:serde",
+  "starknet-types/serde",
+  "ethereum-light-client-types/serde",
+  "ibc-union-spec/serde",
+]
 
 [dev-dependencies]
 hex-literal = { workspace = true }

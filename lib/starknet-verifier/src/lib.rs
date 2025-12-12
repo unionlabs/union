@@ -1,5 +1,5 @@
-use starknet_light_client_types::{ClientStateV1, Header, storage_proof::MerkleNode};
-use starknet_storage_verifier::{Felt, Membership, PedersenHash};
+use starknet_light_client_types::{ClientStateV1, Header};
+use starknet_storage_verifier::{Membership, PedersenHash};
 use unionlabs_primitives::{H256, U256};
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -17,8 +17,8 @@ pub enum Error {
 /// 1. Verify the L2 block hash in the L1
 /// 2. Verify the L2 IBC account in the L2 contracts root
 pub fn verify_header(
-    client_state: ClientStateV1,
-    header: Header,
+    client_state: &ClientStateV1,
+    header: &Header,
     l1_state_root: H256,
 ) -> Result<(), Error> {
     // 1.
@@ -33,7 +33,7 @@ pub fn verify_header(
     evm_storage_verifier::verify_storage_proof(
         header.l1_contract_account_proof.storage_root,
         L2_BLOCK_HASH_SLOT,
-        &rlp::encode(&U256::from_be_bytes(*header.l2_block.hash().as_be_bytes())),
+        &rlp::encode(&U256::from_be_bytes(header.l2_block.hash().to_be_bytes())),
         &header.l1_block_hash_proof,
     )
     .map_err(Error::L1BlockHashProof)?;
@@ -43,27 +43,7 @@ pub fn verify_header(
         header.l2_block.contracts_trie_root,
         client_state.ibc_contract_address,
         header.l2_ibc_contract_proof.contract_leaf_data.hash(),
-        header
-            .l2_ibc_contract_proof
-            .nodes
-            .into_iter()
-            .map(|node| match node {
-                MerkleNode::BinaryNode { left, right } => {
-                    starknet_storage_verifier::MerkleNode::BinaryNode {
-                        left: Felt::from_be_bytes(*left.get()).unwrap(),
-                        right: Felt::from_be_bytes(*right.get()).unwrap(),
-                    }
-                }
-                MerkleNode::EdgeNode {
-                    path,
-                    length,
-                    child,
-                } => starknet_storage_verifier::MerkleNode::EdgeNode {
-                    path: Felt::from_be_bytes(*path.get()).unwrap(),
-                    length,
-                    child: Felt::from_be_bytes(*child.get()).unwrap(),
-                },
-            }),
+        &header.l2_ibc_contract_proof.nodes,
     )
     .map_err(Error::L2IbcAccountProof)?;
 
@@ -99,10 +79,8 @@ pub const L2_BLOCK_HASH_SLOT: U256 = {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use starknet_light_client_types::{
-        StorageProof,
-        header::{AccountProof, ContractProof, L1DaMode, L2Block},
-    };
+    use starknet_light_client_types::header::{AccountProof, ContractProof, L1DaMode, L2Block};
+    use starknet_types::{Felt, MerkleNode};
     use unionlabs_primitives::H160;
 
     use super::*;
@@ -119,46 +97,38 @@ mod tests {
 
     #[test]
     fn verify_header_works() {
-        let felt = |s| -> H256 { Felt::from_hex_str(s).unwrap().to_be_bytes().into() };
+        let felt = |s| Felt::from_hex(s).unwrap();
 
         let l2_block = L2Block {
             block_number: 4174049,
-            parent_block_hash: Felt::from_hex_str(
-                "6de8c5b146b0127e0a7842ffa97931850339016cc6fa2083f8817a8fef3260e",
-            )
-            .unwrap(),
-            classes_trie_root: Felt::from_hex_str(
+            parent_block_hash: felt(
+                "0x6de8c5b146b0127e0a7842ffa97931850339016cc6fa2083f8817a8fef3260e",
+            ),
+            classes_trie_root: felt(
                 "0x5e4ce3094b99bc894ff49cb80319f494384158834b69fc8b396f28b65386d49",
-            )
-            .unwrap(),
-            contracts_trie_root: Felt::from_hex_str(
+            ),
+            contracts_trie_root: felt(
                 "0x8eb9daf1010e9400d1549fe06ae61e8bb5b52a85b784a26e4353294b69db0f",
-            )
-            .unwrap(),
-            sequencer_address: Felt::from_hex_str(
-                "1176a1bd84444c89232ec27754698e5d2e7e1a7f1539f12027f28b23ec9f3d8",
-            )
-            .unwrap(),
+            ),
+            sequencer_address: felt(
+                "0x1176a1bd84444c89232ec27754698e5d2e7e1a7f1539f12027f28b23ec9f3d8",
+            ),
             block_timestamp: 1765453275,
             transaction_count: 6,
             events_count: 4 + 4 + 11 + 5 + 7 + 5,
             state_diff_length: 39,
-            state_diff_commitment: Felt::from_hex_str(
+            state_diff_commitment: felt(
                 "0x700341e929df7d4cd196e97bfe84b13bc65a981d93229dfe249b2ab80a9be37",
-            )
-            .unwrap(),
-            transactions_commitment: Felt::from_hex_str(
+            ),
+            transactions_commitment: felt(
                 "0x7646130360d27c6e5de4d09f5e8141301a20aa66fc4c8c17189be631466a264",
-            )
-            .unwrap(),
-            events_commitment: Felt::from_hex_str(
+            ),
+            events_commitment: felt(
                 "0x31571f5901e6081cb7b10c64b44df4407f56b4de12c98d98aba7854c4f99cd4",
-            )
-            .unwrap(),
-            receipts_commitment: Felt::from_hex_str(
+            ),
+            receipts_commitment: felt(
                 "0x7a1f73a67ca072a6d7e61f80252ab5c1e4ec3fd916398b26e11fc92ce55a1e2",
-            )
-            .unwrap(),
+            ),
             l1_gas_price: (0x42f7e3a4, 0x1eafaf65743a),
             l1_data_gas_price: (0xef9bf, 0x6dcb3ada5),
             l2_gas_price: (0x410a0, 0x1dcd65000),
@@ -305,12 +275,13 @@ mod tests {
                 nodes,
                 contract_leaf_data: starknet_light_client_types::header::ContractLeafData {
                     nonce: Felt::ZERO,
-                    class_hash: Felt::from_hex_str(
+                    // REVIEW: Should we verify the class in the classes trie?
+                    class_hash: felt(
                         "0x69b893a8b6e1bf94740e33d9584a01295510f3b51f024d9833b2acaf1be4045"
-                    ).unwrap(),
-                    storage_root: Felt::from_hex_str(
+                    ),
+                    storage_root: felt(
                         "0x2c8771df74e758b1fed285eef0cd07cb84b55abfabfb0d6a0f1b7b3aff761fa"
-                    ).unwrap(),
+                    ),
                 },
             },
         };
@@ -322,15 +293,13 @@ mod tests {
         let client_state = ClientStateV1 {
             chain_id: Felt::ZERO,
             latest_height: 1,
-            ibc_contract_address: Felt::from_hex_str(
+            l1_client_id: ClientId!(1),
+            ibc_contract_address: felt(
                 "0x0712ae872c44ec2baee50a19191029e437811fb22de12afb3014642cbe33f09e",
-            )
-            .unwrap()
-            .to_be_bytes()
-            .into(),
+            ),
             l1_contract_address: H160::new(hex!("c662c410C0ECf747543f5bA90660f6ABeBD9C8c4")),
         };
 
-        verify_header(client_state, header, l1_state_root).unwrap();
+        verify_header(&client_state, &header, l1_state_root).unwrap();
     }
 }

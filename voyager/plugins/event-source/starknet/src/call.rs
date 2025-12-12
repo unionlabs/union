@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use enumorph::Enumorph;
 use macros::model;
 use unionlabs::primitives::H256;
