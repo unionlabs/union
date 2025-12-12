@@ -310,9 +310,6 @@ export class TransferData {
 
   version = $derived(pipe(
     this.channel,
-    Option.tap((x) => {
-      return Option.some(x)
-    }),
     Option.map(Struct.get("tags")),
     Option.map(A.contains<"canonical" | "tokenorder-v2">("tokenorder-v2")),
     Option.map(B.match({
