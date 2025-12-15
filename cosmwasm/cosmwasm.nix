@@ -799,7 +799,7 @@ _: {
                 '';
               };
             }
-          ) (dbg lightclients)
+          ) lightclients
         ))
         // (builtins.listToAttrs (
           map (
