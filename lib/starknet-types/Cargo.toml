@@ -1,5 +1,5 @@
 [package]
-name    = "starknet-storage-verifier"
+name    = "starknet-types"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -12,15 +12,15 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-bitvec          = { workspace = true, features = ["alloc"] }
+bincode         = { workspace = true, features = ["alloc", "derive"], optional = true }
+ruint           = { workspace = true }
+serde           = { workspace = true, optional = true, features = ["derive"] }
 starknet-crypto = { workspace = true }
-starknet-types  = { workspace = true }
-thiserror       = { workspace = true }
 
 [dev-dependencies]
+hex-literal       = { workspace = true }
 pathfinder-crypto = { workspace = true }
-serde_json        = { workspace = true }
-starknet-types    = { workspace = true, features = ["serde"] }
 
 [features]
-default = []
+bincode = ["dep:bincode"]
+serde   = ["dep:serde"]

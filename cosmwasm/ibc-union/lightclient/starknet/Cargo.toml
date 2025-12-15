@@ -1,5 +1,5 @@
 [package]
-name    = "base-light-client"
+name    = "starknet-light-client"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -18,16 +18,16 @@ test-include = []
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-base-light-client-types     = { workspace = true, features = ["serde", "ethabi", "bincode"] }
-base-verifier               = { workspace = true }
-cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
+cosmwasm-std                = { workspace = true }
 embed-commit                = { workspace = true }
-ethereum-light-client       = { workspace = true, features = ["library"] }
-ethereum-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
-evm-storage-verifier        = { workspace = true }
+ethereum-light-client       = { workspace = true }
 frissitheto                 = { workspace = true }
 ibc-union-light-client      = { workspace = true }
 ibc-union-msg               = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
+starknet-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+starknet-storage-verifier   = { workspace = true }
+starknet-types              = { workspace = true }
+starknet-verifier           = { workspace = true }
 thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true }

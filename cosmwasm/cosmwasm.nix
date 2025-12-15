@@ -513,6 +513,11 @@ _: {
           dir = "parlia";
           client-type = "parlia";
         }
+        {
+          name = "starknet";
+          dir = "starknet";
+          client-type = "starknet";
+        }
       ];
 
       # client type => package name
