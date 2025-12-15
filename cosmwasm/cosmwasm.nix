@@ -13,7 +13,7 @@ _: {
     let
       crane = mkCrane {
         root = ../.;
-        # gitRev = "1b172ff9247e5eedcddc6665c856b0bf4427035d";
+        # gitRev = "";
         inherit gitRev;
       };
 
@@ -717,44 +717,6 @@ _: {
           '';
         };
 
-      # migrate the admin to the multisig address
-      migrate-managed-contracts-admin-to-self =
-        {
-          name,
-          rpc_url,
-          gas_config,
-          private_key,
-          bech32_prefix,
-          ...
-        }:
-        pkgs.writeShellApplication {
-          name = "${name}-deploy-full";
-          runtimeInputs = [
-            ibc-union-contract-addresses
-            cosmwasm-deployer
-          ];
-          text = ''
-            DEPLOYER=$(
-              PRIVATE_KEY=${private_key} \
-                cosmwasm-deployer \
-                address-of-private-key \
-                --bech32-prefix ${bech32_prefix}
-            )
-            ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
-
-            echo "$DEPLOYER"
-            echo "$ADDRESSES"
-
-            PRIVATE_KEY=${private_key} \
-            RUST_LOG=info \
-              cosmwasm-deployer \
-              migrate-admin-to-self \
-              --addresses <(echo "$ADDRESSES") \
-              --rpc-url ${rpc_url} \
-              ${mk-gas-args gas_config} "$@"
-          '';
-        };
-
       chain-contracts-config-json =
         {
           ucs04-chain-id,
@@ -828,13 +790,16 @@ _: {
                     cosmwasm-deployer \
                     upgrade \
                     --rpc-url ${rpc_url} \
-                    --address ${(getDeployment ucs04-chain-id).lightclient.${lc}.address} \
+                    --address ${
+                      (getDeployment ucs04-chain-id)
+                      .lightclient.${(get-lightclient (lc_: lc_.name == lc)).client-type}.address
+                    } \
                     --new-bytecode ${(mk-lightclient lc).release} \
                       ${mk-gas-args gas_config} "$@"
                 '';
               };
             }
-          ) lightclients
+          ) (dbg lightclients)
         ))
         // (builtins.listToAttrs (
           map (
@@ -1010,35 +975,6 @@ _: {
               --new-bytecode "''${2:?new bytecode path must be set (second argument to this script))}" \
               ${mk-gas-args gas_config} \
               "''${@:3}"
-          '';
-        };
-
-      migrate-to-access-managed =
-        args@{
-          name,
-          ucs04-chain-id,
-          rpc_url,
-          gas_config,
-          private_key,
-          ...
-        }:
-        pkgs.writeShellApplication {
-          name = "${name}-migrate-contract";
-          runtimeInputs = [
-            cosmwasm-deployer
-            ibc-union-contract-addresses
-          ];
-          text = ''
-            PRIVATE_KEY=${private_key} \
-            RUST_LOG="info,''${RUST_LOG:-}" \
-              cosmwasm-deployer \
-              migrate-to-access-managed \
-              --rpc-url ${rpc_url} \
-              --manager ${(getDeployment ucs04-chain-id).manager} \
-              --contracts ${chain-contracts-config-json args} \
-              --addresses <(ibc-union-contract-addresses ${(getDeployment ucs04-chain-id).deployer}) \
-              ${mk-gas-args gas_config} \
-              "$@"
           '';
         };
 
@@ -1247,8 +1183,6 @@ _: {
                       set-bucket-config = set-bucket-config chain;
                       deploy-contract = deploy-contract chain;
                       migrate-contract = migrate-contract chain;
-                      migrate-to-access-managed = migrate-to-access-managed chain;
-                      migrate-managed-contracts-admin-to-self = migrate-managed-contracts-admin-to-self chain;
                       setup-roles = setup-roles chain;
                     }
                     // (chain-migration-scripts chain)
