@@ -307,13 +307,13 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
 
         self.deps.querier.query_wasm_smart::<()>(
             &client_impl,
-            &VerifyMembershipQuery {
+            &VerificationQueryMsg::VerifyMembership(VerifyMembershipQuery {
                 client_id,
                 height,
                 proof: storage_proof.encode_as::<Client::Encoding>().into(),
                 path,
                 value,
-            },
+            }),
         )?;
 
         Ok(())
@@ -765,4 +765,172 @@ pub fn read_consensus_state<T: IbcClient>(
             error: e,
         })
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{
+        ContractResult, Empty, SystemResult, WasmQuery, from_json,
+        testing::{mock_dependencies, mock_env},
+    };
+    use unionlabs::encoding;
+
+    use super::*;
+
+    #[test]
+    fn verify_membership_call() {
+        enum Lc {}
+
+        #[derive(Debug, thiserror::Error)]
+        enum Error {}
+
+        impl From<Error> for IbcClientError<Lc> {
+            fn from(value: Error) -> Self {
+                match value {}
+            }
+        }
+
+        #[derive(Debug)]
+        struct ConsensusState {}
+
+        impl Decode<EthAbi> for ConsensusState {
+            type Error = Error;
+
+            fn decode(_: &[u8]) -> Result<Self, Self::Error> {
+                unreachable!()
+            }
+        }
+
+        impl Encode<EthAbi> for ConsensusState {
+            fn encode(self) -> Vec<u8> {
+                unreachable!()
+            }
+        }
+
+        impl IbcClient for Lc {
+            type Error = Error;
+
+            type CustomQuery = Empty;
+
+            type Header = ();
+
+            type Misbehaviour = ();
+
+            type ClientState = ();
+
+            type ConsensusState = ConsensusState;
+
+            type StorageProof = ();
+
+            type Encoding = encoding::Json;
+
+            fn verify_membership(
+                _ctx: IbcClientCtx<Self>,
+                _height: u64,
+                _key: Vec<u8>,
+                _storage_proof: Self::StorageProof,
+                _value: Vec<u8>,
+            ) -> Result<(), IbcClientError<Self>> {
+                unreachable!()
+            }
+
+            fn verify_non_membership(
+                _ctx: IbcClientCtx<Self>,
+                _height: u64,
+                _key: Vec<u8>,
+                _storage_proof: Self::StorageProof,
+            ) -> Result<(), IbcClientError<Self>> {
+                unreachable!()
+            }
+
+            fn get_timestamp(_consensus_state: &Self::ConsensusState) -> Timestamp {
+                unreachable!()
+            }
+
+            fn get_latest_height(_client_state: &Self::ClientState) -> u64 {
+                unreachable!()
+            }
+
+            fn get_counterparty_chain_id(_client_state: &Self::ClientState) -> String {
+                unreachable!()
+            }
+
+            fn status(_ctx: IbcClientCtx<Self>, _client_state: &Self::ClientState) -> Status {
+                unreachable!()
+            }
+
+            fn verify_creation(
+                _caller: Addr,
+                _client_state: &Self::ClientState,
+                _consensus_state: &Self::ConsensusState,
+                _relayer: Addr,
+            ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>> {
+                unreachable!()
+            }
+
+            fn verify_header(
+                _ctx: IbcClientCtx<Self>,
+                _caller: Addr,
+                _header: Self::Header,
+                _relayer: Addr,
+            ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
+                unreachable!()
+            }
+
+            fn misbehaviour(
+                _ctx: IbcClientCtx<Self>,
+                _caller: Addr,
+                _misbehaviour: Self::Misbehaviour,
+                _relayer: Addr,
+            ) -> Result<Self::ClientState, IbcClientError<Self>> {
+                unreachable!()
+            }
+        }
+
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+
+        deps.querier.update_wasm(|wq| match wq {
+            WasmQuery::Smart { contract_addr, msg } => match contract_addr.as_str() {
+                "client-2-impl" => SystemResult::Ok(ContractResult::Ok(
+                    match from_json::<QueryMsg>(msg).unwrap() {
+                        QueryMsg::Verification(when_not_paused) => {
+                            match when_not_paused
+                                .ensure_not_paused(mock_dependencies().as_ref())
+                                .unwrap()
+                            {
+                                VerificationQueryMsg::VerifyMembership(_) => {
+                                    Binary::new(b"null".to_vec())
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        _ => unreachable!(),
+                    },
+                )),
+                _ => {
+                    unreachable!()
+                }
+            },
+            WasmQuery::Raw { contract_addr, .. } => match contract_addr.as_str() {
+                "ibc-host" => {
+                    SystemResult::Ok(ContractResult::Ok(Binary::new(b"client-2-impl".to_vec())))
+                }
+                _ => {
+                    unreachable!()
+                }
+            },
+            _ => unreachable!(),
+        });
+
+        let ctx = IbcClientCtx::<Lc>::new(
+            ClientId!(1),
+            Addr::unchecked("ibc-host"),
+            deps.as_ref(),
+            env,
+        );
+
+        ctx.verify_membership::<Lc>(ClientId!(2), 1, Bytes::default(), (), Bytes::default())
+            .unwrap();
+    }
 }
