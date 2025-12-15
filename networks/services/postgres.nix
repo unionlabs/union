@@ -16,12 +16,12 @@ let
       }
     else if system == "x86_64-linux" then
       pkgs.dockerTools.pullImage {
-        imageName = "";
-        imageDigest = "";
-        sha256 = "";
-        finalImageName = "";
-        finalImageTag = "";
-        arch = "";
+        imageName = "postgres";
+        imageDigest = "sha256:38d5c9d522037d8bf0864c9068e4df2f8a60127c6489ab06f98fdeda535560f9";
+        sha256 = "sha256-KCRRAzlnRccKXvGYJUvMF2/ZLPXWn8L9MhHQso1BVts=";
+        finalImageName = "postgres";
+        finalImageTag = "18.1";
+        arch = "amd64";
       }
     else
       throw "invalid system";
