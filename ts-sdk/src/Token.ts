@@ -150,7 +150,7 @@ export class Cw20 extends S.TaggedClass<Cw20>()("Cw20", {
 export class CosmosBank extends S.TaggedClass<CosmosBank>()("CosmosBank", {
   // XXX: address incorrect semantically
   address: S.String.pipe(
-    S.pattern(/^[a-z][a-z0-9]{1,127}$/),
+    S.pattern(/^[a-z][a-z0-9/:._-]{1,127}$/),
   ),
 }) {
   /**
@@ -174,6 +174,24 @@ export const Any = S.Union(
   CosmosIbcClassic,
   SuiCoin,
 )
+
+union.union-testnet-10..cw20.union1....
+ethereum.1..evm-native
+osmosis.osmosis-1..cosmos-bank.0xeeee
+babylon.bbn-1..cosmos-bank.ubbn
+
+// export const Any = S.Union(
+//   Erc20,
+//   EvmNative,
+//   Cw20,
+//   CosmosNative
+//   // CosmosTokenFactory,
+//   // CosmosBank,
+//   // CosmosIbcClassic,
+//   StarknetNative
+//   StarknetErc20
+//   SuiCoin,
+// )
 /**
  * @category models
  * @since 2.0.0
