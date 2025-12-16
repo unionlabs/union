@@ -1,5 +1,5 @@
 {
-  "aptos": ["1", "2"],
+  "aptos": ["2"],
   "arbitrum": ["42161", "421614"],
   "babylon": ["bbn-1", "bbn-test-6"],
   "base": ["8453", "84532"],
@@ -7,14 +7,19 @@
   "bob": ["60808", "808813"],
   "bsc": ["56", "97"],
   "corn": ["21000000", "21000001"],
+  "dydx": ["dydx-testnet-4"],
   "ethereum": ["11155111", "560048", "1"],
-  "movement": ["250"],
+  "intento": ["intento-dev-1"],
+  "mantra": ["mantra-dukong-1"],
+  "movement": ["250", "27"],
+  "neutron": ["neutron-1", "pion-1"],
+  "optimism": ["10", "11155420"],
   "osmosis": ["osmo-test-5", "osmosis-1"],
   "scroll": ["534351"],
   "sei": ["pacific-1", "atlantic-2", "1328", "1329"],
-  "sui": ["4c78adac"],
   "stargaze": ["elgafar-1"],
   "stride": ["stride-internal-1"],
+  "sui": ["35834a8a", "4c78adac"],
   "union": ["union-testnet-8", "union-testnet-9", "union-testnet-10", "union-1"],
   "xion": ["xion-testnet-2", "xion-mainnet-1"]
 }
