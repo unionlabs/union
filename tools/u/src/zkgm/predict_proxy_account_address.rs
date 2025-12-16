@@ -2,11 +2,13 @@ use alloy::hex;
 use anyhow::{Context, Result, anyhow, bail};
 use clap::Args;
 use cosmwasm_std::instantiate2_address;
-use deployments::{DEPLOYMENTS, Deployment};
+use deployments::Deployment;
 use ibc_union_spec::ChannelId;
 use ucs03_zkgm::contract::proxy_account_salt;
 use unionlabs::primitives::{Bech32, Bytes, U256};
 use voyager_primitives::IbcInterface;
+
+use crate::deployments::DEPLOYMENTS;
 
 #[derive(Debug, Args)]
 pub struct Cmd {
@@ -96,14 +98,16 @@ impl Cmd {
             }
 
             match deployment {
-                Deployment::IbcSolidity { app: _, .. } => {
+                Deployment::IbcSolidity { contracts: _, .. } => {
                     unimplemented!()
                 }
-                Deployment::IbcCosmwasm { app, .. } => predict_proxy_account_cosmwasm(
-                    app.ucs03
+                Deployment::IbcCosmwasm { contracts, .. } => predict_proxy_account_cosmwasm(
+                    contracts
+                        .iter()
+                        .find(|(_, deployment)| deployment.name == "protocols/ucs03")
                         .as_ref()
                         .context(anyhow!("no ucs03 deployment for {chain_id}"))?
-                        .address
+                        .0
                         .to_string(),
                     args,
                 ),
