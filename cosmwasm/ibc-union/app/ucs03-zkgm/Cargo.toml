@@ -18,6 +18,7 @@ crate-type = ["cdylib", "rlib"]
 access-managed              = { workspace = true }
 alloy-primitives            = { workspace = true }
 alloy-sol-types             = { workspace = true }
+cosmwasm-event              = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_2", "cosmwasm_1_4", "staking"] }
 cw-account                  = { workspace = true }
 cw-storage-plus             = { workspace = true }

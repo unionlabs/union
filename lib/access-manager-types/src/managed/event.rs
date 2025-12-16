@@ -1,4 +1,5 @@
-use cosmwasm_std::{Addr, Event};
+use cosmwasm_event::Event;
+use cosmwasm_std::Addr;
 
 /// Authority that manages this contract was updated.
 ///
@@ -7,12 +8,8 @@ use cosmwasm_std::{Addr, Event};
 /// ```
 ///
 /// <https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.4.0/contracts/access/manager/IAccessManaged.sol#L10>
+#[derive(Event)]
+#[event("authority_updated")]
 pub struct AuthorityUpdated<'a> {
     pub authority: &'a Addr,
-}
-
-impl From<AuthorityUpdated<'_>> for Event {
-    fn from(event: AuthorityUpdated<'_>) -> Self {
-        Event::new("authority_updated").add_attribute("authority", event.authority)
-    }
 }

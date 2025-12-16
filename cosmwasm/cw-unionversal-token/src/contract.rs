@@ -2,8 +2,8 @@ use std::slice;
 
 use access_managed::{EnsureCanCallResult, handle_consume_scheduled_op_reply, state::Authority};
 use cosmwasm_std::{
-    Binary, Deps, DepsMut, Env, Event, MessageInfo, Reply, Response, StdError, StdResult,
-    entry_point, to_json_binary,
+    Binary, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError, StdResult, entry_point,
+    to_json_binary,
 };
 use depolama::StorageExt;
 use frissitheto::{UpgradeError, UpgradeMsg};
@@ -12,8 +12,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::from_value;
 use token_factory_api::TokenFactoryMsg;
 use ucs03_solvable::Solvable;
-use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
-use unionlabs_primitives::{Bytes, U256, encoding::HexPrefixed};
+use ucs03_zkgm::event::Solver;
+use unionlabs_primitives::{Bytes, U256};
 
 use crate::{
     CwUCtx,
@@ -233,13 +233,9 @@ pub fn execute(
                 .add_events(mint_fee_res.events)
                 .add_attributes(mint_fee_res.attributes)
                 .add_submessages(mint_fee_res.messages)
-                .add_event(
-                    Event::new(SOLVER_EVENT).add_attribute(
-                        SOLVER_EVENT_MARKET_MAKER_ATTR,
-                        Bytes::<HexPrefixed>::from(fungible_lane.counterparty_beneficiary.to_vec())
-                            .to_string(),
-                    ),
-                ))
+                .add_event(Solver {
+                    market_maker: fungible_lane.counterparty_beneficiary,
+                }))
         }
         ExecuteMsg::AccessManaged(msg) => Ok(access_managed::execute(deps, env, info, msg)?
             .change_custom()

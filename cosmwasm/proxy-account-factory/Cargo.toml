@@ -15,6 +15,7 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
+cosmwasm-event     = { workspace = true }
 cosmwasm-std       = { workspace = true, features = ["cosmwasm_2_0", "staking", "stargate"] } # enable all features so that any message is dispatchable
 cw-account         = { workspace = true }
 depolama           = { workspace = true }

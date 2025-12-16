@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 bincode              = { workspace = true, features = ["derive"] }
+cosmwasm-event       = { workspace = true }
 cosmwasm-std         = { workspace = true }
 depolama             = { workspace = true }
 schemars             = { workspace = true, optional = true }

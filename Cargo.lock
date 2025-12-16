@@ -130,6 +130,7 @@ name = "access-manager-types"
 version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",
+ "cosmwasm-event",
  "cosmwasm-std",
  "depolama",
  "hex-literal 0.4.1",
@@ -3736,6 +3737,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cosmwasm-event"
+version = "0.0.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.101",
+]
+
+[[package]]
 name = "cosmwasm-schema"
 version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4167,6 +4177,7 @@ name = "cw-account"
 version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",
+ "cosmwasm-event",
  "cosmwasm-std",
  "depolama",
  "embed-commit",
@@ -7150,6 +7161,7 @@ dependencies = [
  "access-manager-types",
  "alloy-primitives",
  "alloy-sol-types",
+ "cosmwasm-event",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-orch",
@@ -8535,6 +8547,7 @@ name = "lst"
 version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",
+ "cosmwasm-event",
  "cosmwasm-schema",
  "cosmwasm-std",
  "cw-utils",
@@ -8560,6 +8573,7 @@ name = "lst-staker"
 version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",
+ "cosmwasm-event",
  "cosmwasm-std",
  "cw-account",
  "cw-utils",
@@ -10351,6 +10365,7 @@ dependencies = [
 name = "pausable"
 version = "0.0.0"
 dependencies = [
+ "cosmwasm-event",
  "cosmwasm-std",
  "depolama",
  "schemars",
@@ -11034,6 +11049,7 @@ dependencies = [
 name = "proxy-account-factory"
 version = "0.0.0"
 dependencies = [
+ "cosmwasm-event",
  "cosmwasm-std",
  "cw-account",
  "depolama",
@@ -15762,6 +15778,7 @@ dependencies = [
  "access-manager-types",
  "alloy-primitives",
  "alloy-sol-types",
+ "cosmwasm-event",
  "cosmwasm-std",
  "cw-account",
  "cw-multi-test",
@@ -16161,6 +16178,7 @@ dependencies = [
 name = "upgradable"
 version = "0.0.0"
 dependencies = [
+ "cosmwasm-event",
  "cosmwasm-std",
  "embed-commit",
  "frissitheto",

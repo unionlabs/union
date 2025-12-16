@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    BankMsg, Order, OwnedDeps,
+    BankMsg, Event, Order, OwnedDeps,
     testing::{MockApi, MockQuerier, MockStorage, message_info, mock_dependencies, mock_env},
     to_json_vec,
 };

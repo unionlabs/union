@@ -1,7 +1,7 @@
 use std::num::NonZeroU32;
 
 use cosmwasm_std::{
-    Addr, Checksum, Deps, DepsMut, Empty, Env, Event, MessageInfo, Response, WasmMsg,
+    Addr, Checksum, Deps, DepsMut, Empty, Env, MessageInfo, Response, WasmMsg,
     instantiate2_address, to_json_binary, wasm_execute,
 };
 use depolama::StorageExt;
@@ -11,11 +11,13 @@ use sha2::Digest;
 
 use crate::{
     error::ContractError,
+    event::ProxyCreated,
     msg::{ExecuteMsg, InitMsg, MigrateMsg},
     state::{BytecodeBaseCodeId, CwAccountCodeId},
 };
 
 pub mod error;
+pub mod event;
 pub mod msg;
 pub mod state;
 
@@ -108,11 +110,10 @@ pub fn execute(
                             admin: proxy_address.to_string(),
                         },
                     ])
-                    .add_event(
-                        Event::new("proxy_created")
-                            .add_attribute("creator", info.sender)
-                            .add_attribute("proxy", &proxy_address),
-                    );
+                    .add_event(ProxyCreated {
+                        creator: &info.sender,
+                        proxy: &proxy_address,
+                    });
             };
 
             Ok(res

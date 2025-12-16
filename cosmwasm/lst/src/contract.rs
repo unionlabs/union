@@ -59,7 +59,7 @@
 // TITLE.
 
 use cosmwasm_std::{
-    Binary, Deps, DepsMut, Env, Event, MessageInfo, Response, StdResult, ensure, to_json_binary,
+    Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, ensure, to_json_binary,
 };
 use depolama::StorageExt;
 use frissitheto::UpgradeMsg;
@@ -67,6 +67,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::ContractError,
+    event::Init,
     execute::{
         FEE_RATE_DENOMINATOR, accept_ownership, bond, circuit_breaker, rebase, receive_rewards,
         receive_unstaked_tokens, resume_contract, revoke_ownership_transfer, slash_batches,
@@ -157,26 +158,16 @@ pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractE
 
     deps.storage.write_item::<Stopped>(&false);
 
-    Ok(Response::new().add_event(
-        Event::new("init")
-            .add_attribute("admin", admin)
-            .add_attribute("native_token_denom", native_token_denom)
-            .add_attribute(
-                "minimum_liquid_stake_amount",
-                minimum_liquid_stake_amount.to_string(),
-            )
-            .add_attribute(
-                "protocol_fee_rate",
-                protocol_fee_config.fee_rate.to_string(),
-            )
-            .add_attribute("protocol_fee_recipient", protocol_fee_config.fee_recipient)
-            .add_attribute(
-                "current_unbonding_period",
-                unbonding_period_seconds.to_string(),
-            )
-            .add_attribute("staker_address", staker_address)
-            .add_attribute("lst_address", lst_address),
-    ))
+    Ok(Response::new().add_event(Init {
+        admin,
+        native_token_denom,
+        minimum_liquid_stake_amount,
+        protocol_fee_rate: protocol_fee_config.fee_rate,
+        protocol_fee_recipient: protocol_fee_config.fee_recipient,
+        current_unbonding_period: unbonding_period_seconds,
+        staker_address,
+        lst_address,
+    }))
 }
 
 #[cfg_attr(not(feature = "library"), cosmwasm_std::entry_point)]

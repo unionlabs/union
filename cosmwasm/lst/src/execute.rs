@@ -68,6 +68,11 @@ use depolama::StorageExt;
 
 use crate::{
     error::{ContractError, ContractResult},
+    event::{
+        AcceptOwnership, Bond, CircuitBreaker, Rebase, ReceiveRewards, ReceiveUnstakedTokens,
+        ResumeContract, RevokeOwnershipTransfer, SlashBatch, SubmitBatch, TransferOwnership,
+        Unbond, Withdraw,
+    },
     helpers::{assets_to_shares, shares_to_assets, total_assets},
     msg::StakerExecuteMsg,
     state::{
@@ -194,13 +199,12 @@ pub fn bond(
             },
             vec![],
         )?)
-        .add_event(
-            Event::new("bond")
-                .add_attribute("mint_to_address", mint_to_address.to_string())
-                .add_attribute("sender", info.sender.to_string())
-                .add_attribute("in_amount", bond_amount.to_string())
-                .add_attribute("mint_amount", mint_amount.to_string()),
-        );
+        .add_event(Bond {
+            mint_to_address,
+            sender: info.sender,
+            in_amount: bond_amount,
+            mint_amount,
+        });
 
     Ok(response)
 }
@@ -299,13 +303,12 @@ pub fn unbond(
             },
             vec![],
         )?)
-        .add_event(
-            Event::new("unbond")
-                .add_attribute("staker", info.sender)
-                .add_attribute("batch", current_pending_batch.batch_id.to_string())
-                .add_attribute("amount", unbond_amount.to_string())
-                .add_attribute("is_new_request", is_new_request.to_string()),
-        );
+        .add_event(Unbond {
+            staker: info.sender,
+            batch: current_pending_batch.batch_id,
+            amount: unbond_amount,
+            is_new_request,
+        });
 
     Ok(response)
 }
@@ -435,16 +438,12 @@ pub fn submit_batch(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResul
             },
             vec![],
         )?)
-        .add_event(
-            Event::new("submit_batch")
-                .add_attribute("batch_id", batch_id.to_string())
-                .add_attribute("batch_total", total_lst_to_burn.to_string())
-                .add_attribute("expected_unstaked", unbond_amount.to_string())
-                .add_attribute(
-                    "current_unbonding_period",
-                    config.unbonding_period_seconds.to_string(),
-                ),
-        ))
+        .add_event(SubmitBatch {
+            batch_id,
+            batch_total: total_lst_to_burn,
+            expected_unstaked: unbond_amount,
+            current_unbonding_period: config.unbonding_period_seconds,
+        }))
 }
 
 /// Receive rewards (denominated in the native token) to this contract.
@@ -496,15 +495,11 @@ pub fn receive_rewards(deps: DepsMut, info: MessageInfo) -> ContractResult<Respo
         })?;
 
     Ok(Response::new()
-        .add_event(
-            Event::new("receive_rewards")
-                .add_attribute("amount", received_rewards.to_string())
-                .add_attribute(
-                    "amount_after_protocol_fee",
-                    amount_after_protocol_fee.to_string(),
-                )
-                .add_attribute("protocol_fee", protocol_fee.to_string()),
-        )
+        .add_event(ReceiveRewards {
+            amount: received_rewards,
+            amount_after_protocol_fee,
+            protocol_fee,
+        })
         // send amount after fees to the staker (we restake the received staking rewards)
         .add_message(wasm_execute(
             deps.storage.read_item::<StakerAddress>()?.to_string(),
@@ -529,7 +524,9 @@ pub fn rebase(deps: DepsMut, info: MessageInfo) -> ContractResult<Response> {
     ensure_not_stopped(deps.as_ref())?;
 
     Ok(Response::new()
-        .add_event(Event::new("rebase").add_attribute("caller", info.sender.clone()))
+        .add_event(Rebase {
+            caller: info.sender,
+        })
         // call into the rebase method on the lst staker
         .add_message(wasm_execute(
             deps.storage.read_item::<StakerAddress>()?.to_string(),
@@ -588,11 +585,10 @@ pub fn receive_unstaked_tokens(
         },
     );
 
-    Ok(Response::new().add_event(
-        Event::new("receive_unstaked_tokens")
-            .add_attribute("batch", batch_id.to_string())
-            .add_attribute("amount", received_native_amount.to_string()),
-    ))
+    Ok(Response::new().add_event(ReceiveUnstakedTokens {
+        batch: batch_id,
+        amount: received_native_amount,
+    }))
 }
 
 pub fn withdraw(
@@ -637,13 +633,12 @@ pub fn withdraw(
         .delete::<UnstakeRequestsByStakerHash>(&unstake_request_key);
 
     Ok(Response::new()
-        .add_event(
-            Event::new("withdraw")
-                .add_attribute("staker", info.sender)
-                .add_attribute("batch_id", batch_id.to_string())
-                .add_attribute("withdraw_to_address", &withdraw_to_address)
-                .add_attribute("amount", amount.to_string()),
-        )
+        .add_event(Withdraw {
+            staker: info.sender,
+            batch_id,
+            withdraw_to_address: &withdraw_to_address,
+            amount,
+        })
         // send the native token (U) back to the desired address
         .add_message(BankMsg::Send {
             to_address: withdraw_to_address.to_string(),
@@ -677,11 +672,10 @@ pub fn transfer_ownership(
             .expect("overflow"),
     });
 
-    Ok(Response::new().add_event(
-        Event::new("transfer_ownership")
-            .add_attribute("new_owner", new_owner)
-            .add_attribute("previous_owner", info.sender),
-    ))
+    Ok(Response::new().add_event(TransferOwnership {
+        new_owner,
+        previous_owner: info.sender,
+    }))
 }
 
 // Revoke transfer ownership, callable by the owner
@@ -691,7 +685,7 @@ pub fn revoke_ownership_transfer(deps: DepsMut, info: MessageInfo) -> ContractRe
 
     deps.storage.delete_item::<PendingOwnerStore>();
 
-    Ok(Response::new().add_event(Event::new("revoke_ownership_transfer")))
+    Ok(Response::new().add_event(RevokeOwnershipTransfer {}))
 }
 
 pub fn accept_ownership(deps: DepsMut, env: Env, info: MessageInfo) -> ContractResult<Response> {
@@ -716,8 +710,9 @@ pub fn accept_ownership(deps: DepsMut, env: Env, info: MessageInfo) -> ContractR
 
         deps.storage.write_item::<Admin>(&info.sender);
 
-        Ok(Response::new()
-            .add_event(Event::new("accept_ownership").add_attribute("new_owner", info.sender)))
+        Ok(Response::new().add_event(AcceptOwnership {
+            new_owner: info.sender,
+        }))
     } else {
         Err(ContractError::CallerIsNotPendingOwner)
     }
@@ -734,6 +729,7 @@ pub fn update_config(
     nonpayable(&info)?;
     ensure_admin(deps.as_ref(), &info)?;
 
+    // TODO: Add this event to events.rs (will need support for optional fields in cosmwasm-event)
     let mut event = Event::new("update_config");
 
     if let Some(protocol_fee_config) = protocol_fee_config {
@@ -802,8 +798,9 @@ pub fn circuit_breaker(deps: DepsMut, info: MessageInfo) -> ContractResult<Respo
     {
         deps.storage.write_item::<Stopped>(&true);
 
-        Ok(Response::new()
-            .add_event(Event::new("circuit_breaker").add_attribute("breaker", info.sender)))
+        Ok(Response::new().add_event(CircuitBreaker {
+            breaker: info.sender,
+        }))
     } else {
         Err(ContractError::Unauthorized {
             sender: info.sender,
@@ -825,21 +822,11 @@ pub fn resume_contract(
     deps.storage
         .write_item::<AccountingStateStore>(&new_accounting_state);
 
-    Ok(Response::new().add_event(
-        Event::new("resume_contract")
-            .add_attribute(
-                "total_bonded_native_tokens",
-                new_accounting_state.total_bonded_native_tokens.to_string(),
-            )
-            .add_attribute(
-                "total_issued_lst",
-                new_accounting_state.total_issued_lst.to_string(),
-            )
-            .add_attribute(
-                "total_reward_amount",
-                new_accounting_state.total_reward_amount.to_string(),
-            ),
-    ))
+    Ok(Response::new().add_event(ResumeContract {
+        total_bonded_native_tokens: new_accounting_state.total_bonded_native_tokens,
+        total_issued_lst: new_accounting_state.total_issued_lst,
+        total_reward_amount: new_accounting_state.total_reward_amount,
+    }))
 }
 
 pub fn slash_batches(
@@ -868,10 +855,6 @@ pub fn slash_batches(
         |BatchExpectedAmount {
              batch_id,
              expected_native_amount: amount,
-         }| {
-            Event::new("slash_batch")
-                .add_attribute("batch_id", batch_id.to_string())
-                .add_attribute("amount", amount.to_string())
-        },
+         }| SlashBatch { batch_id, amount },
     )))
 }

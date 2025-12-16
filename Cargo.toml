@@ -300,6 +300,7 @@ members = [
   "lib/starknet-verifier",
   "lib/starknet-types",
   "lib/starknet-light-client-types",
+  "lib/cosmwasm-event",
 ]
 
 [workspace.package]
@@ -372,6 +373,7 @@ consensus-primitives                      = { path = "lib/consensus-primitives",
 cosmos-client                             = { path = "lib/cosmos-client", default-features = false }
 cosmos-sdk-event                          = { path = "lib/cosmos-sdk-event", default-features = false }
 cosmos-signer                             = { path = "lib/cosmos-signer", default-features = false }
+cosmwasm-event                            = { path = "lib/cosmwasm-event", default-features = false }
 create3                                   = { path = "lib/create3", default-features = false }
 cw-account                                = { path = "cosmwasm/cw-account", default-features = false }
 cw-escrow-vault                           = { path = "cosmwasm/cw-escrow-vault", default-features = false }

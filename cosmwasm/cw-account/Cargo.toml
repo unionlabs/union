@@ -16,6 +16,7 @@ workspace = true
 
 [dependencies]
 bincode              = { workspace = true, features = ["derive"] }
+cosmwasm-event       = { workspace = true }
 cosmwasm-std         = { workspace = true, features = ["cosmwasm_2_0", "staking", "stargate"] } # enable all features so that any message is dispatchable
 depolama             = { workspace = true, features = ["iterator"] }
 embed-commit         = { workspace = true }
@@ -32,6 +33,7 @@ unionlabs-primitives = { workspace = true, features = ["bincode"] }
 hex-literal = { workspace = true }
 
 [features]
-default  = []
+default = []
+
 library  = []
 schemars = ["dep:schemars"]
