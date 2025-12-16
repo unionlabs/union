@@ -489,9 +489,6 @@
                 cometblsOpenApiYml = "${inputs.cometbls}/rpc/openapi/openapi.yaml";
                 ibcGoOpenApiYml = "${inputs.ibc-go}/docs/client/swagger-ui/swagger.yaml";
               };
-
-              # Used as the salt when executing `instantiate2` in CosmWasm.
-              cw-instantiate2-salt = "61616161";
             };
           };
 
@@ -626,7 +623,6 @@
             PROTOC = "${pkgs.protobuf}/bin/protoc";
             FOUNDRY_LIBS = ''["${self'.packages.evm-libs}"]'';
             FOUNDRY_DISABLE_NIGHTLY_WARNING = "1";
-            # LD_LIBRARY_PATH = "${lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib ]}";
           };
           # https://flake.parts/options/treefmt-nix#opt-perSystem.treefmt
           treefmt = import ./treefmt.nix {
