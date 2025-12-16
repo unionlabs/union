@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, env, fs, path::Path};
 use heck::ToPascalCase;
 
 fn main() {
-    let path = "../../deployments/universal-chain-ids.json";
+    let path = "well-known.json";
 
     println!("cargo:rerun-if-changed={path}");
 
@@ -81,9 +81,9 @@ fn main() {
 
     let well_known = format!(
         r#"
-        /// Well-known universal chain ids, as defined in [`universal-chain-ids.json`].
+        /// Well-known universal chain ids, as defined in [`well-known.json`].
         ///
-        /// [`universal-chain-ids.json`]: https://github.com/unionlabs/union/blob/main/deployments/universal-chain-ids.json
+        /// [`well-known.json`]: https://github.com/unionlabs/union/blob/main/lib/ucs04/well-known.json
         pub mod well_known {{
             #![allow(clippy::enum_glob_use)]
             use super::{{UniversalChainId, Family::*, Id}};
