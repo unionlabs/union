@@ -8,7 +8,7 @@ license-file = { workspace = true }
 publish      = { workspace = true }
 repository   = { workspace = true }
 
-include = ["../../deployments/deployments-v2.json"]
+include = ["../../deployments/deployments.json"]
 
 [lints]
 workspace = true
