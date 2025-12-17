@@ -116,14 +116,7 @@ Both the editions and the chain sub-keys should be sorted. This is handled by ru
 
 ## universal-chain-ids.json
 
-As described in [UCS04], Union uses a two-part identifier — chain family name and chain ID — to uniquely identify a network. This helps prevent ambiguity across environments, testnets, and mainnets.
-
-This file defines all known universal chain IDs used in the Union ecosystem. It provides the canonical mapping from chain family to their supported chain IDs and serves as a reference for disambiguating chain identifiers across environments.
-
-The structure is as follows:
-
-- `<chain family name>`: The name of the chain family (e.g. `ethereum`, `babylon`).
-  - A list of supported chain IDs for that chain. These IDs are used to form **universal chain IDs** by combining the chain name and ID, e.g. `ethereum.1`, `babylon.bbn-test-5`.
+See [lib/ucs04](../lib/ucs04/README) for more information. This file is hardlinked from that folder due to limitations with cargo vendoring. ([1](https://github.com/ipetkov/crane/discussions/666), [2](https://crane.dev/faq/git-dep-cannot-find-relative-path.html))
 
 ## token-whitelist.json
 

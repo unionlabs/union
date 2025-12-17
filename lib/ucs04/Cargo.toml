@@ -2,13 +2,13 @@
 name    = "ucs04"
 version = "0.0.0"
 
-include = ["../../deployments/universal-chain-ids.json"]
-
 authors      = { workspace = true }
 edition      = { workspace = true }
 license-file = { workspace = true }
 publish      = { workspace = true }
 repository   = { workspace = true }
+
+include = ["well-known.json"]
 
 [lints]
 workspace = true
