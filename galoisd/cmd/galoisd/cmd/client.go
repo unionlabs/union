@@ -3,13 +3,15 @@ package cmd
 import (
 	"context"
 	"crypto/tls"
+	"log"
+	"time"
+
 	provergrpc "galois/grpc/api/v3"
+
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
-	"log"
-	"time"
 )
 
 const (

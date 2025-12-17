@@ -2,9 +2,10 @@ package cometbls
 
 import (
 	"encoding/hex"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestVerifier(t *testing.T) {

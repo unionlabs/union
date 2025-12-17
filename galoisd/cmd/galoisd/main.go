@@ -5,6 +5,7 @@ package main
 
 import (
 	"galois/cmd/galoisd/cmd"
+
 	"github.com/spf13/cobra"
 )
 
