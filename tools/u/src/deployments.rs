@@ -8,7 +8,7 @@ use ucs04::UniversalChainId;
 use crate::print_json;
 
 pub static DEPLOYMENTS: LazyLock<Deployments<'static>> = LazyLock::new(|| {
-    serde_json::from_slice(include_bytes!("../../../deployments/deployments-v2.json")).unwrap()
+    serde_json::from_slice(include_bytes!("../../../deployments/deployments.json")).unwrap()
 });
 
 #[derive(Debug, Subcommand)]
