@@ -49,7 +49,7 @@ _: {
             pnpm --filter=docs build
             runHook postBuild
           '';
-          NODE_OPTIONS="--no-warnings --max-old-space-size=8192";
+          NODE_OPTIONS = "--no-warnings --max-old-space-size=8192";
           installPhase = ''
             export NODE_OPTIONS="--no-warnings --max-old-space-size=8192"
             mkdir -p $out
