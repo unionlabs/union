@@ -41,7 +41,7 @@ _: {
             runHook preBuild
             export PUPPETEER_SKIP_DOWNLOAD=1
             export ASTRO_TELEMETRY_DISABLED=1
-            export NODE_OPTIONS="--no-warnings"
+            export NODE_OPTIONS="--no-warnings --max-old-space-size=8192"
             mkdir docs/src/content/docs/reference/@unionlabs
             cp -r ${self'.packages.ts-sdk-docs}/modules docs/src/content/docs/reference/@unionlabs/sdk
             cp -r ${self'.packages.ts-sdk-evm-docs}/modules docs/src/content/docs/reference/@unionlabs/sdk-evm
@@ -50,7 +50,9 @@ _: {
             pnpm --filter=docs build
             runHook postBuild
           '';
+          NODE_OPTIONS = "--no-warnings --max-old-space-size=8192";
           installPhase = ''
+            export NODE_OPTIONS="--no-warnings --max-old-space-size=8192"
             mkdir -p $out
             cp -r ./docs/dist/* $out
           '';

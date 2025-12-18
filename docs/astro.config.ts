@@ -208,6 +208,14 @@ export default defineConfig({
               label: "Connect",
               items: [
                 {
+                  label: "Existing Implementations",
+                  link: "/connect/implementations",
+                },
+                {
+                  label: "Integration Requirements",
+                  link: "/connect/integration-requirements",
+                },
+                {
                   label: "New Chain",
                   items: [
                     {

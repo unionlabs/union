@@ -1,0 +1,31 @@
+---
+title: Union Protocol Integration Requirements
+---
+
+The Union protocol is agnostic to the underlying abstract machine it is running on. Many integrations already exist, as described in [../implementations]. If a new implementation is required, there are several requirements for building a new integration, as defined below.
+
+## Verifiable Consensus and Finality
+
+The chain must have some sort of consensus that can be verified in an on-chain light client. This typically entails a validator set that signs on the state of the chain, eventually reaching a state of finality. Note that for L2s, this is typically a verification of the settlement in the finalized state of the L1.
+
+## Verifiable Transaction Outputs
+
+Included in the finalized state verified by the light client there must be some sort of "root" (block hash, storage root, transaction root) against which transaction outputs can be verified. This could be a merkle root of the chain storage or receipts/logs, a flat hash of transaction effects, or anything else that enables verifying arbitrary transaction outputs in a block. Additionally, if this method of verification is through proofs that are derived from chain state, they must be queryable from an endpoint (i.e. [`eth_getProof`]) or reconstructable from a standard node interface; for example querying all data required for building a block hash.
+
+## Execution Environment (Smart Contracts)
+
+The Union protocol is implemented fully virtualized in a smart contract environment. Almost any VM can be supported, as long as it has the required capabilities.
+
+Required capabilities:
+
+- `BN254` *OR* `BLS12-381` precompiles: ecAdd, ecMul, ecPairing
+  - Alternatively, these signatures can be verified directly in the smart contract, however this is typically not desirable due to the cost of these operations.
+- Cross-contract calls (either natively, or a way to emulate it; for example [Sui's PTBs][ptb])
+
+Not required, but ideal to have for a fully featured implementation:
+
+- Deterministic and predictable contract address derivation
+- Existing token standard with capabilities to do escrow/unescrow (either through lock/unlock or burn/mint)
+
+[ptb]: https://docs.sui.io/concepts/transactions/prog-txn-blocks
+[`eth_getProof`]: https://eips.ethereum.org/EIPS/eip-1186
