@@ -6,6 +6,7 @@ members = [
   "cairo/mock_client",
   "cairo/cometbls_light_client",
   "cairo/loopback_light_client",
+  "cairo/cometbls_verifier",
 ]
 
 [workspace.dependencies]
@@ -17,4 +18,5 @@ ibc                 = { path = "cairo/ibc" }
 openzeppelin        = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v3.0.0-alpha.3" }
 starknet            = "2.13.1"
 
-snforge_std = "0.53.0-rc.0"
+garaga              = { git = "https://github.com/keep-starknet-strange/garaga.git", tag = "v1.0.1" }
+snforge_std   = "0.53.0-rc.0"
