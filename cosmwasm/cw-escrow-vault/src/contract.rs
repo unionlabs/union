@@ -4,16 +4,15 @@ use access_managed::{EnsureCanCallResult, handle_consume_scheduled_op_reply, sta
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Reply, Response,
-    StdError, StdResult, to_json_binary, wasm_execute,
+    BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Reply, Response, StdError,
+    StdResult, to_json_binary, wasm_execute,
 };
 use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
 use frissitheto::{UpgradeError, UpgradeMsg};
 use ibc_union_spec::path::commit_packets;
 use ucs03_solvable::{Solvable, SolverQuery};
-use ucs03_zkgm::contract::{SOLVER_EVENT, SOLVER_EVENT_MARKET_MAKER_ATTR};
-use unionlabs_primitives::{Bytes, encoding::HexPrefixed};
+use ucs03_zkgm::event::Solver;
 
 use crate::{
     error::ContractError,
@@ -181,13 +180,9 @@ pub fn execute(
                 order.quote_amount.try_into().expect("impossible"),
             )?;
 
-            Ok(Response::new().add_messages(messages).add_event(
-                Event::new(SOLVER_EVENT).add_attribute(
-                    SOLVER_EVENT_MARKET_MAKER_ATTR,
-                    Bytes::<HexPrefixed>::from(fungible_lane.counterparty_beneficiary.to_vec())
-                        .to_string(),
-                ),
-            ))
+            Ok(Response::new().add_messages(messages).add_event(Solver {
+                market_maker: fungible_lane.counterparty_beneficiary,
+            }))
         }
         ExecuteMsg::AccessManaged(msg) => {
             access_managed::execute(deps, env, info, msg).map_err(Into::into)
@@ -297,14 +292,15 @@ mod tests {
     use access_managed::Restricted;
     use access_manager_types::{CanCall, managed::error::AccessManagedError};
     use cosmwasm_std::{
-        Addr, ContractInfoResponse, ContractResult, Empty, OwnedDeps, QuerierResult, QueryRequest,
-        SystemResult, WasmMsg, WasmQuery,
+        Addr, ContractInfoResponse, ContractResult, Empty, Event, OwnedDeps, QuerierResult,
+        QueryRequest, SystemResult, WasmMsg, WasmQuery,
         testing::{
             MOCK_CONTRACT_ADDR, MockApi, MockQuerier, MockStorage, message_info, mock_dependencies,
             mock_env,
         },
     };
     use ibc_union_spec::{ChannelId, Packet, Timestamp};
+    use unionlabs_primitives::Bytes;
 
     use super::*;
 
@@ -420,10 +416,9 @@ mod tests {
 
         assert_eq!(
             res.events,
-            vec![Event::new(SOLVER_EVENT).add_attribute(
-                SOLVER_EVENT_MARKET_MAKER_ATTR,
-                Bytes::<HexPrefixed>::from(vec![0; 32]).to_string(),
-            )]
+            vec![Event::from(Solver {
+                market_maker: Bytes::new(&[0; 32])
+            })]
         );
 
         assert_eq!(

@@ -36,6 +36,7 @@ use crate::{
         TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW, TokenMetadata, TokenOrderAck,
         TokenOrderV1, TokenOrderV2, ZkgmPacket,
     },
+    event::{CreateProxyAccount, Solver, TokenBucketUpdate},
     msg::{
         Config, ExecuteMsg, InitMsg, MigrateMsg, PredictWrappedTokenResponse, QueryMsg,
         RestrictedExecuteMsg, SendMsg, V1ToV2Migration, V1ToV2WrappedMigration,
@@ -60,9 +61,6 @@ pub const MM_SOLVER_FILL_REPLY_ID: u64 = 0xb0cad0;
 
 pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
 pub const ZKGM_CW_ACCOUNT_LABEL: &str = "zkgm-cw-account";
-
-pub const SOLVER_EVENT: &str = "solver";
-pub const SOLVER_EVENT_MARKET_MAKER_ATTR: &str = "market_maker";
 
 /// Instantiate `ucs03-zkgm`.
 ///
@@ -307,12 +305,12 @@ pub fn execute(
                             }
                         },
                     )?;
-                    Ok(Response::new().add_event(
-                        Event::new("token_bucket_update")
-                            .add_attribute("denom", denom)
-                            .add_attribute("capacity", token_bucket.capacity)
-                            .add_attribute("refill_rate", token_bucket.refill_rate),
-                    ))
+
+                    Ok(Response::new().add_event(TokenBucketUpdate {
+                        denom,
+                        capacity: token_bucket.capacity,
+                        refill_rate: token_bucket.refill_rate,
+                    }))
                 }
                 RestrictedExecuteMsg::MigrateV1ToV2 {
                     balance_migrations,
@@ -1584,13 +1582,12 @@ fn execute_call(
                     admin: predicted_address.to_string(),
                 },
             ])
-            .add_event(
-                Event::new("create_proxy_account")
-                    .add_attribute("path", call_proxy_salt.path.to_string())
-                    .add_attribute("channel_id", call_proxy_salt.channel_id.to_string())
-                    .add_attribute("owner", call_proxy_salt.sender.to_string())
-                    .add_attribute("address", predicted_address),
-            );
+            .add_event(CreateProxyAccount {
+                path: call_proxy_salt.path,
+                channel_id: call_proxy_salt.channel_id,
+                owner: call_proxy_salt.sender,
+                address: predicted_address,
+            });
     }
 
     if call.eureka {
@@ -2663,10 +2660,10 @@ pub fn reply(mut deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Cont
         MM_SOLVER_FILL_REPLY_ID => {
             let extract_market_maker = |x: &SubMsgResponse| {
                 x.events.iter().find_map(|e| {
-                    if e.ty == format!("wasm-{}", SOLVER_EVENT) {
+                    if e.ty == Solver::wasm_ty() {
                         e.attributes
                             .iter()
-                            .find(|a| a.key == SOLVER_EVENT_MARKET_MAKER_ATTR)
+                            .find(|a| a.key == Solver::market_maker_attr_key())
                             .and_then(|a| Bytes::<HexPrefixed>::from_str(&a.value).ok())
                     } else {
                         None
@@ -2674,6 +2671,7 @@ pub fn reply(mut deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Cont
                 })
             };
             match reply.result {
+                // TODO: use if-let guards once stable: https://github.com/rust-lang/rust/pull/141295
                 SubMsgResult::Ok(reply_data) if extract_market_maker(&reply_data).is_some() => {
                     let market_maker = extract_market_maker(&reply_data).expect("impossible");
                     Ok(Response::new().add_message(wasm_execute(

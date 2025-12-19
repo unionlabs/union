@@ -7,6 +7,7 @@ use unionlabs_primitives::Bytes;
 
 pub mod com;
 pub mod contract;
+pub mod event;
 pub mod msg;
 pub mod state;
 pub mod token_bucket;

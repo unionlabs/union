@@ -16,6 +16,7 @@ workspace = true
 
 [dependencies]
 bincode              = { workspace = true, features = ["derive"] }
+cosmwasm-event       = { workspace = true }
 cosmwasm-std         = { workspace = true }
 cw-account           = { workspace = true, features = ["library"] }
 cw-utils             = { workspace = true }

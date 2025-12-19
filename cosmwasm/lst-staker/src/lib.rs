@@ -4,7 +4,7 @@ use std::{collections::BTreeMap, num::NonZeroU32};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     Addr, Binary, Coin, DecCoin, Decimal256, DelegatorReward, Deps, DepsMut, DistributionMsg, Env,
-    Event, Int256, MessageInfo, Response, StakingMsg, StdError, Uint128, Uint256, to_json_binary,
+    Int256, MessageInfo, Response, StakingMsg, StdError, Uint128, Uint256, to_json_binary,
     wasm_execute,
 };
 use cw_account::ensure_local_admin_or_self;
@@ -14,10 +14,12 @@ use frissitheto::{InitStateVersionError, UpgradeError, UpgradeMsg};
 use lst::msg::{ConfigResponse, StakerExecuteMsg};
 
 use crate::{
+    event::{Rebase, SetLstHubAddress, SetValidators, Stake, Unstake, ValidatorConfigured},
     msg::{ExecuteMsg, MigrateMsg, QueryMsg},
     state::{LstHub, Validators},
 };
 
+pub mod event;
 pub mod msg;
 pub mod state;
 
@@ -60,8 +62,7 @@ pub fn execute(
 
             deps.storage.write_item::<LstHub>(&address);
 
-            Ok(Response::new()
-                .add_event(Event::new("set_lst_hub_address").add_attribute("address", address)))
+            Ok(Response::new().add_event(SetLstHubAddress { address }))
         }
         ExecuteMsg::SetValidators(validators) => {
             ensure_local_admin_or_self(deps.as_ref(), &env, &info)?;
@@ -110,18 +111,16 @@ fn set_validators(
     })?;
 
     let mut response = Response::new()
-        .add_event(
-            Event::new("set_validators").add_attribute("total_shares", total_shares.to_string()),
-        )
-        .add_events(validators.iter().map(|(validator, shares)| {
-            Event::new("validator_configured")
-                .add_attribute("address", validator)
-                .add_attribute("shares", shares.to_string())
-                .add_attribute(
-                    "weight",
-                    Decimal256::from_ratio(*shares, total_shares).to_string(),
-                )
-        }));
+        .add_event(SetValidators { total_shares })
+        .add_events(
+            validators
+                .iter()
+                .map(|(validator, shares)| ValidatorConfigured {
+                    address: validator,
+                    shares: *shares,
+                    weight: Decimal256::from_ratio(*shares, total_shares),
+                }),
+        );
 
     // if this isn't the first time setting the validators, rebase and rebalance the currently
     // staked amounts
@@ -181,11 +180,10 @@ fn stake(deps: Deps, env: &Env, info: &MessageInfo) -> Result<Response, Contract
                     ),
                 }),
         )
-        .add_event(
-            Event::new("stake")
-                .add_attribute("total", amount_to_stake)
-                .add_attribute("pending_rewards", total_pending_rewards),
-        ))
+        .add_event(Stake {
+            total: amount_to_stake.into(),
+            pending_rewards: total_pending_rewards.into(),
+        }))
 }
 
 fn unstake(deps: Deps, env: &Env, amount: u128) -> Result<Response, ContractError> {
@@ -216,7 +214,7 @@ fn unstake(deps: Deps, env: &Env, amount: u128) -> Result<Response, ContractErro
     Ok(Response::new()
         .add_events(rebase_response.events)
         .add_submessages(rebase_response.messages)
-        .add_event(Event::new("unstake").add_attribute("total", amount.to_string()))
+        .add_event(Unstake { total: amount })
         .add_messages(msgs))
 }
 
@@ -231,10 +229,9 @@ fn rebase(deps: Deps, env: &Env) -> Result<Response, ContractError> {
             &lst::msg::ExecuteMsg::ReceiveRewards {},
             vec![Coin::new(total_pending_rewards, native_token_denom)],
         )?)
-        .add_event(
-            Event::new("rebase")
-                .add_attribute("restaked_rewards", total_pending_rewards.to_string()),
-        ))
+        .add_event(Rebase {
+            restaked_rewards: total_pending_rewards.into(),
+        }))
 }
 
 fn query_native_token_denom(deps: Deps) -> Result<String, ContractError> {

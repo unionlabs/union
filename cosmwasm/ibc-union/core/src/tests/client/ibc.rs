@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    Addr, Event,
+    Event,
     testing::{message_info, mock_dependencies, mock_env},
     to_json_binary,
 };
@@ -15,7 +15,7 @@ use ibc_union_msg::{
 use super::*;
 use crate::{
     ContractError,
-    contract::{events, execute, init},
+    contract::{events::RegisterClient, execute, init},
     state::{ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates, ClientTypes},
 };
 
@@ -23,12 +23,6 @@ const CLIENT_TYPE: &str = "union";
 const CLIENT_ADDRESS: &str = "unionclient";
 const SENDER: &str = "unionsender";
 const RELAYER: &str = "unionrelayer";
-
-fn new_client_registered_event(client_type: &str, client_address: &Addr) -> Event {
-    Event::new(events::client::REGISTER)
-        .add_attribute(events::attribute::CLIENT_TYPE, client_type)
-        .add_attribute(events::attribute::CLIENT_ADDRESS, client_address)
-}
 
 #[test]
 fn register_client_ok() {
@@ -50,11 +44,11 @@ fn register_client_ok() {
 
     let res = register_client(deps.as_mut()).unwrap();
 
-    assert!(
-        res.events
-            .into_iter()
-            .any(|e| e == new_client_registered_event(CLIENT_TYPE, &mock_addr(CLIENT_ADDRESS)))
-    );
+    assert!(res.events.into_iter().any(|e| e
+        == Event::from(RegisterClient {
+            client_type: CLIENT_TYPE.to_owned(),
+            client_address: mock_addr(CLIENT_ADDRESS),
+        })));
 
     assert_eq!(
         deps.storage
@@ -163,15 +157,15 @@ fn create_client_commitments_saved() {
     let client_id = res
         .events
         .iter()
-        .find(|event| event.ty.eq(events::client::CREATE))
+        .find(|event| event.ty.eq("create_client"))
         .expect("create client event exists")
         .attributes
         .iter()
-        .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
-        .expect("client type attribute exists")
+        .find(|attribute| attribute.key.eq("client_id"))
+        .expect("client id attribute exists")
         .value
         .parse::<ClientId>()
-        .expect("client type string is u32");
+        .expect("client id string is u32");
 
     assert_eq!(
         deps.storage.read::<ClientTypes>(&client_id).unwrap(),
@@ -239,15 +233,15 @@ fn update_client_ok() {
     let client_id = res
         .events
         .iter()
-        .find(|event| event.ty.eq(events::client::CREATE))
+        .find(|event| event.ty.eq("create_client"))
         .expect("create client event exists")
         .attributes
         .iter()
-        .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
-        .expect("client type attribute exists")
+        .find(|attribute| attribute.key.eq("client_id"))
+        .expect("client id attribute exists")
         .value
         .parse::<ClientId>()
-        .expect("client type string is u32");
+        .expect("client id string is u32");
 
     assert!(
         execute(
@@ -305,15 +299,15 @@ fn update_client_ko() {
     let client_id = res
         .events
         .iter()
-        .find(|event| event.ty.eq(events::client::CREATE))
+        .find(|event| event.ty.eq("create_client"))
         .expect("create client event exists")
         .attributes
         .iter()
-        .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
-        .expect("client type attribute exists")
+        .find(|attribute| attribute.key.eq("client_id"))
+        .expect("client id attribute exists")
         .value
         .parse::<ClientId>()
-        .expect("client type string is u32");
+        .expect("client id string is u32");
 
     assert!(
         execute(
@@ -378,15 +372,15 @@ fn update_client_commitments_saved() {
     let client_id = res
         .events
         .iter()
-        .find(|event| event.ty.eq(events::client::CREATE))
+        .find(|event| event.ty.eq("create_client"))
         .expect("create client event exists")
         .attributes
         .iter()
-        .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
-        .expect("client type attribute exists")
+        .find(|attribute| attribute.key.eq("client_id"))
+        .expect("client id attribute exists")
         .value
         .parse::<ClientId>()
-        .expect("client type string is u32");
+        .expect("client id string is u32");
 
     execute(
         deps.as_mut(),

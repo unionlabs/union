@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    Api, CanonicalAddr, Checksum, CodeInfoResponse, ContractInfoResponse, ContractResult,
+    Api, CanonicalAddr, Checksum, CodeInfoResponse, ContractInfoResponse, ContractResult, Event,
     OwnedDeps, SystemError, SystemResult, WasmQuery,
     testing::{MockApi, MockQuerier, MockStorage, message_info, mock_dependencies, mock_env},
 };

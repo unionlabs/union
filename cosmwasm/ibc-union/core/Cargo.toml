@@ -22,6 +22,7 @@ library           = []
 access-managed   = { workspace = true }
 alloy-primitives = { workspace = true }
 alloy-sol-types  = { workspace = true }
+cosmwasm-event   = { workspace = true }
 cosmwasm-schema  = { workspace = true }
 cosmwasm-std     = { workspace = true, features = ["abort", "iterator"] }
 cw-orch          = { workspace = true, optional = true }

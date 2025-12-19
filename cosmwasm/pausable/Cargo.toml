@@ -12,11 +12,12 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-cosmwasm-std = { workspace = true, features = [] }
-depolama     = { workspace = true }
-schemars     = { workspace = true, optional = true }
-serde        = { workspace = true, features = ["derive"] }
-thiserror    = { workspace = true }
+cosmwasm-event = { workspace = true }
+cosmwasm-std   = { workspace = true, features = [] }
+depolama       = { workspace = true }
+schemars       = { workspace = true, optional = true }
+serde          = { workspace = true, features = ["derive"] }
+thiserror      = { workspace = true }
 
 [features]
 default = []

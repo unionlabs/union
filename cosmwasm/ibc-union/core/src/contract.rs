@@ -6,8 +6,8 @@ use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    Addr, Attribute, Binary, Deps, DepsMut, Env, Event, MessageInfo, OverflowError,
-    OverflowOperation, Reply, Response, StdError, StdResult, to_json_binary, wasm_execute,
+    Addr, Binary, Deps, DepsMut, Env, Event, MessageInfo, OverflowError, OverflowOperation, Reply,
+    Response, StdError, StdResult, to_json_binary, wasm_execute,
 };
 use depolama::{RawStore, StorageExt};
 use frissitheto::{UpgradeError, UpgradeMsg};
@@ -47,6 +47,13 @@ use unionlabs::{
 
 use crate::{
     ContractError,
+    contract::events::{
+        BatchAcks, BatchSend, ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck,
+        ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, CommitMembershipProof,
+        CommitNonMembershipProof, ConnectionOpenAck, ConnectionOpenInit, ConnectionOpenTry,
+        CreateClient, CreateLensClient, ForceUpdateClient, IntentPacketRecv, PacketAck, PacketRecv,
+        PacketSend, RegisterClient, TimeoutPacket, UpdateClient, WriteAck,
+    },
     state::{
         ChannelOwner, Channels, ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates,
         ClientStore, ClientTypes, Commitments, Connections, ContractChannels, NextChannelId,
@@ -57,102 +64,231 @@ use crate::{
 type ContractResult = Result<Response, ContractError>;
 
 pub mod events {
-    pub mod client {
-        pub const REGISTER: &str = "register_client";
-        pub const CREATE: &str = "create_client";
-        pub const UPDATE: &str = "update_client";
-    }
-    pub mod connection {
-        pub const OPEN_INIT: &str = "connection_open_init";
-        pub const OPEN_TRY: &str = "connection_open_try";
-        pub const OPEN_ACK: &str = "connection_open_ack";
-        pub const OPEN_CONFIRM: &str = "connection_open_confirm";
-    }
-    pub mod channel {
-        pub const OPEN_INIT: &str = "channel_open_init";
-        pub const OPEN_TRY: &str = "channel_open_try";
-        pub const OPEN_ACK: &str = "channel_open_ack";
-        pub const OPEN_CONFIRM: &str = "channel_open_confirm";
-        pub const CLOSE_INIT: &str = "channel_close_init";
-        pub const CLOSE_CONFIRM: &str = "channel_close_confirm";
-    }
-    pub mod packet {
-        pub const SEND: &str = "packet_send";
-        pub const RECV: &str = "packet_recv";
-        pub const INTENT_RECV: &str = "intent_packet_recv";
-        pub const ACK: &str = "packet_ack";
-        pub const TIMEOUT: &str = "packet_timeout";
-        pub const BATCH_SEND: &str = "batch_send";
-        pub const BATCH_ACKS: &str = "batch_acks";
-        pub const WRITE_ACK: &str = "write_ack";
-    }
-    pub mod proof {
-        pub const COMMIT_MEMBERSHIP: &str = "commit_membership_proof";
-        pub const COMMIT_NON_MEMBERSHIP: &str = "commit_non_membership_proof";
-    }
-    pub mod attribute {
-        pub const CLIENT_ID: &str = "client_id";
-        pub const CONNECTION_ID: &str = "connection_id";
-        pub const CHANNEL_ID: &str = "channel_id";
-        pub const COUNTERPARTY_CHANNEL_ID: &str = "counterparty_channel_id";
-        pub const COUNTERPARTY_HEIGHT: &str = "counterparty_height";
-        pub const PACKET_HASH: &str = "packet_hash";
-        pub const PACKET_SOURCE_CHANNEL_ID: &str = "packet_source_channel_id";
-        pub const PACKET_DESTINATION_CHANNEL_ID: &str = "packet_destination_channel_id";
-        pub const PACKET_DATA: &str = "packet_data";
-        pub const PACKET_TIMEOUT_HEIGHT: &str = "packet_timeout_height";
-        pub const PACKET_TIMEOUT_TIMESTAMP: &str = "packet_timeout_timestamp";
-        pub const BATCH_HASH: &str = "batch_hash";
-        pub const MAKER: &str = "maker";
-        pub const MAKER_MSG: &str = "maker_msg";
-        pub const ACKNOWLEDGEMENT: &str = "acknowledgement";
-        pub const ACKNOWLEDGEMENT_HASH: &str = "acknowledgement_hash";
-        pub const CLIENT_TYPE: &str = "client_type";
-        pub const CLIENT_ADDRESS: &str = "client_address";
-        pub const COUNTERPARTY_CHAIN_ID: &str = "counterparty_chain_id";
-        pub const COUNTERPARTY_CLIENT_ID: &str = "counterparty_client_id";
-        pub const COUNTERPARTY_CONNECTION_ID: &str = "counterparty_connection_id";
-        pub const PORT_ID: &str = "port_id";
-        pub const COUNTERPARTY_PORT_ID: &str = "counterparty_port_id";
-        pub const VERSION: &str = "version";
-        pub const PATH: &str = "path";
-        pub const VALUE: &str = "value";
-        pub const PROOF_HEIGHT: &str = "proof_height";
-    }
-}
+    use cosmwasm_event::Event;
+    use cosmwasm_std::Addr;
+    use depolama::Bytes;
+    use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
+    use unionlabs::primitives::{H256, encoding::HexUnprefixed};
 
-#[must_use]
-fn packet_to_attrs(packet: &Packet) -> [Attribute; 5] {
-    [
-        (
-            events::attribute::PACKET_SOURCE_CHANNEL_ID,
-            packet.source_channel_id.to_string(),
-        ),
-        (
-            events::attribute::PACKET_DESTINATION_CHANNEL_ID,
-            packet.destination_channel_id.to_string(),
-        ),
-        (events::attribute::PACKET_DATA, packet.data.to_string()),
-        // emitted as a legacy attribute
-        (events::attribute::PACKET_TIMEOUT_HEIGHT, 0.to_string()),
-        (
-            events::attribute::PACKET_TIMEOUT_TIMESTAMP,
-            packet.timeout_timestamp.to_string(),
-        ),
-    ]
-    .map(Into::into)
-}
+    #[derive(Event)]
+    #[event("register_client")]
+    pub struct RegisterClient {
+        pub client_type: String,
+        pub client_address: Addr,
+    }
 
-#[must_use]
-fn packet_to_attr_hash(channel_id: ChannelId, packet: &Packet) -> [Attribute; 2] {
-    [
-        (events::attribute::CHANNEL_ID, channel_id.to_string()),
-        (
-            events::attribute::PACKET_HASH,
-            commit_packets(slice::from_ref(packet)).to_string(),
-        ),
-    ]
-    .map(Into::into)
+    #[derive(Event)]
+    #[event("create_client")]
+    pub struct CreateClient {
+        pub client_id: ClientId,
+        pub client_type: String,
+        pub counterparty_chain_id: String,
+    }
+
+    #[derive(Event)]
+    #[event("update_client")]
+    pub struct UpdateClient {
+        pub client_id: ClientId,
+        pub counterparty_height: u64,
+    }
+
+    #[derive(Event)]
+    #[event("force_update_client")]
+    pub struct ForceUpdateClient {
+        pub client_id: ClientId,
+        pub counterparty_height: u64,
+    }
+
+    #[derive(Event)]
+    #[event("connection_open_init")]
+    pub struct ConnectionOpenInit {
+        pub connection_id: ConnectionId,
+        pub client_id: ClientId,
+        pub counterparty_client_id: ClientId,
+    }
+
+    #[derive(Event)]
+    #[event("connection_open_try")]
+    pub struct ConnectionOpenTry {
+        pub connection_id: ConnectionId,
+        pub client_id: ClientId,
+        pub counterparty_client_id: ClientId,
+        pub counterparty_connection_id: ConnectionId,
+    }
+
+    #[derive(Event)]
+    #[event("connection_open_ack")]
+    pub struct ConnectionOpenAck {
+        pub connection_id: ConnectionId,
+        pub client_id: ClientId,
+        pub counterparty_client_id: ClientId,
+        pub counterparty_connection_id: ConnectionId,
+    }
+
+    #[derive(Event)]
+    #[event("connection_open_confirm")]
+    pub struct ConnectionOpenConfirm {
+        pub connection_id: ConnectionId,
+        pub client_id: ClientId,
+        pub counterparty_client_id: ClientId,
+        pub counterparty_connection_id: ConnectionId,
+    }
+
+    #[derive(Event)]
+    #[event("channel_open_init")]
+    pub struct ChannelOpenInit<'a> {
+        pub port_id: &'a Addr,
+        pub channel_id: ChannelId,
+        pub counterparty_port_id: &'a Bytes<HexUnprefixed>,
+        pub connection_id: ConnectionId,
+        pub version: &'a str,
+    }
+
+    #[derive(Event)]
+    #[event("channel_open_try")]
+    pub struct ChannelOpenTry<'a> {
+        pub port_id: &'a Addr,
+        pub channel_id: ChannelId,
+        pub counterparty_port_id: &'a Bytes<HexUnprefixed>,
+        pub counterparty_channel_id: ChannelId,
+        pub connection_id: ConnectionId,
+        pub counterparty_version: &'a str,
+    }
+
+    #[derive(Event)]
+    #[event("channel_open_ack")]
+    pub struct ChannelOpenAck<'a> {
+        pub port_id: &'a Addr,
+        pub channel_id: ChannelId,
+        pub counterparty_port_id: &'a Bytes<HexUnprefixed>,
+        pub counterparty_channel_id: ChannelId,
+        pub connection_id: ConnectionId,
+    }
+
+    #[derive(Event)]
+    #[event("channel_open_confirm")]
+    pub struct ChannelOpenConfirm<'a> {
+        pub port_id: &'a Addr,
+        pub channel_id: ChannelId,
+        pub counterparty_port_id: &'a Bytes<HexUnprefixed>,
+        pub counterparty_channel_id: ChannelId,
+        pub connection_id: ConnectionId,
+    }
+
+    #[derive(Event)]
+    #[event("channel_close_init")]
+    pub struct ChannelCloseInit<'a> {
+        pub port_id: &'a Addr,
+        pub channel_id: ChannelId,
+        pub counterparty_port_id: &'a Bytes<HexUnprefixed>,
+        pub counterparty_channel_id: ChannelId,
+    }
+
+    #[derive(Event)]
+    #[event("channel_close_confirm")]
+    pub struct ChannelCloseConfirm<'a> {
+        pub port_id: &'a Addr,
+        pub channel_id: ChannelId,
+        pub counterparty_port_id: &'a Bytes<HexUnprefixed>,
+        pub counterparty_channel_id: ChannelId,
+    }
+
+    #[derive(Event)]
+    #[event("packet_send")]
+    pub struct PacketSend {
+        pub packet_source_channel_id: ChannelId,
+        pub packet_destination_channel_id: ChannelId,
+        pub packet_data: Bytes,
+        pub packet_timeout_height: u64,
+        pub packet_timeout_timestamp: Timestamp,
+        pub channel_id: ChannelId,
+        pub packet_hash: H256,
+    }
+
+    #[derive(Event)]
+    #[event("batch_send")]
+    pub struct BatchSend {
+        pub channel_id: ChannelId,
+        pub packet_hash: H256,
+        pub batch_hash: H256,
+    }
+
+    #[derive(Event)]
+    #[event("batch_acks")]
+    pub struct BatchAcks {
+        pub channel_id: ChannelId,
+        pub packet_hash: H256,
+        pub batch_hash: H256,
+    }
+
+    #[derive(Event)]
+    #[event("packet_recv")]
+    pub struct PacketRecv<'a> {
+        pub channel_id: ChannelId,
+        pub packet_hash: H256,
+        pub maker: &'a Addr,
+        pub maker_msg: &'a Bytes<HexUnprefixed>,
+    }
+
+    #[derive(Event)]
+    #[event("intent_packet_recv")]
+    pub struct IntentPacketRecv<'a> {
+        pub channel_id: ChannelId,
+        pub packet_hash: H256,
+        pub maker: &'a Addr,
+        pub maker_msg: &'a Bytes<HexUnprefixed>,
+    }
+
+    #[derive(Event)]
+    #[event("packet_ack")]
+    pub struct PacketAck<'a> {
+        pub channel_id: ChannelId,
+        pub packet_hash: H256,
+        pub acknowledgement: &'a Bytes<HexUnprefixed>,
+        pub maker: &'a Addr,
+    }
+
+    #[derive(Event)]
+    #[event("write_ack")]
+    pub struct WriteAck<'a> {
+        pub channel_id: ChannelId,
+        pub packet_hash: H256,
+        pub acknowledgement: &'a Bytes<HexUnprefixed>,
+    }
+
+    #[derive(Event)]
+    #[event("timeout_packet")]
+    pub struct TimeoutPacket<'a> {
+        pub channel_id: ChannelId,
+        pub packet_hash: H256,
+        pub maker: &'a Addr,
+    }
+
+    #[derive(Event)]
+    #[event("commit_membership_proof")]
+    pub struct CommitMembershipProof<'a> {
+        pub client_id: ClientId,
+        pub proof_height: u64,
+        pub path: &'a Bytes<HexUnprefixed>,
+        pub value: &'a Bytes<HexUnprefixed>,
+    }
+
+    #[derive(Event)]
+    #[event("commit_non_membership_proof")]
+    pub struct CommitNonMembershipProof<'a> {
+        pub client_id: ClientId,
+        pub proof_height: u64,
+        pub path: &'a Bytes<HexUnprefixed>,
+    }
+
+    #[derive(Event)]
+    #[event("create_lens_client")]
+    pub struct CreateLensClient<'a> {
+        pub client_id: ClientId,
+        pub l1_client_id: ClientId,
+        pub l2_client_id: ClientId,
+        pub l2_chain_id: &'a str,
+    }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -166,12 +302,7 @@ pub fn execute(
         ExecuteMsg::WriteAcknowledgement(MsgWriteAcknowledgement {
             packet,
             acknowledgement,
-        }) => write_acknowledgement(
-            deps.branch(),
-            info.sender,
-            packet,
-            acknowledgement.into_vec(),
-        ),
+        }) => write_acknowledgement(deps.branch(), info.sender, packet, acknowledgement),
         ExecuteMsg::PacketSend(MsgSendPacket {
             source_channel_id,
             timeout_timestamp,
@@ -181,7 +312,7 @@ pub fn execute(
             info.sender,
             source_channel_id,
             timeout_timestamp,
-            data.into_vec(),
+            data,
         ),
         ExecuteMsg::MigrateState(MsgMigrateState {
             client_id,
@@ -256,14 +387,10 @@ pub fn execute(
                         client_id,
                     )?;
 
-                    Ok(Response::new().add_event(
-                        Event::new("force_update_client")
-                            .add_attribute(events::attribute::CLIENT_ID, client_id.to_string())
-                            .add_attribute(
-                                events::attribute::COUNTERPARTY_HEIGHT,
-                                height.to_string(),
-                            ),
-                    ))
+                    Ok(Response::new().add_event(ForceUpdateClient {
+                        client_id,
+                        counterparty_height: height,
+                    }))
                 }
                 RestrictedExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
                     client_id,
@@ -697,19 +824,26 @@ fn batch_send(deps: DepsMut, packets: Vec<Packet>) -> ContractResult {
     if packets.len() < 2 {
         return Err(ContractError::NotEnoughPackets);
     }
+
     let channel_id = packets[0].source_channel_id;
+
     let batch_hash = commit_packets(&packets);
+
     let batch_commitment_key = BatchPacketsPath::from_packets(&packets).key();
-    let mut events = Vec::new();
+
+    let mut events = Vec::with_capacity(packets.len());
+
     for packet in packets {
-        events.push(
-            Event::new(events::packet::BATCH_SEND)
-                .add_attributes(packet_to_attr_hash(channel_id, &packet))
-                .add_attribute(events::attribute::BATCH_HASH, batch_hash.to_string()),
-        );
+        events.push(BatchSend {
+            channel_id,
+            packet_hash: packet.hash(),
+            batch_hash,
+        });
+
         if packet.source_channel_id != channel_id {
             return Err(ContractError::BatchSameChannelOnly);
         }
+
         let commitment_key = BatchPacketsPath::from_packets(&[packet]).key();
 
         let commitment = deps
@@ -721,7 +855,9 @@ fn batch_send(deps: DepsMut, packets: Vec<Packet>) -> ContractResult {
             return Err(ContractError::PacketCommitmentNotFound);
         }
     }
+
     store_commit(deps, &batch_commitment_key, &COMMITMENT_MAGIC);
+
     Ok(Response::new().add_events(events))
 }
 
@@ -729,24 +865,34 @@ fn batch_acks(deps: DepsMut, packets: Vec<Packet>, acks: Vec<Bytes>) -> Contract
     if packets.len() < 2 {
         return Err(ContractError::NotEnoughPackets);
     }
+
     let channel_id = packets[0].destination_channel_id;
+
     let batch_hash = commit_packets(&packets);
+
     let batch_commitment_key = BatchReceiptsPath::from_packets(&packets).key();
+
     let mut events = Vec::new();
+
     for (packet, ack) in packets.into_iter().zip(acks.iter()) {
-        events.push(
-            Event::new(events::packet::BATCH_ACKS)
-                .add_attributes(packet_to_attr_hash(channel_id, &packet))
-                .add_attribute(events::attribute::BATCH_HASH, batch_hash.to_string()),
-        );
+        events.push(BatchAcks {
+            channel_id,
+            packet_hash: commit_packets(slice::from_ref(&packet)),
+            batch_hash,
+        });
+
         if packet.destination_channel_id != channel_id {
             return Err(ContractError::BatchSameChannelOnly);
         }
+
         let commitment_key = BatchReceiptsPath::from_packets(&[packet]).key();
+
         let commitment = read_commit(deps.as_ref(), &commitment_key);
+
         match commitment {
             Some(ack_commitment) => {
                 let ack_commitment_expected = commit_ack(ack);
+
                 if ack_commitment == COMMITMENT_MAGIC {
                     return Err(ContractError::AcknowledgementIsEmpty);
                 } else if ack_commitment != ack_commitment_expected {
@@ -759,7 +905,9 @@ fn batch_acks(deps: DepsMut, packets: Vec<Packet>, acks: Vec<Bytes>) -> Contract
             None => return Err(ContractError::PacketCommitmentNotFound),
         }
     }
+
     store_commit(deps, &batch_commitment_key, &commit_acks(&acks));
+
     Ok(Response::new().add_events(events))
 }
 
@@ -772,21 +920,23 @@ fn timeout_packet(
     relayer: Addr,
 ) -> ContractResult {
     let source_channel = packet.source_channel_id;
+
     let channel = ensure_channel_state(deps.as_ref(), source_channel)?;
+
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
     let proof_timestamp =
         get_timestamp_at_height(deps.as_ref(), connection.client_id, proof_height)?;
+
     if proof_timestamp.is_zero() {
         return Err(ContractError::TimeoutProofTimestampNotFound);
     }
 
     let commitment_key = BatchReceiptsPath::from_packets(slice::from_ref(&packet)).key();
 
-    let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
     query_light_client::<()>(
         deps.as_ref(),
-        client_impl,
+        client_impl(deps.as_ref(), connection.client_id)?,
         VerifyNonMembershipQuery {
             client_id: connection.client_id,
             height: proof_height,
@@ -794,6 +944,7 @@ fn timeout_packet(
             path: commitment_key.into_bytes(),
         },
     )?;
+
     mark_packet_as_acknowledged(deps.branch(), &packet)?;
 
     if packet.timeout_timestamp.is_zero() {
@@ -806,11 +957,11 @@ fn timeout_packet(
 
     let port_id = deps.storage.read::<ChannelOwner>(&source_channel)?;
     Ok(Response::new()
-        .add_event(
-            Event::new(events::packet::TIMEOUT)
-                .add_attributes(packet_to_attr_hash(source_channel, &packet))
-                .add_attributes([(events::attribute::MAKER, relayer.to_string())]),
-        )
+        .add_event(TimeoutPacket {
+            channel_id: source_channel,
+            packet_hash: commit_packets(slice::from_ref(&packet)),
+            maker: &relayer,
+        })
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnTimeoutPacket {
@@ -855,27 +1006,31 @@ fn acknowledge_packet(
     )?;
 
     let port_id = deps.storage.read::<ChannelOwner>(&source_channel_id)?;
-    let mut events = Vec::with_capacity(packets.len());
+    let mut events = Vec::<Event>::with_capacity(packets.len());
     let mut messages = Vec::with_capacity(packets.len());
     for (packet, ack) in packets.into_iter().zip(acknowledgements) {
         if packet.source_channel_id != source_channel_id {
             return Err(ContractError::BatchSameChannelOnly);
         }
+
         mark_packet_as_acknowledged(deps.branch(), &packet)?;
+
         events.push(
-            Event::new(events::packet::ACK)
-                .add_attributes(packet_to_attr_hash(source_channel_id, &packet))
-                .add_attributes([
-                    (events::attribute::ACKNOWLEDGEMENT, hex::encode(&ack)),
-                    (events::attribute::MAKER, relayer.clone().to_string()),
-                ]),
+            PacketAck {
+                channel_id: source_channel_id,
+                packet_hash: packet.hash(),
+                acknowledgement: ack.as_encoding(),
+                maker: &relayer,
+            }
+            .into(),
         );
+
         messages.push(wasm_execute(
             port_id.clone(),
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnAcknowledgementPacket {
                 caller: info.sender.clone().into_string(),
                 packet,
-                acknowledgement: ack.to_vec().into(),
+                acknowledgement: ack.into_encoding(),
                 relayer: relayer.clone().into(),
             }),
             vec![],
@@ -917,11 +1072,10 @@ fn register_client(
             None => Ok(client_address),
         })?;
 
-    Ok(Response::new().add_event(
-        Event::new(events::client::REGISTER)
-            .add_attribute(events::attribute::CLIENT_TYPE, client_type)
-            .add_attribute(events::attribute::CLIENT_ADDRESS, client_address),
-    ))
+    Ok(Response::new().add_event(RegisterClient {
+        client_type,
+        client_address,
+    }))
 }
 
 fn create_client(
@@ -934,6 +1088,7 @@ fn create_client(
 ) -> Result<Response, ContractError> {
     let client_impl = deps.storage.read::<ClientRegistry>(&client_type)?;
     let client_id = next_client_id(deps.branch())?;
+
     deps.storage.write::<ClientTypes>(&client_id, &client_type);
     deps.storage.write::<ClientImpls>(&client_id, &client_impl);
 
@@ -953,16 +1108,12 @@ fn create_client(
         .fold(Response::new(), |response, e| {
             response.add_event(make_verify_creation_event(client_id, e))
         });
-    Ok(
-        response.add_event(Event::new(events::client::CREATE).add_attributes([
-            (events::attribute::CLIENT_TYPE, client_type),
-            (events::attribute::CLIENT_ID, client_id.to_string()),
-            (
-                events::attribute::COUNTERPARTY_CHAIN_ID,
-                verify_creation_response.counterparty_chain_id,
-            ),
-        ])),
-    )
+
+    Ok(response.add_event(CreateClient {
+        client_id,
+        client_type,
+        counterparty_chain_id: verify_creation_response.counterparty_chain_id,
+    }))
 }
 
 /// Shared functionality between CreateClient and ForceUpdateClient.
@@ -980,7 +1131,7 @@ fn init_client(
 
     // 1. write these states first, so they can be read by the light client contract during VerifyCreation
     deps.storage
-        .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
+        .write::<ClientStates>(&client_id, &(&client_state_bytes).into());
 
     // 2. once the client state is saved, query the light client impl for the height of that client state (the state we just saved is the latest height)
     let latest_height = query_light_client::<u64>(
@@ -992,7 +1143,7 @@ fn init_client(
     // 3. save the consensus state, so that it can be read during VerifyCreation as well
     deps.storage.write::<ClientConsensusStates>(
         &(client_id, latest_height),
-        &consensus_state_bytes.to_vec().into(),
+        &(&consensus_state_bytes).into(),
     );
 
     // 4. finally, call VerifyCreation, which will read the states we just stored
@@ -1005,6 +1156,7 @@ fn init_client(
             relayer: relayer.into(),
         },
     )?;
+
     if let Some(client_state_bytes) = verify_creation_response.client_state_bytes.as_ref() {
         // if VerifyCreation returns a new client state to save, overwrite the state we just wrote.
         deps.storage
@@ -1014,7 +1166,7 @@ fn init_client(
     store_commit(
         deps.branch(),
         &ClientStatePath { client_id }.key(),
-        &commit(client_state_bytes),
+        &commit(&client_state_bytes),
     );
 
     store_commit(
@@ -1024,7 +1176,7 @@ fn init_client(
             height: latest_height,
         }
         .key(),
-        &commit(consensus_state_bytes),
+        &commit(&consensus_state_bytes),
     );
 
     for (k, v) in &verify_creation_response.storage_writes {
@@ -1081,7 +1233,7 @@ fn update_client(
             &commit(&client_state_bytes),
         );
         deps.storage
-            .write::<ClientStates>(&client_id, &client_state_bytes.to_vec().into());
+            .write::<ClientStates>(&client_id, &client_state_bytes);
     }
 
     store_commit(
@@ -1104,15 +1256,10 @@ fn update_client(
             .write::<ClientStore<RawStore>>(&(client_id, k), &v);
     }
 
-    Ok(
-        Response::new().add_event(Event::new(events::client::UPDATE).add_attributes([
-            (events::attribute::CLIENT_ID, client_id.to_string()),
-            (
-                events::attribute::COUNTERPARTY_HEIGHT,
-                update.height.to_string(),
-            ),
-        ])),
-    )
+    Ok(Response::new().add_event(UpdateClient {
+        client_id,
+        counterparty_height: update.height,
+    }))
 }
 
 fn connection_open_init(
@@ -1121,23 +1268,21 @@ fn connection_open_init(
     counterparty_client_id: ClientId,
 ) -> ContractResult {
     let connection_id = next_connection_id(deps.branch())?;
+
     let connection = Connection {
         state: ConnectionState::Init,
         client_id,
         counterparty_client_id,
         counterparty_connection_id: None,
     };
+
     save_connection(deps.branch(), connection_id, &connection)?;
-    Ok(
-        Response::new().add_event(Event::new(events::connection::OPEN_INIT).add_attributes([
-            (events::attribute::CONNECTION_ID, connection_id.to_string()),
-            (events::attribute::CLIENT_ID, client_id.to_string()),
-            (
-                events::attribute::COUNTERPARTY_CLIENT_ID,
-                counterparty_client_id.to_string(),
-            ),
-        ])),
-    )
+
+    Ok(Response::new().add_event(ConnectionOpenInit {
+        connection_id,
+        client_id,
+        counterparty_client_id,
+    }))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1187,20 +1332,12 @@ fn connection_open_try(
 
     save_connection(deps.branch(), connection_id, &connection)?;
 
-    Ok(
-        Response::new().add_event(Event::new(events::connection::OPEN_TRY).add_attributes([
-            (events::attribute::CONNECTION_ID, connection_id.to_string()),
-            (events::attribute::CLIENT_ID, client_id.to_string()),
-            (
-                events::attribute::COUNTERPARTY_CLIENT_ID,
-                counterparty_client_id.to_string(),
-            ),
-            (
-                events::attribute::COUNTERPARTY_CONNECTION_ID,
-                counterparty_connection_id.to_string(),
-            ),
-        ])),
-    )
+    Ok(Response::new().add_event(ConnectionOpenTry {
+        connection_id,
+        client_id,
+        counterparty_client_id,
+        counterparty_connection_id,
+    }))
 }
 
 fn connection_open_ack(
@@ -1250,23 +1387,12 @@ fn connection_open_ack(
 
     save_connection(deps.branch(), connection_id, &connection)?;
 
-    Ok(
-        Response::new().add_event(Event::new(events::connection::OPEN_ACK).add_attributes([
-            (events::attribute::CONNECTION_ID, connection_id.to_string()),
-            (
-                events::attribute::CLIENT_ID,
-                connection.client_id.to_string(),
-            ),
-            (
-                events::attribute::COUNTERPARTY_CLIENT_ID,
-                connection.counterparty_client_id.to_string(),
-            ),
-            (
-                events::attribute::COUNTERPARTY_CONNECTION_ID,
-                counterparty_connection_id.to_string(),
-            ),
-        ])),
-    )
+    Ok(Response::new().add_event(ConnectionOpenAck {
+        connection_id,
+        client_id: connection.client_id,
+        counterparty_client_id: connection.counterparty_client_id,
+        counterparty_connection_id,
+    }))
 }
 
 fn connection_open_confirm(
@@ -1292,9 +1418,12 @@ fn connection_open_confirm(
         counterparty_connection_id: Some(connection_id),
     };
 
+    let counterparty_connection_id = connection
+        .counterparty_connection_id
+        .expect("state is open, counterparty exists; qed;");
+
     if verify {
         let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
-
         query_light_client::<()>(
             deps.as_ref(),
             client_impl,
@@ -1303,9 +1432,7 @@ fn connection_open_confirm(
                 height: proof_height,
                 proof: proof_ack.into(),
                 path: ConnectionPath {
-                    connection_id: connection
-                        .counterparty_connection_id
-                        .expect("state is open, counterparty exists; qed;"),
+                    connection_id: counterparty_connection_id,
                 }
                 .key()
                 .into_bytes(),
@@ -1318,26 +1445,12 @@ fn connection_open_confirm(
 
     save_connection(deps.branch(), connection_id, &connection)?;
 
-    Ok(Response::new().add_event(
-        Event::new(events::connection::OPEN_CONFIRM).add_attributes([
-            (events::attribute::CONNECTION_ID, connection_id.to_string()),
-            (
-                events::attribute::CLIENT_ID,
-                connection.client_id.to_string(),
-            ),
-            (
-                events::attribute::COUNTERPARTY_CLIENT_ID,
-                connection.counterparty_client_id.to_string(),
-            ),
-            (
-                events::attribute::COUNTERPARTY_CONNECTION_ID,
-                connection
-                    .counterparty_connection_id
-                    .expect("state is open, counterparty exists; qed;")
-                    .to_string(),
-            ),
-        ]),
-    ))
+    Ok(Response::new().add_event(ConnectionOpenAck {
+        connection_id,
+        client_id: connection.client_id,
+        counterparty_client_id: connection.counterparty_client_id,
+        counterparty_connection_id,
+    }))
 }
 
 fn channel_open_init(
@@ -1364,16 +1477,13 @@ fn channel_open_init(
     )?;
 
     Ok(Response::new()
-        .add_event(Event::new(events::channel::OPEN_INIT).add_attributes([
-            (events::attribute::PORT_ID, port_id.to_string()),
-            (events::attribute::CHANNEL_ID, channel_id.to_string()),
-            (
-                events::attribute::COUNTERPARTY_PORT_ID,
-                hex::encode(&counterparty_port_id),
-            ),
-            (events::attribute::CONNECTION_ID, connection_id.to_string()),
-            (events::attribute::VERSION, version.clone()),
-        ]))
+        .add_event(ChannelOpenInit {
+            port_id: &port_id,
+            channel_id,
+            counterparty_port_id: counterparty_port_id.as_encoding(),
+            connection_id,
+            version: &version,
+        })
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenInit {
@@ -1416,7 +1526,7 @@ fn channel_open_try(
         state: ChannelState::Init,
         connection_id,
         counterparty_channel_id: None,
-        counterparty_port_id: port_id.as_bytes().to_vec().into(),
+        counterparty_port_id: port_id.as_bytes().into(),
         version: counterparty_version.clone(),
     };
 
@@ -1457,23 +1567,14 @@ fn channel_open_try(
     )?;
 
     Ok(Response::new()
-        .add_event(Event::new(events::channel::OPEN_TRY).add_attributes([
-            (events::attribute::PORT_ID, port_id.to_string()),
-            (events::attribute::CHANNEL_ID, channel_id.to_string()),
-            (
-                events::attribute::COUNTERPARTY_PORT_ID,
-                hex::encode(&channel.counterparty_port_id),
-            ),
-            (
-                events::attribute::COUNTERPARTY_CHANNEL_ID,
-                counterparty_channel_id.to_string(),
-            ),
-            (
-                events::attribute::CONNECTION_ID,
-                channel.connection_id.to_string(),
-            ),
-            ("counterparty_version", counterparty_version.clone()),
-        ]))
+        .add_event(ChannelOpenTry {
+            port_id: &port_id,
+            channel_id,
+            counterparty_port_id: channel.counterparty_port_id.as_encoding(),
+            counterparty_channel_id,
+            connection_id,
+            counterparty_version: &counterparty_version,
+        })
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
@@ -1501,24 +1602,30 @@ fn channel_open_ack(
     verify: bool,
 ) -> ContractResult {
     let mut channel = deps.storage.read::<Channels>(&channel_id)?;
+
     if channel.state != ChannelState::Init {
         return Err(ContractError::ChannelInvalidState {
             got: channel.state,
             expected: ChannelState::Init,
         });
     }
+
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
+
     let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
+
     let expected_channel = Channel {
         state: ChannelState::TryOpen,
         connection_id: connection
             .counterparty_connection_id
             .expect("connection is open; qed;"),
         counterparty_channel_id: Some(channel_id),
-        counterparty_port_id: port_id.as_bytes().to_vec().into(),
+        counterparty_port_id: port_id.as_bytes().into(),
         version: counterparty_version.clone(),
     };
+
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
+
     if verify {
         query_light_client::<()>(
             deps.as_ref(),
@@ -1536,24 +1643,21 @@ fn channel_open_ack(
             },
         )?;
     }
+
     channel.state = ChannelState::Open;
     channel.version = counterparty_version.clone();
     channel.counterparty_channel_id = Some(counterparty_channel_id);
+
     save_channel(deps.branch(), channel_id, &channel)?;
+
     Ok(Response::new()
-        .add_event(Event::new(events::channel::OPEN_ACK).add_attributes([
-            (events::attribute::PORT_ID, port_id.to_string()),
-            (events::attribute::CHANNEL_ID, channel_id.to_string()),
-            (
-                events::attribute::COUNTERPARTY_PORT_ID,
-                hex::encode(&channel.counterparty_port_id),
-            ),
-            (
-                events::attribute::COUNTERPARTY_CHANNEL_ID,
-                counterparty_channel_id.to_string(),
-            ),
-            ("connection_id", channel.connection_id.to_string()),
-        ]))
+        .add_event(ChannelOpenAck {
+            port_id: &port_id,
+            channel_id,
+            counterparty_port_id: channel.counterparty_port_id.as_encoding(),
+            counterparty_channel_id,
+            connection_id: channel.connection_id,
+        })
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenAck {
@@ -1577,28 +1681,36 @@ fn channel_open_confirm(
     verify: bool,
 ) -> ContractResult {
     let mut channel = deps.storage.read::<Channels>(&channel_id)?;
+
     if channel.state != ChannelState::TryOpen {
         return Err(ContractError::ChannelInvalidState {
             got: channel.state,
             expected: ChannelState::TryOpen,
         });
     }
+
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
+
     let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
+
     let counterparty_connection_id = connection
         .counterparty_connection_id
         .expect("connection is open; qed;");
+
     let expected_channel = Channel {
         state: ChannelState::Open,
         connection_id: counterparty_connection_id,
         counterparty_channel_id: Some(channel_id),
-        counterparty_port_id: port_id.clone().as_bytes().to_vec().into(),
+        counterparty_port_id: port_id.as_bytes().into(),
         version: channel.version.clone(),
     };
+
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
+
     let counterparty_channel_id = channel
         .counterparty_channel_id
         .expect("channel state is try open; qed;");
+
     if verify {
         query_light_client::<()>(
             deps.as_ref(),
@@ -1616,25 +1728,19 @@ fn channel_open_confirm(
             },
         )?;
     }
+
     channel.state = ChannelState::Open;
+
     save_channel(deps.branch(), channel_id, &channel)?;
+
     Ok(Response::new()
-        .add_event(Event::new(events::channel::OPEN_CONFIRM).add_attributes([
-            (events::attribute::PORT_ID, port_id.to_string()),
-            (events::attribute::CHANNEL_ID, channel_id.to_string()),
-            (
-                events::attribute::COUNTERPARTY_PORT_ID,
-                hex::encode(&channel.counterparty_port_id),
-            ),
-            (
-                events::attribute::COUNTERPARTY_CHANNEL_ID,
-                counterparty_channel_id.to_string(),
-            ),
-            (
-                events::attribute::CONNECTION_ID,
-                channel.connection_id.to_string(),
-            ),
-        ]))
+        .add_event(ChannelOpenConfirm {
+            port_id: &port_id,
+            channel_id,
+            counterparty_port_id: channel.counterparty_port_id.as_encoding(),
+            counterparty_channel_id,
+            connection_id: channel.connection_id,
+        })
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenConfirm {
@@ -1653,34 +1759,31 @@ fn channel_close_init(
     relayer: Addr,
 ) -> ContractResult {
     let mut channel = deps.storage.read::<Channels>(&channel_id)?;
+
     if channel.state != ChannelState::Open {
         return Err(ContractError::ChannelInvalidState {
             got: channel.state,
             expected: ChannelState::Open,
         });
     }
+
     ensure_connection_state(deps.as_ref(), channel.connection_id)?;
+
     channel.state = ChannelState::Closed;
+
     save_channel(deps.branch(), channel_id, &channel)?;
+
     let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
+
     Ok(Response::new()
-        .add_event(
-            Event::new(events::channel::CLOSE_INIT).add_attributes([
-                (events::attribute::PORT_ID, port_id.to_string()),
-                (events::attribute::CHANNEL_ID, channel_id.to_string()),
-                (
-                    events::attribute::COUNTERPARTY_PORT_ID,
-                    hex::encode(&channel.counterparty_port_id),
-                ),
-                (
-                    events::attribute::COUNTERPARTY_CHANNEL_ID,
-                    channel
-                        .counterparty_channel_id
-                        .expect("channel is open; qed;")
-                        .to_string(),
-                ),
-            ]),
-        )
+        .add_event(ChannelCloseInit {
+            port_id: &port_id,
+            channel_id,
+            counterparty_port_id: channel.counterparty_port_id.as_encoding(),
+            counterparty_channel_id: channel
+                .counterparty_channel_id
+                .expect("channel is open; qed;"),
+        })
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelCloseInit {
@@ -1701,28 +1804,36 @@ fn channel_close_confirm(
     relayer: Addr,
 ) -> ContractResult {
     let mut channel = deps.storage.read::<Channels>(&channel_id)?;
+
     if channel.state != ChannelState::Open {
         return Err(ContractError::ChannelInvalidState {
             got: channel.state,
             expected: ChannelState::Open,
         });
     }
+
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
+
     let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
+
     let connection_id = connection
         .counterparty_connection_id
         .expect("connection is open; qed;");
+
     let expected_channel = Channel {
         state: ChannelState::Closed,
         connection_id,
         counterparty_channel_id: Some(channel_id),
-        counterparty_port_id: port_id.as_bytes().to_vec().into(),
+        counterparty_port_id: port_id.as_bytes().into(),
         version: channel.version.clone(),
     };
+
     let client_impl = client_impl(deps.as_ref(), connection.client_id)?;
+
     let counterparty_channel_id = channel
         .counterparty_channel_id
         .expect("channel is open; qed;");
+
     query_light_client::<()>(
         deps.as_ref(),
         client_impl,
@@ -1738,26 +1849,24 @@ fn channel_close_confirm(
             value: commit(expected_channel.abi_encode()).into_bytes(),
         },
     )?;
+
     channel.state = ChannelState::Closed;
+
     deps.storage.write::<Channels>(&channel_id, &channel);
+
     store_commit(
         deps.branch(),
         &ChannelPath { channel_id }.key(),
         &commit(channel.abi_encode()),
     );
+
     Ok(Response::new()
-        .add_event(Event::new(events::channel::CLOSE_CONFIRM).add_attributes([
-            (events::attribute::PORT_ID, port_id.to_string()),
-            (events::attribute::CHANNEL_ID, channel_id.to_string()),
-            (
-                events::attribute::COUNTERPARTY_PORT_ID,
-                hex::encode(&channel.counterparty_port_id),
-            ),
-            (
-                events::attribute::COUNTERPARTY_CHANNEL_ID,
-                counterparty_channel_id.to_string(),
-            ),
-        ]))
+        .add_event(ChannelCloseConfirm {
+            port_id: &port_id,
+            channel_id,
+            counterparty_port_id: channel.counterparty_port_id.as_encoding(),
+            counterparty_channel_id,
+        })
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenConfirm {
@@ -1781,7 +1890,10 @@ fn process_receive(
     proof_height: u64,
     intent: bool,
 ) -> Result<Response, ContractError> {
+    let relayer_addr = deps.api.addr_validate(&relayer)?;
+
     let first = packets.first().ok_or(ContractError::NotEnoughPackets)?;
+
     let destination_channel_id = first.destination_channel_id;
 
     let channel = ensure_channel_state(deps.as_ref(), destination_channel_id)?;
@@ -1796,14 +1908,14 @@ fn process_receive(
             VerifyMembershipQuery {
                 client_id: connection.client_id,
                 height: proof_height,
-                proof: proof.to_vec().into(),
+                proof,
                 path: proof_commitment_key.into_bytes(),
                 value: COMMITMENT_MAGIC.into_bytes(),
             },
         )?;
     }
 
-    let mut events = Vec::with_capacity(packets.len());
+    let mut events = Vec::<Event>::with_capacity(packets.len());
     let mut messages = Vec::with_capacity(packets.len());
     let port_id = deps.storage.read::<ChannelOwner>(&destination_channel_id)?;
     for (packet, relayer_msg) in packets.into_iter().zip(relayer_msgs) {
@@ -1823,12 +1935,13 @@ fn process_receive(
         if !set_packet_receive(deps.branch(), commitment_key) {
             if intent {
                 events.push(
-                    Event::new(events::packet::INTENT_RECV)
-                        .add_attributes(packet_to_attr_hash(destination_channel_id, &packet))
-                        .add_attributes([
-                            (events::attribute::MAKER, relayer.clone()),
-                            (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
-                        ]),
+                    IntentPacketRecv {
+                        channel_id: destination_channel_id,
+                        packet_hash: packet.hash(),
+                        maker: &relayer_addr,
+                        maker_msg: relayer_msg.as_encoding(),
+                    }
+                    .into(),
                 );
 
                 messages.push(wasm_execute(
@@ -1836,19 +1949,20 @@ fn process_receive(
                     &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnIntentRecvPacket {
                         caller: info.sender.clone().into_string(),
                         packet,
-                        market_maker: deps.api.addr_validate(&relayer)?.into(),
-                        market_maker_msg: relayer_msg.to_vec().into(),
+                        market_maker: relayer.clone(),
+                        market_maker_msg: relayer_msg.into_encoding(),
                     }),
                     vec![],
                 )?);
             } else {
                 events.push(
-                    Event::new(events::packet::RECV)
-                        .add_attributes(packet_to_attr_hash(destination_channel_id, &packet))
-                        .add_attributes([
-                            (events::attribute::MAKER, relayer.clone()),
-                            (events::attribute::MAKER_MSG, hex::encode(&relayer_msg)),
-                        ]),
+                    PacketRecv {
+                        channel_id: destination_channel_id,
+                        packet_hash: packet.hash(),
+                        maker: &relayer_addr,
+                        maker_msg: relayer_msg.as_encoding(),
+                    }
+                    .into(),
                 );
 
                 messages.push(wasm_execute(
@@ -1856,8 +1970,8 @@ fn process_receive(
                     &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnRecvPacket {
                         caller: info.sender.clone().into_string(),
                         packet,
-                        relayer: deps.api.addr_validate(&relayer)?.into(),
-                        relayer_msg: relayer_msg.to_vec().into(),
+                        relayer: relayer.clone(),
+                        relayer_msg: relayer_msg.into_encoding(),
                     }),
                     // TODO: this is incorrect and we should allow the relayer
                     // to specify how to split the total funds individually for
@@ -1876,7 +1990,7 @@ fn write_acknowledgement(
     mut deps: DepsMut,
     sender: Addr,
     packet: Packet,
-    acknowledgement: Vec<u8>,
+    acknowledgement: Bytes,
 ) -> ContractResult {
     if acknowledgement.is_empty() {
         return Err(ContractError::AcknowledgementIsEmpty);
@@ -1886,6 +2000,7 @@ fn write_acknowledgement(
 
     // make sure the caller owns the channel
     let port_id = deps.storage.read::<ChannelOwner>(&channel_id)?;
+
     if port_id != sender {
         return Err(ContractError::Unauthorized {
             channel_id,
@@ -1906,22 +2021,17 @@ fn write_acknowledgement(
         None => return Err(ContractError::PacketNotReceived),
     }
 
-    let acknowledgement_serialized = hex::encode(&acknowledgement);
-
     store_commit(
         deps.branch(),
         &commitment_key,
-        &commit_ack(&acknowledgement.into()),
+        &commit_ack(&acknowledgement),
     );
 
-    Ok(Response::new().add_event(
-        Event::new(events::packet::WRITE_ACK)
-            .add_attributes(packet_to_attr_hash(channel_id, &packet))
-            .add_attributes([(
-                events::attribute::ACKNOWLEDGEMENT,
-                acknowledgement_serialized,
-            )]),
-    ))
+    Ok(Response::new().add_event(WriteAck {
+        channel_id,
+        packet_hash: packet.hash(),
+        acknowledgement: acknowledgement.as_encoding(),
+    }))
 }
 
 fn send_packet(
@@ -1929,13 +2039,14 @@ fn send_packet(
     sender: Addr,
     source_channel_id: ChannelId,
     timeout_timestamp: Timestamp,
-    data: Vec<u8>,
+    data: Bytes,
 ) -> ContractResult {
     if timeout_timestamp.is_zero() {
         return Err(ContractError::TimeoutMustBeSet);
     }
 
     let port_id = deps.storage.read::<ChannelOwner>(&source_channel_id)?;
+
     if port_id != sender {
         return Err(ContractError::Unauthorized {
             channel_id: source_channel_id,
@@ -1945,12 +2056,13 @@ fn send_packet(
     }
 
     let channel = ensure_channel_state(deps.as_ref(), source_channel_id)?;
+
     let packet = Packet {
         source_channel_id,
         destination_channel_id: channel
             .counterparty_channel_id
             .expect("channel is open; qed;"),
-        data: data.into(),
+        data,
         timeout_height: MustBeZero,
         timeout_timestamp,
     };
@@ -1958,10 +2070,7 @@ fn send_packet(
     let serialized_packet =
         serde_json_wasm::to_string(&packet).expect("packet serialization is infallible; qed;");
 
-    let packet_attrs = packet_to_attrs(&packet);
-    let packet_attr_hash = packet_to_attr_hash(source_channel_id, &packet);
-
-    let commitment_key = BatchPacketsPath::from_packets(&[packet]).key();
+    let commitment_key = BatchPacketsPath::from_packets(slice::from_ref(&packet)).key();
 
     if read_commit(deps.as_ref(), &commitment_key).is_some() {
         return Err(ContractError::PacketCommitmentAlreadyExist);
@@ -1970,11 +2079,16 @@ fn send_packet(
     store_commit(deps.branch(), &commitment_key, &COMMITMENT_MAGIC);
 
     Ok(Response::new()
-        .add_event(
-            Event::new(events::packet::SEND)
-                .add_attributes(packet_attr_hash)
-                .add_attributes(packet_attrs),
-        )
+        .add_event(PacketSend {
+            packet_hash: packet.hash(),
+            packet_source_channel_id: packet.source_channel_id,
+            packet_destination_channel_id: packet.destination_channel_id,
+            packet_data: packet.data,
+            // emitted as a legacy attribute
+            packet_timeout_height: 0,
+            packet_timeout_timestamp: packet.timeout_timestamp,
+            channel_id: packet.source_channel_id,
+        })
         .set_data(serialized_packet.as_bytes()))
 }
 
@@ -2302,12 +2416,13 @@ fn make_verify_creation_event(client_id: ClientId, event: VerifyCreationResponse
             l1_client_id,
             l2_client_id,
             l2_chain_id,
-        } => Event::new("create_lens_client").add_attributes([
-            ("client_id", client_id.to_string()),
-            ("l1_client_id", l1_client_id.to_string()),
-            ("l2_client_id", l2_client_id.to_string()),
-            ("l2_chain_id", l2_chain_id),
-        ]),
+        } => CreateLensClient {
+            client_id,
+            l1_client_id,
+            l2_client_id,
+            l2_chain_id: &l2_chain_id,
+        }
+        .into(),
     }
 }
 
@@ -2344,13 +2459,12 @@ fn commit_membership_proof(
         &commit(&value),
     );
 
-    Ok(Response::new().add_event(
-        Event::new(events::proof::COMMIT_MEMBERSHIP)
-            .add_attribute(events::attribute::CLIENT_ID, client_id.to_string())
-            .add_attribute(events::attribute::PROOF_HEIGHT, proof_height.to_string())
-            .add_attribute(events::attribute::PATH, path.to_string())
-            .add_attribute(events::attribute::VALUE, value.to_string()),
-    ))
+    Ok(Response::new().add_event(CommitMembershipProof {
+        client_id,
+        proof_height,
+        path: path.as_encoding(),
+        value: value.as_encoding(),
+    }))
 }
 
 fn commit_non_membership_proof(
@@ -2384,12 +2498,11 @@ fn commit_non_membership_proof(
         &commit(NON_MEMBERSHIP_COMMITMENT_VALUE),
     );
 
-    Ok(Response::new().add_event(
-        Event::new(events::proof::COMMIT_NON_MEMBERSHIP)
-            .add_attribute(events::attribute::CLIENT_ID, client_id.to_string())
-            .add_attribute(events::attribute::PROOF_HEIGHT, proof_height.to_string())
-            .add_attribute(events::attribute::PATH, path.to_string()),
-    ))
+    Ok(Response::new().add_event(CommitNonMembershipProof {
+        client_id,
+        proof_height,
+        path: path.as_encoding(),
+    }))
 }
 
 #[cfg(test)]

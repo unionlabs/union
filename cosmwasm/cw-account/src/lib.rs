@@ -1,19 +1,21 @@
 use std::num::NonZeroU32;
 
 use cosmwasm_std::{
-    Addr, Binary, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, Order, Response, StdError,
-    from_json, to_json_binary,
+    Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, from_json,
+    to_json_binary,
 };
 use depolama::{self, StorageExt};
 use frissitheto::{InitStateVersionError, UpgradeError, UpgradeMsg};
 use ucs03_zkgmable::Zkgmable;
 
 use crate::{
+    event::{AddAdmin, Dispatch, RemoteExecute, RemoveAdmin, SetZkgm},
     msg::{ExecuteMsg, InitMsg, MigrateMsg, QueryMsg},
     state::{Admins, Zkgm},
     types::{Admin, LocalAdmin, RemoteAdmin},
 };
 
+pub mod event;
 pub mod msg;
 pub mod state;
 pub mod types;
@@ -126,22 +128,20 @@ pub fn execute(
 
             deps.storage.write_item::<Zkgm>(&zkgm);
 
-            Ok(Response::new().add_event(
-                Event::new("set_zkgm")
-                    .add_attribute("zkgm", zkgm.to_string())
-                    .add_attribute("admin", actor),
-            ))
+            Ok(Response::new().add_event(SetZkgm {
+                admin: actor,
+                zkgm: &zkgm,
+            }))
         }
         ExecuteMsg::AddAdmin(new_admin) => {
             let actor = ensure_local_admin_or_self(deps.as_ref(), &env, &info)?;
 
             deps.storage.write::<Admins>(&new_admin, &());
 
-            Ok(Response::new().add_event(
-                Event::new("add_admin")
-                    .add_attribute("new_admin", new_admin.to_string())
-                    .add_attribute("admin", actor),
-            ))
+            Ok(Response::new().add_event(AddAdmin {
+                new_admin: &new_admin,
+                admin: actor,
+            }))
         }
         ExecuteMsg::RemoveAdmin(removed_admin) => {
             let actor = ensure_local_admin_or_self(deps.as_ref(), &env, &info)?;
@@ -149,10 +149,9 @@ pub fn execute(
             let maybe_event = deps
                 .storage
                 .maybe_read::<Admins>(&removed_admin)?
-                .map(|()| {
-                    Event::new("remove_admin")
-                        .add_attribute("removed_admin", removed_admin.to_string())
-                        .add_attribute("admin", actor)
+                .map(|()| RemoveAdmin {
+                    removed_admin: &removed_admin,
+                    admin: actor,
                 });
 
             deps.storage.delete::<Admins>(&removed_admin);
@@ -169,10 +168,10 @@ pub fn execute(
             }
         }
         ExecuteMsg::Dispatch(messages) => {
-            let actor = ensure_local_admin_or_self(deps.as_ref(), &env, &info)?;
+            let admin = ensure_local_admin_or_self(deps.as_ref(), &env, &info)?;
 
             Ok(Response::new()
-                .add_event(Event::new("dispatch").add_attribute("admin", actor))
+                .add_event(Dispatch { admin })
                 .add_messages(messages))
         }
         ExecuteMsg::Zkgmable(Zkgmable::OnZkgm(on_zkgm)) => {
@@ -185,11 +184,11 @@ pub fn execute(
             ensure_remote_admin(deps.as_ref(), &info, &remote_admin)?;
 
             Ok(Response::new()
-                .add_event(Event::new("remote_execute").add_attributes([
-                    ("sender", on_zkgm.sender.to_string()),
-                    ("channel_id", on_zkgm.destination_channel_id.to_string()),
-                    ("path", on_zkgm.path.to_string()),
-                ]))
+                .add_event(RemoteExecute {
+                    sender: on_zkgm.sender,
+                    channel_id: on_zkgm.destination_channel_id,
+                    path: on_zkgm.path,
+                })
                 .add_messages(from_json::<Vec<CosmosMsg>>(&on_zkgm.message)?))
         }
         ExecuteMsg::Zkgmable(Zkgmable::OnIntentZkgm(_)) => Err(ContractError::IntentsNotSupported),

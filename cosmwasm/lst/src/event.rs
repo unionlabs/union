@@ -58,17 +58,115 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-#![cfg_attr(not(test), warn(clippy::arithmetic_side_effects, clippy::unwrap_used))]
+use cosmwasm_event::Event;
+use cosmwasm_std::Addr;
 
-pub mod contract;
-pub mod error;
-pub mod event;
-pub mod execute;
-pub mod helpers;
-pub mod msg;
-pub mod query;
-pub mod state;
-pub mod types;
+use crate::types::BatchId;
 
-#[cfg(test)]
-pub mod tests;
+#[derive(Event)]
+#[event("init")]
+pub struct Init {
+    pub admin: Addr,
+    pub native_token_denom: String,
+    pub minimum_liquid_stake_amount: u128,
+    pub protocol_fee_rate: u128,
+    pub protocol_fee_recipient: String,
+    pub current_unbonding_period: u64,
+    pub staker_address: Addr,
+    pub lst_address: Addr,
+}
+
+#[derive(Event)]
+#[event("bond")]
+pub struct Bond {
+    pub mint_to_address: Addr,
+    pub sender: Addr,
+    pub in_amount: u128,
+    pub mint_amount: u128,
+}
+
+#[derive(Event)]
+#[event("unbond")]
+pub struct Unbond {
+    pub staker: Addr,
+    pub batch: BatchId,
+    pub amount: u128,
+    pub is_new_request: bool,
+}
+
+#[derive(Event)]
+#[event("submit_batch")]
+pub struct SubmitBatch {
+    pub batch_id: BatchId,
+    pub batch_total: u128,
+    pub expected_unstaked: u128,
+    pub current_unbonding_period: u64,
+}
+
+#[derive(Event)]
+#[event("receive_rewards")]
+pub struct ReceiveRewards {
+    pub amount: u128,
+    pub amount_after_protocol_fee: u128,
+    pub protocol_fee: u128,
+}
+
+#[derive(Event)]
+#[event("rebase")]
+pub struct Rebase {
+    pub caller: Addr,
+}
+
+#[derive(Event)]
+#[event("receive_unstaked_tokens")]
+pub struct ReceiveUnstakedTokens {
+    pub batch: BatchId,
+    pub amount: u128,
+}
+
+#[derive(Event)]
+#[event("withdraw")]
+pub struct Withdraw<'a> {
+    pub staker: Addr,
+    pub batch_id: BatchId,
+    pub withdraw_to_address: &'a Addr,
+    pub amount: u128,
+}
+
+#[derive(Event)]
+#[event("transfer_ownership")]
+pub struct TransferOwnership {
+    pub new_owner: String,
+    pub previous_owner: Addr,
+}
+
+#[derive(Event)]
+#[event("revoke_ownership_transfer")]
+pub struct RevokeOwnershipTransfer {}
+
+#[derive(Event)]
+#[event("accept_ownership")]
+pub struct AcceptOwnership {
+    pub new_owner: Addr,
+}
+
+#[derive(Event)]
+#[event("circuit_breaker")]
+pub struct CircuitBreaker {
+    pub breaker: Addr,
+}
+
+#[derive(Event)]
+#[event("resume_contract")]
+pub struct ResumeContract {
+    pub total_bonded_native_tokens: u128,
+    pub total_issued_lst: u128,
+    pub total_reward_amount: u128,
+}
+
+#[derive(Event)]
+#[event("slash_batch")]
+pub struct SlashBatch {
+    pub batch_id: BatchId,
+    pub amount: u128,
+}
