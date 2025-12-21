@@ -20,15 +20,15 @@ export namespace Transport {
    * @since 2.0.0
    */
   export interface Sui {
-    readonly relayStoreId: string
     readonly vaultId: string
     readonly ibcStoreId: string
     /** One or more coins a user wants to spend. Keep array for multi-coin support. */
     readonly coins: ReadonlyArray<{
       /** e.g. "0x2::sui::SUI" or a custom coin type */
       readonly typeArg: string
+      readonly baseAmount: bigint
       /** Concrete coin object id(s) for spending */
-      readonly objectId: string
+      readonly objectId?: string
     }>
   }
 

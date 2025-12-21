@@ -6,6 +6,12 @@ import { UniversalChainId } from "./chain.js"
 import { ChannelId } from "./channel.js"
 import { Hex } from "./hex.js"
 
+export const SuiTypeTag = Schema.String.pipe(
+  Schema.pattern(/^0x[0-9a-fA-F]+::[A-Za-z_][A-Za-z0-9_]*::[A-Za-z_][A-Za-z0-9_]*$/),
+  Schema.brand("SuiTypeTag"),
+)
+export type SuiTypeTag = typeof SuiTypeTag.Type
+
 export const TokenRawDenom = Hex.pipe(
   Schema.lowercased(),
   Schema.brand("TokenRawDenom"),
@@ -76,6 +82,10 @@ export class Bucket extends Schema.Class<Bucket>("Bucket")({
 export class Token extends Schema.Class<Token>("Token")({
   rank: Schema.OptionFromNullOr(Schema.Int),
   denom: TokenRawDenom,
+  native_denom: Schema.optionalWith(Schema.NonEmptyString, {
+    as: "Option",
+    nullable: true,
+  }),
   representations: Schema.Array(TokenRepresentation),
   wrapping: Schema.Array(TokenWrapping),
   bucket: Schema.OptionFromNullOr(Bucket),

@@ -4,6 +4,7 @@ import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.js"
 import { evmWalletsInformation, sepoliaStore } from "$lib/wallet/evm/index.js"
+import { suiStore, suiWalletsInformation } from "$lib/wallet/sui"
 import { Option } from "effect"
 import Modal from "../Modal.svelte"
 
@@ -11,10 +12,12 @@ let currentWalletType = $state("all")
 
 let evmConnected = $state(false)
 let cosmosConnected = $state(false)
+let suiConnected = $state(false)
 
 $effect(() => {
   evmConnected = sepoliaStore.connectionStatus === "connected"
   cosmosConnected = cosmosStore.connectionStatus === "connected"
+  suiConnected = suiStore.connectionStatus === "connected"
 })
 </script>
 
@@ -43,10 +46,12 @@ $effect(() => {
         style:left={currentWalletType === "all"
         ? "0"
         : currentWalletType === "evm"
-        ? "33.333%"
-        : "66.666%"}
-        style:width="33.333%"
-        style:height="100%"
+        ? "25%"
+        : currentWalletType === "cosmos"
+        ? "50%"
+        : "75%"}
+        style:width="25%"
+        style:height="75%"
       >
       </div>
       <button
@@ -102,6 +107,27 @@ $effect(() => {
           </span>
         </div>
       </button>
+      <button
+        onclick={() => currentWalletType = "sui"}
+        class="
+          flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors relative cursor-pointer
+          {currentWalletType === 'sui'
+          ? 'text-zinc-900 dark:text-white'
+          : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'}
+        "
+      >
+        <div class="flex items-center justify-center gap-2">
+          <span>Sui</span>
+          <span
+            class="
+              w-1.5 h-1.5 rounded-full transition-all duration-300 ring-1 ring-opacity-20 {suiConnected
+              ? 'bg-green-500 animate-pulse ring-green-500 shadow-[0_0_6px_0px_rgba(34,197,94,0.6)]'
+              : 'bg-white/10 dark:bg-white/5 backdrop-blur-sm ring-white/20'}
+            "
+          >
+          </span>
+        </div>
+      </button>
     </nav>
   </section>
 
@@ -128,6 +154,17 @@ $effect(() => {
         onDisconnectClick={cosmosStore.disconnect}
         showDivider={false}
       />
+    {:else if currentWalletType === "sui"}
+      <Connection
+        chain="sui"
+        address={suiStore.address}
+        chainWalletsInformation={suiWalletsInformation}
+        connectStatus={suiStore.connectionStatus}
+        connectedWalletId={suiStore.connectedWallet}
+        onConnectClick={(id: string) => suiStore.connect(id as any)}
+        onDisconnectClick={suiStore.disconnect}
+        showDivider={false}
+      />
     {:else if currentWalletType === "all"}
       <Connection
         chain="evm"
@@ -148,6 +185,16 @@ $effect(() => {
         onConnectClick={cosmosStore.connect}
         onDisconnectClick={cosmosStore.disconnect}
         showDivider={true}
+      />
+      <Connection
+        chain="sui"
+        address={suiStore.address}
+        chainWalletsInformation={suiWalletsInformation}
+        connectStatus={suiStore.connectionStatus}
+        connectedWalletId={suiStore.connectedWallet}
+        onConnectClick={(id: string) => suiStore.connect(id as any)}
+        onDisconnectClick={suiStore.disconnect}
+        showDivider={false}
       />
     {/if}
   </section>

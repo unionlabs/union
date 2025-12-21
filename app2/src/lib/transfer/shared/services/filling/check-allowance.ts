@@ -4,6 +4,7 @@ import { fallbackTransport } from "$lib/wallet/evm/wagmi-config.svelte"
 import { Token, Ucs05, Utils, ZkgmClientRequest } from "@unionlabs/sdk"
 import { Cosmos } from "@unionlabs/sdk-cosmos"
 import { Evm } from "@unionlabs/sdk-evm"
+import { Sui } from "@unionlabs/sdk-sui"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { Data, Effect, HashMap, Match, Option, pipe, Tuple } from "effect"
 import * as A from "effect/Array"
@@ -127,6 +128,50 @@ const handleEvmAllowances = (
       ),
       Effect.allWith({ concurrency: 2 }),
       Effect.provide(client),
+    )
+  })
+
+const handleSuiAllowances = (
+  tokens: ReadonlyArray<Token.Any>,
+  sender: Ucs05.SuiDisplay,
+  sourceChain: Chain,
+): Effect.Effect<
+  ReadonlyArray<{ readonly token: Token.Any; readonly allowance: bigint }>,
+  AllowanceCheckError
+> =>
+  Effect.gen(function*() {
+    const rpc = yield* sourceChain.getRpcUrl("rpc").pipe(
+      Effect.mapError(
+        () =>
+          new AllowanceCheckError({
+            message: "Could not derive Sui RPC URL",
+          }),
+      ),
+    )
+
+    const suiPublicClientLayer = Sui.PublicClient.Live({ url: rpc })
+
+    return yield* pipe(
+      tokens,
+      A.map((token) =>
+        pipe(
+          Sui.readTotalCoinBalance(
+            token.address as unknown as string,
+            sender.address as unknown as string,
+          ),
+          Effect.map((total) => ({ token, allowance: total })),
+        )
+      ),
+      Effect.allWith({ concurrency: 2 }),
+      Effect.provide(suiPublicClientLayer),
+      Effect.catchAll((cause) =>
+        Effect.fail(
+          new AllowanceCheckError({
+            message: "Sui allowance (balance) lookup failed",
+            cause,
+          }),
+        )
+      ),
     )
   })
 

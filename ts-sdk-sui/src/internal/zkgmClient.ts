@@ -1,3 +1,4 @@
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Transaction } from "@mysten/sui/transactions"
 import * as Call from "@unionlabs/sdk/Call"
 import type { Hex } from "@unionlabs/sdk/schema/hex"
@@ -10,6 +11,7 @@ import * as ClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
 import * as ClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
 import * as IncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
 import * as ZkgmInstruction from "@unionlabs/sdk/ZkgmInstruction"
+import bs58 from "bs58"
 import { Match, ParseResult, pipe, Predicate } from "effect"
 import * as A from "effect/Array"
 import * as Effect from "effect/Effect"
@@ -17,7 +19,28 @@ import * as Inspectable from "effect/Inspectable"
 import * as Option from "effect/Option"
 import * as S from "effect/Schema"
 import * as Stream from "effect/Stream"
+import { fromHex as viemFromHex } from "viem"
+import { toHex } from "viem"
 import * as Sui from "../Sui.js"
+
+type HexAddr = `0x${string}`
+const base58ToHex = (s: string): Hex => toHex(bs58.decode(s)) as Hex
+
+const decodeAsciiHex = (hex: string) =>
+  viemFromHex((hex.startsWith("0x") ? hex : ("0x" + hex)) as HexAddr, "string") as string
+
+export function parseUcs03Port(raw: string): {
+  ucs03Address: HexAddr
+  module: string
+  relayStoreId: HexAddr
+} {
+  const decoded = decodeAsciiHex(raw.trim())
+  const [addr, mod, relay] = decoded.split("::")
+  if (!addr?.startsWith("0x") || !relay?.startsWith("0x")) {
+    throw new Error(`Invalid port: ${decoded}`)
+  }
+  return { ucs03Address: addr as HexAddr, module: mod || "zkgm", relayStoreId: relay as HexAddr }
+}
 
 export const fromWallet = (
   opts: { client: Sui.Sui.PublicClient; wallet: Sui.Sui.WalletClient },
@@ -108,13 +131,19 @@ export const fromWallet = (
         ),
       )
 
-      console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { operand })
-
       const tx = new Transaction()
       const CLOCK_OBJECT_ID = "0x6" // Sui system clock
       const tHeight = 0n
-      const module = "zkgm" // zkgm module name
+      const { ucs03Address: decodedUcs03, module: decodedModule, relayStoreId: relayFromPort } =
+        parseUcs03Port(request.ucs03Address as unknown as string)
 
+      console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", {
+        decodedUcs03,
+        decodedModule,
+        relayFromPort,
+      })
+
+      const module = decodedModule // zkgm module name
       const suiParams = request.transport?.sui
       console.log("request.transport:", request.transport)
       if (!suiParams) {
@@ -128,14 +157,16 @@ export const fromWallet = (
         )
       }
 
-      const { relayStoreId, vaultId, ibcStoreId, coins } = suiParams
+      const { vaultId, ibcStoreId, coins } = suiParams
 
       console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", {
-        relayStoreId,
+        decodedUcs03,
         vaultId,
         ibcStoreId,
         coins,
       })
+
+      console.log("[@unionlabs/sdk-sui/internal/zkgmClient] request:", request)
 
       const hexToBytes = (hex: `0x${string}`): Uint8Array => {
         const s = hex.slice(2)
@@ -148,7 +179,7 @@ export const fromWallet = (
 
       // 1) begin_send(channel_id: u32, salt: vector<u8>) -> SendCtx
       let sendCtx = tx.moveCall({
-        target: `${request.ucs03Address}::${module}::begin_send`,
+        target: `${decodedUcs03}::${module}::begin_send`,
         typeArguments: [],
         arguments: [
           tx.pure.u32(Number(request.channelId)),
@@ -157,15 +188,22 @@ export const fromWallet = (
       })
 
       // 2) For each coin: send_with_coin<T>(relay_store, vault, ibc_store, coin, version, opcode, operand, ctx) -> SendCtx
-      for (const { typeArg, objectId } of coins) {
+      for (const { typeArg, baseAmount, objectId } of coins) {
+        console.log("typeArg, baseAmount objectId: ", { typeArg, baseAmount, objectId })
+        const coinArg = yield* Sui.prepareCoinForAmount(
+          tx,
+          typeArg,
+          baseAmount,
+        )
+        console.log("coinArg: ", coinArg)
         sendCtx = tx.moveCall({
-          target: `${request.ucs03Address}::${module}::send_with_coin`,
+          target: `${decodedUcs03}::${module}::send_with_coin`,
           typeArguments: [typeArg],
           arguments: [
-            tx.object(relayStoreId),
+            tx.object(relayFromPort),
             tx.object(vaultId),
             tx.object(ibcStoreId),
-            tx.object(objectId),
+            coinArg,
             tx.pure.u8(Number(request.instruction.version)),
             tx.pure.u8(Number(request.instruction.opcode)),
             tx.pure.vector("u8", hexToBytes(operand as `0x${string}`)),
@@ -176,7 +214,7 @@ export const fromWallet = (
 
       // 3) end_send(ibc_store, clock, t_height: u64, timeout_ns: u64, ctx)
       tx.moveCall({
-        target: `${request.ucs03Address}::${module}::end_send`,
+        target: `${decodedUcs03}::${module}::end_send`,
         typeArguments: [],
         arguments: [
           tx.object(ibcStoreId),
@@ -186,29 +224,47 @@ export const fromWallet = (
           sendCtx,
         ],
       })
-
       // sign & execute
+
+      // wallet.signer?.setRpcUrl(wallet.rpc);
+      // wallet.setRpcUrl(wallet.rpc);
       const submit = Effect.tryPromise({
-        try: async () =>
-          wallet.client.signAndExecuteTransaction({
-            signer: wallet.signer,
-            transaction: tx,
-          }),
+        try: async () => {
+          if ((tx as any).setSender && typeof wallet.signer?.toSuiAddress === "function") {
+            tx.setSender(wallet.signer.toSuiAddress())
+          }
+          
+          // Our wrapper may already execute
+          const signed = await wallet.signer.signTransactionBlock({ transactionBlock: tx })
+
+          if ((signed as any).executeResult) {
+            // Wallet already executed (signAndExecute path)
+            return (signed as any).executeResult
+          }
+
+          // Old path: we only signed, so execute via client
+          const { signature, bytes } = signed as { signature: string; bytes: Uint8Array }
+          return wallet.client.executeTransactionBlock({
+            transactionBlock: bytes,
+            signature,
+            options: { showEffects: true, showEvents: true },
+          })
+        },
         catch: (cause) =>
           new ClientError.RequestError({
             reason: "Transport",
             request,
             cause,
-            description: "signAndExecuteTransaction",
+            description: "signTransactionBlock + executeTransactionBlock",
           }),
       })
 
       const res = yield* submit
 
-      console.log("Res.transaction:", res.transaction)
       const txHash = (res.digest ?? res.transaction?.txSignatures[0] ?? "") as Hex
+      const convertedHex = base58ToHex(txHash)
 
-      return new ClientResponseImpl(request, client, txHash)
+      return new ClientResponseImpl(request, client, convertedHex)
     })
   )
 

@@ -30,10 +30,14 @@ import type { SubmitInstruction } from "$lib/transfer/normal/steps/steps"
 import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
 import { fallbackTransport } from "$lib/wallet/evm/wagmi-config.svelte"
+import { suiStore } from "$lib/wallet/sui/config.svelte"
+import { getFullnodeUrl } from "@mysten/sui/client"
 import { ZkgmClientError, ZkgmIncomingMessage } from "@unionlabs/sdk"
 import { ZkgmClient } from "@unionlabs/sdk"
 import { Cosmos, CosmosZkgmClient } from "@unionlabs/sdk-cosmos"
 import { Evm, EvmZkgmClient, Safe } from "@unionlabs/sdk-evm"
+import { Sui } from "@unionlabs/sdk-sui"
+import { SuiZkgmClient } from "@unionlabs/sdk-sui"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
   CreateViemPublicClientError,
@@ -79,6 +83,9 @@ let error = $state<
     | Evm.CreateWalletClientError
     | Evm.CreatePublicClientError
     | Cosmos.ClientError
+    | Sui.CreatePublicClientError
+    | Sui.CreateWalletClientError
+    | Sui.WriteContractError
     | NoSuchElementException
     | CryptoError
     | ExecuteContractError
@@ -195,6 +202,42 @@ export const submit = Effect.gen(function*() {
       Effect.provide(walletClient),
     )
   })
+  const doSui = Effect.gen(function*() {
+    const chain = step.intent.sourceChain
+
+    const url = yield* chain.getRpcUrl("rpc")
+
+    const { address } = yield* wallets.getAddressForChain(chain)
+    const maybe = (wallets as any).getSuiSigner?.()
+
+    const signer = yield* pipe(
+      Effect.sync(() => suiStore.getSuiSigner()),
+      Effect.flatMap(
+        Option.match({
+          onNone: () => Effect.fail(new Error("Sui signer not available. Connect a Sui wallet.")),
+          onSome: (s) => Effect.succeed(s),
+        }),
+      ),
+    )
+
+    ctaCopy = "Switching Network..."
+    yield* Effect.sleep("1.5 seconds")
+
+    const publicClient = Sui.PublicClient.Live({ url: url }) 
+    const walletClient = Sui.WalletClient.Live({ url: url, signer: signer, rpc: url })
+
+    // 5) Execute ZKGM request
+    ctaCopy = "Executing..."
+
+    const response = yield* ZkgmClient.execute(request).pipe(
+      Effect.provide(SuiZkgmClient.layerWithoutWallet),
+      Effect.provide(publicClient),
+      Effect.provide(walletClient),
+    )
+
+    ctaCopy = "Confirming Transaction..."
+    return response.txHash
+  })
 
   const doCosmos = Effect.gen(function*() {
     const chain = step.intent.sourceChain
@@ -215,7 +258,7 @@ export const submit = Effect.gen(function*() {
     const publicClient = Cosmos.Client.Live(rpcUrl)
 
     ctaCopy = "Executing..."
-
+    console.log("instruction:", step.instruction) // --- IGNORE ---
     const response = yield* ZkgmClient.execute(step.instruction).pipe(
       Effect.provide(CosmosZkgmClient.layerWithoutSigningClient),
       Effect.provide(walletClient),
@@ -229,6 +272,7 @@ export const submit = Effect.gen(function*() {
   return yield* Match.value(sourceChainRpcType).pipe(
     Match.when("evm", () => doEvm),
     Match.when("cosmos", () => doCosmos),
+    Match.when("sui", () => doSui),
     Match.orElse(() =>
       Effect.gen(function*() {
         yield* Effect.logFatal("Unknown chain type")
