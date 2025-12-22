@@ -155,16 +155,37 @@ $effect(() => {
         showDivider={false}
       />
     {:else if currentWalletType === "sui"}
-      <Connection
-        chain="sui"
-        address={suiStore.address}
-        chainWalletsInformation={suiWalletsInformation}
-        connectStatus={suiStore.connectionStatus}
-        connectedWalletId={suiStore.connectedWallet}
-        onConnectClick={(id: string) => suiStore.connect(id as any)}
-        onDisconnectClick={suiStore.disconnect}
-        showDivider={false}
-      />
+      {#if suiWalletsInformation.length > 0}
+        <Connection
+          chain="sui"
+          address={suiStore.address}
+          chainWalletsInformation={suiWalletsInformation}
+          connectStatus={suiStore.connectionStatus}
+          connectedWalletId={suiStore.connectedWallet}
+          onConnectClick={(id: string) => suiStore.connect(id as any)}
+          onDisconnectClick={suiStore.disconnect}
+          showDivider={false}
+          connectionError={suiStore.connectionError}
+          errorWalletId={suiStore.errorWalletId}
+        />
+      {:else}
+        <a
+          href="https://sui.io/get-started"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="w-full bg-zinc-100 dark:bg-zinc-900 rounded-lg p-4 flex items-center gap-3 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+        >
+          <img
+            src="/logos/chains/color/SUI.svg"
+            alt="Sui"
+            class="size-8 rounded-lg bg-white dark:bg-zinc-800 p-1"
+          />
+          <div class="flex flex-col">
+            <span class="text-zinc-900 dark:text-zinc-50 font-medium">Get a Sui Wallet</span>
+            <span class="text-zinc-500 text-sm">No Sui wallets detected</span>
+          </div>
+        </a>
+      {/if}
     {:else if currentWalletType === "all"}
       <Connection
         chain="evm"
@@ -186,16 +207,44 @@ $effect(() => {
         onDisconnectClick={cosmosStore.disconnect}
         showDivider={true}
       />
-      <Connection
-        chain="sui"
-        address={suiStore.address}
-        chainWalletsInformation={suiWalletsInformation}
-        connectStatus={suiStore.connectionStatus}
-        connectedWalletId={suiStore.connectedWallet}
-        onConnectClick={(id: string) => suiStore.connect(id as any)}
-        onDisconnectClick={suiStore.disconnect}
-        showDivider={true}
-      />
+      {#if suiWalletsInformation.length > 0}
+        <Connection
+          chain="sui"
+          address={suiStore.address}
+          chainWalletsInformation={suiWalletsInformation}
+          connectStatus={suiStore.connectionStatus}
+          connectedWalletId={suiStore.connectedWallet}
+          onConnectClick={(id: string) => suiStore.connect(id as any)}
+          onDisconnectClick={suiStore.disconnect}
+          showDivider={true}
+          connectionError={suiStore.connectionError}
+          errorWalletId={suiStore.errorWalletId}
+        />
+      {:else}
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-4 mb-2">
+            <div class="flex-1 h-px bg-zinc-200 dark:bg-zinc-800"></div>
+            <span class="text-zinc-500 dark:text-zinc-400 text-xs uppercase">sui</span>
+            <div class="flex-1 h-px bg-zinc-200 dark:bg-zinc-800"></div>
+          </div>
+          <a
+            href="https://sui.io/get-started"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-full bg-zinc-100 dark:bg-zinc-900 rounded-lg p-4 flex items-center gap-3 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <img
+              src="/logos/chains/color/SUI.svg"
+              alt="Sui"
+              class="size-8 rounded-lg bg-white dark:bg-zinc-800 p-1"
+            />
+            <div class="flex flex-col">
+              <span class="text-zinc-900 dark:text-zinc-50 font-medium">Get a Sui Wallet</span>
+              <span class="text-zinc-500 text-sm">No Sui wallets detected</span>
+            </div>
+          </a>
+        </div>
+      {/if}
     {/if}
   </section>
 </Modal>
