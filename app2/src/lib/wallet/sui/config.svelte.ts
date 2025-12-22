@@ -61,10 +61,9 @@ function pickSuiWallet(targetId: SuiWalletId | undefined) {
 function createSigner(
   wallet: AnyWallet,
   account: AnyWallet["accounts"][number],
-  chain: `${string}:${string}` = "sui:mainnet",
 ) {
-  async function signTransaction(input: { transaction: Transaction }) {
-    const { transaction } = input
+  async function signTransaction(input: { transaction: Transaction; chain?: `${string}:${string}` }) {
+    const { transaction, chain = "sui:mainnet" } = input
 
     const signAndExecute = wallet.features["sui:signAndExecuteTransaction"]
     if (signAndExecute) {
