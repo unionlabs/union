@@ -67,7 +67,7 @@ export const fromWallet = (
         u: ZkgmInstruction.ZkgmInstruction,
       ) => Effect.Effect<
         Ucs03.Ucs03,
-        ParseResult.ParseError | Sui.ReadContractError | Sui.ReadCoinError
+        ParseResult.ParseError | Sui.ReadContractError | Sui.ReadCoinError | Sui.NoCoinMetadataError
       > = pipe(
         Match.type<ZkgmInstruction.ZkgmInstruction>(),
         Match.tagsExhaustive({
@@ -93,6 +93,7 @@ export const fromWallet = (
                   Effect.gen(function*() {
                     const meta = yield* pipe(
                       Sui.readCoinMeta(
+                        // XXX
                         v1.baseToken.address as unknown as any,
                       ),
                       Effect.provideService(Sui.PublicClient, client),

@@ -8,8 +8,7 @@ import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 
 import { Transaction } from "@mysten/sui/transactions"
 import { extractErrorDetails } from "@unionlabs/sdk/Utils"
-import { Context, Data, Effect, flow, Layer, pipe } from "effect"
-import * as A from "effect/Array"
+import { Array, Context, Data, Effect, flow, Layer, pipe } from "effect"
 import * as Predicate from "effect/Predicate"
 import { type Address } from "viem"
 import * as internal from "./internal/sui.js"
@@ -458,7 +457,10 @@ export const prepareCoinForAmount = (
     if (rest.length > 0) {
       tx.mergeCoins(targetArg, rest)
     }
-    return yield* A.head(tx.splitCoins(targetArg, [tx.pure.u64(amount)]))
+    Array.head
+
+    const [out] = tx.splitCoins(targetArg, [tx.pure.u64(amount)])
+    return out
   })
 
 /**
