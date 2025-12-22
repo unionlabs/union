@@ -262,22 +262,28 @@ export const fromWallet = (
 
       // wallet.signer?.setRpcUrl(wallet.rpc);
       // wallet.setRpcUrl(wallet.rpc);
+      // Determine chain identifier for wallet (e.g., "sui:testnet" or "sui:mainnet")
+      const isTestnet = request.source.testnet === true
+      const suiChain: `${string}:${string}` = isTestnet ? "sui:testnet" : "sui:mainnet"
+
       const submit = Effect.tryPromise({
         try: async () => {
           if ((tx as any).setSender && typeof wallet.signer?.toSuiAddress === "function") {
             tx.setSender(wallet.signer.toSuiAddress())
           }
 
-          // Our wrapper may already execute
-          const signed = await (wallet.signer as any).signTransaction({ transactionBlock: tx })
+          const signed = await (wallet.signer as any).signTransaction({ transaction: tx, chain: suiChain })
 
-          if ((signed as any).executeResult) {
-            // Wallet already executed (signAndExecute path)
-            return (signed as any).executeResult
+          if (signed.kind === "error") {
+            throw new Error(signed.error)
           }
 
-          // Old path: we only signed, so execute via client
-          const { signature, bytes } = signed as { signature: string; bytes: Uint8Array }
+          if (signed.kind === "executed") {
+            return signed.executeResult
+          }
+
+          // signed.kind === "signed" - execute via client
+          const { signature, bytes } = signed
           return wallet.client.executeTransactionBlock({
             transactionBlock: bytes,
             signature,
@@ -289,7 +295,7 @@ export const fromWallet = (
             reason: "Transport",
             request,
             cause,
-            description: "signTransactionBlock + executeTransactionBlock",
+            description: "signTransaction + executeTransactionBlock",
           }),
       })
 
