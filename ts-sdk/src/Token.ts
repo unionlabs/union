@@ -169,16 +169,32 @@ export const Any = S.Union(
   Erc20,
   EvmGas,
   Cw20,
-  CosmosTokenFactory,
-  CosmosBank,
-  CosmosIbcClassic,
+  CosmosBank { address, type: "normal" | "factory" | "ibc"},
   SuiCoin,
+  SuiToken,
+  // StarknetNative
+  // StarknetErc20  
 )
 
 union.union-testnet-10..cw20.union1....
 ethereum.1..evm-native
 osmosis.osmosis-1..cosmos-bank.0xeeee
-babylon.bbn-1..cosmos-bank.ubbn
+
+babylon.bbn-1:cosmos-bank.ubbn
+osmosis.osmosis-1:cosmos-bank.factory/osmo1c584m4lq25h83yp6ag8hh4htjr92d954vklzja/ufoo
+sui.4c78adac:sui-coin.0x650be2f4aafc86a91f506b4efc35f34af9a7fafe21e143c0f45f4f465f4d51ff::u::U
+
+
+ethereum.1..erc20.0xba5eD44733953d79717F6269357C77718C8Ba5ed
+union.union-1.cosmos-bank.au
+
+erc20.0xabcdef
+cw20.union1dfsdfsdf
+evm-native
+cosmos-bank.ubbn
+
+factory/
+ibc/
 
 // export const Any = S.Union(
 //   Erc20,
@@ -190,7 +206,7 @@ babylon.bbn-1..cosmos-bank.ubbn
 //   // CosmosIbcClassic,
 //   StarknetNative
 //   StarknetErc20
-//   SuiCoin,
+
 // )
 /**
  * @category models
