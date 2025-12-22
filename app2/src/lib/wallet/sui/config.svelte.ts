@@ -17,7 +17,7 @@ import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519"
 
 import { SuiClient } from "@mysten/sui/client"
 import { Transaction } from "@mysten/sui/transactions"
-import { fromBase64, toBase64 } from "@mysten/sui/utils" // 👈 add toB64
+import { fromBase64, toBase64 } from "@mysten/sui/utils"
 
 export const suiWalletsInformation = [
   {
@@ -98,7 +98,9 @@ function makeWalletStandardSigner(
     let bytes: Uint8Array
     if (input.transactionBlock instanceof Transaction) {
       const tmpClient = new SuiClient({
-        url: typeof rpcUrl === "string" ? rpcUrl : (rpcUrl?.toString() ?? ""),
+        url: typeof rpcUrl === "string"
+          ? rpcUrl
+          : (rpcUrl?.toString() ?? ""),
       })
       bytes = await input.transactionBlock.build({ client: tmpClient })
     } else if (typeof input.transactionBlock === "string") {
@@ -270,7 +272,7 @@ class SuiStore {
     if (!wallet) {
       this.connectionStatus = "disconnected"
       this.saveToStorage()
-      window.open("https://slushwallet.xyz", "_blank", "noopener,noreferrer")
+      window.open("https://slush.app", "_blank", "noopener,noreferrer")
       return
     }
 
@@ -329,8 +331,12 @@ class SuiStore {
 
   disconnect = async () => {
     try {
-      const w = this.connectedWallet ? pickSuiWallet(this.connectedWallet) : undefined
-      const off = (this as any)._offAccountsChanged as undefined | (() => void)
+      const w = this.connectedWallet
+        ? pickSuiWallet(this.connectedWallet)
+        : undefined
+      const off = (this as any)._offAccountsChanged as
+        | undefined
+        | (() => void)
       off?.()
 
       if (w?.features?.["standard:disconnect"]) {
