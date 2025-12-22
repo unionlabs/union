@@ -8,7 +8,8 @@ import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 
 import { Transaction } from "@mysten/sui/transactions"
 import { extractErrorDetails } from "@unionlabs/sdk/Utils"
-import { Context, Data, Effect, flow, Layer } from "effect"
+import { Context, Data, Effect, flow, Layer, pipe } from "effect"
+import * as Predicate from "effect/Predicate"
 import { type Address } from "viem"
 import * as internal from "./internal/sui.js"
 
@@ -96,6 +97,10 @@ export namespace Sui {
 
 export class ReadCoinError extends Data.TaggedError("ReadCoinError")<{
   cause: unknown
+}> {}
+
+export class NoCoinMetadataError extends Data.TaggedError("NoCoinMetadataError")<{
+  coinType: string
 }> {}
 
 export const readContract = <T>(
@@ -317,28 +322,27 @@ export const readCoinMetadata = (tokenAddress: Address) =>
  * @since 0.0.0
  */
 export const readCoinMeta = (coinType: string) =>
-  Effect.gen(function*() {
-    const client = (yield* PublicClient).client
-
-    const out = yield* Effect.tryPromise({
-      try: async () => {
-        const meta = await client.getCoinMetadata({ coinType })
-        // meta can be null if the type has no metadata published
-        if (!meta) {
-          // normalize to a typed error consistent with your pattern
-          throw new ReadCoinError({ cause: `No CoinMetadata found for ${coinType}` })
-        }
-        const { name, symbol, decimals } = meta
-        return { name, symbol, decimals }
-      },
-      catch: err =>
-        new ReadCoinError({
-          cause: extractErrorDetails(err as Error),
+  pipe(
+    PublicClient,
+    Effect.andThen(({ client }) =>
+      pipe(
+        Effect.tryPromise({
+          try: () => client.getCoinMetadata({ coinType }),
+          catch: err =>
+            new ReadCoinError({
+              cause: extractErrorDetails(err as Error),
+            }),
         }),
-    })
-
-    return out
-  })
+        Effect.flatMap(
+          Effect.liftPredicate(
+            /// XXX: pred cannot be curried for some reason or type inference breaks
+            x => Predicate.isNotNull(x),
+            () => new NoCoinMetadataError({ coinType }),
+          ),
+        ),
+      )
+    ),
+  )
 
 /**
  * Read all coin objects for a given `coinType` and owner address.
