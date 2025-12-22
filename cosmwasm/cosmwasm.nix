@@ -5,7 +5,6 @@ _: {
       mkCrane,
       pkgs,
       dbg,
-      system,
       gitRev,
       ensureAtRepositoryRoot,
       ...
@@ -17,44 +16,44 @@ _: {
         inherit gitRev;
       };
 
+      # CosmmWasm Contracts
+
+      cw-account = crane.buildWasmContract "cosmwasm/cw-account" { };
+      cw-escrow-vault = crane.buildWasmContract "cosmwasm/cw-escrow-vault" {
+        # doesn't use bls precompiles, so the miscompilation is not an issue
+        buildWithOz = true;
+      };
+      cw-unionversal-token = crane.buildWasmContract "cosmwasm/cw-unionversal-token" {
+        # doesn't use bls precompiles, so the miscompilation is not an issue
+        buildWithOz = true;
+      };
+      lst = crane.buildWasmContract "cosmwasm/lst" { };
+      lst-staker = crane.buildWasmContract "cosmwasm/lst-staker" { };
+      proxy-account-factory = crane.buildWasmContract "cosmwasm/proxy-account-factory" { };
+      manager = crane.buildWasmContract "cosmwasm/gatekeeper" { };
+      cw20-base = crane.buildWasmContract "cosmwasm/cw20-base" { };
+      cw20-wrapped-tokenfactory = crane.buildWasmContract "cosmwasm/cw20-wrapped-tokenfactory" { };
+      ibc-union = crane.buildWasmContract "cosmwasm/ibc-union/core" { };
+      multicall = crane.buildWasmContract "cosmwasm/multicall" { };
+      on-zkgm-call-proxy = crane.buildWasmContract "cosmwasm/on-zkgm-call-proxy" { };
+      cw20-token-minter = crane.buildWasmContract "cosmwasm/cw20-token-minter" { };
+      osmosis-tokenfactory-token-minter =
+        crane.buildWasmContract "cosmwasm/osmosis-tokenfactory-token-minter"
+          { };
+
+      # Get the full deployments object for a chain.
       getDeployment =
         ucs04-chain-id:
         (builtins.fromJSON (builtins.readFile ../deployments/deployments.json)).${ucs04-chain-id};
 
-      # minified version of the protos found in https://github.com/CosmWasm/wasmd/tree/2e748fb4b860ee109123827f287949447f2cded7/proto/cosmwasm/wasm/v1
-      cosmwasmProtoDefs = pkgs.writeTextDir "/cosmwasm.proto" ''
-        syntax = "proto3";
-        package cosmwasm;
-
-        message QueryContractInfoRequest {
-          string address = 1;
-        }
-
-        message QueryContractInfoResponse {
-          ContractInfo contract_info = 2;
-        }
-
-        message ContractInfo {
-          uint64 code_id = 1;
-        }
-
-        message QueryCodeRequest {
-          uint64 code_id = 1;
-        }
-
-        message QueryCodeResponse {
-          bytes data = 2;
-        }
-
-        message QuerySmartContractStateRequest {
-          string address = 1;
-          bytes query_data = 2;
-        }
-
-        message QuerySmartContractStateResponse {
-          bytes data = 1;
-        }
-      '';
+      # Get a deployed contract address by name on a chain.
+      getDeployedContractAddress =
+        ucs04-chain-id: name:
+        (pkgs.lib.lists.findSingle ({ value, ... }: value.name == value)
+          (throw "no deployment found for ${name} on ${ucs04-chain-id}")
+          (throw "many deployments found for ${name} on ${ucs04-chain-id}")
+          (builtins.attrsToList (getDeployment ucs04-chain-id).contracts)
+        ).name;
 
       bytecode-base = pkgs.stdenv.mkDerivation {
         name = "base-bytecode";
@@ -64,10 +63,382 @@ _: {
         buildPhase = ''
           wasm-as $src -o $out
         '';
+        meta = {
+          description = "The raw bytecode used in the deterministic instantiate2 address derivation.";
+        };
       };
 
       inherit (crane.buildWorkspaceMember "cosmwasm/deployer" { }) cosmwasm-deployer;
 
+      # CosmWasm Networks
+      #
+      # ucs04-chain-id : The UCS04 Chain ID of this chain.
+      # name           : A Unique identifier for this chain. This will be used in the nix derivation
+      #                  outputs (i.e. .#cosmwasm-scripts.<name>.<script>)
+      # rpc-url        : A CometBFT JSON-RPC url for this chain.
+      # deployer-key   : A bash expression that resolves to an 0x-prefixed private key. This is the
+      #                  key that will be used for *new* deployments; only for address derivation.
+      # ops-key        : A bash expression that resolves to an 0x-prefixed private key. This is the
+      #                  key that will be used for all operations *after* the initial deployment of
+      #                  a contract (i.e. storing new code).
+      # gas-config     : The gas parameters for transaction submission for this chain. See the docs
+      #                  on `mk-gas-args` for more information.
+      # bech32-prefix  : The bech32 prefix for this chain.
+      # apps           : A map of IBC app name to the deployment configuration. See the docs on
+      #                  `ucs03-configs` for more information.
+      # lightclients   : Lightclients that are to be deployed on this chain.
+      networks = [
+        rec {
+          ucs04-chain-id = "union.union-devnet-1";
+          name = "union-devnet";
+          rpc-url = "http://localhost:26657";
+          # alice from the devnet keyring
+          deployer-key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
+          ops-key = deployer-key;
+          gas-config = {
+            type = "feemarket";
+            max_gas = 100000000;
+            gas_multiplier = 1.4;
+          };
+          bech32-prefix = "union";
+          apps = {
+            ucs03 = (ucs03-configs.cw20 cw20-base) // {
+              rate_limit_disabled = true;
+            };
+          };
+          lightclients = [
+            "trusted-mpt"
+            # "sui"
+          ];
+        }
+        {
+          ucs04-chain-id = "union.union-testnet-10";
+          name = "union-testnet-10";
+          rpc-url = "https://rpc.rpc-node.union-testnet-10.union.build";
+          # rpc-url = "https://union-testnet-rpc.polkachu.com";
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
+          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          gas-config = {
+            type = "feemarket";
+          };
+          apps = {
+            ucs03 = (ucs03-configs.cw20 cw20-base) // {
+              rate_limit_disabled = true;
+            };
+          };
+          bech32-prefix = "union";
+          lightclients = [
+            "arbitrum"
+            "base"
+            "bob"
+            "berachain"
+            "ethereum"
+            "trusted-mpt"
+            "ethermint"
+            "tendermint-bls"
+            "parlia"
+            "sui"
+            "state-lens-ics23-mpt"
+          ];
+          u = "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r";
+          eu = "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f";
+          lst = true;
+          on-zkgm-call-proxy = true;
+        }
+        {
+          ucs04-chain-id = "union.union-1";
+          name = "union";
+          rpc-url = "https://rpc.rpc-node.union-1.union.build";
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
+          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          gas-config = {
+            type = "feemarket";
+            max_gas = 10000000;
+            gas_multiplier = 1.4;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20 cw20-base;
+          };
+          bech32-prefix = "union";
+          lightclients = [
+            "arbitrum"
+            "bob"
+            "berachain"
+            "ethereum"
+            "trusted-mpt"
+            "ethermint"
+            "base"
+            "tendermint-bls"
+            "state-lens-ics23-mpt"
+            "parlia"
+          ];
+          u = "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r";
+          eu = "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f";
+          lst = true;
+          on-zkgm-call-proxy = false;
+        }
+        {
+          ucs04-chain-id = "osmosis.osmosis-devnet-1";
+          name = "osmosis-devnet";
+          rpc-url = "http://localhost:26857";
+          deployer-key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
+          gas-config = {
+            type = "fixed";
+            gas_price = "0.05";
+            gas_denom = "uosmo";
+            gas_multiplier = "1.1";
+            max_gas = 60000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.osmosis-tokenfactory // {
+              rate_limit_disabled = true;
+            };
+          };
+          bech32-prefix = "osmo";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
+          ucs04-chain-id = "osmosis.osmo-test-5";
+          name = "osmosis-testnet";
+          rpc-url = "https://osmosis-testnet-rpc.polkachu.com";
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
+          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          gas-config = {
+            type = "fixed";
+            gas_price = "0.1";
+            gas_denom = "uosmo";
+            gas_multiplier = "1.2";
+            max_gas = 40000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.osmosis-tokenfactory // {
+              rate_limit_disabled = true;
+            };
+          };
+          bech32-prefix = "osmo";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
+          ucs04-chain-id = "osmosis.osmosis-1";
+          name = "osmosis";
+          rpc-url = "https://osmosis-rpc.polkachu.com";
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
+          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          gas-config = {
+            type = "osmosis-eip1559-feemarket";
+            max_gas = 60000000;
+            gas_multiplier = "1.2";
+            base_fee_multiplier = "1.4";
+            denom = "uosmo";
+          };
+          apps = {
+            ucs03 = ucs03-configs.osmosis-tokenfactory;
+          };
+          bech32-prefix = "osmo";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
+          ucs04-chain-id = "babylon.bbn-test-6";
+          name = "babylon-testnet";
+          rpc-url = "https://babylon-testnet-rpc.polkachu.com";
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
+          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          gas-config = {
+            type = "fixed";
+            gas_price = "0.003";
+            gas_denom = "ubbn";
+            gas_multiplier = "1.1";
+            max_gas = 10000000;
+          };
+          apps = {
+            ucs03 = (ucs03-configs.cw20 cw20-wrapped-tokenfactory) // {
+              rate_limit_disabled = true;
+            };
+          };
+          bech32-prefix = "bbn";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "trusted-mpt"
+            "state-lens-ics23-mpt"
+            "state-lens-ics23-ics23"
+          ];
+          u = "bbn1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqnrn5rr";
+          eu = "bbn1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hqscechf";
+        }
+        {
+          ucs04-chain-id = "babylon.bbn-1";
+          name = "babylon";
+          rpc-url = "https://babylon-rpc.polkachu.com";
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
+          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          gas-config = {
+            type = "fixed";
+            gas_price = "0.003";
+            gas_denom = "ubbn";
+            gas_multiplier = "1.1";
+            max_gas = 10000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20 cw20-wrapped-tokenfactory;
+          };
+          bech32-prefix = "bbn";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "trusted-mpt"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
+          ucs04-chain-id = "xion.xion-testnet-2";
+          name = "xion-testnet";
+          rpc-url = "https://rpc.xion-testnet-2.burnt.com";
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
+          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          gas-config = {
+            type = "fixed";
+            gas_price = "0.002";
+            gas_denom = "uxion";
+            gas_multiplier = "1.5";
+            max_gas = 60000000;
+          };
+          apps = {
+            ucs03 = (ucs03-configs.cw20 cw20-base) // {
+              rate_limit_disabled = true;
+            };
+          };
+          bech32-prefix = "xion";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+            "state-lens-ics23-ics23"
+          ];
+        }
+        rec {
+          ucs04-chain-id = "intento.intento-dev-1";
+          name = "intento-devnet";
+          rpc-url = "https://rpc-devnet.intento.zone/";
+          deployer-key = ''"$1"'';
+          ops-key = deployer-key;
+          gas-config = {
+            type = "fixed";
+            gas_price = "0.015";
+            gas_denom = "uinto";
+            gas_multiplier = "1.4";
+            max_gas = 60000000;
+          };
+          apps = {
+            ucs03 = (ucs03-configs.cw20 cw20-base) // {
+              rate_limit_disabled = true;
+            };
+          };
+          bech32-prefix = "into";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+      ];
+
+      # name => { dir, client-type, features? }
+      all-lightclients = {
+        base = {
+          dir = "base";
+          client-type = "base";
+        };
+        bob = {
+          dir = "bob";
+          client-type = "bob";
+        };
+        arbitrum = {
+          dir = "arbitrum";
+          client-type = "arbitrum";
+        };
+        berachain = {
+          dir = "berachain";
+          client-type = "berachain";
+        };
+        cometbls = {
+          dir = "cometbls";
+          client-type = "cometbls";
+        };
+        ethereum = {
+          dir = "ethereum";
+          client-type = "ethereum";
+        };
+        trusted-mpt = {
+          dir = "trusted-mpt";
+          client-type = "trusted/evm/mpt";
+        };
+        ethermint = {
+          dir = "ethermint";
+          client-type = "ethermint";
+        };
+        tendermint = {
+          dir = "tendermint";
+          client-type = "tendermint";
+        };
+        tendermint-bls = {
+          dir = "tendermint";
+          client-type = "tendermint";
+          features = [ "bls" ];
+        };
+        state-lens-ics23-mpt = {
+          dir = "state-lens-ics23-mpt";
+          client-type = "state-lens/ics23/mpt";
+        };
+        state-lens-ics23-ics23 = {
+          dir = "state-lens-ics23-ics23";
+          client-type = "state-lens/ics23/ics23";
+        };
+        sui = {
+          dir = "sui";
+          client-type = "sui";
+        };
+        parlia = {
+          dir = "parlia";
+          client-type = "parlia";
+        };
+        starknet = {
+          dir = "starknet";
+          client-type = "starknet";
+        };
+      };
+
+      all-apps = {
+        # TODO: Revive
+        # ucs00-pingpong = {
+        #   name = "ucs00";
+        # };
+        ucs03-zkgm = {
+          name = "ucs03";
+        };
+      };
+
+      # Gas configurations supported by cosmwasm-deployer.
+      #
+      # Fixed                     : Use a fixed configuration, with the specified gas denom, price,
+      #                             multiplier, and max gas.
+      # Feemarket                 : Query gas prices from the feemarket module. Both max gas and
+      #                             multiplier are optional.
+      # Osmosis EIP1559 Feemarket : Query gas prices from osmosis' eip1559 feemarket module, with
+      #                             the specified denom and base fee multiplier. Both the max gas
+      #                             and multiplier are optional.
       mk-gas-args =
         config@{ type, ... }:
         {
@@ -107,429 +478,7 @@ _: {
         .${type}
           (builtins.removeAttrs config [ "type" ]);
 
-      networks = [
-        {
-          chain-id = "union-devnet-1";
-          ucs04-chain-id = "union.union-devnet-1";
-          name = "union-devnet";
-          rpc_url = "http://localhost:26657";
-          # alice from the devnet keyring
-          private_key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
-          gas_config = {
-            type = "feemarket";
-            max_gas = 100000000;
-            gas_multiplier = 1.4;
-          };
-          ucs03_type = "cw20";
-          bech32_prefix = "union";
-          apps = {
-            ucs03 = (ucs03-configs.cw20 cw20-base) // {
-              rate_limit_disabled = true;
-            };
-          };
-          # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
-          lightclients = [
-            "trusted-mpt"
-            # "sui"
-          ];
-        }
-        {
-          chain-id = "union-testnet-10";
-          ucs04-chain-id = "union.union-testnet-10";
-          name = "union-testnet-10";
-          rpc_url = "https://rpc.rpc-node.union-testnet-10.union.build";
-          # rpc_url = "https://union-testnet-rpc.polkachu.com";
-          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
-          gas_config = {
-            type = "feemarket";
-          };
-          apps = {
-            ucs03 = (ucs03-configs.cw20 cw20-base) // {
-              rate_limit_disabled = true;
-            };
-          };
-          bech32_prefix = "union";
-          lightclients = [
-            "arbitrum"
-            "base"
-            "bob"
-            "berachain"
-            "ethereum"
-            "trusted-mpt"
-            "ethermint"
-            "tendermint-bls"
-            "parlia"
-            "sui"
-            # "movement"
-            "state-lens-ics23-mpt"
-            # "state-lens-ics23-smt"
-          ];
-          u = "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r";
-          eu = "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f";
-          lst = true;
-          on-zkgm-call-proxy = true;
-        }
-        {
-          chain-id = "union-1";
-          ucs04-chain-id = "union.union-1";
-          name = "union";
-          rpc_url = "https://rpc.rpc-node.union-1.union.build";
-          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
-          gas_config = {
-            type = "feemarket";
-            max_gas = 10000000;
-            gas_multiplier = 1.4;
-          };
-          apps = {
-            ucs03 = ucs03-configs.cw20 cw20-base;
-          };
-          bech32_prefix = "union";
-          lightclients = [
-            "arbitrum"
-            "bob"
-            "berachain"
-            "ethereum"
-            "trusted-mpt"
-            "ethermint"
-            "base"
-            "tendermint-bls"
-            # "movement"
-            "state-lens-ics23-mpt"
-            # "state-lens-ics23-smt"
-            "parlia"
-          ];
-          u = "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r";
-          eu = "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f";
-          lst = true;
-          on-zkgm-call-proxy = false;
-        }
-        {
-          chain-id = "elgafar-1";
-          name = "stargaze-testnet";
-          rpc_url = "https://rpc.elgafar-1.stargaze.chain.kitchen";
-          private_key = ''"$1"'';
-          gas_config = {
-            type = "fixed";
-            gas_price = "1.0";
-            gas_denom = "ustars";
-            gas_multiplier = "1.1";
-            max_gas = 10000000;
-          };
-          apps = {
-            ucs03 = (ucs03-configs.cw20 cw20-base) // {
-              rate_limit_disabled = true;
-            };
-          };
-          bech32_prefix = "stars";
-          lightclients = [
-            "cometbls"
-            "tendermint"
-            "state-lens-ics23-mpt"
-          ];
-        }
-        {
-          chain-id = "osmosis-devnet-1";
-          name = "osmosis-devnet";
-          rpc_url = "http://localhost:26857";
-          private_key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
-          gas_config = {
-            type = "fixed";
-            gas_price = "0.05";
-            gas_denom = "uosmo";
-            gas_multiplier = "1.1";
-            max_gas = 60000000;
-          };
-          apps = {
-            ucs03 = ucs03-configs.osmosis_tokenfactory // {
-              rate_limit_disabled = true;
-            };
-          };
-          bech32_prefix = "osmo";
-          lightclients = [
-            "cometbls"
-            "tendermint"
-            "state-lens-ics23-mpt"
-          ];
-        }
-        {
-          chain-id = "osmo-test-5";
-          ucs04-chain-id = "osmosis.osmo-test-5";
-          name = "osmosis-testnet";
-          rpc_url = "https://osmosis-testnet-rpc.polkachu.com";
-          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
-          gas_config = {
-            type = "fixed";
-            gas_price = "0.1";
-            gas_denom = "uosmo";
-            gas_multiplier = "1.2";
-            max_gas = 40000000;
-          };
-          apps = {
-            ucs03 = ucs03-configs.osmosis_tokenfactory // {
-              rate_limit_disabled = true;
-            };
-          };
-          bech32_prefix = "osmo";
-          lightclients = [
-            "cometbls"
-            "tendermint"
-            "state-lens-ics23-mpt"
-          ];
-        }
-        {
-          chain-id = "osmosis-1";
-          ucs04-chain-id = "osmosis.osmosis-1";
-          name = "osmosis";
-          rpc_url = "https://osmosis-rpc.polkachu.com";
-          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
-          gas_config = {
-            type = "osmosis-eip1559-feemarket";
-            max_gas = 60000000;
-            gas_multiplier = "1.2";
-            base_fee_multiplier = "1.4";
-            denom = "uosmo";
-          };
-          apps = {
-            ucs03 = ucs03-configs.osmosis_tokenfactory;
-          };
-          bech32_prefix = "osmo";
-          lightclients = [
-            "cometbls"
-            "tendermint"
-            "state-lens-ics23-mpt"
-          ];
-        }
-        {
-          chain-id = "bbn-test-6";
-          ucs04-chain-id = "babylon.bbn-test-6";
-          name = "babylon-testnet";
-          rpc_url = "https://babylon-testnet-rpc.polkachu.com";
-          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
-          gas_config = {
-            type = "fixed";
-            gas_price = "0.003";
-            gas_denom = "ubbn";
-            gas_multiplier = "1.1";
-            max_gas = 10000000;
-          };
-          apps = {
-            ucs03 = (ucs03-configs.cw20 cw20-wrapped-tokenfactory) // {
-              rate_limit_disabled = true;
-            };
-          };
-          bech32_prefix = "bbn";
-          lightclients = [
-            "cometbls"
-            "tendermint"
-            "trusted-mpt"
-            "state-lens-ics23-mpt"
-            "state-lens-ics23-ics23"
-          ];
-          u = "bbn1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqnrn5rr";
-          eu = "bbn1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hqscechf";
-        }
-        {
-          chain-id = "bbn-1";
-          ucs04-chain-id = "babylon.bbn-1";
-          name = "babylon";
-          rpc_url = "https://babylon-rpc.polkachu.com";
-          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
-          gas_config = {
-            type = "fixed";
-            gas_price = "0.003";
-            gas_denom = "ubbn";
-            gas_multiplier = "1.1";
-            max_gas = 10000000;
-          };
-          apps = {
-            ucs03 = ucs03-configs.cw20 cw20-wrapped-tokenfactory;
-          };
-          bech32_prefix = "bbn";
-          lightclients = [
-            "cometbls"
-            "tendermint"
-            "trusted-mpt"
-            "state-lens-ics23-mpt"
-          ];
-        }
-        {
-          chain-id = "stride-internal-1";
-          name = "stride-testnet";
-          rpc_url = "https://stride-testnet-rpc.polkachu.com";
-          private_key = ''"$1"'';
-          gas_config = {
-            type = "fixed";
-            gas_price = "0.1";
-            gas_denom = "ustrd";
-            gas_multiplier = "1.1";
-            max_gas = 60000000;
-          };
-          apps = {
-            ucs03 = (ucs03-configs.cw20 cw20-base) // {
-              rate_limit_disabled = true;
-            };
-          };
-          permissioned = true;
-          bech32_prefix = "stride";
-          lightclients = [
-            "cometbls"
-            "tendermint"
-            "state-lens-ics23-mpt"
-            # "state-lens-ics23-smt"
-          ];
-        }
-        {
-          chain-id = "xion-testnet-2";
-          ucs04-chain-id = "xion.xion-testnet-2";
-          name = "xion-testnet";
-          rpc_url = "https://rpc.xion-testnet-2.burnt.com";
-          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
-          gas_config = {
-            type = "fixed";
-            gas_price = "0.002";
-            gas_denom = "uxion";
-            gas_multiplier = "1.5";
-            max_gas = 60000000;
-          };
-          apps = {
-            ucs03 = (ucs03-configs.cw20 cw20-base) // {
-              rate_limit_disabled = true;
-            };
-          };
-          bech32_prefix = "xion";
-          lightclients = [
-            "cometbls"
-            "tendermint"
-            "state-lens-ics23-mpt"
-            "state-lens-ics23-ics23"
-          ];
-        }
-        {
-          chain-id = "mantra-dukong-1";
-          name = "mantra-testnet";
-          rpc_url = "https://rpc.dukong.mantrachain.io/";
-          private_key = ''"$1"'';
-          gas_config = {
-            type = "fixed";
-            gas_price = "0.015";
-            gas_denom = "uom";
-            gas_multiplier = "1.4";
-            max_gas = 60000000;
-          };
-          apps = {
-            ucs03 = (ucs03-configs.cw20 cw20-base) // {
-              rate_limit_disabled = true;
-            };
-          };
-          bech32_prefix = "mantra";
-          lightclients = [
-            "cometbls"
-            "tendermint"
-            "state-lens-ics23-mpt"
-          ];
-        }
-      ];
-
-      # directory => {}
-      all-lightclients = [
-        {
-          name = "base";
-          dir = "base";
-          client-type = "base";
-        }
-        {
-          name = "bob";
-          dir = "bob";
-          client-type = "bob";
-        }
-        {
-          name = "arbitrum";
-          dir = "arbitrum";
-          client-type = "arbitrum";
-        }
-        {
-          name = "berachain";
-          dir = "berachain";
-          client-type = "berachain";
-        }
-        {
-          name = "cometbls";
-          dir = "cometbls";
-          client-type = "cometbls";
-        }
-        {
-          name = "ethereum";
-          dir = "ethereum";
-          client-type = "ethereum";
-        }
-        {
-          name = "trusted-mpt";
-          dir = "trusted-mpt";
-          client-type = "trusted/evm/mpt";
-        }
-        {
-          name = "ethermint";
-          dir = "ethermint";
-          client-type = "ethermint";
-        }
-        {
-          name = "tendermint";
-          dir = "tendermint";
-          client-type = "tendermint";
-        }
-        {
-          name = "tendermint-bls";
-          dir = "tendermint";
-          client-type = "tendermint";
-          features = [ "bls" ];
-        }
-        # {
-        #   name = "movement";
-        #   dir = "movement";
-        #   client-type = "movement";
-        # }
-        {
-          name = "state-lens-ics23-mpt";
-          dir = "state-lens-ics23-mpt";
-          client-type = "state-lens/ics23/mpt";
-        }
-        # {
-        #   name = "state-lens-ics23-smt";
-        #   dir = "state-lens-ics23-smt";
-        #   client-type = "state-lens/ics23/smt";
-        # }
-        {
-          name = "state-lens-ics23-ics23";
-          dir = "state-lens-ics23-ics23";
-          client-type = "state-lens/ics23/ics23";
-        }
-        {
-          name = "sui";
-          dir = "sui";
-          client-type = "sui";
-        }
-        {
-          name = "parlia";
-          dir = "parlia";
-          client-type = "parlia";
-        }
-        {
-          name = "starknet";
-          dir = "starknet";
-          client-type = "starknet";
-        }
-      ];
-
-      # client type => package name
-      all-apps = {
-        # ucs00-pingpong = {
-        #   name = "ucs00";
-        # };
-        ucs03-zkgm = {
-          name = "ucs03";
-        };
-      };
-
+      # Supported configurations for the ucs03-zkgm deployment.
       ucs03-configs = {
         cw20 = cw20-impl: {
           type = "cw20";
@@ -543,7 +492,7 @@ _: {
           };
           rate_limit_disabled = false;
         };
-        osmosis_tokenfactory = {
+        osmosis-tokenfactory = {
           type = "osmosis-tokenfactory";
           rate_limit_disabled = false;
           path = "${(mk-app "ucs03-zkgm").release}";
@@ -557,9 +506,46 @@ _: {
 
       get-git-rev =
         {
-          rpc_url,
+          ucs04-chain-id,
+          rpc-url,
           ...
         }:
+        let
+          # minified version of the protos found in https://github.com/CosmWasm/wasmd/tree/2e748fb4b860ee109123827f287949447f2cded7/proto/cosmwasm/wasm/v1
+          cosmwasmProtoDefs = pkgs.writeTextDir "/cosmwasm.proto" ''
+            syntax = "proto3";
+            package cosmwasm;
+
+            message QueryContractInfoRequest {
+              string address = 1;
+            }
+
+            message QueryContractInfoResponse {
+              ContractInfo contract_info = 2;
+            }
+
+            message ContractInfo {
+              uint64 code_id = 1;
+            }
+
+            message QueryCodeRequest {
+              uint64 code_id = 1;
+            }
+
+            message QueryCodeResponse {
+              bytes data = 2;
+            }
+
+            message QuerySmartContractStateRequest {
+              string address = 1;
+              bytes query_data = 2;
+            }
+
+            message QuerySmartContractStateResponse {
+              bytes data = 1;
+            }
+          '';
+        in
         pkgs.writeShellApplication {
           name = "get-git-rev";
           runtimeInputs = [
@@ -571,7 +557,7 @@ _: {
           text = ''
             embed-commit-verifier extract <(curl -L \
               --silent \
-              '${rpc_url}/abci_query?path=%22/cosmwasm.wasm.v1.Query/Code%22&data=0x'"$(
+              '${rpc-url}/abci_query?path=%22/cosmwasm.wasm.v1.Query/Code%22&data=0x'"$(
                 buf \
                   convert \
                   ${cosmwasmProtoDefs}/cosmwasm.proto \
@@ -580,7 +566,7 @@ _: {
                     echo "{\"code_id\":$(
                       curl -L \
                         --silent \
-                        '${rpc_url}/abci_query?path=%22/cosmwasm.wasm.v1.Query/ContractInfo%22&data=0x'"$(
+                        '${rpc-url}/abci_query?path=%22/cosmwasm.wasm.v1.Query/ContractInfo%22&data=0x'"$(
                           buf \
                             convert \
                             ${cosmwasmProtoDefs}/cosmwasm.proto \
@@ -610,13 +596,18 @@ _: {
                 | jq .data -r \
                 | base64 -d)
           '';
+          meta = {
+            description = "Extract the embedded git rev from a contract on ${ucs04-chain-id}.";
+            longDescription = "All of our deployed wasm binaries have the current git revision embedded at compile time. This script will fetch the wasm code of the provided contract and extract the embedded git rev. See the `embed-commit` crate for more information.";
+          };
         };
 
       deploy =
         args@{
+          ucs04-chain-id,
           name,
-          rpc_url,
-          gas_config,
+          rpc-url,
+          gas-config,
           private_key,
           permissioned ? false,
           ...
@@ -631,18 +622,22 @@ _: {
               deploy-full \
               --contracts ${chain-contracts-config-json args} \
               ${if permissioned then "--permissioned " else ""} \
-              --rpc-url ${rpc_url} \
-              ${mk-gas-args gas_config} "$@"
+              --rpc-url ${rpc-url} \
+              ${mk-gas-args gas-config} "$@"
           '';
+          meta = {
+            description = "Deploy a contract on ${ucs04-chain-id}.";
+            longDescription = "Deploy a contract on ${ucs04-chain-id}. The bytecode must be specified. This is a prerequisite for deploying the full stack, as all of the contracts we deploy are access managed.";
+          };
         };
 
       deploy-manager =
         {
+          ucs04-chain-id,
           name,
-          rpc_url,
-          gas_config,
-          private_key,
-          bech32_prefix,
+          rpc-url,
+          gas-config,
+          deployer-key,
           ...
         }:
         pkgs.writeShellApplication {
@@ -651,30 +646,26 @@ _: {
             cosmwasm-deployer
           ];
           text = ''
-            DEPLOYER=$(
-              PRIVATE_KEY=${private_key} \
-                cosmwasm-deployer \
-                address-of-private-key \
-                --bech32-prefix ${bech32_prefix}
-            )
-            echo "deployer address: $DEPLOYER"
-
-            PRIVATE_KEY=${private_key} \
+            PRIVATE_KEY=${deployer-key} \
             RUST_LOG=info \
               cosmwasm-deployer \
               deploy-manager \
               --bytecode ${manager.release} \
-              --rpc-url ${rpc_url} \
-              ${mk-gas-args gas_config} "$@"
+              --rpc-url ${rpc-url} \
+              ${mk-gas-args gas-config} "$@"
           '';
+          meta = {
+            description = "Deploy the manager on ${ucs04-chain-id}.";
+            longDescription = "Deploy the manager contract on ${ucs04-chain-id}. This is a prerequisite for deploying the full stack, as all of the contracts we deploy are access managed.";
+          };
         };
 
       whitelist-relayers =
         {
           name,
           ucs04-chain-id,
-          rpc_url,
-          gas_config,
+          rpc-url,
+          gas-config,
           private_key,
           ...
         }:
@@ -688,8 +679,8 @@ _: {
               tx \
               whitelist-relayers \
               --manager ${(getDeployment ucs04-chain-id).manager} \
-              --rpc-url ${rpc_url} \
-              ${mk-gas-args gas_config} "$@"
+              --rpc-url ${rpc-url} \
+              ${mk-gas-args gas-config} "$@"
           '';
         };
 
@@ -697,8 +688,8 @@ _: {
         {
           name,
           ucs04-chain-id,
-          rpc_url,
-          gas_config,
+          rpc-url,
+          gas-config,
           private_key,
           ...
         }:
@@ -711,9 +702,9 @@ _: {
               cosmwasm-deployer \
               tx \
               set-bucket-config \
-              --rpc-url ${rpc_url} \
-              --ucs03-address ${(getDeployment ucs04-chain-id).app.ucs03.address} \
-              ${mk-gas-args gas_config} "$@"
+              --rpc-url ${rpc-url} \
+              --ucs03-address ${getDeployedContractAddress ucs04-chain-id "protocols/ucs03"} \
+              ${mk-gas-args gas-config} "$@"
           '';
         };
 
@@ -727,19 +718,11 @@ _: {
         pkgs.writeText "${ucs04-chain-id}.contracts-config.json" (
           builtins.toJSON {
             core = ibc-union.release;
-            lightclient = builtins.listToAttrs (
-              map (
-                { name, client-type, ... }:
-                {
-                  name = client-type;
-                  value = (mk-lightclient name).release;
-                }
-              ) (builtins.filter ({ name, ... }: builtins.elem name lightclients) all-lightclients)
-            );
+            lightclient = builtins.mapAttrs (
+              name: { client-type, ... }: pkgs.lib.nameValuePair client-type (mk-lightclient name)
+            ) (pkgs.lib.getAttrs lightclients all-lightclients);
             app = apps;
             escrow_vault = cw-escrow-vault.release;
-            on_zkgm_call_proxy = on-zkgm-call-proxy.release;
-            manager = manager.release;
           }
         );
 
@@ -763,11 +746,10 @@ _: {
         args@{
           lightclients,
           apps,
-          private_key,
+          ops-key,
           ucs04-chain-id,
-          rpc_url,
-          bech32_prefix,
-          gas_config,
+          rpc-url,
+          gas-config,
           ...
         }:
         (builtins.listToAttrs (
@@ -781,21 +763,17 @@ _: {
               value = pkgs.writeShellApplication {
                 name = "${args.name}-${name}";
                 runtimeInputs = [
-                  ibc-union-contract-addresses
                   cosmwasm-deployer
                 ];
                 text = ''
-                  PRIVATE_KEY=${private_key} \
+                  PRIVATE_KEY=${ops-key} \
                   RUST_LOG=info \
                     cosmwasm-deployer \
                     upgrade \
-                    --rpc-url ${rpc_url} \
-                    --address ${
-                      (getDeployment ucs04-chain-id)
-                      .lightclient.${(get-lightclient (lc_: lc_.name == lc)).client-type}.address
-                    } \
+                    --rpc-url ${rpc-url} \
+                    --address ${(getDeployedContractAddress ucs04-chain-id "lightclients/${all-lightclients.${lc}.client-type}")} \
                     --new-bytecode ${(mk-lightclient lc).release} \
-                      ${mk-gas-args gas_config} "$@"
+                      ${mk-gas-args gas-config} "$@"
                 '';
               };
             }
@@ -806,93 +784,24 @@ _: {
             app:
             let
               name = "migrate-app-${app}";
-              full-app = pkgs.lib.lists.findFirst (a: a.value.name == app) (throw "???") (
-                pkgs.lib.attrsets.mapAttrsToList pkgs.lib.attrsets.nameValuePair all-apps
-              );
-              isCw20 = apps.ucs03.token_minter_config ? cw20;
             in
             {
               inherit name;
               value = pkgs.writeShellApplication {
                 name = "${args.name}-${name}";
                 runtimeInputs = [
-                  ibc-union-contract-addresses
                   cosmwasm-deployer
                   pkgs.jq
                 ];
                 text = ''
-                  PRIVATE_KEY=${private_key} \
-                  RUST_LOG=info \
-                    cosmwasm-deployer \
-                    store-code \
-                    --rpc-url ${rpc_url} \
-                    --bytecode ${apps.ucs03.token_minter_path} \
-                    --output token-minter-code-id.txt \
-                    ${mk-gas-args gas_config}
-
-                  echo "token minter code id: $(cat token-minter-code-id.txt)"
-
-                  ${pkgs.lib.optionalString isCw20 ''
-                    PRIVATE_KEY=${private_key} \
-                    RUST_LOG=info \
-                      cosmwasm-deployer \
-                      store-code \
-                      --rpc-url ${rpc_url} \
-                      --bytecode ${apps.ucs03.token_minter_config.cw20.cw20_impl} \
-                      --output cw20-impl-code-id.txt \
-                      ${mk-gas-args gas_config}
-
-                    echo "cw20 impl code id: $(cat cw20-impl-code-id.txt)"
-                  ''}
-
-                  PRIVATE_KEY=${private_key} \
-                  RUST_LOG=info \
-                    cosmwasm-deployer \
-                    store-code \
-                    --rpc-url ${rpc_url} \
-                    --bytecode ${apps.ucs03.cw_account_path} \
-                    --output cw-account-code-id.txt \
-                    ${mk-gas-args gas_config}
-
-                  echo "cw-account code id: $(cat cw-account-code-id.txt)"
-
-                  PRIVATE_KEY=${private_key} \
-                  RUST_LOG=info \
-                    cosmwasm-deployer \
-                    proxy-code-id \
-                    --rpc-url ${rpc_url} \
-                    --output proxy-code-id.txt \
-                    ${mk-gas-args gas_config}
-
-                  echo "proxy code id: $(cat proxy-code-id.txt)"
-
-                  DEPLOYER=$(
-                    PRIVATE_KEY=${private_key} \
-                      cosmwasm-deployer \
-                      address-of-private-key \
-                      --bech32-prefix ${bech32_prefix}
-                  )
-
-                  echo "deployer address: $DEPLOYER"
-
-                  ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
-
-                  PRIVATE_KEY=${private_key} \
+                  PRIVATE_KEY=${ops-key} \
                   RUST_LOG=info \
                     cosmwasm-deployer \
                     migrate \
-                    --rpc-url ${rpc_url} \
-                    --address "$(echo "$ADDRESSES" | jq '.app."${app}"' -r)" \
-                    --message "{\"token_minter_migration\":{\"new_code_id\":$(cat token-minter-code-id.txt),\"msg\":\"$(echo ${
-                      if isCw20 then ''"{\"new_cw20_code_id\":$(cat cw20-impl-code-id.txt)}"'' else ''"{}"''
-                    } | base64)\"}, \"rate_limit_disabled\":${
-                      if apps.ucs03.rate_limit_disabled then "true" else "false"
-                    }, \"cw_account_code_id\": $(cat cw-account-code-id.txt), \"dummy_code_id\": $(cat proxy-code-id.txt)}" \
-                    --force \
-                    --new-bytecode ${(mk-app full-app.name).release} \
-                    ${mk-gas-args gas_config}
-
-                  rm token-minter-code-id.txt
+                    --rpc-url ${rpc-url} \
+                    --address ${getDeployedContractAddress ucs04-chain-id "core"} \
+                    --new-bytecode ${(mk-app app).release} \
+                    ${mk-gas-args gas-config} "$@"
                 '';
               };
             }
@@ -909,14 +818,14 @@ _: {
                 cosmwasm-deployer
               ];
               text = ''
-                PRIVATE_KEY=${private_key} \
+                PRIVATE_KEY=${ops-key} \
                 RUST_LOG=info \
                   cosmwasm-deployer \
                   upgrade \
-                  --rpc-url ${rpc_url} \
-                  --address ${(getDeployment ucs04-chain-id).core.address} \
+                  --rpc-url ${rpc-url} \
+                  --address ${(getDeployedContractAddress ucs04-chain-id).core.address} \
                   --new-bytecode ${ibc-union.release} \
-                  ${mk-gas-args gas_config} "$@"
+                  ${mk-gas-args gas-config} "$@"
               '';
             };
           }
@@ -924,11 +833,11 @@ _: {
 
       deploy-contract =
         {
+          ucs04-chain-id,
           name,
-          rpc_url,
-          gas_config,
-          private_key,
-          bech32_prefix,
+          rpc-url,
+          gas-config,
+          deployer-key,
           ...
         }:
         pkgs.writeShellApplication {
@@ -937,53 +846,54 @@ _: {
             cosmwasm-deployer
           ];
           text = ''
-            DEPLOYER=$(
-              PRIVATE_KEY=${private_key} \
-                cosmwasm-deployer \
-                address-of-private-key \
-                --bech32-prefix ${bech32_prefix}
-            )
-            echo "deployer address: $DEPLOYER"
-
-            PRIVATE_KEY=${private_key} \
+            PRIVATE_KEY=${deployer-key} \
             RUST_LOG=info \
               cosmwasm-deployer \
               deploy-contract \
-              --rpc-url ${rpc_url} \
-              ${mk-gas-args gas_config} "$@"
+              --rpc-url ${rpc-url} \
+              ${mk-gas-args gas-config} "$@"
           '';
+          meta = {
+            description = "Deploy a contract on ${ucs04-chain-id}.";
+            longDescription = "Deploy a contract on ${ucs04-chain-id} via the bytecode-base deterministic address pattern. The bytecode must be specified.";
+          };
         };
 
       migrate-contract =
         {
+          ucs04-chain-id,
           name,
-          rpc_url,
-          gas_config,
-          private_key,
+          rpc-url,
+          gas-config,
+          ops-key,
           ...
         }:
         pkgs.writeShellApplication {
           name = "${name}-migrate-contract";
           runtimeInputs = [ cosmwasm-deployer ];
           text = ''
-            PRIVATE_KEY=${private_key} \
+            PRIVATE_KEY=${ops-key} \
             RUST_LOG=info \
               cosmwasm-deployer \
               migrate \
-              --rpc-url ${rpc_url} \
+              --rpc-url ${rpc-url} \
               --address "''${1:?address must be set (first argument to this script))}" \
               --new-bytecode "''${2:?new bytecode path must be set (second argument to this script))}" \
-              ${mk-gas-args gas_config} \
+              ${mk-gas-args gas-config} \
               "''${@:3}"
           '';
+          meta = {
+            description = "Deploy a contract on ${ucs04-chain-id}.";
+            longDescription = "Deploy a contract on ${ucs04-chain-id} via the bytecode-base deterministic address pattern. The bytecode must be specified.";
+          };
         };
 
       setup-roles =
         {
-          name,
           ucs04-chain-id,
-          rpc_url,
-          gas_config,
+          name,
+          rpc-url,
+          gas-config,
           ...
         }:
         pkgs.writeShellApplication {
@@ -996,12 +906,16 @@ _: {
             RUST_LOG=info \
               cosmwasm-deployer \
               setup-roles \
-              --rpc-url ${rpc_url} \
-              --manager ${(getDeployment ucs04-chain-id).manager} \
+              --rpc-url ${rpc-url} \
+              --manager ${(getDeployedContractAddress ucs04-chain-id).manager} \
               --addresses <(ibc-union-contract-addresses ${(getDeployment ucs04-chain-id).deployer}) \
-              ${mk-gas-args gas_config} \
+              ${mk-gas-args gas-config} \
               "$@"
           '';
+          meta = {
+            description = "Setup access management roles on ${ucs04-chain-id}.";
+            longDescription = "Setup access management roles for the core stack on ${ucs04-chain-id}. This must be run after the full deployment with `.#cosmwasm-scripts.${ucs04-chain-id}.deploy`.";
+          };
         };
 
       ibc-union-contract-addresses = pkgs.writeShellApplication {
@@ -1011,7 +925,9 @@ _: {
           cosmwasm-deployer \
             addresses \
             ${
-              pkgs.lib.strings.concatStrings (map (lc: " --lightclient ${lc.client-type}") all-lightclients)
+              pkgs.lib.strings.concatStrings (
+                pkgs.lib.mapAttrsToList (_: { client-type, ... }: " --lightclient ${client-type}") all-lightclients
+              )
             } \
             ${
               pkgs.lib.strings.concatStrings (map (a: " --${all-apps.${a}.name}") (builtins.attrNames all-apps))
@@ -1020,22 +936,14 @@ _: {
         '';
       };
 
-      get-lightclient =
-        f:
-        pkgs.lib.lists.findSingle f (throw "lightclient not found")
-          (throw "many matching lightclients found")
-          all-lightclients;
-
       mk-lightclient =
         name:
         let
-          lc = get-lightclient (lc: lc.name == name);
+          lc = all-lightclients.${name};
         in
-        (lc.hook or (d: d)) (
-          crane.buildWasmContract "cosmwasm/ibc-union/lightclient/${lc.dir}" {
-            features = lc.features or null;
-          }
-        );
+        crane.buildWasmContract "cosmwasm/ibc-union/lightclient/${lc.dir}" {
+          features = lc.features or null;
+        };
 
       mk-app =
         dir:
@@ -1044,51 +952,10 @@ _: {
           buildWithOz = true;
         };
 
-      cw-account = crane.buildWasmContract "cosmwasm/cw-account" { };
-
-      cw-escrow-vault = crane.buildWasmContract "cosmwasm/cw-escrow-vault" {
-        # doesn't use bls precompiles, so the miscompilation is not an issue
-        buildWithOz = true;
-      };
-
-      cw-unionversal-token = crane.buildWasmContract "cosmwasm/cw-unionversal-token" {
-        # doesn't use bls precompiles, so the miscompilation is not an issue
-        buildWithOz = true;
-      };
-
-      lst = crane.buildWasmContract "cosmwasm/lst" { };
-      lst-staker = crane.buildWasmContract "cosmwasm/lst-staker" { };
-
-      proxy-account-factory = crane.buildWasmContract "cosmwasm/proxy-account-factory" { };
-
-      manager = crane.buildWasmContract "cosmwasm/gatekeeper" { };
-      access-manager = crane.buildWasmContract "cosmwasm/access-manager" { };
-      access-managed-example = crane.buildWasmContract "e2e/access-managed-example" { };
-
-      cw20-base = crane.buildWasmContract "cosmwasm/cw20-base" { };
-
-      cw20-wrapped-tokenfactory = crane.buildWasmContract "cosmwasm/cw20-wrapped-tokenfactory" { };
-
-      ibc-union = crane.buildWasmContract "cosmwasm/ibc-union/core" { };
-
-      multicall = crane.buildWasmContract "cosmwasm/multicall" { };
-
-      on-zkgm-call-proxy = crane.buildWasmContract "cosmwasm/on-zkgm-call-proxy" { };
-
-      # native-token-minter = crane.buildWasmContract {
-      #   crateDirFromRoot = "cosmwasm/native-token-minter";
-      # };
-
-      cw20-token-minter = crane.buildWasmContract "cosmwasm/cw20-token-minter" { };
-
-      osmosis-tokenfactory-token-minter =
-        crane.buildWasmContract "cosmwasm/osmosis-tokenfactory-token-minter"
-          { };
-
       update-deployments-json =
         {
           name,
-          rpc_url,
+          rpc-url,
           ucs04-chain-id,
           lightclients,
           apps,
@@ -1109,7 +976,7 @@ _: {
             RUST_LOG=info update-deployments \
               "deployments/deployments.json" \
               ${ucs04-chain-id} \
-              --rpc-url ${rpc_url} \
+              --rpc-url ${rpc-url} \
               ${pkgs.lib.concatMapStringsSep " " (lc: "--lightclient ${lc}") lightclients} \
               ${if apps ? ucs03 then "--ucs03 --ucs03-minter ${apps.ucs03.type}" else ""} \
               ${if apps ? ucs00 then "--ucs00" else ""} \
@@ -1137,14 +1004,12 @@ _: {
             cw-escrow-vault
             cw-unionversal-token
             lst
-            access-manager
             lst-staker
-            access-managed-example
             proxy-account-factory
+            ibc-union-contract-addresses
             ;
           cosmwasm-scripts =
             {
-              inherit ibc-union-contract-addresses;
               update-deployments-json = pkgs.writeShellApplication {
                 name = "update-deployments-json";
                 text =
@@ -1193,18 +1058,16 @@ _: {
         }
         //
           # all light clients
-          (builtins.listToAttrs (
-            map (
-              { name, ... }:
-              let
-                lc = mk-lightclient name;
-              in
-              {
-                name = lc.passthru.packageName;
-                value = lc;
-              }
-            ) all-lightclients
-          ))
+          (pkgs.lib.mapAttrs' (
+            name: _:
+            let
+              lc = mk-lightclient name;
+            in
+            {
+              name = lc.passthru.packageName;
+              value = lc;
+            }
+          ) all-lightclients)
         //
           # all apps
           (pkgs.lib.mapAttrs' (n: _v: rec {

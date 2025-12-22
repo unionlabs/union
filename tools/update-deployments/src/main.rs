@@ -14,6 +14,7 @@ use tracing::info;
 use ucs04::UniversalChainId;
 use unionlabs::primitives::{Bech32, H160, H256};
 
+// TODO: Change this to take just a list of salts and/or addresses
 #[derive(clap::Parser)]
 struct Args {
     path: PathBuf,

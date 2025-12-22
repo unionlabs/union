@@ -460,6 +460,7 @@ static MANAGER: LazyLock<Salt> = LazyLock::new(|| {
 const LIGHTCLIENT: &str = "lightclients";
 const APP: &str = "protocols";
 
+const UCS00: &str = "ucs00";
 const UCS03: &str = "ucs03";
 
 static BYTECODE_BASE: LazyLock<Salt> = LazyLock::new(|| Salt::Utf8("bytecode-base".to_owned()));
@@ -1905,7 +1906,11 @@ fn calculate_contract_addresses(
     let mut app = AppAddresses::default();
 
     if apps.ucs00 {
-        todo!()
+        app.ucs00 = Some(instantiate2_address(
+            deployer.clone(),
+            sha2(BYTECODE_BASE_BYTECODE),
+            &Salt::Utf8(format!("{APP}/{UCS00}")),
+        )?);
     }
 
     if apps.ucs03 {
