@@ -11,9 +11,11 @@ publish    = { workspace = true }
 repository = { workspace = true }
 
 [dependencies]
-bcs     = { workspace = true }
-serde   = { workspace = true, features = ["derive"] }
-sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+bcs             = { workspace = true }
+move-core-types = { workspace = true }
+serde           = { workspace = true, features = ["derive"] }
+sui_sdk         = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+thiserror       = { workspace = true }
 
 [lints]
 workspace = true

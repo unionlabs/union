@@ -7,6 +7,7 @@ use ibc_union_spec::{
     query::{PacketByHash, PacketByHashResponse, Query},
 };
 use jsonrpsee::{Extensions, core::async_trait};
+use move_core_types::ident_str;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_sdk::{
@@ -303,14 +304,19 @@ impl StateModuleServer<IbcUnion> for Module {
         _: Height,
         path: StorePath,
     ) -> RpcResult<Value> {
-        let query =
-            SuiQuery::new(&self.sui_client, self.ibc_store, self.ibc_store_initial_seq).await;
+        let query = SuiQuery::new_with_store(
+            &self.sui_client,
+            self.ibc_contract,
+            self.ibc_store,
+            self.ibc_store_initial_seq,
+        )
+        .await;
 
         Ok(match path {
             StorePath::Connection(path) => {
                 match query
                     .add_param(path.connection_id.raw())
-                    .call(self.ibc_contract, "get_connection")
+                    .call(ident_str!("ibc"), ident_str!("get_connection"))
                     .await
                 {
                     Ok(res) => into_value(convert_connection(
@@ -322,7 +328,7 @@ impl StateModuleServer<IbcUnion> for Module {
             StorePath::Channel(path) => {
                 match query
                     .add_param(path.channel_id.raw())
-                    .call(self.ibc_contract, "get_channel")
+                    .call(ident_str!("ibc"), ident_str!("get_channel"))
                     .await
                 {
                     Ok(res) => into_value(convert_channel(
@@ -334,7 +340,7 @@ impl StateModuleServer<IbcUnion> for Module {
             StorePath::ClientState(path) => {
                 match query
                     .add_param(path.client_id.raw())
-                    .call(self.ibc_contract, "get_client_state")
+                    .call(ident_str!("ibc"), ident_str!("get_client_state"))
                     .await
                 {
                     Ok(res) => {
@@ -351,7 +357,7 @@ impl StateModuleServer<IbcUnion> for Module {
                 match query
                     .add_param(path.client_id.raw())
                     .add_param(path.height)
-                    .call(self.ibc_contract, "get_consensus_state")
+                    .call(ident_str!("ibc"), ident_str!("get_consensus_state"))
                     .await
                 {
                     Ok(res) => {
@@ -372,7 +378,7 @@ impl StateModuleServer<IbcUnion> for Module {
                         }
                         .key(),
                     )
-                    .call(self.ibc_contract, "get_commitment")
+                    .call(ident_str!("ibc"), ident_str!("get_commitment"))
                     .await
                 {
                     Ok(res) => into_value(res[0].0.clone()),

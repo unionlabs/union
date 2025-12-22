@@ -14547,8 +14547,10 @@ name = "sui-utils"
 version = "0.0.0"
 dependencies = [
  "bcs",
+ "move-core-types",
  "serde",
  "sui-sdk",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -17899,6 +17901,7 @@ dependencies = [
  "ibc-union-spec",
  "jsonrpsee 0.25.1",
  "macros",
+ "move-core-types",
  "reqwest 0.11.27",
  "serde",
  "serde-utils",

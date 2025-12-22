@@ -325,8 +325,9 @@ pub fn packet_timeout_commitment_call(
 }
 
 pub async fn get_port_id(module: &Module, channel_id: ChannelId) -> RpcResult<SuiAddress> {
-    let query = SuiQuery::new(
+    let query = SuiQuery::new_with_store(
         &module.sui_client,
+        module.ibc_contract.into(),
         module.ibc_store.into(),
         module.ibc_store_initial_seq,
     )
@@ -334,7 +335,7 @@ pub async fn get_port_id(module: &Module, channel_id: ChannelId) -> RpcResult<Su
 
     let res = query
         .add_param(channel_id.raw())
-        .call(module.ibc_contract.into(), "get_port_id")
+        .call(ident_str!("ibc"), ident_str!("get_port_id"))
         .await
         .map_err(RpcError::retryable_from_message)?;
 
