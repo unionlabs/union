@@ -7,17 +7,16 @@ if (typeof BigInt.prototype.toJSON !== "function") {
 }
 import { getFullnodeUrl } from "@mysten/sui/client"
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
+import { Sui, SuiZkgmClient } from "@unionlabs/sdk-sui"
+import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
+import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
+import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
 import * as ZkgmClient from "@unionlabs/sdk/ZkgmClient"
 import * as ZkgmClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
 import * as ZkgmClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
 import { Effect, Logger } from "effect"
-import { PublicClient, WalletClient } from "../src/Sui.js"
-import { layerWithoutWallet } from "../src/SuiZkgmClient.js"
-
-import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
-import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
-import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
+import * as Layer from "effect/Layer"
 
 const MNEMONIC = process.env.SUI_MNEMONIC ?? "..."
 const RECIPIENT = process.env.RECIPIENT
@@ -36,7 +35,7 @@ const program = Effect.gen(function*() {
   const destination = yield* ChainRegistry.byUniversalId(
     UniversalChainId.make("union.union-1"),
   )
-  const wallet = yield* WalletClient
+  const wallet = yield* Sui.WalletClient
 
   const sender = wallet.signer.toSuiAddress()
 
@@ -89,16 +88,19 @@ const program = Effect.gen(function*() {
 
   yield* Effect.log("Submission Hash", response.txHash)
 }).pipe(
-  Effect.provide(layerWithoutWallet),
-  Effect.provide(PublicClient.Live({ url: getFullnodeUrl("testnet") })),
   Effect.provide(
-    WalletClient.Live({
-      url: getFullnodeUrl("testnet"),
-      signer: keypair,
-    }),
+    Layer.mergeAll(
+      SuiZkgmClient.layerWithoutWallet,
+      ChainRegistry.Default,
+      Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault),
+    ).pipe(
+      Layer.provideMerge(Sui.PublicClient.Live({ url: getFullnodeUrl("testnet") })),
+      Layer.provideMerge(Sui.WalletClient.Live({
+        url: getFullnodeUrl("testnet"),
+        signer: keypair,
+      })),
+    ),
   ),
-  Effect.provide(ChainRegistry.Default),
-  Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
 )
 
 Effect.runPromise(program).catch((e: any) => {
