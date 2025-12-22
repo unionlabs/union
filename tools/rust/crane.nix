@@ -818,13 +818,13 @@
         # cleanCargoLock = writeTOML "Cargo.lock" (
         #   cleanCargoLock (
         #     builtins.attrNames (
-        #       ((crateCargoToml "cosmwasm/ibc-union/core").dependencies or { })
-        #       // ((crateCargoToml "cosmwasm/ibc-union/core").build-dependencies or { })
-        #       // (lib.optionalAttrs false (crateCargoToml "cosmwasm/ibc-union/core").dev-dependencies or { })
+        #       ((crateCargoToml "cosmwasm/core").dependencies or { })
+        #       // ((crateCargoToml "cosmwasm/core").build-dependencies or { })
+        #       // (lib.optionalAttrs false (crateCargoToml "cosmwasm/core").dev-dependencies or { })
         #     )
         #   )
         # );
-        # getAllDeps = dbg (getAllDeps [ "cosmwasm/ibc-union/core" ]);
+        # getAllDeps = dbg (getAllDeps [ "cosmwasm/core" ]);
         # getDependency = dbg (
         #   getCargoLockPackageEntry "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)"
         # );
