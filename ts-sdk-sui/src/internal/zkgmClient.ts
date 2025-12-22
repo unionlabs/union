@@ -1,6 +1,5 @@
 import { SuiClient } from "@mysten/sui/client"
 import { Transaction } from "@mysten/sui/transactions"
-import { ZkgmClientError } from "@unionlabs/sdk"
 import * as Call from "@unionlabs/sdk/Call"
 import type { Hex } from "@unionlabs/sdk/schema/hex"
 import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
