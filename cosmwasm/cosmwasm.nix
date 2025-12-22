@@ -33,7 +33,7 @@ _: {
       manager = crane.buildWasmContract "cosmwasm/gatekeeper" { };
       cw20-base = crane.buildWasmContract "cosmwasm/cw20-base" { };
       cw20-wrapped-tokenfactory = crane.buildWasmContract "cosmwasm/cw20-wrapped-tokenfactory" { };
-      ibc-union = crane.buildWasmContract "cosmwasm/ibc-union/core" { };
+      ibc-union = crane.buildWasmContract "cosmwasm/core" { };
       multicall = crane.buildWasmContract "cosmwasm/multicall" { };
       on-zkgm-call-proxy = crane.buildWasmContract "cosmwasm/on-zkgm-call-proxy" { };
       cw20-token-minter = crane.buildWasmContract "cosmwasm/cw20-token-minter" { };
@@ -941,13 +941,13 @@ _: {
         let
           lc = all-lightclients.${name};
         in
-        crane.buildWasmContract "cosmwasm/ibc-union/lightclient/${lc.dir}" {
+        crane.buildWasmContract "cosmwasm/lightclient/${lc.dir}" {
           features = lc.features or null;
         };
 
       mk-app =
         dir:
-        crane.buildWasmContract "cosmwasm/ibc-union/app/${dir}" {
+        crane.buildWasmContract "cosmwasm/app/${dir}" {
           # none of our apps use bls precompiles, so the miscompilation is not an issue
           buildWithOz = true;
         };

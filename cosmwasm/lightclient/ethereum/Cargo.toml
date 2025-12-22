@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [package.metadata.crane]
-test-include = ["cosmwasm/ibc-union/lightclient/ethereum/src/test"]
+test-include = ["cosmwasm/lightclient/ethereum/src/test"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]

@@ -3,15 +3,15 @@ resolver = "2"
 # NOTE: All paths must be listed out (i.e. no globs) since ifd is still broken in nix (still can't import the output of `cargo metadata` :( ). See crane.nix for where this is used.
 members = [
   "cosmwasm/token-factory-api",
-  "cosmwasm/ibc-union/app/ucs03-zkgm",
-  "cosmwasm/ibc-union/app/ucs06-funded-dispatch",
+  "cosmwasm/app/ucs03-zkgm",
+  "cosmwasm/app/ucs06-funded-dispatch",
   "cosmwasm/multicall",
   "cosmwasm/lst",
   "cosmwasm/lst-staker",
 
-  "cosmwasm/ibc-union/core",
-  "cosmwasm/ibc-union/core/msg",
-  "cosmwasm/ibc-union/core/light-client-interface",
+  "cosmwasm/core",
+  "cosmwasm/core/msg",
+  "cosmwasm/core/light-client-interface",
 
   "devnet-compose",
 
@@ -97,27 +97,27 @@ members = [
 
   "cosmwasm/deployer",
 
-  "cosmwasm/ibc-union/lightclient/arbitrum",
-  "cosmwasm/ibc-union/lightclient/base",
-  "cosmwasm/ibc-union/lightclient/berachain",
-  "cosmwasm/ibc-union/lightclient/bob",
-  "cosmwasm/ibc-union/lightclient/cometbls",
-  "cosmwasm/ibc-union/lightclient/ethereum",
-  "cosmwasm/ibc-union/lightclient/ethermint",
-  "cosmwasm/ibc-union/lightclient/tendermint",
-  # "cosmwasm/ibc-union/lightclient/movement",
-  "cosmwasm/ibc-union/lightclient/parlia",
-  "cosmwasm/ibc-union/lightclient/trusted-mpt",
-  "cosmwasm/ibc-union/lightclient/attested",
-  "cosmwasm/ibc-union/lightclient/starknet",
-  "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt",
-  # "cosmwasm/ibc-union/lightclient/state-lens-ics23-smt",
-  "cosmwasm/ibc-union/lightclient/state-lens-ics23-ics23",
-  "cosmwasm/ibc-union/lightclient/sui",
+  "cosmwasm/lightclient/arbitrum",
+  "cosmwasm/lightclient/base",
+  "cosmwasm/lightclient/berachain",
+  "cosmwasm/lightclient/bob",
+  "cosmwasm/lightclient/cometbls",
+  "cosmwasm/lightclient/ethereum",
+  "cosmwasm/lightclient/ethermint",
+  "cosmwasm/lightclient/tendermint",
+  # "cosmwasm/lightclient/movement",
+  "cosmwasm/lightclient/parlia",
+  "cosmwasm/lightclient/trusted-mpt",
+  "cosmwasm/lightclient/attested",
+  "cosmwasm/lightclient/starknet",
+  "cosmwasm/lightclient/state-lens-ics23-mpt",
+  # "cosmwasm/lightclient/state-lens-ics23-smt",
+  "cosmwasm/lightclient/state-lens-ics23-ics23",
+  "cosmwasm/lightclient/sui",
 
   # these will all be re enabled and updated once ethereum-light-client is updated
-  # "cosmwasm/ibc-union/lightclient/scroll",
-  # "cosmwasm/ibc-union/lightclient/linea",
+  # "cosmwasm/lightclient/scroll",
+  # "cosmwasm/lightclient/linea",
 
   "tools/devnet-utils",
   "tools/build-evm-deployer-tx",
@@ -366,7 +366,7 @@ bob-verifier                              = { path = "lib/bob-verifier", default
 cometbft-rpc                              = { path = "lib/cometbft-rpc", default-features = false }
 cometbft-types                            = { path = "lib/cometbft-types", default-features = false }
 cometbls-groth16-verifier                 = { path = "lib/cometbls-groth16-verifier", default-features = false }
-cometbls-light-client                     = { path = "cosmwasm/ibc-union/lightclient/cometbls", default-features = false }
+cometbls-light-client                     = { path = "cosmwasm/lightclient/cometbls", default-features = false }
 cometbls-light-client-types               = { path = "lib/cometbls-light-client-types", default-features = false }
 concurrent-keyring                        = { path = "lib/concurrent-keyring", default-features = false }
 consensus-primitives                      = { path = "lib/consensus-primitives", default-features = false }
@@ -385,7 +385,7 @@ deployments                               = { path = "lib/deployments", default-
 depolama                                  = { path = "lib/depolama", default-features = false }
 embed-commit                              = { path = "lib/embed-commit", default-features = false }
 embed-commit-verifier                     = { path = "lib/embed-commit/verifier", default-features = false }
-ethereum-light-client                     = { path = "cosmwasm/ibc-union/lightclient/ethereum", default-features = false }
+ethereum-light-client                     = { path = "cosmwasm/lightclient/ethereum", default-features = false }
 ethereum-light-client-types               = { path = "lib/ethereum-light-client-types", default-features = false }
 ethereum-sync-protocol                    = { path = "lib/ethereum-sync-protocol", default-features = false }
 ethereum-sync-protocol-types              = { path = "lib/ethereum-sync-protocol-types", default-features = false }
@@ -398,9 +398,9 @@ gnark-key-parser                          = { path = "lib/gnark-key-parser", def
 gnark-mimc                                = { path = "lib/gnark-mimc", default-features = false }
 ibc-classic-spec                          = { path = "lib/ibc-classic-spec", default-features = false }
 ibc-solidity                              = { path = "lib/ibc-solidity", default-features = false }
-ibc-union                                 = { path = "cosmwasm/ibc-union/core", default-features = false }
-ibc-union-light-client                    = { path = "cosmwasm/ibc-union/core/light-client-interface", default-features = false }
-ibc-union-msg                             = { path = "cosmwasm/ibc-union/core/msg", default-features = false }
+ibc-union                                 = { path = "cosmwasm/core", default-features = false }
+ibc-union-light-client                    = { path = "cosmwasm/core/light-client-interface", default-features = false }
+ibc-union-msg                             = { path = "cosmwasm/core/msg", default-features = false }
 ibc-union-spec                            = { path = "lib/ibc-union-spec", default-features = false }
 ics23                                     = { path = "lib/ics23", default-features = false }
 linea-light-client-types                  = { path = "lib/linea-light-client-types", default-features = false }
@@ -431,7 +431,7 @@ starknet-storage-verifier                 = { path = "lib/starknet-storage-verif
 starknet-types                            = { path = "lib/starknet-types", default-features = false }
 starknet-verifier                         = { path = "lib/starknet-verifier", default-features = false }
 state-lens-ics23-ics23-light-client-types = { path = "lib/state-lens-ics23-ics23-light-client-types", default-features = false }
-state-lens-ics23-mpt-light-client         = { path = "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt", default-features = false }
+state-lens-ics23-mpt-light-client         = { path = "cosmwasm/lightclient/state-lens-ics23-mpt", default-features = false }
 state-lens-ics23-mpt-light-client-types   = { path = "lib/state-lens-ics23-mpt-light-client-types", default-features = false }
 state-lens-ics23-smt-light-client-types   = { path = "lib/state-lens-ics23-smt-light-client-types", default-features = false }
 state-lens-light-client-types             = { path = "lib/state-lens-light-client-types", default-features = false }
@@ -440,18 +440,18 @@ subset-of-derive                          = { path = "lib/subset-of-derive", def
 sui-light-client-types                    = { path = "lib/sui-light-client-types", default-features = false }
 sui-sdk                                   = { git = "https://github.com/mystenlabs/sui", default-features = false }
 sui-verifier                              = { path = "lib/sui-verifier", default-features = false }
-tendermint-light-client                   = { path = "cosmwasm/ibc-union/lightclient/tendermint", default-features = false }
+tendermint-light-client                   = { path = "cosmwasm/lightclient/tendermint", default-features = false }
 tendermint-light-client-types             = { path = "lib/tendermint-light-client-types", default-features = false }
 tendermint-verifier                       = { path = "lib/tendermint-verifier", default-features = false }
 token-factory-api                         = { path = "cosmwasm/token-factory-api", default-features = false }
 trusted-mpt-light-client-types            = { path = "lib/trusted-mpt-light-client-types", default-features = false }
 ucs03-solvable                            = { path = "lib/ucs03-solvable", default-features = false }
-ucs03-zkgm                                = { path = "cosmwasm/ibc-union/app/ucs03-zkgm", default-features = false }
+ucs03-zkgm                                = { path = "cosmwasm/app/ucs03-zkgm", default-features = false }
 ucs03-zkgm-packet                         = { path = "lib/ucs03-zkgm-packet", default-features = false }
 ucs03-zkgm-token-minter-api               = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
 ucs03-zkgmable                            = { path = "lib/ucs03-zkgmable", default-features = false }
 ucs04                                     = { path = "lib/ucs04", default-features = false }
-unionlabs                                 = { path = "lib/unionlabs", default-features = false, features = ["proto"] }                 # TODO: Properly feature gate proto in unionlabs
+unionlabs                                 = { path = "lib/unionlabs", default-features = false, features = ["proto"] }           # TODO: Properly feature gate proto in unionlabs
 unionlabs-encoding                        = { path = "lib/unionlabs-encoding", default-features = false }
 unionlabs-primitives                      = { path = "lib/unionlabs-primitives", default-features = false }
 upgradable                                = { path = "cosmwasm/upgradable", default-features = false }
