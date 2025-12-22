@@ -14543,6 +14543,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "sui-utils"
+version = "0.0.0"
+dependencies = [
+ "bcs",
+ "serde",
+ "sui-sdk",
+]
+
+[[package]]
 name = "sui-verifier"
 version = "0.0.0"
 dependencies = [
@@ -17895,6 +17904,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "sui-sdk",
+ "sui-utils",
  "tokio",
  "tracing",
  "unionlabs",
@@ -17997,6 +18007,7 @@ dependencies = [
  "sha3",
  "shared-crypto",
  "sui-sdk",
+ "sui-utils",
  "tokio",
  "tracing",
  "ucs03-zkgm",

@@ -94,6 +94,7 @@ members = [
   "lib/state-lens-ics23-ics23-light-client-types",
   "lib/state-lens-ics23-smt-light-client-types",
   "lib/sui-light-client-types",
+  "lib/sui-utils",
 
   "cosmwasm/deployer",
 
@@ -439,6 +440,7 @@ subset-of                                 = { path = "lib/subset-of", default-fe
 subset-of-derive                          = { path = "lib/subset-of-derive", default-features = false }
 sui-light-client-types                    = { path = "lib/sui-light-client-types", default-features = false }
 sui-sdk                                   = { git = "https://github.com/mystenlabs/sui", default-features = false }
+sui-utils                                 = { path = "lib/sui-utils", default-features = false }
 sui-verifier                              = { path = "lib/sui-verifier", default-features = false }
 tendermint-light-client                   = { path = "cosmwasm/lightclient/tendermint", default-features = false }
 tendermint-light-client-types             = { path = "lib/tendermint-light-client-types", default-features = false }

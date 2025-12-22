@@ -25,6 +25,7 @@ reqwest        = { workspace = true, features = ["json"] }
 serde          = { workspace = true, features = ["derive"] }
 serde-utils    = { workspace = true }
 serde_json     = { workspace = true }
+sui-utils      = { workspace = true }
 sui_sdk        = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
 tokio          = { workspace = true }
 tracing        = { workspace = true }
