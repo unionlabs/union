@@ -62,7 +62,9 @@ function createSigner(
   wallet: AnyWallet,
   account: AnyWallet["accounts"][number],
 ) {
-  async function signTransaction(input: { transaction: Transaction; chain?: `${string}:${string}` }) {
+  async function signTransaction(
+    input: { transaction: Transaction; chain?: `${string}:${string}` },
+  ) {
     const { transaction, chain = "sui:mainnet" } = input
 
     const signAndExecute = wallet.features["sui:signAndExecuteTransaction"]

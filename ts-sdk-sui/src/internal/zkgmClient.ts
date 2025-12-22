@@ -272,7 +272,10 @@ export const fromWallet = (
             tx.setSender(wallet.signer.toSuiAddress())
           }
 
-          const signed = await (wallet.signer as any).signTransaction({ transaction: tx, chain: suiChain })
+          const signed = await (wallet.signer as any).signTransaction({
+            transaction: tx,
+            chain: suiChain,
+          })
 
           if (signed.kind === "error") {
             throw new Error(signed.error)
