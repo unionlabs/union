@@ -6,11 +6,13 @@
 import { SuiClient } from "@mysten/sui/client"
 import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 
-import { Transaction } from "@mysten/sui/transactions"
+import { Transaction, TransactionResult } from "@mysten/sui/transactions"
 import { extractErrorDetails } from "@unionlabs/sdk/Utils"
 import { Context, Data, Effect, flow, Layer, pipe } from "effect"
 import * as A from "effect/Array"
+import { dual } from "effect/Function"
 import * as Predicate from "effect/Predicate"
+import * as Struct from "effect/Struct"
 import { type Address } from "viem"
 import * as internal from "./internal/sui.js"
 
@@ -57,54 +59,23 @@ export namespace Sui {
   }
 }
 
-// /**
-//  * @category utils
-//  * @since 0.0.0
-//  */
-// export const channelBalance = (path: bigint, token: Hex) =>
-//   Effect.gen(function*() {
-//     const client = (yield* PublicClientDestination).client
-//     const config = yield* ChannelDestination
-
-//     const result = yield* readContract(client, {
-//       address: config.ucs03address,
-//       abi: Ucs03.Abi,
-//       functionName: "_deprecated_channelBalanceV1",
-//       args: [config.channelId, path, token],
-//     })
-
-//     return result
-//   })
-
-// /**
-//  * @category utils
-//  * @since 0.0.0
-//  */
-// export const channelBalanceAtBlock = (path: bigint, token: Hex, blockNumber: bigint) =>
-//   Effect.gen(function*() {
-//     const client = (yield* PublicClientDestination).client
-//     const config = yield* ChannelDestination
-
-//     const result = yield* readContract(client, {
-//       address: config.ucs03address,
-//       abi: Ucs03.Abi,
-//       functionName: "_deprecated_channelBalanceV1",
-//       args: [config.channelId, path, token],
-//       blockNumber: blockNumber,
-//     })
-
-//     return result
-//   })
-
+/**
+ * @category errors
+ * @since 0.0.0
+ */
 export class ReadCoinError extends Data.TaggedError("ReadCoinError")<{
   cause: unknown
 }> {}
 
+/**
+ * @category errors
+ * @since 0.0.0
+ */
 export class NoCoinMetadataError extends Data.TaggedError("NoCoinMetadataError")<{
   coinType: string
 }> {}
 
-export const readContract = <T>(
+export const readContract = (
   client: SuiClient,
   sender: string,
   packageId: string,
@@ -114,22 +85,31 @@ export const readContract = <T>(
   args: any[],
   tx: Transaction,
 ) =>
-  Effect.tryPromise({
-    try: async () => {
-      tx.moveCall({
-        target: `${packageId}::${module}::${fn}`,
-        typeArguments: typeArgs,
-        arguments: args,
-      })
-      const result = await client.devInspectTransactionBlock({
-        transactionBlock: tx,
-        sender,
-      })
-      return result.results // result as unknown as T
-    },
-    catch: e => new ReadContractError({ cause: extractErrorDetails(e as Error) }),
-  }).pipe(
-    // optional: e.g. timeout & retry like your Aptos wrapper
+  pipe(
+    moveCall(tx, {
+      target: `${packageId}::${module}::${fn}`,
+      typeArguments: typeArgs,
+      arguments: args,
+    }),
+    Effect.andThen(() =>
+      pipe(
+        Effect.tryPromise({
+          try: () =>
+            client.devInspectTransactionBlock({
+              transactionBlock: tx,
+              sender,
+            }),
+          catch: e => new ReadContractError({ cause: extractErrorDetails(e as Error) }),
+        }),
+        Effect.map(Struct.get("results")),
+        Effect.flatMap(Effect.liftPredicate(
+          (x) => Predicate.isNotNullable(x),
+          () => new ReadContractError({ cause: "sui execution result is null" }),
+        )),
+      )
+    ),
+    Effect.catchTag("@unionlabs/sdk-sui/Sui/MoveCallError", (cause) =>
+      new ReadContractError({ cause })),
     Effect.timeout("10 seconds"),
     Effect.retry({ times: 5 }),
   )
@@ -144,22 +124,25 @@ export const writeContract = (
   args: any[],
   tx: Transaction,
 ) =>
-  Effect.tryPromise({
-    try: async () => {
-      tx.moveCall({
-        target: `${packageId}::${module}::${fn}`,
-        typeArguments: typeArgs,
-        arguments: args,
+  pipe(
+    moveCall(tx, {
+      target: `${packageId}::${module}::${fn}`,
+      typeArguments: typeArgs,
+      arguments: args,
+    }),
+    Effect.andThen(() =>
+      Effect.tryPromise({
+        try: () =>
+          client.signAndExecuteTransaction({
+            signer,
+            transaction: tx,
+          }),
+        catch: e => new WriteContractError({ cause: extractErrorDetails(e as Error) }),
       })
-      // sign & execute
-      const res = await client.signAndExecuteTransaction({
-        signer,
-        transaction: tx,
-      })
-      return res
-    },
-    catch: e => new WriteContractError({ cause: extractErrorDetails(e as Error) }),
-  })
+    ),
+    Effect.catchTag("@unionlabs/sdk-sui/Sui/MoveCallError", (cause) =>
+      new WriteContractError({ cause })),
+  )
 
 /**
  * @category context
@@ -276,6 +259,38 @@ export class CreateWalletClientError
     cause: unknown
   }>
 {}
+
+/**
+ * @category errors
+ * @since 0.0.0
+ */
+export class MoveCallError extends Data.TaggedError("@unionlabs/sdk-sui/Sui/MoveCallError")<{
+  cause: unknown
+}> {}
+
+/**
+ * @category utils
+ * @since 0.0.0
+ */
+export const moveCall: {
+  (
+    tx: Transaction,
+    args: Parameters<Transaction["moveCall"]>[0],
+  ): Effect.Effect<TransactionResult, MoveCallError>
+  (
+    args: Parameters<Transaction["moveCall"]>[0],
+  ): (tx: Transaction) => Effect.Effect<TransactionResult, MoveCallError>
+} = dual(
+  2,
+  (
+    tx: Transaction,
+    args: Parameters<Transaction["moveCall"]>[0],
+  ): Effect.Effect<TransactionResult, MoveCallError> =>
+    Effect.try({
+      try: () => tx.moveCall(args),
+      catch: (cause) => new MoveCallError({ cause }),
+    }),
+)
 
 /**
  * Read Coin metadata (name, symbol, decimals, …) for a given `coinType`.

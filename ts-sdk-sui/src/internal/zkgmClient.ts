@@ -1,5 +1,6 @@
 import { SuiClient } from "@mysten/sui/client"
 import { Transaction } from "@mysten/sui/transactions"
+import { ZkgmClientError } from "@unionlabs/sdk"
 import * as Call from "@unionlabs/sdk/Call"
 import type { Hex } from "@unionlabs/sdk/schema/hex"
 import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
@@ -201,14 +202,25 @@ export const fromWallet = (
       }
 
       // 1) begin_send(channel_id: u32, salt: vector<u8>) -> SendCtx
-      let sendCtx = tx.moveCall({
-        target: `${decodedUcs03}::${module}::begin_send`,
-        typeArguments: [],
-        arguments: [
-          tx.pure.u32(Number(request.channelId)),
-          tx.pure.vector("u8", hexToBytes(salt as `0x${string}`)),
-        ],
-      })
+      let sendCtx = yield* pipe(
+        tx,
+        Sui.moveCall({
+          target: `${decodedUcs03}::${module}::begin_send`,
+          typeArguments: [],
+          arguments: [
+            tx.pure.u32(Number(request.channelId)),
+            tx.pure.vector("u8", hexToBytes(salt as `0x${string}`)),
+          ],
+        }),
+        Effect.mapError((cause) =>
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause,
+            description: "send context failed",
+          })
+        ),
+      )
 
       // 2) For each coin: send_with_coin<T>(relay_store, vault, ibc_store, coin, version, opcode, operand, ctx) -> SendCtx
       for (const { typeArg, baseAmount, objectId } of coins) {
@@ -229,7 +241,7 @@ export const fromWallet = (
           ),
         )
         console.log("coinArg: ", coinArg)
-        sendCtx = tx.moveCall({
+        sendCtx = yield* Sui.moveCall(tx, {
           target: `${decodedUcs03}::${module}::send_with_coin`,
           typeArguments: [typeArg],
           arguments: [
@@ -242,11 +254,20 @@ export const fromWallet = (
             tx.pure.vector("u8", hexToBytes(operand as `0x${string}`)),
             sendCtx,
           ],
-        })
+        }).pipe(
+          Effect.mapError((cause) =>
+            new ClientError.RequestError({
+              reason: "Transport",
+              request,
+              cause,
+              description: "send_with_coin context preparation failed",
+            })
+          ),
+        )
       }
 
       // 3) end_send(ibc_store, clock, t_height: u64, timeout_ns: u64, ctx)
-      tx.moveCall({
+      yield* Sui.moveCall(tx, {
         target: `${decodedUcs03}::${module}::end_send`,
         typeArguments: [],
         arguments: [
@@ -257,7 +278,16 @@ export const fromWallet = (
           tx.pure.u64(BigInt(timeoutTimestamp)),
           sendCtx,
         ],
-      })
+      }).pipe(
+        Effect.mapError((cause) =>
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause,
+            description: "end_send failed",
+          })
+        ),
+      )
       // sign & execute
 
       // wallet.signer?.setRpcUrl(wallet.rpc);
