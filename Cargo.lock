@@ -14543,6 +14543,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sui-utils"
+version = "0.0.0"
+dependencies = [
+ "bcs",
+ "move-core-types",
+ "serde",
+ "sui-sdk",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "sui-verifier"
 version = "0.0.0"
 dependencies = [
@@ -17890,11 +17901,13 @@ dependencies = [
  "ibc-union-spec",
  "jsonrpsee 0.25.1",
  "macros",
+ "move-core-types",
  "reqwest 0.11.27",
  "serde",
  "serde-utils",
  "serde_json",
  "sui-sdk",
+ "sui-utils",
  "tokio",
  "tracing",
  "unionlabs",
@@ -17997,6 +18010,7 @@ dependencies = [
  "sha3",
  "shared-crypto",
  "sui-sdk",
+ "sui-utils",
  "tokio",
  "tracing",
  "ucs03-zkgm",

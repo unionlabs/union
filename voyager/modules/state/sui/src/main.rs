@@ -7,22 +7,21 @@ use ibc_union_spec::{
     query::{PacketByHash, PacketByHashResponse, Query},
 };
 use jsonrpsee::{Extensions, core::async_trait};
+use move_core_types::ident_str;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_sdk::{
-    SuiClient, SuiClientBuilder,
+    SuiClientBuilder,
     rpc_types::{
         SuiMoveValue, SuiObjectDataOptions, SuiParsedData, SuiTransactionBlockResponseOptions,
-        SuiTypeTag,
     },
     types::{
-        Identifier, TypeTag,
-        base_types::{ObjectID, SuiAddress},
+        TypeTag,
+        base_types::{ObjectID, SequenceNumber},
         dynamic_field::DynamicFieldName,
-        programmable_transaction_builder::ProgrammableTransactionBuilder,
-        transaction::{Argument, CallArg, Command, ObjectArg, TransactionKind},
     },
 };
+use sui_utils::SuiQuery;
 use tracing::instrument;
 use unionlabs::{
     encoding::{Bcs, DecodeAs as _},
@@ -63,6 +62,8 @@ pub struct Module {
     pub ibc_store: ObjectID,
 
     pub ibc_contract: ObjectID,
+
+    pub ibc_store_initial_seq: SequenceNumber,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -237,12 +238,25 @@ impl StateModule<IbcUnion> for Module {
         )
         .unwrap();
 
+        let ibc_store_initial_seq = sui_client
+            .read_api()
+            .get_object_with_options(config.ibc_store, SuiObjectDataOptions::new().with_owner())
+            .await
+            .unwrap()
+            .data
+            .expect("object exists on chain")
+            .owner
+            .expect("owner will be present")
+            .start_version()
+            .expect("object is shared, hence it has a start version");
+
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
             sui_client,
             rpc_url: config.rpc_url,
             ibc_store: config.ibc_store,
             ibc_contract,
+            ibc_store_initial_seq,
         })
     }
 }
@@ -290,13 +304,19 @@ impl StateModuleServer<IbcUnion> for Module {
         _: Height,
         path: StorePath,
     ) -> RpcResult<Value> {
-        let query = SuiQuery::new(&self.sui_client, self.ibc_store).await;
+        let query = SuiQuery::new_with_store(
+            &self.sui_client,
+            self.ibc_contract,
+            self.ibc_store,
+            self.ibc_store_initial_seq,
+        )
+        .await;
 
         Ok(match path {
             StorePath::Connection(path) => {
                 match query
                     .add_param(path.connection_id.raw())
-                    .call(self.ibc_contract, "get_connection")
+                    .call(ident_str!("ibc"), ident_str!("get_connection"))
                     .await
                 {
                     Ok(res) => into_value(convert_connection(
@@ -308,7 +328,7 @@ impl StateModuleServer<IbcUnion> for Module {
             StorePath::Channel(path) => {
                 match query
                     .add_param(path.channel_id.raw())
-                    .call(self.ibc_contract, "get_channel")
+                    .call(ident_str!("ibc"), ident_str!("get_channel"))
                     .await
                 {
                     Ok(res) => into_value(convert_channel(
@@ -320,7 +340,7 @@ impl StateModuleServer<IbcUnion> for Module {
             StorePath::ClientState(path) => {
                 match query
                     .add_param(path.client_id.raw())
-                    .call(self.ibc_contract, "get_client_state")
+                    .call(ident_str!("ibc"), ident_str!("get_client_state"))
                     .await
                 {
                     Ok(res) => {
@@ -337,7 +357,7 @@ impl StateModuleServer<IbcUnion> for Module {
                 match query
                     .add_param(path.client_id.raw())
                     .add_param(path.height)
-                    .call(self.ibc_contract, "get_consensus_state")
+                    .call(ident_str!("ibc"), ident_str!("get_consensus_state"))
                     .await
                 {
                     Ok(res) => {
@@ -358,7 +378,7 @@ impl StateModuleServer<IbcUnion> for Module {
                         }
                         .key(),
                     )
-                    .call(self.ibc_contract, "get_commitment")
+                    .call(ident_str!("ibc"), ident_str!("get_commitment"))
                     .await
                 {
                     Ok(res) => into_value(res[0].0.clone()),
@@ -367,78 +387,6 @@ impl StateModuleServer<IbcUnion> for Module {
             }
             what => panic!("WHAT: {what:?}"),
         })
-    }
-}
-
-struct SuiQuery<'a> {
-    client: &'a SuiClient,
-    params: Vec<CallArg>,
-}
-
-impl<'a> SuiQuery<'a> {
-    async fn new(client: &'a SuiClient, ibc_store_id: ObjectID) -> Self {
-        let object_ref = client
-            .read_api()
-            .get_object_with_options(ibc_store_id, SuiObjectDataOptions::new())
-            .await
-            .unwrap()
-            .object_ref_if_exists()
-            .unwrap();
-        Self {
-            client,
-            params: vec![CallArg::Object(ObjectArg::ImmOrOwnedObject(object_ref))],
-        }
-    }
-
-    fn add_param<T>(mut self, param: T) -> Self
-    where
-        T: serde::Serialize,
-    {
-        self.params
-            .push(CallArg::Pure(bcs::to_bytes(&param).unwrap()));
-        self
-    }
-
-    async fn call(
-        self,
-        package: ObjectID,
-        function: &str,
-    ) -> Result<Vec<(Vec<u8>, SuiTypeTag)>, String> {
-        let mut ptb = ProgrammableTransactionBuilder::new();
-        ptb.command(Command::move_call(
-            package,
-            Identifier::new("ibc").unwrap(),
-            Identifier::new(function).unwrap(),
-            vec![],
-            self.params
-                .iter()
-                .enumerate()
-                .map(|(i, _)| Argument::Input(i as u16))
-                .collect(),
-        ));
-
-        for arg in self.params {
-            ptb.input(arg).unwrap();
-        }
-
-        let res = self
-            .client
-            .read_api()
-            .dev_inspect_transaction_block(
-                SuiAddress::ZERO,
-                TransactionKind::ProgrammableTransaction(ptb.finish()),
-                None,
-                None,
-                None,
-            )
-            .await
-            .unwrap();
-
-        match (res.results, res.error) {
-            (Some(res), _) => Ok(res[0].clone().return_values),
-            (_, Some(err)) => Err(err),
-            _ => panic!("invalid"),
-        }
     }
 }
 
