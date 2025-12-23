@@ -1,6 +1,24 @@
 // Zed settings to use Union's devShell
 {
   "languages": {
+    "JSON": {
+      "formatter": {
+        "external": {
+          "command": "treefmt",
+          "arguments": ["--stdin", ".json"]
+        }
+      },
+      "format_on_save": "on"
+    },
+    "JSONC": {
+      "formatter": {
+        "external": {
+          "command": "treefmt",
+          "arguments": ["--stdin", ".jsonc"]
+        }
+      },
+      "format_on_save": "on"
+    },
     "TypeScript": {
       "language_servers": ["tsgo", "typescript-language-server", "!vtsls"],
       "formatter": {
