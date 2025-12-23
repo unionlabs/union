@@ -256,11 +256,12 @@ export const AnyDisplayFromString = S.transformOrFail(
   AnyDisplay,
   {
     decode: (address) =>
-      Effect.firstSuccessOf([
-        S.decodeUnknown(EvmDisplay)({ _tag: "EvmDisplay", address }),
-        S.decodeUnknown(CosmosDisplay)({ _tag: "CosmosDisplay", address }),
-        S.decodeUnknown(SuiDisplay)({ _tag: "SuiDisplay", address }),
-      ]).pipe(
+      pipe(
+        Effect.firstSuccessOf([
+          S.decodeUnknown(EvmDisplay)({ _tag: "EvmDisplay", address }),
+          S.decodeUnknown(CosmosDisplay)({ _tag: "CosmosDisplay", address }),
+          S.decodeUnknown(SuiDisplay)({ _tag: "SuiDisplay", address }),
+        ]),
         Effect.catchTag("ParseError", (error) => ParseResult.fail(error.issue)),
       ),
     encode: flow(Struct.get("address"), Effect.succeed),
