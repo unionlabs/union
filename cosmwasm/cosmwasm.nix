@@ -49,10 +49,10 @@ _: {
       # Get a deployed contract address by name on a chain.
       getDeployedContractAddress =
         ucs04-chain-id: name:
-        (pkgs.lib.lists.findSingle ({ value, ... }: value.name == value)
+        (pkgs.lib.lists.findSingle ({ value, ... }: value.name == name)
           (throw "no deployment found for ${name} on ${ucs04-chain-id}")
           (throw "many deployments found for ${name} on ${ucs04-chain-id}")
-          (builtins.attrsToList (getDeployment ucs04-chain-id).contracts)
+          (pkgs.lib.attrsToList (getDeployment ucs04-chain-id).contracts)
         ).name;
 
       bytecode-base = pkgs.stdenv.mkDerivation {
@@ -332,11 +332,11 @@ _: {
           ucs04-chain-id = "intento.intento-dev-1";
           name = "intento-devnet";
           rpc-url = "https://rpc-devnet.intento.zone/";
-          deployer-key = ''"$1"'';
+          deployer-key = ''"$(op item get intento-devnet-deployer --vault union-testnet-10 --field private-key --reveal)"'';
           ops-key = deployer-key;
           gas-config = {
             type = "fixed";
-            gas_price = "0.015";
+            gas_price = "0.0015";
             gas_denom = "uinto";
             gas_multiplier = "1.4";
             max_gas = 60000000;
@@ -612,7 +612,7 @@ _: {
           name,
           rpc-url,
           gas-config,
-          private_key,
+          deployer-key,
           permissioned ? false,
           ...
         }:
@@ -620,18 +620,19 @@ _: {
           name = "${name}-deploy-full";
           runtimeInputs = [ cosmwasm-deployer ];
           text = ''
-            PRIVATE_KEY=${private_key} \
+            PRIVATE_KEY=${deployer-key} \
             RUST_LOG=info \
               cosmwasm-deployer \
               deploy-full \
               --contracts ${chain-contracts-config-json args} \
               ${if permissioned then "--permissioned " else ""} \
               --rpc-url ${rpc-url} \
+              --manager ${getDeployedContractAddress ucs04-chain-id "manager"} \
               ${mk-gas-args gas-config} "$@"
           '';
           meta = {
-            description = "Deploy a contract on ${ucs04-chain-id}.";
-            longDescription = "Deploy a contract on ${ucs04-chain-id}. The bytecode must be specified. This is a prerequisite for deploying the full stack, as all of the contracts we deploy are access managed.";
+            description = "Deploy the full union IBC stack on ${ucs04-chain-id}.";
+            longDescription = "Deploy the full union IBC stack on ${ucs04-chain-id}. The manager must first be deployed with `.#cosmwasm-scripts.${ucs04-chain-id}.deploy-manager`.";
           };
         };
 
@@ -670,14 +671,14 @@ _: {
           ucs04-chain-id,
           rpc-url,
           gas-config,
-          private_key,
+          ops-key,
           ...
         }:
         pkgs.writeShellApplication {
           name = "${name}-whitelist-relayers";
           runtimeInputs = [ cosmwasm-deployer ];
           text = ''
-            PRIVATE_KEY=${private_key} \
+            PRIVATE_KEY=${ops-key} \
             RUST_LOG=info \
               cosmwasm-deployer \
               tx \
@@ -694,14 +695,14 @@ _: {
           ucs04-chain-id,
           rpc-url,
           gas-config,
-          private_key,
+          ops-key,
           ...
         }:
         pkgs.writeShellApplication {
           name = "${name}-set-bucket-config";
           runtimeInputs = [ cosmwasm-deployer ];
           text = ''
-            PRIVATE_KEY=${private_key} \
+            PRIVATE_KEY=${ops-key} \
             RUST_LOG=info \
               cosmwasm-deployer \
               tx \
@@ -722,11 +723,11 @@ _: {
         pkgs.writeText "${ucs04-chain-id}.contracts-config.json" (
           builtins.toJSON {
             core = ibc-union.release;
-            lightclient = builtins.mapAttrs (
+            lightclient = pkgs.lib.mapAttrs' (
               name: { client-type, ... }: pkgs.lib.nameValuePair client-type (mk-lightclient name)
             ) (pkgs.lib.getAttrs lightclients all-lightclients);
             app = apps;
-            escrow_vault = cw-escrow-vault.release;
+            # escrow_vault = cw-escrow-vault.release;
           }
         );
 
@@ -981,7 +982,11 @@ _: {
               "deployments/deployments.json" \
               ${ucs04-chain-id} \
               --rpc-url ${rpc-url} \
-              ${pkgs.lib.concatMapStringsSep " " (lc: "--lightclient ${lc}") lightclients} \
+              ${
+                pkgs.lib.concatMapStringsSep " " (
+                  lc: "--lightclient ${all-lightclients.${lc}.client-type}"
+                ) lightclients
+              } \
               ${if apps ? ucs03 then "--ucs03 --ucs03-minter ${apps.ucs03.type}" else ""} \
               ${if apps ? ucs00 then "--ucs00" else ""} \
               ${if lst then "--lst" else ""} \

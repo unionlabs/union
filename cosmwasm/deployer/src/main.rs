@@ -65,7 +65,7 @@ enum App {
         #[arg(long)]
         output: Option<PathBuf>,
         #[arg(long)]
-        manager_admin: Bech32<Bytes>,
+        manager: Bech32<H256>,
         /// Marks this chain as permissioned.
         ///
         /// Permisioned cosmwasm chains require special handling of instantiate permissions in order to deploy the stack.
@@ -469,12 +469,10 @@ static BYTECODE_BASE: LazyLock<Salt> = LazyLock::new(|| Salt::Utf8("bytecode-bas
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 struct ContractPaths {
     core: PathBuf,
-    manager: PathBuf,
     // salt -> wasm path
     lightclient: BTreeMap<String, PathBuf>,
     app: AppPaths,
     escrow_vault: Option<PathBuf>,
-    on_zkgm_call_proxy: PathBuf,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -518,7 +516,6 @@ struct ContractAddresses {
     manager: Option<Bech32<H256>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     escrow_vault: Option<Bech32<H256>>,
-    on_zkgm_call_proxy: Bech32<H256>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -569,7 +566,7 @@ async fn do_main() -> Result<()> {
             private_key,
             contracts,
             output,
-            manager_admin,
+            manager,
             permissioned,
             gas_config,
         } => {
@@ -578,7 +575,7 @@ async fn do_main() -> Result<()> {
                 private_key,
                 contracts,
                 output,
-                manager_admin,
+                manager,
                 permissioned,
                 gas_config,
             )
@@ -877,7 +874,6 @@ async fn do_main() -> Result<()> {
                 app,
                 manager: _,
                 escrow_vault,
-                on_zkgm_call_proxy: _,
             } = serde_json::from_slice::<ContractAddresses>(
                 &std::fs::read(addresses).context("reading addresses path")?,
             )?;
@@ -1333,7 +1329,7 @@ async fn deploy_full(
     private_key: H256,
     contracts: PathBuf,
     output: Option<PathBuf>,
-    manager_admin: Bech32,
+    manager: Bech32<H256>,
     permissioned: bool,
     gas_config: GasFillerArgs,
 ) -> Result<()> {
@@ -1344,18 +1340,6 @@ async fn deploy_full(
     let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
 
     let bytecode_base_code_id = ctx.store_bytecode_base(&gas_config).await?;
-
-    let manager = ctx
-        .deploy_and_initiate(
-            read_bytecode(contracts.manager)?.1,
-            bytecode_base_code_id,
-            access_manager_types::manager::msg::InitMsg {
-                initial_admin: Addr::unchecked(manager_admin.to_string()),
-            },
-            &MANAGER,
-            true,
-        )
-        .await?;
 
     let access_managed_init_msg = access_manager_types::managed::msg::InitMsg {
         initial_authority: Addr::unchecked(manager.to_string()),
@@ -1373,12 +1357,6 @@ async fn deploy_full(
         )
         .await?;
 
-    let on_zkgm_call_proxy_address = instantiate2_address(
-        ctx.wallet().address(),
-        sha2(BYTECODE_BASE_BYTECODE),
-        &ON_ZKGM_CALL_PROXY,
-    )?;
-
     let mut contract_addresses = ContractAddresses {
         core: core_address.clone(),
         lightclient: BTreeMap::default(),
@@ -1388,7 +1366,6 @@ async fn deploy_full(
         },
         manager: Some(manager.clone()),
         escrow_vault: None,
-        on_zkgm_call_proxy: on_zkgm_call_proxy_address.clone(),
     };
 
     for (client_type, path) in contracts.lightclient {
@@ -1664,19 +1641,6 @@ async fn deploy_full(
             contract_addresses.escrow_vault = Some(escrow_vault_address);
         }
 
-        ctx.deploy_and_initiate(
-            read_bytecode(contracts.on_zkgm_call_proxy)?.1,
-            bytecode_base_code_id,
-            on_zkgm_call_proxy::InitMsg {
-                zkgm: Addr::unchecked(ucs03_address.to_string()),
-            },
-            &ON_ZKGM_CALL_PROXY,
-            true,
-        )
-        .await?;
-
-        info!("on-zkgm-call-proxy address is {on_zkgm_call_proxy_address}");
-
         contract_addresses.app.ucs03 = Some(ucs03_address);
     }
 
@@ -1927,18 +1891,11 @@ fn calculate_contract_addresses(
         &ESCROW_VAULT,
     )?;
 
-    let on_zkgm_call_proxy = instantiate2_address(
-        deployer.clone(),
-        sha2(BYTECODE_BASE_BYTECODE),
-        &ON_ZKGM_CALL_PROXY,
-    )?;
-
     Ok(ContractAddresses {
         core,
         lightclient,
         app,
         escrow_vault: Some(escrow_vault),
-        on_zkgm_call_proxy,
         manager: Some(instantiate2_address(
             deployer,
             sha2(BYTECODE_BASE_BYTECODE),

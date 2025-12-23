@@ -6,7 +6,7 @@ use alloy::{
 use anyhow::{Context, Result, bail};
 use clap::Parser;
 use cosmwasm_std::instantiate2_address;
-use deployments::{DeployedContract, Deployments, Rev};
+use deployments::{DeployedContract, Deployments, IbcCosmwasmDeployedContractExtra, Rev};
 use protos::cosmwasm::wasm::v1::{
     QueryCodeRequest, QueryCodeResponse, QueryContractInfoRequest, QueryContractInfoResponse,
 };
@@ -56,7 +56,6 @@ enum Ucs03Minter {
 const BYTECODE_BASE_CHECKSUM: &[u8] =
     &hex!("ec827349ed4c1fec5a9c3462ff7c979d4c40e7aa43b16ed34469d04ff835f2a1");
 
-#[allow(unused)]
 fn derive_cosmwasm(deployer: &Bech32<H160>, salt: String) -> Bech32<H256> {
     Bech32::new(
         deployer.hrp().to_string(),
@@ -79,7 +78,14 @@ fn derive_evm(sender: H160, deployer: H160, namespace: &'static str, salt: &str)
         keccak256(
             sender
                 .into_iter()
-                .chain(format!("{namespace}/{salt}").bytes())
+                .chain(
+                    if salt.is_empty() {
+                        namespace.to_owned()
+                    } else {
+                        format!("{namespace}/{salt}")
+                    }
+                    .bytes(),
+                )
                 .collect::<Vec<_>>(),
         ),
     )
@@ -105,14 +111,38 @@ async fn do_main() -> Result<()> {
 
     match deployment {
         deployments::Deployment::IbcCosmwasm {
-            deployer: _,
+            deployer,
             contracts,
         } => {
             let client = cometbft_rpc::Client::new(args.rpc_url).await?;
 
-            // TODO: Handle adding new contracts (u, eu, ...)
+            contracts
+                .entry(derive_cosmwasm(deployer, "ibc-is-based".to_owned()))
+                .or_insert(DeployedContract {
+                    name: "core".to_owned(),
+                    salt: Some(b"ibc-is-based".into()),
+                    height: 0,
+                    commit: Rev::Unknown,
+                    extra: IbcCosmwasmDeployedContractExtra { code_id: 0 },
+                });
+
+            for client_type in &args.lightclient {
+                contracts
+                    .entry(derive_cosmwasm(
+                        deployer,
+                        format!("lightclients/{client_type}"),
+                    ))
+                    .or_insert(DeployedContract {
+                        name: format!("lightclients/{client_type}"),
+                        salt: Some(format!("lightclients/{client_type}").into_bytes().into()),
+                        height: 0,
+                        commit: Rev::Unknown,
+                        extra: IbcCosmwasmDeployedContractExtra { code_id: 0 },
+                    });
+            }
 
             for (address, deployment) in contracts {
+                info!(%address, "updating {}", deployment.name);
                 let contract_info = get_cosmwasm_contract_info(&client, &address).await?;
                 deployment.height = contract_info.created.unwrap().block_height;
                 deployment.commit = get_commit_wasm(&client, contract_info.code_id).await?;
@@ -135,6 +165,16 @@ async fn do_main() -> Result<()> {
             let provider = alloy::providers::ProviderBuilder::new_with_network::<AnyNetwork>()
                 .connect(&args.rpc_url)
                 .await?;
+
+            contracts
+                .entry(derive_evm(*sender, *deployer, "ibc-is-based", ""))
+                .or_insert(DeployedContract {
+                    name: "core".to_owned(),
+                    salt: Some(b"ibc-is-based".into()),
+                    height: 0,
+                    commit: Rev::Unknown,
+                    extra: (),
+                });
 
             for client_type in &args.lightclient {
                 contracts
