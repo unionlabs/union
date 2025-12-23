@@ -1,0 +1,247 @@
+---
+title: UCS07 - Universal Token ID
+---
+
+Universal Token IDs provide a globally unique, human-readable identifier for any token across all supported blockchain ecosystems. They enable unambiguous token identification across chains, APIs, configuration files, and user interfaces.
+
+## Motivation
+
+Token identification across blockchains presents several challenges:
+
+1. **Namespace Collisions**: Different chains may have tokens with identical contract addresses or denominations
+2. **Ecosystem Diversity**: Each blockchain ecosystem uses different token standards (ERC20, CW20, Cosmos Bank, Sui Coin, etc.)
+3. **Parsing Ambiguity**: Without a standardized format, it's impossible to determine how to parse a token identifier
+
+Universal Token IDs solve these problems by combining a [Universal Chain ID (UCS04)](/ucs/04) with a token kind and denomination into a single canonical identifier.
+
+## Format
+
+```
+<universal_chain_id>:<token_kind>.<denom>
+```
+
+For native tokens that have no denomination:
+
+```
+<universal_chain_id>:<token_kind>
+```
+
+### Components
+
+| Component | Description |
+|-----------|-------------|
+| `universal_chain_id` | A [UCS04 Universal Chain ID](/ucs/04) identifying the chain (e.g., `ethereum.1`, `osmosis.osmosis-1`) |
+| `token_kind` | The token standard used on that chain (see [Token Kinds](#token-kinds)) |
+| `denom` | The token's native denomination or address on its origin chain |
+
+The colon (`:`) separates the chain identifier from the token specification. The period (`.`) separates the token kind from the denomination.
+
+## Token Kinds
+
+| Token Kind | Ecosystem | Has Denom | Description |
+|------------|-----------|-----------|-------------|
+| `erc20` | EVM | Yes | ERC20 tokens on EVM-compatible chains |
+| `evm-native` | EVM | No | Native gas tokens (ETH, MATIC, BNB, etc.) |
+| `cw20` | Cosmos | Yes | CW20 tokens on CosmWasm chains |
+| `cosmos-bank` | Cosmos | Yes | Native Cosmos SDK bank module tokens |
+| `sui-coin` | Sui | Yes | Coin objects on Sui |
+| `sui-token` | Sui | Yes | Token objects on Sui |
+| `starknet-erc20` | Starknet | Yes | ERC20 tokens on Starknet |
+| `starknet-native` | Starknet | No | Native STRK token |
+
+### Native Token Kinds
+
+The following token kinds represent chain-native assets and do **not** include a denomination:
+
+- `evm-native` — The native gas token of an EVM chain (ETH, MATIC, etc.)
+- `starknet-native` — The native STRK token on Starknet
+
+Since each chain has exactly one native token, no disambiguation is required.
+
+## Denomination Rules
+
+### ERC20 Tokens
+
+ERC20 denominations **MUST** be [ERC-55](https://eips.ethereum.org/EIPS/eip-55) checksummed addresses to be considered valid.
+
+```
+ethereum.1:erc20.0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed
+```
+
+An identifier with an incorrectly checksummed address is **invalid**:
+
+```
+ethereum.1:erc20.0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed  ❌ Invalid (not checksummed)
+ethereum.1:erc20.0x5aAEb6053f3E94c9b9a09f33669435e7ef1beaed  ❌ Invalid (wrong checksum)
+```
+
+### Cosmos Bank Tokens
+
+Cosmos bank denominations **MUST** use the smallest available denomination unit. This ensures consistency and avoids ambiguity between display denominations and base denominations.
+
+| Correct | Incorrect |
+|---------|-----------|
+| `au` | `U` |
+| `ubbn` | `BABY` |
+| `uosmo` | `OSMO` |
+| `uatom` | `ATOM` |
+
+Cosmos bank denominations come in several forms:
+
+| Prefix | Type | Example |
+|--------|------|---------|
+| (none) | Native/Base | `uatom`, `uosmo`, `ubbn` |
+| `factory/` | Token Factory | `factory/osmo1.../ufoo` |
+| `ibc/` | IBC Transferred | `ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2` |
+
+### Sui Tokens
+
+Sui coin denominations use the full type path including the package address, module, and type name:
+
+```
+sui.4c78adac:sui-coin.0x650be2f4aafc86a91f506b4efc35f34af9a7fafe21e143c0f45f4f465f4d51ff::u::U
+```
+
+### Starknet ERC20 Tokens
+
+Starknet ERC20 denominations use the contract address:
+
+```
+starknet.SN_MAIN:starknet-erc20.0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
+```
+
+## Examples
+
+### EVM Chains
+
+```
+ethereum.1:evm-native
+ethereum.1:erc20.0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+ethereum.1:erc20.0xba5eD44733953d79717F6269357C77718C8Ba5ed
+arbitrum.42161:evm-native
+arbitrum.42161:erc20.0xaf88d065e77c8cC2239327C5EDb3A432268e5831
+```
+
+### Cosmos Chains
+
+```
+osmosis.osmosis-1:cosmos-bank.uosmo
+osmosis.osmosis-1:cosmos-bank.factory/osmo1c584m4lq25h83yp6ag8hh4htjr92d954vklzja/ufoo
+osmosis.osmosis-1:cosmos-bank.ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2
+babylon.bbn-1:cosmos-bank.ubbn
+cosmoshub.cosmoshub-4:cosmos-bank.uatom
+```
+
+### Sui
+
+```
+sui.4c78adac:sui-coin.0x650be2f4aafc86a91f506b4efc35f34af9a7fafe21e143c0f45f4f465f4d51ff::u::U
+sui.4c78adac:sui-coin.0x2::sui::SUI
+```
+
+### Starknet
+
+```
+starknet.SN_MAIN:starknet-native
+starknet.SN_MAIN:starknet-erc20.0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
+```
+
+
+## Validation Rules
+
+1. The `universal_chain_id` must be a valid [UCS04](/ucs/04) identifier
+2. The `token_kind` must be one of the defined token kinds
+3. Native token kinds (`evm-native`, `starknet-native`) must not include a denomination
+4. All other token kinds must include a denomination after the `.` separator
+5. ERC20 denominations must be valid ERC-55 checksummed addresses
+6. Cosmos bank denominations must use the smallest unit denomination
+
+## Implementation Suggestions
+
+### Parsing Cosmos Bank Denominations
+
+For Cosmos bank assets, implementations should parse and categorize denominations based on their prefix for efficient handling:
+
+```typescript
+type CosmosDenomKind = "native" | "factory" | "ibc"
+
+interface ParsedCosmosDenom {
+  kind: CosmosDenomKind
+  denom: string
+}
+
+function parseCosmosDenom(denom: string): ParsedCosmosDenom {
+  if (denom.startsWith("factory/")) {
+    return { kind: "factory", denom }
+  } else if (denom.startsWith("ibc/")) {
+    return { kind: "ibc", denom }
+  } else {
+    return { kind: "native", denom }
+  }
+}
+```
+
+This classification enables:
+- Optimized storage with an enum discriminant rather than repeated string prefix matching
+- Efficient routing logic based on denomination type
+- One-time parsing with the result cached for subsequent operations
+
+### Type-Safe Token Kind Handling
+
+```typescript
+type TokenKind =
+  | "erc20"
+  | "evm-native"
+  | "cw20"
+  | "cosmos-bank"
+  | "sui-coin"
+  | "sui-token"
+  | "starknet-erc20"
+  | "starknet-native"
+
+const NATIVE_TOKEN_KINDS: TokenKind[] = ["evm-native", "starknet-native"]
+
+function hasDenom(kind: TokenKind): boolean {
+  return !NATIVE_TOKEN_KINDS.includes(kind)
+}
+```
+
+Union's TypeScript SDK provide a UCS07 implementation.
+
+## URL Encoding
+
+When Universal Token IDs are used in URLs (query parameters, path segments, or fragments), they must be properly encoded to handle special characters.
+
+### Characters Requiring Encoding
+
+| Character | URL Encoded | Usage in Universal Token ID |
+|-----------|-------------|----------------------------|
+| `:` | `%3A` | Separator between chain ID and token spec |
+| `/` | `%2F` | Present in `factory/` and `ibc/` denominations |
+
+### Encoding Recommendations
+
+**Query Parameters**: Always URL-encode the entire Universal Token ID:
+
+```
+# Original
+osmosis.osmosis-1:cosmos-bank.factory/osmo1.../ufoo
+
+# In query parameter
+?token=osmosis.osmosis-1%3Acosmos-bank.factory%2Fosmo1...%2Fufoo
+```
+
+**Path Segments**: URL-encode the token ID or use an alternative encoding:
+
+```
+# URL-encoded path segment
+/tokens/osmosis.osmosis-1%3Acosmos-bank.uosmo
+```
+
+**API Design Recommendation**: Consider accepting Universal Token IDs in request bodies (JSON) rather than URLs when possible, as this avoids encoding complexity:
+
+```json
+{
+  "token": "osmosis.osmosis-1:cosmos-bank.factory/osmo1.../ufoo"
+}
+```
