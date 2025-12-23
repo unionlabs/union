@@ -572,6 +572,7 @@
                 graphviz
                 emmet-language-server
                 typescript-go
+                package-version-server
                 nodePackages_latest.graphqurl
                 nodePackages_latest.svelte-language-server
                 nodePackages_latest."@astrojs/language-server"
