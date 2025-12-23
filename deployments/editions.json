@@ -41,7 +41,7 @@
         "environment": "production"
       },
       "sui.4c78adac": {
-        "environment": "development"
+        "environment": "staging"
       },
       "union.union-1": {
         "environment": "production"
