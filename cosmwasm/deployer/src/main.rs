@@ -451,8 +451,6 @@ static ESCROW_VAULT: LazyLock<Salt> = LazyLock::new(|| {
             .unwrap(),
     )
 });
-static ON_ZKGM_CALL_PROXY: LazyLock<Salt> =
-    LazyLock::new(|| Salt::Utf8("on-zkgm-call-proxy".to_owned()));
 static CORE: LazyLock<Salt> = LazyLock::new(|| Salt::Utf8("ibc-is-based".to_owned()));
 static MANAGER: LazyLock<Salt> = LazyLock::new(|| {
     Salt::Raw(hex!("7b1f7c3b93ff643023d63bbbe182a179922ad85a2aa0e03ef50170b591a7b752").into())
