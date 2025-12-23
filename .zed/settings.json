@@ -2,7 +2,11 @@
 {
     "languages": {
         "TypeScript": {
-            "language_servers": ["typescript-language-server", "!vtsls"],
+            "language_servers": [
+                "tsgo",
+                "typescript-language-server",
+                "!vtsls"
+            ],
             "formatter": {
                 "external": {
                     "command": "treefmt",
@@ -12,7 +16,11 @@
             "format_on_save": "on"
         },
         "TSX": {
-            "language_servers": ["typescript-language-server", "!vtsls"],
+            "language_servers": [
+                "tsgo",
+                "typescript-language-server",
+                "!vtsls"
+            ],
             "formatter": {
                 "external": {
                     "command": "treefmt",
@@ -22,7 +30,11 @@
             "format_on_save": "on"
         },
         "JavaScript": {
-            "language_servers": ["typescript-language-server", "!vtsls"],
+            "language_servers": [
+                "tsgo",
+                "typescript-language-server",
+                "!vtsls"
+            ],
             "formatter": {
                 "external": {
                     "command": "treefmt",

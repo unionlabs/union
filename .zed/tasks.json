@@ -1,17 +1,27 @@
 [
-  {
-    "label": "Docs Dev Server",
-    "command": "nix run .#docs-dev-server -L",
-    "use_new_terminal": true
-  },
-  {
-    "label": "Build Docs",
-    "command": "nix build .#docs -L",
-    "use_new_terminal": true
-  },
-  {
-    "label": "Build App",
-    "command": "nix build .#app -L",
-    "use_new_terminal": true
-  }
+    {
+        "label": "Docs Dev Server",
+        "command": "nix run .#docs-dev-server -L",
+        "use_new_terminal": true
+    },
+    {
+        "label": "Build Docs",
+        "command": "nix build .#docs -L",
+        "use_new_terminal": true
+    },
+    {
+        "label": "Spellcheck",
+        "command": "nix build .#checks.aarch64-linux.spellcheck -L",
+        "use_new_terminal": true
+    },
+    {
+        "label": "Format",
+        "command": "nix fmt",
+        "use_new_terminal": true
+    },
+    {
+        "label": "Build App",
+        "command": "nix build .#app -L",
+        "use_new_terminal": true
+    }
 ]
