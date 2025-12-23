@@ -75,6 +75,14 @@ ethereum.1:erc20.0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed  ❌ Invalid (not ch
 ethereum.1:erc20.0x5aAEb6053f3E94c9b9a09f33669435e7ef1beaed  ❌ Invalid (wrong checksum)
 ```
 
+### CW20 Tokens
+
+CW20 denominations **MUST** be valid checksummed Bech32 contract addresses. The checksum is inherent to the Bech32 encoding format.
+
+```
+babylon.bbn-1:cw20.bbn1300se0vwue77hn6s8wph64ey6d55zaf48jrveg9wafsquncn3e4scssgvd
+```
+
 ### Cosmos Bank Tokens
 
 Cosmos bank denominations **MUST** use the smallest available denomination unit. This ensures consistency and avoids ambiguity between display denominations and base denominations.
@@ -92,7 +100,7 @@ Cosmos bank denominations come in several forms:
 |--------|------|---------|
 | (none) | Native/Base | `uatom`, `uosmo`, `ubbn` |
 | `factory/` | Token Factory | `factory/osmo1.../ufoo` |
-| `ibc/` | IBC Transferred | `ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2` |
+| `ibc/` | IBC Classic | `ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2` |
 
 ### Sui Tokens
 
@@ -100,14 +108,6 @@ Sui coin denominations use the full type path including the package address, mod
 
 ```
 sui.4c78adac:sui-coin.0x650be2f4aafc86a91f506b4efc35f34af9a7fafe21e143c0f45f4f465f4d51ff::u::U
-```
-
-### Starknet ERC20 Tokens
-
-Starknet ERC20 denominations use the contract address:
-
-```
-starknet.SN_MAIN:starknet-erc20.0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
 ```
 
 ## Examples
@@ -119,7 +119,7 @@ ethereum.1:evm-native
 ethereum.1:erc20.0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
 ethereum.1:erc20.0xba5eD44733953d79717F6269357C77718C8Ba5ed
 arbitrum.42161:evm-native
-arbitrum.42161:erc20.0xaf88d065e77c8cC2239327C5EDb3A432268e5831
+arbitrum.42161:erc20.0xba5eD44733953d79717F6269357C77718C8Ba5ed
 ```
 
 ### Cosmos Chains
@@ -154,7 +154,8 @@ starknet.SN_MAIN:starknet-erc20.0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c74
 3. Native token kinds (`evm-native`, `starknet-native`) must not include a denomination
 4. All other token kinds must include a denomination after the `.` separator
 5. ERC20 denominations must be valid ERC-55 checksummed addresses
-6. Cosmos bank denominations must use the smallest unit denomination
+6. CW20 denominations must be valid checksummed Bech32 contract addresses
+7. Cosmos bank denominations must use the smallest unit denomination
 
 ## Implementation Suggestions
 
