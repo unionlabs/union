@@ -17844,7 +17844,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-proof-module-cosmos-sdk-union"
+name = "voyager-proof-module-cosmwasm"
 version = "0.0.0"
 dependencies = [
  "clap",
