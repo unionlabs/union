@@ -7,7 +7,7 @@ interface Props {
 const { className, grid } = Astro.props
 ---
 
-<section class=`flex w-full justify-center items-center`>
+<section class={`flex w-full justify-center items-center`}>
   <div
     class:list={[
       `max-w-6xl w-full z-10 px-4 overflow-hidden ${className}`,

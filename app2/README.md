@@ -33,4 +33,4 @@ A `Button` would go in `src/lib/components/ui/button/index.svelte`
 1. Go to https://icones.js.org/collection/ic?s=sharp
 2. Click on the item you want
 3. Click the Components > Svelte button
-4. Add it to `src/lib/components/icons`, `ic:sharp-bannana` becomes `SharpBannanaIcon.svelte`
+4. Add it to `src/lib/components/icons`, `ic:sharp-banana` becomes `SharpBananaIcon.svelte`

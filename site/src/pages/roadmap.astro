@@ -178,10 +178,10 @@ const getStatusColor = (status: string) => {
               <nav class="space-y-2">
                 {
                   roadmapData.map((section, sectionIndex) => {
-                const sectionProgress = calculateProgress(section)
-                const sectionStatus = getStatus(sectionProgress)
+                    const sectionProgress = calculateProgress(section)
+                    const sectionStatus = getStatus(sectionProgress)
 
-                return (
+                    return (
                     <div class="section-nav">
                       <div class="flex items-center hover:bg-zinc-800 transition-all group">
                         <button
@@ -209,7 +209,7 @@ const getStatusColor = (status: string) => {
                         </button>
                         {
                           section.subsections && section.subsections.length > 0
-                    && (
+                            && (
                             <button
                               data-toggle-section={section.id}
                               class="section-toggle p-2 transition-all"
@@ -234,7 +234,7 @@ const getStatusColor = (status: string) => {
 
                       {
                         section.subsections && section.subsections.length > 0
-                  && (
+                          && (
                           <div
                             class="subsection-nav ml-4 mt-1 space-y-1 transition-all duration-300 ease-in-out overflow-hidden"
                             class:list={[sectionIndex === 0 ? "" : "hidden"]}
@@ -242,12 +242,12 @@ const getStatusColor = (status: string) => {
                           >
                             {
                               section.subsections.map((subsection: any) => {
-                    const subsectionProgress = calculateSubsectionProgress(
-                      subsection,
-                    )
-                    const subsectionStatus = getStatus(subsectionProgress)
+                                const subsectionProgress = calculateSubsectionProgress(
+                                  subsection,
+                                )
+                                const subsectionStatus = getStatus(subsectionProgress)
 
-                    return (
+                                return (
                                 <button
                                   data-subsection-id={subsection.id}
                                   class="subsection-nav-item w-full text-left px-3 py-1.5 transition-all text-sm hover:bg-zinc-800 block"
@@ -274,14 +274,14 @@ const getStatusColor = (status: string) => {
                                   </div>
                                 </button>
                               )
-                  })
+                              })
                             }
                           </div>
                         )
                       }
                     </div>
                   )
-              })
+                  })
                 }
               </nav>
             </div>
@@ -300,10 +300,10 @@ const getStatusColor = (status: string) => {
                 <nav class="space-y-2">
                   {
                     roadmapData.map((section, sectionIndex) => {
-                  const sectionProgress = calculateProgress(section)
-                  const sectionStatus = getStatus(sectionProgress)
+                      const sectionProgress = calculateProgress(section)
+                      const sectionStatus = getStatus(sectionProgress)
 
-                  return (
+                      return (
                       <div class="section-nav">
                         <div class="flex items-center hover:bg-zinc-800 transition-all group">
                           <button
@@ -331,7 +331,7 @@ const getStatusColor = (status: string) => {
                           </button>
                           {
                             section.subsections && section.subsections.length > 0
-                      && (
+                              && (
                               <button
                                 data-toggle-section={section.id}
                                 class="section-toggle p-2 transition-all"
@@ -356,7 +356,7 @@ const getStatusColor = (status: string) => {
 
                         {
                           section.subsections && section.subsections.length > 0
-                    && (
+                            && (
                             <div
                               class="subsection-nav ml-4 mt-1 space-y-1 transition-all duration-300 ease-in-out overflow-hidden"
                               class:list={[sectionIndex === 0 ? "" : "hidden"]}
@@ -364,12 +364,12 @@ const getStatusColor = (status: string) => {
                             >
                               {
                                 section.subsections.map((subsection: any) => {
-                      const subsectionProgress = calculateSubsectionProgress(
-                        subsection,
-                      )
-                      const subsectionStatus = getStatus(subsectionProgress)
+                                  const subsectionProgress = calculateSubsectionProgress(
+                                    subsection,
+                                  )
+                                  const subsectionStatus = getStatus(subsectionProgress)
 
-                      return (
+                                  return (
                                   <button
                                     data-subsection-id={subsection.id}
                                     class="subsection-nav-item w-full text-left px-3 py-1.5 transition-all text-sm hover:bg-zinc-800 block"
@@ -396,14 +396,14 @@ const getStatusColor = (status: string) => {
                                     </div>
                                   </button>
                                 )
-                    })
+                                })
                               }
                             </div>
                           )
                         }
                       </div>
                     )
-                })
+                    })
                   }
                 </nav>
               </div>
@@ -414,10 +414,10 @@ const getStatusColor = (status: string) => {
               <div class="roadmap-timeline pb-[70vh]">
                 {
                   roadmapData.map((section, sectionIndex) => {
-                const sectionProgress = calculateProgress(section)
-                const sectionStatus = getStatus(sectionProgress)
+                    const sectionProgress = calculateProgress(section)
+                    const sectionStatus = getStatus(sectionProgress)
 
-                return (
+                    return (
                     <div
                       class="roadmap-section mb-12"
                       data-section={section.id}
@@ -452,14 +452,14 @@ const getStatusColor = (status: string) => {
                       <div class="subsections-container space-y-6">
                         {
                           section.subsections && section.subsections.length > 0
-                    ? (
-                      section.subsections.map((subsection: any) => {
-                        const subsectionProgress = calculateSubsectionProgress(
-                          subsection,
-                        )
-                        const subsectionStatus = getStatus(subsectionProgress)
+                            ? (
+                              section.subsections.map((subsection: any) => {
+                                const subsectionProgress = calculateSubsectionProgress(
+                                  subsection,
+                                )
+                                const subsectionStatus = getStatus(subsectionProgress)
 
-                        return (
+                                return (
                             <div
                               class="subsection-wrapper"
                               data-subsection={subsection.id}
@@ -508,57 +508,57 @@ const getStatusColor = (status: string) => {
                                 >
                                   {
                                     subsection.milestones
-                            && subsection.milestones.length > 0
-                          ? (
+                                        && subsection.milestones.length > 0
+                                      ? (
                                       <ul class="space-y-2">
                                         {
                                           subsection.milestones.map((
-                            milestone: any,
-                          ) => (
+                                            milestone: any,
+                                          ) => (
                                             <li class="flex items-start gap-4">
                                               {
-                                                /* Display the appropriate icon based on completion status */
+                                                                            /* Display the appropriate icon based on completion status */
                                               }
                                               {
                                                 milestone.markComplete
-                              ? (
-                                milestone.completeIcon?.fields?.file
-                                    ?.url
-                                  ? (
+                                                  ? (
+                                                    milestone.completeIcon?.fields?.file
+                                                        ?.url
+                                                      ? (
                                                   <img
                                                     src={milestone.completeIcon.fields.file.url
-                                                      .startsWith("//")
-                                                    ? `https:${milestone.completeIcon.fields.file.url}`
-                                                    : milestone.completeIcon.fields.file
-                                                      .url}
+                                                        .startsWith("//")
+                                                      ? `https:${milestone.completeIcon.fields.file.url}`
+                                                      : milestone.completeIcon.fields.file
+                                                        .url}
                                                     alt="Complete"
                                                     class="w-6 h-6 mt-0.5 flex-shrink-0"
                                                   />
                                                 )
-                                  : (
+                                                : (
                                                   <div class="w-6 h-6 mt-0.5 flex-shrink-0 bg-green-500" />
                                                 )
-                              )
-                              : (
-                                milestone.incompleteIcon?.fields
-                                    ?.file
-                                    ?.url
-                                  ? (
+                                                )
+                                                : (
+                                                  milestone.incompleteIcon?.fields
+                                                      ?.file
+                                                      ?.url
+                                                    ? (
                                                   <img
                                                     src={milestone.incompleteIcon.fields.file
-                                                      .url
-                                                      .startsWith("//")
-                                                    ? `https:${milestone.incompleteIcon.fields.file.url}`
-                                                    : milestone.incompleteIcon.fields.file
-                                                      .url}
+                                                        .url
+                                                        .startsWith("//")
+                                                      ? `https:${milestone.incompleteIcon.fields.file.url}`
+                                                      : milestone.incompleteIcon.fields.file
+                                                        .url}
                                                     alt="Incomplete"
                                                     class="w-6 h-6 mt-0.5 flex-shrink-0 opacity-50"
                                                   />
                                                 )
-                                  : (
+                                                : (
                                                   <div class="w-6 h-6 mt-0.5 flex-shrink-0 border-2 border-zinc-400" />
                                                 )
-                              )
+                                                )
                                               }
                                               <div class="flex-1">
                                                 <span
@@ -572,7 +572,7 @@ const getStatusColor = (status: string) => {
                                                 </span>
                                                 {
                                                   milestone.description
-                                && (
+                                                    && (
                                                     <p class="text-sm text-zinc-600 mt-1">
                                                       {milestone.description}
                                                     </p>
@@ -584,7 +584,7 @@ const getStatusColor = (status: string) => {
                                         }
                                       </ul>
                                     )
-                          : (
+                                    : (
                                       <p class="text-zinc-500 italic">
                                         No milestones defined yet.
                                       </p>
@@ -594,9 +594,9 @@ const getStatusColor = (status: string) => {
                               </div>
                             </div>
                           )
-                      })
-                    )
-                    : (
+                            })
+                          )
+                          : (
                             <div class="text-zinc-500 italic">
                               No detailed subsections available yet. Check back soon!
                             </div>
@@ -605,7 +605,7 @@ const getStatusColor = (status: string) => {
                       </div>
                     </div>
                   )
-              })
+                  })
                 }
               </div>
             </div>

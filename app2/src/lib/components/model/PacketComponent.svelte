@@ -1,38 +1,46 @@
 <script lang="ts">
-import { Effect, Option } from "effect"
-import { packetDetails } from "$lib/stores/packets.svelte"
-import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-import { chains } from "$lib/stores/chains.svelte"
-import { getChain } from "@unionlabs/sdk/schema"
-import ChainComponent from "$lib/components/model/ChainComponent.svelte"
-import Label from "$lib/components/ui/Label.svelte"
-import Skeleton from "$lib/components/ui/Skeleton.svelte"
-import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
-import { fromHex } from "viem"
-import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
-import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
-import HeightComponent from "$lib/components/model/HeightComponent.svelte"
 import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import HeightComponent from "$lib/components/model/HeightComponent.svelte"
 import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
+import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
+import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
+import Label from "$lib/components/ui/Label.svelte"
+import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import * as AppRuntime from "$lib/runtime"
+import { chains } from "$lib/stores/chains.svelte"
+import { packetDetails } from "$lib/stores/packets.svelte"
+import { getChain } from "@unionlabs/sdk/schema"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
-import * as S from "effect/Schema"
+import { Effect, Option } from "effect"
 import { pipe } from "effect/Function"
-import { getOrUndefined } from "effect/Option";
-import A from "../ui/A.svelte";
+import { getOrUndefined } from "effect/Option"
+import * as S from "effect/Schema"
+import { fromHex } from "viem"
+import A from "../ui/A.svelte"
 
 const sourceChain = $derived(
-  Option.flatMap(packetDetails.data, data =>
-    Option.flatMap(chains.data, chainsData => getChain(chainsData, data.source_universal_chain_id))
-  )
+  Option.flatMap(
+    packetDetails.data,
+    data =>
+      Option.flatMap(
+        chains.data,
+        chainsData => getChain(chainsData, data.source_universal_chain_id),
+      ),
+  ),
 )
 
 const destinationChain = $derived(
-  Option.flatMap(packetDetails.data, data =>
-    Option.flatMap(chains.data, chainsData =>
-      getChain(chainsData, data.destination_universal_chain_id)
-    )
-  )
+  Option.flatMap(
+    packetDetails.data,
+    data =>
+      Option.flatMap(
+        chains.data,
+        chainsData => getChain(chainsData, data.destination_universal_chain_id),
+      ),
+  ),
 )
 </script>
 
@@ -58,7 +66,7 @@ const destinationChain = $derived(
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 gap-y-8 p-4">
       <div>
         <div class="flex gap-4">
-          <div class="flex-1 ">
+          <div class="flex-1">
             <Label>Source Chain</Label>
             {#if Option.isSome(sourceChain)}
               <ChainComponent chain={sourceChain.value} />
@@ -78,13 +86,16 @@ const destinationChain = $derived(
             <Label>Chan</Label>
             <div class="">{packetDetails.data.value.source_channel_id}</div>
           </div>
-          
         </div>
 
         <div class="mt-2">
           <Label>Port</Label>
-          <LongMonoWord>{ Option.isSome(sourceChain) && sourceChain.value.rpc_type === "cosmos" ? fromHex(packetDetails.data.value.source_port_id, "string") : packetDetails.data.value.source_port_id}</LongMonoWord>
-        </div>        
+          <LongMonoWord>{
+            Option.isSome(sourceChain) && sourceChain.value.rpc_type === "cosmos"
+            ? fromHex(packetDetails.data.value.source_port_id, "string")
+            : packetDetails.data.value.source_port_id
+          }</LongMonoWord>
+        </div>
       </div>
       <div>
         <div class="flex gap-4">
@@ -110,10 +121,14 @@ const destinationChain = $derived(
           </div>
         </div>
 
-        <div  class="mt-2">
+        <div class="mt-2">
           <Label>Port</Label>
-          <LongMonoWord>{ Option.isSome(destinationChain) && destinationChain.value.rpc_type === "cosmos" ? fromHex(packetDetails.data.value.destination_port_id, "string") : packetDetails.data.value.destination_port_id}</LongMonoWord>
-        </div>        
+          <LongMonoWord>{
+            Option.isSome(destinationChain) && destinationChain.value.rpc_type === "cosmos"
+            ? fromHex(packetDetails.data.value.destination_port_id, "string")
+            : packetDetails.data.value.destination_port_id
+          }</LongMonoWord>
+        </div>
       </div>
     </div>
 
@@ -125,22 +140,28 @@ const destinationChain = $derived(
       <div>
         <Label>Height</Label>
         {#if Option.isSome(sourceChain)}
-          <HeightComponent 
-            height={packetDetails.data.value.timeout_height} 
-            chain={sourceChain.value} 
+          <HeightComponent
+            height={packetDetails.data.value.timeout_height}
+            chain={sourceChain.value}
           />
         {:else}
           <div class="">{packetDetails.data.value.timeout_height}</div>
         {/if}
       </div>
     </div>
-    
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
       {#if Option.isSome(packetDetails.data.value.packet_ack_maker)}
         <section>
           <Label>Ack Maker</Label>
-          {#if pipe(sourceChain, Option.map(c => c.rpc_type === "cosmos"), Option.getOrElse(() => false))}
-            <LongMonoWord>{fromHex(packetDetails.data.value.packet_ack_maker.value, "string")}</LongMonoWord>
+          {#if pipe(
+          sourceChain,
+          Option.map(c => c.rpc_type === "cosmos"),
+          Option.getOrElse(() => false),
+        )}
+            <LongMonoWord>{
+              fromHex(packetDetails.data.value.packet_ack_maker.value, "string")
+            }</LongMonoWord>
           {:else}
             <LongMonoWord>{packetDetails.data.value.packet_ack_maker.value}</LongMonoWord>
           {/if}
@@ -149,16 +170,22 @@ const destinationChain = $derived(
       {#if Option.isSome(packetDetails.data.value.packet_recv_maker)}
         <section>
           <Label>Receive Maker</Label>
-          {#if pipe(destinationChain, Option.map(c => c.rpc_type === "cosmos"), Option.getOrElse(() => false))}
-            <LongMonoWord>{fromHex(packetDetails.data.value.packet_recv_maker.value, "string")}</LongMonoWord>
+          {#if pipe(
+          destinationChain,
+          Option.map(c => c.rpc_type === "cosmos"),
+          Option.getOrElse(() => false),
+        )}
+            <LongMonoWord>{
+              fromHex(packetDetails.data.value.packet_recv_maker.value, "string")
+            }</LongMonoWord>
           {:else}
             <LongMonoWord>{packetDetails.data.value.packet_recv_maker.value}</LongMonoWord>
           {/if}
         </section>
       {/if}
     </div>
-    
-     <div class="p-4">
+
+    <div class="p-4">
       <div class="flex flex-col gap-4 h-full">
         <div class="flex-1 overflow-x-auto">
           <Label>Packet Data [Indexed]</Label>
@@ -168,19 +195,22 @@ const destinationChain = $derived(
           <Label>Packet Data [<code class="lowercase">@unionlabs/sdk</code>]</Label>
           {#await AppRuntime.runPromise(pipe(
             S.decode(Ucs03.PacketFromHex)(packetDetails.data.value.data),
-            Effect.flatMap((packet) => pipe(
-              S.decode(Ucs03.Ucs03FromInstruction)(packet.instruction),
-              Effect.map((instruction) => ({
-                ...packet,
-                instruction
-              })
-            )))
-          ))}
+            Effect.flatMap((packet) =>
+              pipe(
+                S.decode(Ucs03.Ucs03FromInstruction)(packet.instruction),
+                Effect.map((instruction) => ({
+                  ...packet,
+                  instruction,
+                })),
+              )
+            ),
+          ))
+          }
             <pre class="text-zinc-500 mt-2">Decoding...</pre>
           {:then decoded}
             <pre class="overflow-auto text-sm mt-2">{JSON.stringify(decoded, null, 2)}</pre>
           {:catch error}
-            <div class=" text-zinc-500 mt-2">No data decoding available for this packet.</div>
+            <div class="text-zinc-500 mt-2">No data decoding available for this packet.</div>
             <pre class="text-red-700 mt-2 overflow-auto">{error}</pre>
           {/await}
         </div>
@@ -191,15 +221,14 @@ const destinationChain = $derived(
       <Label>Raw Packet Data</Label>
       <LongMonoWord class="mt-2">{packetDetails.data.value.data}</LongMonoWord>
     </div>
-    
-    
+
     {#if Option.isSome(packetDetails.data.value.acknowledgement)}
       <div class="p-4">
         <Label>Acknowledgement</Label>
         <LongMonoWord class="mt-2">{packetDetails.data.value.acknowledgement.value}</LongMonoWord>
       </div>
     {/if}
-    <PacketTracesComponent packetTraces={packetDetails.data.value.traces}/>
+    <PacketTracesComponent packetTraces={packetDetails.data.value.traces} />
   </div>
 {:else}
   <div class="p-4">

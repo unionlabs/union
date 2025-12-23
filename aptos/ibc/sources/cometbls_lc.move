@@ -481,7 +481,7 @@ module ibc::cometbls_lc {
         let chain_id = bcs_utils::peel_string(&mut buf);
         let trusting_period = bcs_utils::peel_u64(&mut buf);
         let max_clock_drift = bcs_utils::peel_u64(&mut buf);
-        let frozen_height = height::decode_bcs(&mut buf); // TODO: Not sure if its correc;
+        let frozen_height = height::decode_bcs(&mut buf); // TODO: Not sure if its correct;
         let latest_height = height::decode_bcs(&mut buf);
         let contract_address = bcs_utils::peel_fixed_bytes(&mut buf, 32);
 

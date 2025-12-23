@@ -17,7 +17,7 @@ _: {
     {
       packages = {
         site = mkCi false (buildPnpmPackage {
-          hash = "sha256-QQtlK9xlLoxkTgpEoHFExYcj+/Y+KjU1Uy4tVbnXdeI=";
+          hash = "sha256-WkDdok2luYp/q1s2cb4Aa7iWzKsifJ7HpRKMnf0pTG4=";
           packageJsonPath = ./package.json;
           extraSrcs = [
             ../site

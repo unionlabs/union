@@ -41,13 +41,6 @@
             plugins.dprint-plugin-typescript
             plugins.g-plane-markup_fmt
           ]);
-          # plugins = map toString (
-          #   with pkgsUnstable.dprint-plugins;
-          #   [
-          #     dprint-plugin-typescript
-          #     g-plane-markup_fmt
-          #   ]
-          # );
         };
     };
     yamlfmt = {
@@ -92,37 +85,35 @@
         "-formatter"
         "retain_line_breaks=true"
       ];
-      dprint = {
-        includes = [
-          "*.ts"
-          "*.mts"
-          "*.cts"
-          "*.js"
-          "*.cjs"
-          "*.mjs"
-          "*.jsx"
-          "*.tsx"
-          "*.d.ts"
-          "*.d.mts"
-          "*.d.cts"
-          "*.svelte"
-          "*.astro"
+      dprint.includes = lib.mkForce [
+        "*.ts"
+        "*.mts"
+        "*.cts"
+        "*.js"
+        "*.cjs"
+        "*.mjs"
+        "*.jsx"
+        "*.tsx"
+        "*.d.ts"
+        "*.d.mts"
+        "*.d.cts"
+        "*.svelte"
+        "*.astro"
 
-          "**/*.ts"
-          "**/*.mts"
-          "**/*.cts"
-          "**/*.js"
-          "**/*.cjs"
-          "**/*.mjs"
-          "**/*.jsx"
-          "**/*.tsx"
-          "**/*.d.ts"
-          "**/*.d.mts"
-          "**/*.d.cts"
-          "**/*.svelte"
-          "**/*.astro"
-        ];
-      };
+        "**/*.ts"
+        "**/*.mts"
+        "**/*.cts"
+        "**/*.js"
+        "**/*.cjs"
+        "**/*.mjs"
+        "**/*.jsx"
+        "**/*.tsx"
+        "**/*.d.ts"
+        "**/*.d.mts"
+        "**/*.d.cts"
+        "**/*.svelte"
+        "**/*.astro"
+      ];
       biome =
         let
           biomeJsonConfig = builtins.fromJSON (builtins.readFile ./biome.json);

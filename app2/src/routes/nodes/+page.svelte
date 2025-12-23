@@ -1,14 +1,14 @@
 <script lang="ts">
-import { Effect, Option, Either } from "effect"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { cn } from "$lib/utils"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
-import type { Chain } from "@unionlabs/sdk/schema"
+import { runPromise } from "$lib/runtime"
 import { chains } from "$lib/stores/chains.svelte"
+import { cn } from "$lib/utils"
+import type { Chain } from "@unionlabs/sdk/schema"
 import type { RpcProtocolType } from "@unionlabs/sdk/schema"
-    import { runPromise } from "$lib/runtime";
+import { Effect, Either, Option } from "effect"
 
 type RpcType = "cosmos" | "evm"
 
@@ -57,7 +57,7 @@ const withTiming = async (fn: () => Promise<any>) => {
 
 const checkRpcStatus = (
   type: RpcType,
-  url: string
+  url: string,
 ): Effect.Effect<RpcStatusResult, RpcStatusError> =>
   Effect.tryPromise({
     try: async signal => {
@@ -70,12 +70,13 @@ const checkRpcStatus = (
               jsonrpc: "2.0",
               id: 1,
               method: "status",
-              params: []
-            })
+              params: [],
+            }),
           })
         )
-        if (!res.ok)
+        if (!res.ok) {
           throw new RpcStatusError("cosmos", url, `HTTP ${res.status} - ${res.statusText}`)
+        }
         const data = await res.json()
         if (!(data?.result?.sync_info && data?.result?.node_info)) {
           throw new RpcStatusError("cosmos", url, "Malformed response", data)
@@ -89,8 +90,8 @@ const checkRpcStatus = (
             latestBlockHeight: Number(data.result.sync_info.latest_block_height),
             catchingUp: data.result.sync_info.catching_up,
             moniker: data.result.node_info.moniker,
-            network: data.result.node_info.network
-          }
+            network: data.result.node_info.network,
+          },
         }
       }
       if (type === "evm") {
@@ -102,11 +103,13 @@ const checkRpcStatus = (
               jsonrpc: "2.0",
               id: 1,
               method: "eth_blockNumber",
-              params: []
-            })
+              params: [],
+            }),
           })
         )
-        if (!res.ok) throw new RpcStatusError("evm", url, `HTTP ${res.status} - ${res.statusText}`)
+        if (!res.ok) {
+          throw new RpcStatusError("evm", url, `HTTP ${res.status} - ${res.statusText}`)
+        }
         const data = await res.json()
         if (!data?.result) {
           throw new RpcStatusError("evm", url, "Missing result field", data)
@@ -119,14 +122,14 @@ const checkRpcStatus = (
           status: {
             kind: "evm",
             latestBlockHex: hex,
-            latestBlockNumber: Number.parseInt(hex, 16)
-          }
+            latestBlockNumber: Number.parseInt(hex, 16),
+          },
         }
       }
       throw new RpcStatusError(type, url, `Unsupported type: ${type}`)
     },
     catch: err =>
-      err instanceof RpcStatusError ? err : new RpcStatusError(type, url, "Unknown error", err)
+      err instanceof RpcStatusError ? err : new RpcStatusError(type, url, "Unknown error", err),
   })
 
 type NodeStatus = {
@@ -141,15 +144,15 @@ let nodeData: Map<string, NodeStatus> = $state(new Map())
 let hasInitialized = $state(false)
 
 const checkNode = (chain: Chain, rpcUrl: string) =>
-  Effect.gen(function* (_) {
+  Effect.gen(function*(_) {
     const key = `${chain.universal_chain_id}-${rpcUrl}`
 
     nodeData = new Map(
       nodeData.set(key, {
         chain,
         rpcUrl,
-        status: "CHECKING"
-      })
+        status: "CHECKING",
+      }),
     )
 
     const result = yield* _(
@@ -157,31 +160,31 @@ const checkNode = (chain: Chain, rpcUrl: string) =>
         Effect.map(res =>
           Either.right({
             status: "OK" as const,
-            responseTime: Math.round(res.responseTimeMs)
+            responseTime: Math.round(res.responseTimeMs),
           })
         ),
         Effect.catchAll((err: RpcStatusError) =>
           Effect.succeed(
             Either.left({
               status: "ERROR" as const,
-              error: err.message
-            })
+              error: err.message,
+            }),
           )
-        )
-      )
+        ),
+      ),
     )
 
     const status = Either.match(result, {
       onLeft: error => error,
-      onRight: success => success
+      onRight: success => success,
     })
 
     nodeData = new Map(
       nodeData.set(key, {
         chain,
         rpcUrl,
-        ...status
-      })
+        ...status,
+      }),
     )
 
     return status
@@ -194,7 +197,7 @@ async function checkAllNodes() {
   )
 
   await Promise.all(
-    rpcNodes.map(({ chain, rpc }) => checkNode(chain, rpc.url).pipe(runPromise))
+    rpcNodes.map(({ chain, rpc }) => checkNode(chain, rpc.url).pipe(runPromise)),
   )
 }
 
@@ -211,7 +214,10 @@ setInterval(() => {
 </script>
 
 <Sections>
-  <Card class="overflow-auto" divided>
+  <Card
+    class="overflow-auto"
+    divided
+  >
     <div class="p-3 text-sm font-medium text-zinc-400">Node Status</div>
     <div class="space-y-1">
       {#if Option.isNone(chains.data)}
@@ -239,7 +245,7 @@ setInterval(() => {
               class={cn(
                 "flex justify-between gap-8 px-4 py-2 h-12 items-center",
                 "hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors duration-75",
-                "cursor-pointer"
+                "cursor-pointer",
               )}
             >
               <div>
@@ -274,10 +280,10 @@ setInterval(() => {
                       !status
                         ? "bg-zinc-500/20 text-zinc-500"
                         : status.status === "CHECKING"
-                          ? "bg-accent/20 text-accent"
-                          : status.status === "OK"
-                            ? "bg-emerald-500/20 text-emerald-500"
-                            : "bg-zinc-500/20 text-zinc-500"
+                        ? "bg-accent/20 text-accent"
+                        : status.status === "OK"
+                        ? "bg-emerald-500/20 text-emerald-500"
+                        : "bg-zinc-500/20 text-zinc-500",
                     )}
                   >
                     {!status ? "PENDING" : status.status}

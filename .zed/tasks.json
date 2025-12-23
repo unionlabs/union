@@ -10,8 +10,18 @@
     "use_new_terminal": true
   },
   {
+    "label": "Spellcheck",
+    "command": "nix build .#checks.aarch64-linux.spellcheck -L",
+    "use_new_terminal": true
+  },
+  {
+    "label": "Format",
+    "command": "nix fmt",
+    "use_new_terminal": true
+  },
+  {
     "label": "Build App",
-    "command": "nix build .#app -L",
+    "command": "nix build .#app2 -L",
     "use_new_terminal": true
   }
 ]

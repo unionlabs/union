@@ -1,7 +1,7 @@
 <script lang="ts">
-import { Match, Option as O, Data, pipe } from "effect"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte"
+import { Data, Match, Option as O, pipe } from "effect"
 
 type BondState = Data.TaggedEnum<{
   Ready: {}
@@ -107,7 +107,7 @@ const errorMessage = $derived("message" in state ? state.message : "An error occ
 
 const getMessage = (type: string, state: any, inputAmount: string) => {
   const baseMessages: Record<string, Record<string, any>> = {
-    bond: {
+    "bond": {
       Ready: {
         title: O.isNone(WalletStore.evmAddress)
           ? "Connect your wallet to start staking"
@@ -119,80 +119,82 @@ const getMessage = (type: string, state: any, inputAmount: string) => {
           : inputAmount
           ? "Click stake button to begin transaction"
           : "Enter the amount of U tokens you want to stake",
-        txHash: O.none()
+        txHash: O.none(),
       },
       SwitchingChain: {
         title: isSafeWallet ? "Preparing Safe Transaction" : "Switching to mainnet",
-        subtitle: isSafeWallet ? "Preparing transaction for Safe wallet..." : "Please switch to mainnet in your wallet",
-        txHash: O.none()
+        subtitle: isSafeWallet
+          ? "Preparing transaction for Safe wallet..."
+          : "Please switch to mainnet in your wallet",
+        txHash: O.none(),
       },
       CheckingAllowance: {
         title: "Checking Token Allowance",
         subtitle: "Reading current token allowance from blockchain...",
-        txHash: O.none()
+        txHash: O.none(),
       },
       ApprovingAllowance: {
         title: `Approving ${inputAmount || "0"} U`,
         subtitle: "Confirm token approval transaction in your wallet",
-        txHash: O.none()
+        txHash: O.none(),
       },
       AllowanceSubmitted: {
         title: "Approval submitted",
         subtitle: "Allowance transaction submitted",
-        txHash
+        txHash,
       },
       WaitingForAllowanceConfirmation: {
         title: "Confirming submission",
         subtitle: "Waiting for allowance confirmation",
-        txHash
+        txHash,
       },
       AllowanceApproved: {
         title: `Approved ${inputAmount || "0"} U`,
         subtitle: "Token spending approved, proceeding...",
-        txHash: O.none()
+        txHash: O.none(),
       },
       CreatingTokenOrder: {
         title: "Creating order",
         subtitle: "Building cross-chain token order...",
-        txHash: O.none()
+        txHash: O.none(),
       },
       PreparingBondTransaction: {
         title: "Preparing bond",
         subtitle: "Preparing bond transaction with contracts...",
-        txHash: O.none()
+        txHash: O.none(),
       },
       ConfirmingBond: {
         title: "Confirm bond",
         subtitle: "Confirm bond transaction in your wallet",
-        txHash: O.none()
+        txHash: O.none(),
       },
       BondSubmitted: {
         title: "Bond successfully submitted",
         subtitle: "Transaction submitted",
-        txHash
+        txHash,
       },
       WaitingForConfirmation: {
         title: "Confirming submission",
         subtitle: "Waiting for confirmation",
-        txHash
+        txHash,
       },
       WaitingForIndexer: {
         title: "Indexing submission",
         subtitle: "Transaction confirmed, indexing data...",
-        txHash
+        txHash,
       },
       Success: {
         title: "Bond submitted",
         subtitle: "Your stake has been successfully submitted!",
-        txHash
+        txHash,
       },
       Error: {
         title: "Bond Failed",
         subtitle: errorMessage,
-        txHash: O.none()
-      }
+        txHash: O.none(),
+      },
     },
-    unbond: {
+    "unbond": {
       Ready: {
         title: O.isNone(WalletStore.evmAddress)
           ? "Connect your wallet to start unstaking"
@@ -204,80 +206,82 @@ const getMessage = (type: string, state: any, inputAmount: string) => {
           : inputAmount
           ? "Click unstake button to begin transaction (27 day unbond period)"
           : "Enter the amount of eU tokens you want to unstake",
-        txHash: O.none()
+        txHash: O.none(),
       },
       SwitchingChain: {
         title: isSafeWallet ? "Preparing Safe Transaction" : "Switching to mainnet",
-        subtitle: isSafeWallet ? "Preparing transaction for Safe wallet..." : "Please switch to mainnet in your wallet",
-        txHash: O.none()
+        subtitle: isSafeWallet
+          ? "Preparing transaction for Safe wallet..."
+          : "Please switch to mainnet in your wallet",
+        txHash: O.none(),
       },
       CheckingAllowance: {
         title: "Checking Token Allowance",
         subtitle: "Reading current token allowance from blockchain...",
-        txHash: O.none()
+        txHash: O.none(),
       },
       ApprovingAllowance: {
         title: `Approving ${inputAmount || "0"} eU`,
         subtitle: "Confirm token approval transaction in your wallet",
-        txHash: O.none()
+        txHash: O.none(),
       },
       AllowanceSubmitted: {
         title: "Approval submitted",
         subtitle: "Allowance transaction submitted",
-        txHash
+        txHash,
       },
       WaitingForAllowanceConfirmation: {
         title: "Confirming submission",
         subtitle: "Waiting for allowance confirmation",
-        txHash
+        txHash,
       },
       AllowanceApproved: {
         title: `Approved ${inputAmount || "0"} eU`,
         subtitle: "Token spending approved, proceeding...",
-        txHash: O.none()
+        txHash: O.none(),
       },
       CreatingTokenOrder: {
         title: "Creating order",
         subtitle: "Building cross-chain token order...",
-        txHash: O.none()
+        txHash: O.none(),
       },
       PreparingUnbondTransaction: {
         title: "Preparing unbond",
         subtitle: "Preparing unbond transaction with contracts...",
-        txHash: O.none()
+        txHash: O.none(),
       },
       ConfirmingUnbond: {
         title: "Confirm unbond",
         subtitle: "Confirm unbond transaction in your wallet",
-        txHash: O.none()
+        txHash: O.none(),
       },
       UnbondSubmitted: {
         title: "Unbond successfully submitted",
         subtitle: "Transaction submitted",
-        txHash
+        txHash,
       },
       WaitingForConfirmation: {
         title: "Confirming submission",
         subtitle: "Waiting for confirmation",
-        txHash
+        txHash,
       },
       WaitingForIndexer: {
         title: "Indexing submission",
         subtitle: "Transaction confirmed, indexing data...",
-        txHash
+        txHash,
       },
       Success: {
         title: "Unbond submitted",
         subtitle: "Your unbond request has been successfully submitted!",
-        txHash
+        txHash,
       },
       Error: {
         title: "Unbond Failed",
         subtitle: errorMessage,
-        txHash: O.none()
-      }
+        txHash: O.none(),
+      },
     },
-    withdrawal: {
+    "withdrawal": {
       Ready: {
         title: O.isNone(WalletStore.evmAddress)
           ? "Connect your wallet to view withdrawals"
@@ -285,25 +289,25 @@ const getMessage = (type: string, state: any, inputAmount: string) => {
         subtitle: O.isNone(WalletStore.evmAddress)
           ? "Connect wallet to see your withdrawable tokens"
           : "Withdraw your tokens to your wallet",
-        txHash: O.none()
+        txHash: O.none(),
       },
       Loading: {
         title: "Processing withdrawal transaction",
         subtitle: "Please wait while we process your withdrawal...",
-        txHash: O.none()
+        txHash: O.none(),
       },
       Success: {
         title: "Withdrawal completed successfully",
         subtitle: "Your tokens have been successfully withdrawn",
-        txHash: O.none()
+        txHash: O.none(),
       },
       Error: {
         title: "Withdrawal failed",
         subtitle: errorMessage,
-        txHash: O.none()
-      }
+        txHash: O.none(),
+      },
     },
-    dust: {
+    "dust": {
       Ready: {
         title: O.isNone(WalletStore.evmAddress)
           ? "Connect wallet to recover dust"
@@ -311,172 +315,179 @@ const getMessage = (type: string, state: any, inputAmount: string) => {
         subtitle: O.isNone(WalletStore.evmAddress)
           ? "Connect wallet to recover your proxy dust"
           : "Recover eU tokens from your proxy contract",
-        txHash: O.none()
+        txHash: O.none(),
       },
       SwitchingChain: {
         title: "Switching to Ethereum",
         subtitle: "Please confirm the network switch",
-        txHash: O.none()
+        txHash: O.none(),
       },
       CheckingAllowance: {
         title: "Checking eU allowance",
         subtitle: "Verifying token permissions",
-        txHash: O.none()
+        txHash: O.none(),
       },
       ApprovingAllowance: {
         title: "Approve eU spending",
         subtitle: "Confirm the approval in your wallet",
-        txHash: O.none()
+        txHash: O.none(),
       },
       AllowanceSubmitted: {
         title: "Approval submitted",
         subtitle: "Transaction submitted",
-        txHash
+        txHash,
       },
       WaitingForAllowanceConfirmation: {
         title: "Confirming approval",
         subtitle: "Waiting for confirmation",
-        txHash
+        txHash,
       },
       AllowanceApproved: {
         title: "Approval confirmed",
         subtitle: "eU spending approved",
-        txHash: O.none()
+        txHash: O.none(),
       },
       PreparingTransaction: {
         title: "Preparing dust recovery",
         subtitle: "Setting up the transaction",
-        txHash: O.none()
+        txHash: O.none(),
       },
       ConfirmingWithdrawal: {
         title: "Confirm dust recovery",
         subtitle: "Confirm transaction in your wallet",
-        txHash: O.none()
+        txHash: O.none(),
       },
       WithdrawalSubmitted: {
         title: "Dust recovery submitted",
         subtitle: "Transaction submitted",
-        txHash
+        txHash,
       },
       WaitingForConfirmation: {
         title: "Confirming recovery",
         subtitle: "Waiting for confirmation",
-        txHash
+        txHash,
       },
       WaitingForIndexer: {
         title: "Indexing recovery",
         subtitle: "Transaction confirmed, indexing data...",
-        txHash
+        txHash,
       },
       Success: {
         title: "Dust recovered successfully",
         subtitle: "Your eU tokens have been recovered to your wallet!",
-        txHash
+        txHash,
       },
       Error: {
         title: "Dust recovery failed",
         subtitle: errorMessage,
-        txHash: O.none()
-      }
+        txHash: O.none(),
+      },
     },
     "quick-withdraw": {
       Ready: {
         title: pipe(
           isContractActive,
           O.match({
-            onNone: () => O.isNone(WalletStore.evmAddress)
-              ? "Connect wallet for instant exit"
-              : inputAmount
-              ? "Ready to exit?"
-              : "Enter amount to exit",
-            onSome: (active) => !active
-              ? "Instant Exit Not Active"
-              : O.isNone(WalletStore.evmAddress)
-              ? "Connect wallet for instant exit"
-              : inputAmount
-              ? "Ready to exit?"
-              : "Enter amount to exit",
+            onNone: () =>
+              O.isNone(WalletStore.evmAddress)
+                ? "Connect wallet for instant exit"
+                : inputAmount
+                ? "Ready to exit?"
+                : "Enter amount to exit",
+            onSome: (active) =>
+              !active
+                ? "Instant Exit Not Active"
+                : O.isNone(WalletStore.evmAddress)
+                ? "Connect wallet for instant exit"
+                : inputAmount
+                ? "Ready to exit?"
+                : "Enter amount to exit",
           }),
         ),
         subtitle: pipe(
           isContractActive,
           O.match({
-            onNone: () => O.isNone(WalletStore.evmAddress)
-              ? "Connect wallet to use instant exit"
-              : inputAmount
-              ? "Click exit button to proceed"
-              : "Instant exit converts eU to U instantly",
-            onSome: (active) => !active
-              ? "Please use the regular withdraw process or check back later"
-              : O.isNone(WalletStore.evmAddress)
-              ? "Connect wallet to use instant exit"
-              : inputAmount
-              ? "Click exit button to proceed"
-              : "Instant exit converts eU to U instantly",
+            onNone: () =>
+              O.isNone(WalletStore.evmAddress)
+                ? "Connect wallet to use instant exit"
+                : inputAmount
+                ? "Click exit button to proceed"
+                : "Instant exit converts eU to U instantly",
+            onSome: (active) =>
+              !active
+                ? "Please use the regular withdraw process or check back later"
+                : O.isNone(WalletStore.evmAddress)
+                ? "Connect wallet to use instant exit"
+                : inputAmount
+                ? "Click exit button to proceed"
+                : "Instant exit converts eU to U instantly",
           }),
         ),
-        txHash: O.none()
+        txHash: O.none(),
       },
       SwitchingChain: {
         title: isSafeWallet ? "Preparing Safe Transaction" : "Switching to mainnet",
-        subtitle: isSafeWallet ? "Preparing transaction for Safe wallet..." : "Please switch to mainnet in your wallet",
-        txHash: O.none()
+        subtitle: isSafeWallet
+          ? "Preparing transaction for Safe wallet..."
+          : "Please switch to mainnet in your wallet",
+        txHash: O.none(),
       },
       CheckingAllowance: {
         title: "Checking eU Allowance",
         subtitle: "Verifying token permissions for quick withdrawal...",
-        txHash: O.none()
+        txHash: O.none(),
       },
       ApprovingAllowance: {
         title: `Approving ${inputAmount || "0"} eU`,
         subtitle: "Confirm token approval transaction in your wallet",
-        txHash: O.none()
+        txHash: O.none(),
       },
       AllowanceSubmitted: {
         title: "Approval submitted",
         subtitle: "Allowance transaction submitted",
-        txHash
+        txHash,
       },
       WaitingForAllowanceConfirmation: {
         title: "Confirming approval",
         subtitle: "Waiting for allowance confirmation",
-        txHash
+        txHash,
       },
       AllowanceApproved: {
         title: `Approved ${inputAmount || "0"} eU`,
         subtitle: "Token spending approved, proceeding...",
-        txHash: O.none()
+        txHash: O.none(),
       },
       ConfirmingWithdraw: {
         title: "Confirm exit",
         subtitle: "Confirm exit transaction in your wallet",
-        txHash: O.none()
+        txHash: O.none(),
       },
       WithdrawSubmitted: {
         title: "Exit submitted",
         subtitle: "Transaction submitted",
-        txHash
+        txHash,
       },
       WaitingForConfirmation: {
         title: "Processing exit",
         subtitle: "Waiting for confirmation",
-        txHash
+        txHash,
       },
       Success: {
         title: "Exit successful",
         subtitle: "Your U tokens have been sent to your wallet!",
-        txHash
+        txHash,
       },
       Error: {
         title: "Exit failed",
         subtitle: errorMessage,
-        txHash: O.none()
-      }
-    }
+        txHash: O.none(),
+      },
+    },
   }
-  
+
   const messages = baseMessages[type] || {}
-  return messages[state._tag] || { title: "Unknown state", subtitle: "Please refresh the page", txHash: O.none() }
+  return messages[state._tag]
+    || { title: "Unknown state", subtitle: "Please refresh the page", txHash: O.none() }
 }
 
 const currentMessage = $derived(getMessage(type, state, inputAmount))
@@ -489,7 +500,7 @@ const isContractNotActive = $derived(
       onNone: () => false,
       onSome: (active) => !active,
     }),
-  )
+  ),
 )
 
 const containerPadding = $derived(size === "compact" ? "p-3" : "p-3.5")
@@ -531,9 +542,27 @@ const subtitleSize = $derived(size === "compact" ? "text-[10px]" : "text-[11px]"
           />
         </svg>
       {:else if isActive}
-        <svg class="animate-spin w-3.5 h-3.5 text-accent" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        <svg
+          class="animate-spin w-3.5 h-3.5 text-accent"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          >
+          </circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          >
+          </path>
         </svg>
       {:else if isSuccess}
         <svg
@@ -555,9 +584,7 @@ const subtitleSize = $derived(size === "compact" ? "text-[10px]" : "text-[11px]"
           fill="currentColor"
           viewBox="0 0 24 24"
         >
-          <path
-            d="M12 2L1 21h22L12 2zm0 4l7.53 13H4.47L12 6zm-1 5v4h2v-4h-2zm0 6v2h2v-2h-2z"
-          />
+          <path d="M12 2L1 21h22L12 2zm0 4l7.53 13H4.47L12 6zm-1 5v4h2v-4h-2zm0 6v2h2v-2h-2z" />
         </svg>
       {/if}
     </div>
@@ -570,7 +597,7 @@ const subtitleSize = $derived(size === "compact" ? "text-[10px]" : "text-[11px]"
         {#if O.isSome(currentMessage.txHash)}
           {" "}
           <a
-            href="https://etherscan.io/tx/{O.getOrElse(currentMessage.txHash, () => "")}"
+            href="https://etherscan.io/tx/{O.getOrElse(currentMessage.txHash, () => '')}"
             target="_blank"
             rel="noopener noreferrer"
             class="underline hover:no-underline"

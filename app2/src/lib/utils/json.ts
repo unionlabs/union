@@ -8,7 +8,7 @@ import { isObject } from "effect/Predicate"
 export const safeStringifyJSON = (x: unknown): Effect.Effect<string, ParseResult.ParseError> =>
   Effect.gen(function*() {
     /**
-     * This is valid for 1-indexed `JSON.strigify` parameter, but this cannot be reliably extracted from the types given function overloading.
+     * This is valid for 1-indexed `JSON.stringify` parameter, but this cannot be reliably extracted from the types given function overloading.
      */
     type Replacer = (this: any, key: string, value: any) => any
 

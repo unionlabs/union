@@ -742,7 +742,7 @@ pub fn update_config(
                 protocol_fee_config.fee_rate.to_string(),
             )
             .add_attribute(
-                "protocol_fee_recpient",
+                "protocol_fee_recipient",
                 protocol_fee_config.fee_recipient.to_string(),
             );
     }

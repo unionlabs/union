@@ -27,7 +27,7 @@ _: {
             ../deployments
             ../lib/ucs04/well-known.json
           ];
-          hash = "sha256-b0UEkhTc2P/GdUR85bTCN2kcfhytnFNKlJtu/TmINlo=";
+          hash = "sha256-HAFB0pu/MhHd4MbIeIzoWV7sDeZfYCp5ZF4rVPzppG4=";
           packageJsonPath = ./package.json;
           pnpmWorkspaces = [
             "docs"

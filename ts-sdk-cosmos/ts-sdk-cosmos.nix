@@ -5,7 +5,7 @@ _: {
       ...
     }:
     let
-      hash = "sha256-UPSWVyM2UxIUXeWNChXIJz+BAJbg+Sd2YCbiVFDtwjw=";
+      hash = "sha256-PQM0lS+tOo9K9f07ApF8obqxsV5fMqBWrRvyRT0O5k0=";
     in
     {
       packages = {

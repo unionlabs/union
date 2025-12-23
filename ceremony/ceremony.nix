@@ -9,7 +9,7 @@ _: {
     {
       packages = {
         ceremony = buildPnpmPackage {
-          hash = "sha256-U5I0ABHuc5e39PwUYNncAXjSDoqGOr4GAmRzk74w1M4=";
+          hash = "sha256-1R/7+vIllXY+KmNgxxH2fEHM4UzVmHDiDA3XqmODuJI=";
           packageJsonPath = ./package.json;
           extraSrcs = [
             ../ceremony

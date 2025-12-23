@@ -80,19 +80,19 @@ const menuItems = [
                   { "text-accent-500": menuItem.highlight },
                 ]}
                 {...(menuItem.external
-                ? {
-                  target: "_blank",
-                  rel: "noopener noreferrer",
-                }
-                : {})}
+                  ? {
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                  }
+                  : {})}
               >
                 {menuItem.name}
                 {
-                  menuItem.external ? (
+                                menuItem.external ? (
                     <ExternalLinkIcon class="-mt-0.5 -mr-2 size-4 text-neutral-500" />
-                  ) : (
-                ""
-              )
+                  ): (
+                                 ""
+                               )
                 }
               </a>
             </li>
