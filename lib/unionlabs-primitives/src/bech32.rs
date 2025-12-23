@@ -5,11 +5,25 @@ use serde::{Deserialize, Serialize, de};
 
 use crate::Bytes;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bech32<Data = Bytes, Hrp = String> {
     // TODO: Validate the HRP
     hrp: Hrp,
     data: Data,
+}
+
+impl<Data, Hrp> fmt::Debug for Bech32<Data, Hrp>
+where
+    Hrp: fmt::Debug + AsRef<str>,
+    Data: fmt::Debug + AsRef<[u8]>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Bech32")
+            .field("encoded", &self.to_string())
+            .field("hrp", &self.hrp)
+            .field("data", &self.data)
+            .finish()
+    }
 }
 
 impl<Data, Hrp> Bech32<Data, Hrp> {

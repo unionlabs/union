@@ -632,6 +632,44 @@
       }
     }
   },
+  "intento.intento-dev-1": {
+    "ibc_interface": "ibc-cosmwasm",
+    "deployer": "into18s3t0mx4ja5mclffsjheductwc72p786cled76",
+    "contracts": {
+      "into18rl2mz2wfkwd6uayn2xxrasgulusyjvctjqlf7kjd7het528c8psjqur9t": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 8728,
+        "commit": "5fcb9df377231acdec7d6cc89faf03f8bca78004",
+        "code_id": 4
+      },
+      "into1d092k7x89flxrx2m5at00rcmp4u0tgz09uaxxwarckfs3s8a0t4qcmman8": {
+        "name": "lightclients/cometbls",
+        "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
+        "height": 24755,
+        "code_id": 5
+      },
+      "into1na8kg686n4v6xusefvm4fypccc0jhkkvlyjtwk5sw9u5jrdk68mqh39hlp": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 24762,
+        "code_id": 6
+      },
+      "into15nyfpvt340xd3p45weq5j4yvh24w4heys8eh8xy0x9znl3cv3gxsjzxn5g": {
+        "name": "manager",
+        "salt": "0x7b1f7c3b93ff643023d63bbbe182a179922ad85a2aa0e03ef50170b591a7b752",
+        "height": 8095,
+        "commit": "5fcb9df377231acdec7d6cc89faf03f8bca78004",
+        "code_id": 2
+      },
+      "into16ump44jecz0mphenf2xr3gvn3c2g4ng406p2hhxntjjrflq2t7psd0kujc": {
+        "name": "lightclients/tendermint",
+        "salt": "0x6c69676874636c69656e74732f74656e6465726d696e74",
+        "height": 24768,
+        "code_id": 7
+      }
+    }
+  },
   "osmosis.osmo-test-5": {
     "ibc_interface": "ibc-cosmwasm",
     "deployer": "osmo10c4yqddv6w7sphruvhxs5v0es8r9fcj5ed3yx7",
