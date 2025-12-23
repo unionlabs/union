@@ -566,6 +566,7 @@
               ++ (with pkgsUnstable; [
                 bun
                 pnpm_10
+                moreutils # for `sponge`
                 deno
                 nixd
                 procs

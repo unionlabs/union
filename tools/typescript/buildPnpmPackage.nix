@@ -51,7 +51,7 @@ let
         src
         version
         ;
-      fetcherVersion = 2;
+      fetcherVersion = 3;
     }).overrideAttrs
       (
         super:
@@ -62,7 +62,9 @@ let
           installPhase = ''
             runHook preInstall
             export HOME=$(mktemp -d)
-            pnpm config set store-dir $out
+            mkdir $out
+            storePath=$(mktemp -d)
+            pnpm config set store-dir $storePath
             pnpm config set side-effects-cache false
             pnpm config set update-notifier false
             pnpm config set manage-package-manager-versions false
@@ -156,7 +158,7 @@ let
               --registry="$NIX_NPM_REGISTRY" \
               --frozen-lockfile
 
-            echo 2 > $out/.fetcher-version
+            echo 3 > $out/.fetcher-version
 
             runHook postInstall
           '';

@@ -2,6 +2,7 @@ _: {
   perSystem =
     {
       buildPnpmPackage,
+      pkgs,
       ...
     }:
     {
@@ -16,7 +17,7 @@ _: {
             "@unionlabs/sdk"
             "@unionlabs/sdk-sui"
           ];
-          hash = "sha256-JAhQWOVoLk+0B07WbVH9lSTrzk2tVIZL+yfs7Hv1oO0=";
+          hash = "sha256-o8Xi7tK7OzuMO0Kgbeu6iQbQP9Q3p8NBfWXFdrJVj9Y=";
           doCheck = true;
           buildPhase = ''
             runHook preBuild
