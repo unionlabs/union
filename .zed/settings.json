@@ -93,6 +93,11 @@
         "ignore_system_version": false
       }
     },
+    "package-version-server": {
+      "binary": {
+        "ignore_system_version": false
+      }
+    },
     "vscode-html-language-server": {
       "binary": {
         "ignore_system_version": false,
