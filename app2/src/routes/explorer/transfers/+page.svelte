@@ -12,6 +12,7 @@ import {
 } from "$lib/queries/transfer-list.svelte"
 import { chains } from "$lib/stores/chains.svelte"
 import { transferList } from "$lib/stores/transfers.svelte"
+import { SortOrder } from "@unionlabs/sdk/schema"
 import { Effect, Option } from "effect"
 import { onMount } from "svelte"
 
@@ -29,8 +30,7 @@ const initializeQuery = async () => {
   if (pageParam) {
     if (pageParam.startsWith("-")) {
       // Greater-than query (prev page)
-      const sortOrder = pageParam.substring(1)
-      // @ts-ignore sorOrder is not strictly a SortOrder, but this is desired behavior
+      const sortOrder = SortOrder.make(pageParam.substring(1))
       effect = transferListPageGtQuery(
         sortOrder,
         settingsStore.pageLimit,
@@ -38,9 +38,8 @@ const initializeQuery = async () => {
       )
     } else {
       // Less-than query (next page)
-      // @ts-ignore pageParam is not strictly a SortOrder, but this is desired behavior
       effect = transferListPageLtQuery(
-        pageParam,
+        SortOrder.make(pageParam),
         settingsStore.pageLimit,
         settingsStore.mainnetOnly,
       )
