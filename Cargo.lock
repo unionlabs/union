@@ -1880,6 +1880,7 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 name = "attested-light-client"
 version = "0.0.0"
 dependencies = [
+ "access-manager-types",
  "attested-light-client-types",
  "base64 0.22.1",
  "bincode 2.0.1",
@@ -1893,6 +1894,7 @@ dependencies = [
  "ibc-union-light-client",
  "ibc-union-msg",
  "serde",
+ "serde-utils",
  "serde_json",
  "thiserror 2.0.12",
  "unionlabs",
@@ -16409,6 +16411,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-attested"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "attested-light-client",
+ "attested-light-client-types",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-base"
 version = "0.0.0"
 dependencies = [
@@ -16660,6 +16683,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-module-attested"
+version = "0.0.0"
+dependencies = [
+ "attested-light-client-types",
+ "embed-commit",
+ "jsonrpsee 0.25.1",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-client-module-base"
 version = "0.0.0"
 dependencies = [
@@ -16899,6 +16937,27 @@ dependencies = [
  "jsonrpsee 0.25.1",
  "macros",
  "serde",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-client-update-plugin-attested"
+version = "0.0.0"
+dependencies = [
+ "attested-light-client",
+ "attested-light-client-types",
+ "cometbft-rpc",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
  "unionlabs",
@@ -17309,6 +17368,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-finality-module-attested-evm"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "attested-light-client",
+ "attested-light-client-types",
+ "clap",
+ "cometbft-rpc",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-finality-module-base"
 version = "0.0.0"
 dependencies = [
@@ -17535,6 +17617,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-plugin-attestor-evm"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "attested-light-client",
+ "clap",
+ "cometbft-rpc",
+ "concurrent-keyring",
+ "cosmos-client",
+ "ed25519-dalek",
+ "embed-commit",
+ "enumorph",
+ "ibc-solidity",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "macros",
+ "protos",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-plugin-packet-batch"
 version = "0.0.0"
 dependencies = [
@@ -17710,6 +17820,27 @@ dependencies = [
  "serde",
  "serde_json",
  "unionlabs",
+]
+
+[[package]]
+name = "voyager-proof-module-attested"
+version = "0.0.0"
+dependencies = [
+ "attested-light-client",
+ "attested-light-client-types",
+ "cometbft-rpc",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
 ]
 
 [[package]]

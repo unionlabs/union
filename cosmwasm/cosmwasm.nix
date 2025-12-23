@@ -418,6 +418,10 @@ _: {
           dir = "starknet";
           client-type = "starknet";
         };
+        attested = {
+          dir = "attested";
+          client-type = "attested";
+        };
       };
 
       all-apps = {

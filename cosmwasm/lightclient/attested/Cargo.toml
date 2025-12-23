@@ -15,15 +15,17 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+access-manager-types        = { workspace = true }
 attested-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 bincode                     = { workspace = true, features = ["derive"] }
 cosmwasm-std                = { workspace = true, features = ["abort"] }
-depolama                    = { workspace = true }
+depolama                    = { workspace = true, features = ["iterator"] }
 embed-commit                = { workspace = true }
 frissitheto                 = { workspace = true }
 ibc-union-light-client      = { workspace = true }
 ibc-union-msg               = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
+serde-utils                 = { workspace = true }
 thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 
@@ -33,6 +35,7 @@ ed25519-dalek = { workspace = true, features = ["default"] }
 hex           = { workspace = true }
 hex-literal   = { workspace = true }
 serde_json    = { workspace = true }
+unionlabs     = { workspace = true, features = ["test-utils"] }
 
 [features]
 library = []
