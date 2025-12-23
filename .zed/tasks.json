@@ -21,7 +21,7 @@
   },
   {
     "label": "Build App",
-    "command": "nix build .#app -L",
+    "command": "nix build .#app2 -L",
     "use_new_terminal": true
   }
 ]
