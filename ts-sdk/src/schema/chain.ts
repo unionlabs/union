@@ -5,6 +5,7 @@ import type { Chain as ViemChain } from "viem"
 import { VIEM_CHAINS } from "../constants/viem-chains.js"
 import * as Ucs05 from "../Ucs05.js"
 import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
+import { Base58FromHex, type Hex } from "./hex.js"
 
 export const ChainId = S.String.pipe(S.brand("ChainId"))
 // e.g. union.union-testnet-9
@@ -159,6 +160,13 @@ export class Chain extends S.Class<Chain>("Chain")({
       default:
         return Effect.fail(new NotACosmosChainError({ chain: this }))
     }
+  }
+
+  getDisplayTransactionHash(txHash: Hex): string {
+    if (this.rpc_type === "sui") {
+      return Schema.decodeSync(Base58FromHex)(txHash)
+    }
+    return txHash
   }
 }
 

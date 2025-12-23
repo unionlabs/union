@@ -2,7 +2,7 @@ import { transferPacketHashQuery } from "$lib/queries/packet-hash"
 import { runFork, runPromise } from "$lib/runtime"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import type { PacketHash } from "@unionlabs/sdk/schema"
-import { Effect, Fiber, Option } from "effect"
+import { Fiber, Option } from "effect"
 import type { TimeoutException } from "effect/Cause"
 
 export class TransferHashStore {

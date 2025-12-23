@@ -5,6 +5,7 @@
 import SharpPowerIcon from "$lib/components/icons/SharpPowerIcon.svelte"
 import { type CosmosWalletId } from "$lib/wallet/cosmos"
 import { type EvmWalletId } from "$lib/wallet/evm"
+import { type SuiWalletId } from "$lib/wallet/sui"
 import { RpcType } from "@unionlabs/sdk/schema"
 import type { State } from "@wagmi/core"
 import { Schema } from "effect"
@@ -16,7 +17,7 @@ type ChainWalletsInformation = ReadonlyArray<{
   id: string
   name: string
   icon: string
-  download: string
+  download?: string
 }>
 
 interface Props {
@@ -27,12 +28,15 @@ interface Props {
   connectedWalletId?:
     | (T extends "cosmos" ? CosmosWalletId
       : T extends "evm" ? EvmWalletId
+      : T extends "sui" ? SuiWalletId
       : never)
     | undefined
     | null
   onConnectClick: (walletIdentifier: string) => void | Promise<any>
   onDisconnectClick: () => void
   showDivider?: boolean
+  connectionError?: string | undefined
+  errorWalletId?: string | undefined
 }
 
 let {
@@ -44,6 +48,8 @@ let {
   onConnectClick,
   onDisconnectClick,
   showDivider = true,
+  connectionError = undefined,
+  errorWalletId = undefined,
 }: Props = $props()
 
 let connectText = $derived(
@@ -151,8 +157,9 @@ let connectedWallet = $derived(
 
   <!-- Wallet List -->
   <div class="grid grid-cols-1 gap-2">
-    {#each walletListToRender as { name, id, icon, download }, index (index)}
+    {#each walletListToRender as { name, id, icon }, index (index)}
       {@const walletIdentifier = id}
+      {@const hasError = connectionError && errorWalletId === id}
       {#if !(connectStatus === "connected" && connectedWalletId === id)}
         <button
           role="row"
@@ -160,10 +167,11 @@ let connectedWallet = $derived(
           data-index={index}
           class="
             w-full bg-zinc-100 dark:bg-zinc-900 rounded-lg p-4
-            flex items-center justify-between cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800
+            flex flex-col cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800
             transition-colors duration-200 ease-in-out focus:outline-none
-            text-base font-medium capitalize relative h-14
+            text-base font-medium capitalize relative
             {connectStatus === 'connected' ? 'opacity-60 grayscale hover:opacity-100 hover:grayscale-0' : ''}
+            {hasError ? 'border border-red-500/30' : ''}
           "
           onclick={async () => {
             if (connectStatus === "disconnected") {
@@ -175,19 +183,26 @@ let connectedWallet = $derived(
           }}
           aria-label={`${connectStatus === "disconnected" ? "Connect" : "Disconnect"} ${name} wallet`}
         >
-          <div class="flex items-center gap-3">
-            {#if icon}
-              <img
-                src={icon}
-                alt={name}
-                class="size-8 rounded-lg bg-white dark:bg-zinc-800 p-1"
-              />
+          <div class="flex items-center justify-between w-full h-6">
+            <div class="flex items-center gap-3">
+              {#if icon}
+                <img
+                  src={icon}
+                  alt={name}
+                  class="size-8 rounded-lg bg-white dark:bg-zinc-800 p-1"
+                />
+              {/if}
+              <span class="text-zinc-900 dark:text-zinc-50">{name}</span>
+            </div>
+            {#if (connectStatus === "connecting" || connectStatus === "reconnecting")
+            && connectedWalletId === id}
+              <span class="text-zinc-400">⋯</span>
             {/if}
-            <span class="text-zinc-900 dark:text-zinc-50">{name}</span>
           </div>
-          {#if (connectStatus === "connecting" || connectStatus === "reconnecting")
-          && connectedWalletId === id}
-            <span class="text-zinc-400">⋯</span>
+          {#if hasError}
+            <div class="mt-2 text-xs text-red-400 text-left normal-case font-normal">
+              {connectionError}
+            </div>
           {/if}
         </button>
       {/if}

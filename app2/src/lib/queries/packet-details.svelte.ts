@@ -60,6 +60,7 @@ export const packetDetailsQuery = (packetHash: PacketHash) =>
             transaction_hash
             chain {
               universal_chain_id
+              rpc_type
             }
           }
           

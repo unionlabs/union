@@ -17,10 +17,17 @@ import {
   EU_LST,
   EU_SOLVER_ON_ETH_METADATA,
   EU_SOLVER_ON_UNION_METADATA,
+  SUI_ADDR,
+  SUI_NATIVE_COIN,
+  SUI_SOLVER_ON_COSMOS_METADATA,
+  SUI_SOLVER_ON_SUI_METADATA,
+  SUI_U_COIN,
   U_BANK,
   U_ERC20,
   U_SOLVER_ON_ETH_METADATA,
+  U_SOLVER_ON_SUI_METADATA,
   U_SOLVER_ON_UNION_METADATA,
+  U_SUI,
 } from "@unionlabs/sdk/Constants"
 import * as US from "@unionlabs/sdk/schema"
 import { Array as A, Brand, Effect, Match, Option, pipe, String as Str, Struct } from "effect"
@@ -108,6 +115,9 @@ export class TransferData {
           "0xba5ed44733953d79717f6269357c77718c8ba5ed", // U
           EU_ERC20.address.toLowerCase(), //
           toHex(EU_LST.address),
+          toHex(SUI_NATIVE_COIN.address),
+          toHex(SUI_U_COIN.address),
+          toHex(SUI_ADDR.address),
           // TODO: add eU base
           // TODO: add eU quote
         ],
@@ -126,6 +136,11 @@ export class TransferData {
     ]).pipe(
       Option.flatMap(
         ([baseToken, sourceChain, destinationChain, quoteTokens]) => {
+          console.log("isSolve: ", this.isSolve)
+          console.log("baseToken: ", this.baseToken)
+          console.log("quoteTokens: ", this.quoteTokens)
+          console.log("destinationChain: ", this.destinationChain)
+          console.log("sourceChain: ", this.baseToken)
           if (this.isSolve) {
             return Match.value([
               Brand.unbranded(baseToken.denom).toLowerCase(),
@@ -135,6 +150,22 @@ export class TransferData {
               Match.when(
                 ["0x6175", "evm", Match.any],
                 () => U_ERC20,
+              ),
+              Match.when(
+                ["0x6175", "sui", Str.startsWith("sui.")],
+                () => U_SUI,
+              ),
+              Match.when(
+                [toHex(SUI_NATIVE_COIN.address), "cosmos", Str.startsWith("union.")],
+                () => Token.Cw20.make({ address: SUI_ADDR.address }),
+              ),
+              Match.when(
+                [toHex(SUI_U_COIN.address), "cosmos", Str.startsWith("union.")],
+                () => U_BANK,
+              ),
+              Match.when(
+                [toHex(SUI_ADDR.address), "sui", Str.startsWith("sui.")],
+                () => SUI_NATIVE_COIN,
               ),
               Match.when(
                 [U_ERC20.address.toLowerCase(), "evm", Match.any],
@@ -261,7 +292,23 @@ export class TransferData {
             () => Option.some(U_SOLVER_ON_ETH_METADATA),
           ),
           Match.when(
+            ["solve", "0x6175", "sui", Str.startsWith("sui.")],
+            () => Option.some(U_SOLVER_ON_SUI_METADATA),
+          ),
+          Match.when(
+            ["solve", toHex(SUI_NATIVE_COIN.address), "cosmos", Str.startsWith("union.")],
+            () => Option.some(SUI_SOLVER_ON_COSMOS_METADATA),
+          ),
+          Match.when(
+            ["solve", toHex(SUI_ADDR.address), "sui", Str.startsWith("sui.")],
+            () => Option.some(SUI_SOLVER_ON_SUI_METADATA),
+          ),
+          Match.when(
             ["solve", U_ERC20.address.toLowerCase(), "cosmos", Str.startsWith("union.")],
+            () => Option.some(U_SOLVER_ON_UNION_METADATA),
+          ),
+          Match.when(
+            ["solve", toHex(SUI_U_COIN.address), "cosmos", Str.startsWith("union.")],
             () => Option.some(U_SOLVER_ON_UNION_METADATA),
           ),
           Match.when(
@@ -275,6 +322,10 @@ export class TransferData {
           Match.when(
             ["solve", toHex(EU_LST.address.toLowerCase()), "evm", Str.startsWith("ethereum.")],
             () => Option.some(EU_SOLVER_ON_ETH_METADATA),
+          ),
+          Match.when(
+            ["solve", U_ERC20.address.toLowerCase(), "sui", Str.startsWith("sui.")],
+            () => Option.some(U_SOLVER_ON_SUI_METADATA),
           ),
           Match.when(
             ["solve", Match.any, Match.any, Match.any],

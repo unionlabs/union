@@ -1,3 +1,4 @@
+import { SuiClient } from "@mysten/sui/client"
 import { Transaction } from "@mysten/sui/transactions"
 import * as Call from "@unionlabs/sdk/Call"
 import type { Hex } from "@unionlabs/sdk/schema/hex"
@@ -10,6 +11,7 @@ import * as ClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
 import * as ClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
 import * as IncomingMessage from "@unionlabs/sdk/ZkgmIncomingMessage"
 import * as ZkgmInstruction from "@unionlabs/sdk/ZkgmInstruction"
+import bs58 from "bs58"
 import { Match, ParseResult, pipe, Predicate } from "effect"
 import * as A from "effect/Array"
 import * as Effect from "effect/Effect"
@@ -17,7 +19,39 @@ import * as Inspectable from "effect/Inspectable"
 import * as Option from "effect/Option"
 import * as S from "effect/Schema"
 import * as Stream from "effect/Stream"
+import { toHex } from "viem"
 import * as Sui from "../Sui.js"
+
+type HexAddr = `0x${string}`
+const base58ToHex = (s: string): Hex => toHex(bs58.decode(s)) as Hex
+
+interface Port {
+  id: { id: HexAddr }
+  _module_address: HexAddr
+  data: HexAddr
+}
+
+export const readUcs03Port = (client: SuiClient, portId: string) =>
+  Effect.tryPromise({
+    try: () =>
+      client.getObject({
+        id: portId,
+        options: { showContent: true },
+      }).then(async res => {
+        if (res.data?.content?.dataType !== "moveObject") {
+          throw new Error("Not a MoveObject")
+        }
+
+        const f = res.data.content.fields as unknown as Port
+
+        return {
+          ucs03Address: f._module_address,
+          module: "zkgm",
+          relayStoreId: f.data,
+        }
+      }),
+    catch: error => error,
+  })
 
 export const fromWallet = (
   opts: { client: Sui.Sui.PublicClient; wallet: Sui.Sui.WalletClient },
@@ -33,7 +67,7 @@ export const fromWallet = (
         u: ZkgmInstruction.ZkgmInstruction,
       ) => Effect.Effect<
         Ucs03.Ucs03,
-        ParseResult.ParseError | Sui.ReadContractError | Sui.ReadCoinError
+        ParseResult.ParseError | Sui.ReadContractError | Sui.ReadCoinError | Sui.NoCoinMetadataError
       > = pipe(
         Match.type<ZkgmInstruction.ZkgmInstruction>(),
         Match.tagsExhaustive({
@@ -59,6 +93,7 @@ export const fromWallet = (
                   Effect.gen(function*() {
                     const meta = yield* pipe(
                       Sui.readCoinMeta(
+                        // XXX
                         v1.baseToken.address as unknown as any,
                       ),
                       Effect.provideService(Sui.PublicClient, client),
@@ -108,13 +143,30 @@ export const fromWallet = (
         ),
       )
 
-      console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", { operand })
-
       const tx = new Transaction()
       const CLOCK_OBJECT_ID = "0x6" // Sui system clock
       const tHeight = 0n
-      const module = "zkgm" // zkgm module name
 
+      const { ucs03Address: decodedUcs03, module: decodedModule, relayStoreId: relayFromPort } =
+        yield* pipe(
+          readUcs03Port(wallet.client, request.ucs03Address as unknown as string),
+          Effect.mapError((cause) =>
+            new ClientError.RequestError({
+              reason: "Transport",
+              request,
+              cause,
+              description: "parsing port",
+            })
+          ),
+        )
+
+      console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", {
+        decodedUcs03,
+        decodedModule,
+        relayFromPort,
+      })
+
+      const module = decodedModule // zkgm module name
       const suiParams = request.transport?.sui
       console.log("request.transport:", request.transport)
       if (!suiParams) {
@@ -128,14 +180,16 @@ export const fromWallet = (
         )
       }
 
-      const { relayStoreId, vaultId, ibcStoreId, coins } = suiParams
+      const { vaultId, ibcStoreId, coins } = suiParams
 
       console.log("[@unionlabs/sdk-sui/internal/zkgmClient]", {
-        relayStoreId,
+        decodedUcs03,
         vaultId,
         ibcStoreId,
         coins,
       })
+
+      console.log("[@unionlabs/sdk-sui/internal/zkgmClient] request:", request)
 
       const hexToBytes = (hex: `0x${string}`): Uint8Array => {
         const s = hex.slice(2)
@@ -147,69 +201,147 @@ export const fromWallet = (
       }
 
       // 1) begin_send(channel_id: u32, salt: vector<u8>) -> SendCtx
-      let sendCtx = tx.moveCall({
-        target: `${request.ucs03Address}::${module}::begin_send`,
-        typeArguments: [],
-        arguments: [
-          tx.pure.u32(Number(request.channelId)),
-          tx.pure.vector("u8", hexToBytes(salt as `0x${string}`)),
-        ],
-      })
+      let sendCtx = yield* pipe(
+        tx,
+        Sui.moveCall({
+          target: `${decodedUcs03}::${module}::begin_send`,
+          typeArguments: [],
+          arguments: [
+            tx.pure.u32(Number(request.channelId)),
+            tx.pure.vector("u8", hexToBytes(salt as `0x${string}`)),
+          ],
+        }),
+        Effect.mapError((cause) =>
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause,
+            description: "send context failed",
+          })
+        ),
+      )
 
       // 2) For each coin: send_with_coin<T>(relay_store, vault, ibc_store, coin, version, opcode, operand, ctx) -> SendCtx
-      for (const { typeArg, objectId } of coins) {
-        sendCtx = tx.moveCall({
-          target: `${request.ucs03Address}::${module}::send_with_coin`,
+      for (const { typeArg, baseAmount, objectId } of coins) {
+        console.log("typeArg, baseAmount objectId: ", { typeArg, baseAmount, objectId })
+        const coinArg = yield* Sui.prepareCoinForAmount(
+          tx,
+          typeArg,
+          baseAmount,
+        ).pipe(
+          Effect.provideService(Sui.PublicClient, client),
+          Effect.mapError((cause) =>
+            new ClientError.RequestError({
+              reason: "Transport",
+              request,
+              cause,
+              description: "prepareCoinForAmount",
+            })
+          ),
+        )
+        console.log("coinArg: ", coinArg)
+        sendCtx = yield* Sui.moveCall(tx, {
+          target: `${decodedUcs03}::${module}::send_with_coin`,
           typeArguments: [typeArg],
           arguments: [
-            tx.object(relayStoreId),
+            tx.object(relayFromPort),
             tx.object(vaultId),
             tx.object(ibcStoreId),
-            tx.object(objectId),
+            coinArg,
             tx.pure.u8(Number(request.instruction.version)),
             tx.pure.u8(Number(request.instruction.opcode)),
             tx.pure.vector("u8", hexToBytes(operand as `0x${string}`)),
             sendCtx,
           ],
-        })
+        }).pipe(
+          Effect.mapError((cause) =>
+            new ClientError.RequestError({
+              reason: "Transport",
+              request,
+              cause,
+              description: "send_with_coin context preparation failed",
+            })
+          ),
+        )
       }
 
       // 3) end_send(ibc_store, clock, t_height: u64, timeout_ns: u64, ctx)
-      tx.moveCall({
-        target: `${request.ucs03Address}::${module}::end_send`,
+      yield* Sui.moveCall(tx, {
+        target: `${decodedUcs03}::${module}::end_send`,
         typeArguments: [],
         arguments: [
           tx.object(ibcStoreId),
+          tx.object(relayFromPort),
           tx.object(CLOCK_OBJECT_ID),
           tx.pure.u64(tHeight),
           tx.pure.u64(BigInt(timeoutTimestamp)),
           sendCtx,
         ],
-      })
-
+      }).pipe(
+        Effect.mapError((cause) =>
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause,
+            description: "end_send failed",
+          })
+        ),
+      )
       // sign & execute
+
+      // wallet.signer?.setRpcUrl(wallet.rpc);
+      // wallet.setRpcUrl(wallet.rpc);
+      // Determine chain identifier for wallet (e.g., "sui:testnet" or "sui:mainnet")
+      const isTestnet = request.source.testnet === true
+      const suiChain: `${string}:${string}` = isTestnet ? "sui:testnet" : "sui:mainnet"
+
       const submit = Effect.tryPromise({
-        try: async () =>
-          wallet.client.signAndExecuteTransaction({
-            signer: wallet.signer,
+        try: async () => {
+          if ((tx as any).setSender && typeof wallet.signer?.toSuiAddress === "function") {
+            tx.setSender(wallet.signer.toSuiAddress())
+          }
+
+          const signed = await (wallet.signer as any).signTransaction({
             transaction: tx,
-          }),
+            chain: suiChain,
+          })
+
+          if (signed.kind === "error") {
+            throw new Error(signed.error)
+          }
+
+          if (signed.kind === "executed") {
+            return signed.executeResult
+          }
+
+          // signed.kind === "signed" - execute via client
+          const { signature, bytes } = signed
+          return wallet.client.executeTransactionBlock({
+            transactionBlock: bytes,
+            signature,
+            options: { showEffects: true, showEvents: true },
+          })
+        },
         catch: (cause) =>
           new ClientError.RequestError({
             reason: "Transport",
             request,
             cause,
-            description: "signAndExecuteTransaction",
+            description: "signTransaction + executeTransactionBlock",
           }),
       })
 
       const res = yield* submit
 
-      console.log("Res.transaction:", res.transaction)
       const txHash = (res.digest ?? res.transaction?.txSignatures[0] ?? "") as Hex
+      const convertedHex = base58ToHex(txHash)
 
-      return new ClientResponseImpl(request, client, txHash)
+      return new ClientResponseImpl(request, client, convertedHex)
     })
+      .pipe(
+        Effect.provideService(Sui.PublicClient, opts.client),
+        Effect.provideService(Sui.WalletClient, opts.wallet),
+      )
   )
 
 /** @internal */

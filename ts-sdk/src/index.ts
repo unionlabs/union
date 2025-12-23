@@ -34,17 +34,6 @@ export * as PriceOracle from "./PriceOracle.js"
 /**
  * This module handles [Sui](https://sui.io/) related functionality.
  *
- * :::caution[INCOMPLETE]
- * This module is incomplete. Functionality may be partial. Breaking changes may be necessary and regular.
- * :::
- *
- * @since 2.0.0
- */
-export * as Sui from "./Sui.js"
-
-/**
- * This module handles [Sui](https://sui.io/) related functionality.
- *
  * @since 2.0.0
  */
 export * as Gql from "./Gql.js"

@@ -3,7 +3,7 @@
  *
  * @since 2.0.0
  */
-import { isValidSuiAddress, normalizeSuiAddress } from "@mysten/sui/utils"
+import { isValidSuiAddress } from "@mysten/sui/utils"
 import { bech32, bytes } from "@scure/base"
 import {
   absurd,
@@ -298,7 +298,7 @@ export const ZkgmFromAnyDisplay = S.transform(
         Match.tagsExhaustive({
           CosmosDisplay: ({ address }) => toHex(address),
           EvmDisplay: ({ address }) => identity<Hex>(address),
-          SuiDisplay: ({ address }) => identity<Hex>(normalizeSuiAddress(address) as Hex),
+          SuiDisplay: ({ address }) => identity<Hex>(address as Hex),
         }),
       ),
     encode: (_) => absurd<AnyDisplay>(void 0 as never),
@@ -313,9 +313,11 @@ export const anyDisplayToZkgm = Match.type<AnyDisplay>().pipe(
   Match.tagsExhaustive({
     CosmosDisplay: ({ address }) => S.decode(HexFromString)(address),
     EvmDisplay: ({ address }) => Effect.succeed<Hex>(address),
-    SuiDisplay: ({ address }) => S.decode(HexFromString)(normalizeSuiAddress(address)),
+    SuiDisplay: ({ address }) => Effect.succeed(address as Hex),
   }),
 )
+
+const asCanonical = (hex: Hex) => AddressCanonicalBytes.make(hex)
 
 /**
  * @category transformations
@@ -329,10 +331,9 @@ export const anyDisplayToCanonical = Match.type<AnyDisplay>().pipe(
       const { bytes } = bech32.decodeToBytes(address)
       const result = AddressCanonicalBytes.make(toHex(bytes))
       return result
-      console.log("bytes", { result })
     },
     EvmDisplay: ({ address }) => AddressCanonicalBytes.make(address),
-    SuiDisplay: ({ address }) => AddressCanonicalBytes.make(normalizeSuiAddress(address) as Hex),
+    SuiDisplay: ({ address }) => asCanonical(address as Hex), // brand the 0x… Sui address
   }),
 )
 /**

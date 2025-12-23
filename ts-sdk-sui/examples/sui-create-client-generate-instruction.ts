@@ -7,17 +7,16 @@ if (typeof BigInt.prototype.toJSON !== "function") {
 }
 import { getFullnodeUrl } from "@mysten/sui/client"
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
+import { Sui, SuiZkgmClient } from "@unionlabs/sdk-sui"
+import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
+import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
+import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
 import * as ZkgmClient from "@unionlabs/sdk/ZkgmClient"
 import * as ZkgmClientRequest from "@unionlabs/sdk/ZkgmClientRequest"
 import * as ZkgmClientResponse from "@unionlabs/sdk/ZkgmClientResponse"
 import { Effect, Logger } from "effect"
-import { PublicClient, WalletClient } from "../src/Sui.js"
-import { layerWithoutWallet } from "../src/SuiZkgmClient.js"
-
-import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
-import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
-import * as TokenOrder from "@unionlabs/sdk/TokenOrder"
+import * as Layer from "effect/Layer"
 
 const MNEMONIC = process.env.SUI_MNEMONIC ?? "..."
 const RECIPIENT = process.env.RECIPIENT
@@ -36,7 +35,7 @@ const program = Effect.gen(function*() {
   const destination = yield* ChainRegistry.byUniversalId(
     UniversalChainId.make("union.union-1"),
   )
-  const wallet = yield* WalletClient
+  const wallet = yield* Sui.WalletClient
 
   const sender = wallet.signer.toSuiAddress()
 
@@ -61,19 +60,20 @@ const program = Effect.gen(function*() {
     source,
     destination,
     channelId: ChannelId.make(5),
-    ucs03Address: "0x8675045186976da5b60baf20dc94413fb5415a7054052dc14d93c13d3dbdf830",
+    ucs03Address:
+      "0x3078623965306634373861623162623735393639343336386465363263656437636230343035376634383964353666326230613661376435656263313430373037393a3a7a6b676d3a3a307861316362663135656236333166303139323234643530613935373035356464663931313331333636303133323934393438656535346537663036666635383462",
     instruction: tokenOrder,
 
     // NEW — only read by the Sui client
     transport: {
       sui: {
-        relayStoreId: "0x393a99c6d55d9a79efa52dea6ea253fef25d2526787127290b985222cc20a924",
-        vaultId: "0x7c4ade19208295ed6bf3c4b58487aa4b917ba87d31460e9e7a917f7f12207ca3",
-        ibcStoreId: "0xac7814eebdfbf975235bbb796e07533718a9d83201346769e5f281dc90009175",
+        vaultId: "0xc3ac8618f622fc70ea30eaec5b45d504e239af668033d07e396be44d45f8f45d",
+        ibcStoreId: "0xdc5f20df5f143a06772c073e9c30dacd30e31f6788885cf478d0fd40f92766c4",
         coins: [
           {
             typeArg: "0x2::sui::SUI",
             objectId: "0x266d00c4b329111255339c041cc57a1b616cfeddafdae47df8f814002578e95b",
+            baseAmount: BigInt(3),
           },
         ],
       },
@@ -88,16 +88,19 @@ const program = Effect.gen(function*() {
 
   yield* Effect.log("Submission Hash", response.txHash)
 }).pipe(
-  Effect.provide(layerWithoutWallet),
-  Effect.provide(PublicClient.Live({ url: getFullnodeUrl("testnet") })),
   Effect.provide(
-    WalletClient.Live({
-      url: getFullnodeUrl("testnet"),
-      signer: keypair,
-    }),
+    Layer.mergeAll(
+      SuiZkgmClient.layerWithoutWallet,
+      ChainRegistry.Default,
+      Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault),
+    ).pipe(
+      Layer.provideMerge(Sui.PublicClient.Live({ url: getFullnodeUrl("testnet") })),
+      Layer.provideMerge(Sui.WalletClient.Live({
+        url: getFullnodeUrl("testnet"),
+        signer: keypair,
+      })),
+    ),
   ),
-  Effect.provide(ChainRegistry.Default),
-  Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
 )
 
 Effect.runPromise(program).catch((e: any) => {

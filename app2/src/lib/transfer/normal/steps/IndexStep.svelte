@@ -110,7 +110,7 @@ const handleRedirect = () => {
             Waiting for indexer...
           </p>
           <TransactionHashComponent
-            hash={transferHashStore.hash}
+            hash={sourceChain.getDisplayTransactionHash(transferHashStore.hash as `0x${string}`)}
             chain={sourceChain}
           />
         </div>

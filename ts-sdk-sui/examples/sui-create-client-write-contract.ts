@@ -8,14 +8,8 @@ if (typeof BigInt.prototype.toJSON !== "function") {
 import { getFullnodeUrl } from "@mysten/sui/client"
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Transaction } from "@mysten/sui/transactions"
+import { Sui } from "@unionlabs/sdk-sui"
 import { Effect, Logger } from "effect"
-import {
-  PublicClient,
-  readCoinBalances,
-  readCoinMetadata,
-  WalletClient,
-  writeContract,
-} from "../src/Sui.js"
 
 const MNEMONIC = process.env.SUI_MNEMONIC ?? "..."
 const RECIPIENT = process.env.RECIPIENT
@@ -24,13 +18,13 @@ const RECIPIENT = process.env.RECIPIENT
 const keypair = Ed25519Keypair.deriveKeypair(MNEMONIC)
 
 const program = Effect.gen(function*() {
-  const { client } = yield* PublicClient
+  const { client } = yield* Sui.PublicClient
   yield* Effect.log("Sui public client initialized", client.network)
-  const meta = yield* readCoinMetadata("0x2::sui::SUI" as any)
+  const meta = yield* Sui.readCoinMetadata("0x2::sui::SUI" as any)
   yield* Effect.log("SUI metadata", meta)
 
   yield* Effect.log("keypair.getPublicKey().toSuiAddress()", keypair.getPublicKey().toSuiAddress())
-  const balances = yield* readCoinBalances(
+  const balances = yield* Sui.readCoinBalances(
     "0x2::sui::SUI" as any,
     keypair.getPublicKey().toSuiAddress() as any,
   )
@@ -42,7 +36,7 @@ const program = Effect.gen(function*() {
   const coin = tx.splitCoins(tx.gas, [tx.pure.u64(amountMist)])
   const recipient = tx.pure.address(RECIPIENT)
 
-  const res = yield* writeContract(
+  const res = yield* Sui.writeContract(
     client,
     keypair,
     "0x2", // packageId: Sui framework
@@ -55,14 +49,14 @@ const program = Effect.gen(function*() {
 
   yield* Effect.log("Transfer submitted", res)
 }).pipe(
-  Effect.provide(PublicClient.Live({ url: getFullnodeUrl("testnet") })),
-  Effect.provide(
-    WalletClient.Live({
+  Effect.provide([
+    Sui.PublicClient.Live({ url: getFullnodeUrl("testnet") }),
+    Sui.WalletClient.Live({
       url: getFullnodeUrl("testnet"),
       signer: keypair, // ✅ Sui signer
     }),
-  ),
-  Effect.provide(Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)),
+    Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault),
+  ]),
 )
 
 Effect.runPromise(program).catch(console.error)

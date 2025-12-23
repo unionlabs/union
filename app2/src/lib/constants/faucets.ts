@@ -10,4 +10,5 @@ export const EXTERNAL_FAUCETS = {
   "Sei Testnet": "https://www.docs.sei.io/learn/faucet",
   "BNB Testnet": "https://www.bnbchain.org/en/testnet-faucet",
   "Osmosis Testnet": "https://faucet.testnet.osmosis.zone/",
+  "Sui Testnet": "https://faucet.sui.io",
 } as Record<string, string>
