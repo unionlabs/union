@@ -1,116 +1,104 @@
 // Zed settings to use Union's devShell
 {
-    "languages": {
-        "TypeScript": {
-            "language_servers": [
-                "tsgo",
-                "typescript-language-server",
-                "!vtsls"
-            ],
-            "formatter": {
-                "external": {
-                    "command": "treefmt",
-                    "arguments": ["--stdin", ".ts"]
-                }
-            },
-            "format_on_save": "on"
-        },
-        "TSX": {
-            "language_servers": [
-                "tsgo",
-                "typescript-language-server",
-                "!vtsls"
-            ],
-            "formatter": {
-                "external": {
-                    "command": "treefmt",
-                    "arguments": ["--stdin", ".tsx"]
-                }
-            },
-            "format_on_save": "on"
-        },
-        "JavaScript": {
-            "language_servers": [
-                "tsgo",
-                "typescript-language-server",
-                "!vtsls"
-            ],
-            "formatter": {
-                "external": {
-                    "command": "treefmt",
-                    "arguments": ["--stdin", ".js"]
-                }
-            },
-            "format_on_save": "on"
-        },
-        "Astro": {
-            "formatter": {
-                "external": {
-                    "command": "treefmt",
-                    "arguments": ["--stdin", ".astro"]
-                }
-            },
-            "format_on_save": "on"
-        },
-        "Svelte": {
-            "language_servers": ["svelte-language-server"],
-            "formatter": {
-                "external": {
-                    "command": "treefmt",
-                    "arguments": ["--stdin", ".svelte"]
-                }
-            },
-            "format_on_save": "on"
-        },
-        "JSX": {
-            "formatter": {
-                "external": {
-                    "command": "treefmt",
-                    "arguments": ["--stdin", ".jsx"]
-                }
-            },
-            "format_on_save": "on"
-        },
-        "Cairo": {
-            "formatter": {
-                "external": {
-                    "command": "cairo-format",
-                    "arguments": ["-"]
-                }
-            },
-            "format_on_save": "on"
+  "languages": {
+    "TypeScript": {
+      "language_servers": ["tsgo", "typescript-language-server", "!vtsls"],
+      "formatter": {
+        "external": {
+          "command": "treefmt",
+          "arguments": ["--stdin", ".ts"]
         }
+      },
+      "format_on_save": "on"
     },
-    "lsp": {
-        "typescript-language-server": {
-            "binary": {
-                "ignore_system_version": false
-            }
-        },
-        "vscode-html-language-server": {
-            "binary": {
-                "ignore_system_version": false,
-                "path": "vscode-html-language-server",
-                "arguments": ["--stdio"]
-            }
-        },
-        "astro-language-server": {
-            "binary": {
-                "ignore_system_version": false,
-                "path": "astro-ls",
-                "arguments": ["--stdio"]
-            }
-        },
-        "svelte-language-server": {
-            "binary": {
-                "ignore_system_version": false
-            }
-        },
-        "nixd": {
-            "binary": {
-                "ignore_system_version": false
-            }
+    "TSX": {
+      "language_servers": ["tsgo", "typescript-language-server", "!vtsls"],
+      "formatter": {
+        "external": {
+          "command": "treefmt",
+          "arguments": ["--stdin", ".tsx"]
         }
+      },
+      "format_on_save": "on"
     },
-    "load_direnv": "direct"
+    "JavaScript": {
+      "language_servers": ["tsgo", "typescript-language-server", "!vtsls"],
+      "formatter": {
+        "external": {
+          "command": "treefmt",
+          "arguments": ["--stdin", ".js"]
+        }
+      },
+      "format_on_save": "on"
+    },
+    "Astro": {
+      "formatter": {
+        "external": {
+          "command": "treefmt",
+          "arguments": ["--stdin", ".astro"]
+        }
+      },
+      "format_on_save": "on"
+    },
+    "Svelte": {
+      "language_servers": ["svelte-language-server"],
+      "formatter": {
+        "external": {
+          "command": "treefmt",
+          "arguments": ["--stdin", ".svelte"]
+        }
+      },
+      "format_on_save": "on"
+    },
+    "JSX": {
+      "formatter": {
+        "external": {
+          "command": "treefmt",
+          "arguments": ["--stdin", ".jsx"]
+        }
+      },
+      "format_on_save": "on"
+    },
+    "Cairo": {
+      "formatter": {
+        "external": {
+          "command": "cairo-format",
+          "arguments": ["-"]
+        }
+      },
+      "format_on_save": "on"
+    }
+  },
+  "lsp": {
+    "typescript-language-server": {
+      "binary": {
+        "ignore_system_version": false
+      }
+    },
+    "vscode-html-language-server": {
+      "binary": {
+        "ignore_system_version": false,
+        "path": "vscode-html-language-server",
+        "arguments": ["--stdio"]
+      }
+    },
+    "astro-language-server": {
+      "binary": {
+        "ignore_system_version": false,
+        "path": "astro-ls",
+        "arguments": ["--stdio"]
+      }
+    },
+    "svelte-language-server": {
+      "binary": {
+        "ignore_system_version": false
+      }
+    },
+    "nixd": {
+      "binary": {
+        "ignore_system_version": false
+      }
+    }
+  },
+  "load_direnv": "direct"
 }

@@ -583,7 +583,7 @@ maybe_sol_attr! {
     }
 }
 
-/// Conversions between [`alloy::sol!`] generated types and the canonical tyeps in [`ibc_union_spec`].
+/// Conversions between [`alloy::sol!`] generated types and the canonical types in [`ibc_union_spec`].
 pub mod compat {
     use ibc_union_spec::{ChannelId, ClientId, ConnectionId, MustBeZero, Timestamp};
 

@@ -47,7 +47,6 @@ $effect(() => {
 
 <span>
   {eye}<span class:wobble={loading && !sleep}><span>_</span><span>_</span><span>_</span><span
-      
     >_</span><span>_</span><span>_</span><span>_</span></span>{eye}
 </span>
 

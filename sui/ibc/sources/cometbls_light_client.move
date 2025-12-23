@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -206,7 +206,7 @@ module ibc::cometbls_light_client {
         let chain_id = string::utf8(buf.peel_vec_u8());
         let trusting_period = buf.peel_u64();
         let max_clock_drift = buf.peel_u64();
-        let frozen_height = height::decode_bcs(&mut buf); // TODO: Not sure if its correc;
+        let frozen_height = height::decode_bcs(&mut buf); // TODO: Not sure if its correct;
         let latest_height = height::decode_bcs(&mut buf);
         let contract_address = buf.into_remainder_bytes();
 
@@ -398,7 +398,7 @@ module ibc::cometbls_light_client {
 
     public(package) fun get_client_state(
         client: &Client,
-    ): vector<u8> {        
+    ): vector<u8> {
         encode_client_state(&client.client_state)
     }
 

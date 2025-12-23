@@ -1,8 +1,8 @@
 ---
-import ContainedSection from "../components/ContainedSection.astro"
 import AnimationLayout from "#/layouts/AnimationLayout.astro"
 import { contentfulClient } from "#/lib/contentful/client.ts"
 import type { CategoryFields, EcosystemFields, EcosystemSkeleton } from "#/lib/contentful/types.ts"
+import ContainedSection from "../components/ContainedSection.astro"
 
 let ecosystemData: Array<EcosystemFields> | null = null
 let ecosystemCategories: Array<CategoryFields> | null = null
@@ -10,7 +10,7 @@ let error: string | null = null
 
 try {
   const ecosystemEntries = await contentfulClient.getEntries<EcosystemSkeleton>({
-    content_type: "ecosystem"
+    content_type: "ecosystem",
   })
 
   if (ecosystemEntries.items.length > 0) {
@@ -37,7 +37,10 @@ try {
 }
 ---
 
-<AnimationLayout title="Ecosystem" text="Fix finance. Fix the world.">
+<AnimationLayout
+  title="Ecosystem"
+  text="Fix finance. Fix the world."
+>
   <ContainedSection className="flex gap-4 items-start  sm:mt-3">
     <!--
       <H1>Union <span class="text-accent-500">Ecosystem</span></H1>
@@ -65,7 +68,9 @@ try {
             stroke-linecap="round"
             stroke-linejoin="round"
             stroke-width="2"
-            d="M19 9l-7 7-7-7"></path>
+            d="M19 9l-7 7-7-7"
+          >
+          </path>
         </svg>
       </button>
     </div>
@@ -78,7 +83,10 @@ try {
   </ContainedSection>
 
   <ContainedSection className="mt-4">
-    <div id="filterContent" class="hidden">
+    <div
+      id="filterContent"
+      class="hidden"
+    >
       {
         ecosystemCategories.map((category) => (
           <div class="mb-2">
@@ -90,9 +98,11 @@ try {
                 class="sr-only peer"
               />
               <div
-                class="w-5 h-5 flex items-center justify-center border-2 border-gray-400
-                   peer-checked:bg-accent-500 peer-checked:border-accent-500
-                   bg-transparent transition-colors duration-200 ease-in-out mr-2"
+                class="
+                  w-5 h-5 flex items-center justify-center border-2 border-gray-400
+                  peer-checked:bg-accent-500 peer-checked:border-accent-500
+                  bg-transparent transition-colors duration-200 ease-in-out mr-2
+                "
               >
                 <svg
                   class="w-3 h-3 text-white hidden peer-checked:block"
@@ -136,18 +146,19 @@ try {
           />
           <div class="p-3 z-10 flex flex-col justify-end w-full h-full">
             <div class="flex flex-row items-end">
-              <div class="flex flex-col gap-2 w-full items-start ">
+              <div class="flex flex-col gap-2 w-full items-start">
                 <div class="flex flex-col gap-2 items-start justify-start">
-                  {item.category.map((cat) => (
-                    <div
-
-                      class="text-xs whitespace-nowrap uppercase font-mono font-bold px-1.5"
-                      id="card-cat"
-                      style=`background-color: ${cat.fields.bgColor}; color: ${cat.fields.textColor}`
-                    >
-                      {cat.fields.category}
-                    </div>
-                  ))}
+                  {
+                    item.category.map((cat) => (
+                      <div
+                        class="text-xs whitespace-nowrap uppercase font-mono font-bold px-1.5"
+                        id="card-cat"
+                        style={`background-color: ${cat.fields.bgColor}; color: ${cat.fields.textColor}`}
+                      >
+                        {cat.fields.category}
+                      </div>
+                    ))
+                  }
                 </div>
                 <h3 class="text-2xl uppercase font-supermolot font-bold">
                   {item.name}
@@ -167,114 +178,110 @@ try {
 </AnimationLayout>
 
 <script>
-  let globalClickHandler: ((event: MouseEvent) => void) | null = null;
+let globalClickHandler: ((event: MouseEvent) => void) | null = null
 
-  function initializeFilters() {
-    // Clean up existing event listeners if they exist
-    if (globalClickHandler) {
-      document.removeEventListener("click", globalClickHandler);
-      globalClickHandler = null;
-    }
-
-    // Get all required elements
-    const searchInput = document.getElementById(
-      "searchInput",
-    ) as HTMLInputElement;
-    const checkboxes = document.querySelectorAll(
-      'input[type="checkbox"]',
-    ) as NodeListOf<HTMLInputElement>;
-    const cards = document.querySelectorAll(
-      ".ecosystem-card",
-    ) as NodeListOf<HTMLDivElement>;
-    const filterToggle = document.getElementById("filterToggle");
-    const filterContent = document.getElementById("filterContent");
-
-    // Guard clause - if required elements aren't found, exit early
-    if (!searchInput || !filterToggle || !filterContent) {
-      console.warn("Required elements not found. Check HTML IDs.");
-      return;
-    }
-
-    const filterIcon = filterToggle.querySelector("svg");
-
-    // Remove existing event listeners from elements
-    const oldInput = searchInput.cloneNode(true) as HTMLInputElement;
-    searchInput.parentNode?.replaceChild(oldInput, searchInput);
-
-    checkboxes.forEach((checkbox) => {
-      const oldCheckbox = checkbox.cloneNode(true) as HTMLInputElement;
-      checkbox.parentNode?.replaceChild(oldCheckbox, checkbox);
-    });
-
-    const oldFilterToggle = filterToggle.cloneNode(true);
-    filterToggle.parentNode?.replaceChild(oldFilterToggle, filterToggle);
-
-    // Get fresh references after replacement
-    const newSearchInput = document.getElementById(
-      "searchInput",
-    ) as HTMLInputElement;
-    const newCheckboxes = document.querySelectorAll(
-      'input[type="checkbox"]',
-    ) as NodeListOf<HTMLInputElement>;
-    const newFilterToggle = document.getElementById("filterToggle");
-    const newFilterIcon = newFilterToggle?.querySelector("svg");
-
-    function filterCards(): void {
-      const searchTerm = newSearchInput.value.toLowerCase();
-      const selectedCategories = Array.from(newCheckboxes)
-        .filter((cb) => cb.checked)
-        .map((cb) => cb.value.toLowerCase().trim());
-
-      cards.forEach((card) => {
-        const nameElement = card.querySelector("h3");
-        const name = nameElement?.textContent?.toLowerCase() || "";
-        const categoryElements = card.querySelectorAll("#card-cat");
-        const categories = Array.from(categoryElements).map(
-          (el) => el.textContent?.toLowerCase().trim() || "",
-        );
-
-        const matchesSearch = name.includes(searchTerm);
-        const matchesCategory =
-          selectedCategories.length === 0 ||
-          categories.some((cardCat) => selectedCategories.includes(cardCat));
-
-        if (matchesSearch && matchesCategory) {
-          card.classList.remove("hidden");
-        } else {
-          card.classList.add("hidden");
-        }
-      });
-    }
-
-    // Add new event listeners
-    newSearchInput.addEventListener("input", filterCards);
-    newCheckboxes.forEach((checkbox) =>
-      checkbox.addEventListener("change", filterCards),
-    );
-
-    newFilterToggle?.addEventListener("click", () => {
-      filterContent.classList.toggle("hidden");
-      newFilterIcon?.classList.toggle("rotate-180");
-    });
-
-    // Create and store new global click handler
-    globalClickHandler = (event: MouseEvent) => {
-      const target = event.target as Node;
-      const isClickInsideFilter =
-        newFilterToggle?.contains(target) || filterContent.contains(target);
-
-      if (!isClickInsideFilter && window.innerWidth < 768) {
-        filterContent.classList.add("hidden");
-        newFilterIcon?.classList.remove("rotate-180");
-      }
-    };
-
-    document.addEventListener("click", globalClickHandler);
+function initializeFilters() {
+  // Clean up existing event listeners if they exist
+  if (globalClickHandler) {
+    document.removeEventListener("click", globalClickHandler)
+    globalClickHandler = null
   }
 
-  document.addEventListener("astro:page-load", initializeFilters);
-  // Re-initialize on client-side navigation
-  document.addEventListener("astro:after-swap", initializeFilters);
-  // Initial call to set up filters
-  initializeFilters();
+  // Get all required elements
+  const searchInput = document.getElementById(
+    "searchInput",
+  ) as HTMLInputElement
+  const checkboxes = document.querySelectorAll(
+    "input[type=\"checkbox\"]",
+  ) as NodeListOf<HTMLInputElement>
+  const cards = document.querySelectorAll(
+    ".ecosystem-card",
+  ) as NodeListOf<HTMLDivElement>
+  const filterToggle = document.getElementById("filterToggle")
+  const filterContent = document.getElementById("filterContent")
+
+  // Guard clause - if required elements aren't found, exit early
+  if (!searchInput || !filterToggle || !filterContent) {
+    console.warn("Required elements not found. Check HTML IDs.")
+    return
+  }
+
+  const filterIcon = filterToggle.querySelector("svg")
+
+  // Remove existing event listeners from elements
+  const oldInput = searchInput.cloneNode(true) as HTMLInputElement
+  searchInput.parentNode?.replaceChild(oldInput, searchInput)
+
+  checkboxes.forEach((checkbox) => {
+    const oldCheckbox = checkbox.cloneNode(true) as HTMLInputElement
+    checkbox.parentNode?.replaceChild(oldCheckbox, checkbox)
+  })
+
+  const oldFilterToggle = filterToggle.cloneNode(true)
+  filterToggle.parentNode?.replaceChild(oldFilterToggle, filterToggle)
+
+  // Get fresh references after replacement
+  const newSearchInput = document.getElementById(
+    "searchInput",
+  ) as HTMLInputElement
+  const newCheckboxes = document.querySelectorAll(
+    "input[type=\"checkbox\"]",
+  ) as NodeListOf<HTMLInputElement>
+  const newFilterToggle = document.getElementById("filterToggle")
+  const newFilterIcon = newFilterToggle?.querySelector("svg")
+
+  function filterCards(): void {
+    const searchTerm = newSearchInput.value.toLowerCase()
+    const selectedCategories = Array.from(newCheckboxes)
+      .filter((cb) => cb.checked)
+      .map((cb) => cb.value.toLowerCase().trim())
+
+    cards.forEach((card) => {
+      const nameElement = card.querySelector("h3")
+      const name = nameElement?.textContent?.toLowerCase() || ""
+      const categoryElements = card.querySelectorAll("#card-cat")
+      const categories = Array.from(categoryElements).map(
+        (el) => el.textContent?.toLowerCase().trim() || "",
+      )
+
+      const matchesSearch = name.includes(searchTerm)
+      const matchesCategory = selectedCategories.length === 0
+        || categories.some((cardCat) => selectedCategories.includes(cardCat))
+
+      if (matchesSearch && matchesCategory) {
+        card.classList.remove("hidden")
+      } else {
+        card.classList.add("hidden")
+      }
+    })
+  }
+
+  // Add new event listeners
+  newSearchInput.addEventListener("input", filterCards)
+  newCheckboxes.forEach((checkbox) => checkbox.addEventListener("change", filterCards))
+
+  newFilterToggle?.addEventListener("click", () => {
+    filterContent.classList.toggle("hidden")
+    newFilterIcon?.classList.toggle("rotate-180")
+  })
+
+  // Create and store new global click handler
+  globalClickHandler = (event: MouseEvent) => {
+    const target = event.target as Node
+    const isClickInsideFilter = newFilterToggle?.contains(target) || filterContent.contains(target)
+
+    if (!isClickInsideFilter && window.innerWidth < 768) {
+      filterContent.classList.add("hidden")
+      newFilterIcon?.classList.remove("rotate-180")
+    }
+  }
+
+  document.addEventListener("click", globalClickHandler)
+}
+
+document.addEventListener("astro:page-load", initializeFilters)
+// Re-initialize on client-side navigation
+document.addEventListener("astro:after-swap", initializeFilters)
+// Initial call to set up filters
+initializeFilters()
 </script>

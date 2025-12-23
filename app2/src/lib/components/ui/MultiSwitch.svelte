@@ -1,6 +1,14 @@
 <script
   lang="ts"
-  generics="K, T extends { key: K, label: string, disabled?: boolean | undefined, class?: string | undefined }[]"
+  generics="
+  K,
+  T extends {
+    key: K
+    label: string
+    disabled?: boolean | undefined
+    class?: string | undefined
+  }[],
+"
 >
 import { cn } from "$lib/utils"
 
