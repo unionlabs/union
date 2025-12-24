@@ -12,7 +12,7 @@ use sui_sdk::{
         base_types::ObjectID, committee::EpochId, full_checkpoint_content::CheckpointTransaction,
     },
 };
-use tracing::instrument;
+use tracing::{info, instrument};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
     DefaultCmd, anyhow,
@@ -178,6 +178,7 @@ impl Module {
 
         let mut is_first = true;
         for epoch in from..to {
+            info!(%epoch, "fetching epoch");
             let query = json!({
               "query": "query ($epoch_id: UInt53) { epoch(epochId: $epoch_id) { checkpoints(last: 1) { edges { node { sequenceNumber } } }  } }",
               "variables": { "epoch_id": epoch }
@@ -189,10 +190,18 @@ impl Module {
                 .body(query.to_string())
                 .send()
                 .await
-                .unwrap()
+                .map_err(RpcError::retryable("error fetching epoch checkpoint"))?
+                .error_for_status()
+                .map_err(RpcError::retryable(
+                    "error fetching epoch checkpoint: error status",
+                ))?
                 .text()
                 .await
-                .unwrap();
+                .map_err(RpcError::retryable(
+                    "error fetching epoch checkpoint: error reading text from body",
+                ))?;
+
+            info!(%resp);
 
             let v: serde_json::Value = serde_json::from_str(&resp).unwrap();
 
