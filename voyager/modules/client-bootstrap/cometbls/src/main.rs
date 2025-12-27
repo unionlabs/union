@@ -7,7 +7,7 @@ use cometbls_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{error, instrument};
+use tracing::instrument;
 use unionlabs::{
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     primitives::{Bech32, H256},

@@ -9,7 +9,7 @@ use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tendermint_light_client_types::{ClientState, ConsensusState, Fraction};
-use tracing::{error, info, instrument};
+use tracing::{info, instrument};
 use unionlabs::{
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     primitives::{Bech32, H256},

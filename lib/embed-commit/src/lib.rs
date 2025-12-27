@@ -4,7 +4,7 @@ use bytemuck::CheckedBitPattern;
 
 /// The git rev of the code, as supplied at build time. On `wasm32` targets, this is available via the `commit_hash` export.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, CheckedBitPattern)]
-#[repr(C, u64)]
+#[repr(u64)]
 #[rustfmt::skip]
 pub enum Rev {
     /// The state of the build is unknown (i.e. `GIT_REV` was not set).
@@ -115,4 +115,42 @@ pub static GIT_REV: Rev = match option_env!("GIT_REV") {
 #[unsafe(no_mangle)]
 pub extern "C" fn commit_hash() -> Rev {
     unsafe { core::ptr::read_volatile(&GIT_REV as *const _) }
+}
+
+#[test]
+fn size() {
+    assert_eq!(size_of::<Rev>(), 32);
+}
+
+#[test]
+fn bytes() {
+    assert_eq!(
+        bytemuck::checked::from_bytes::<Rev>(
+            &const_hex::decode_to_array::<_, 32>(
+                "6E776F6E6B6E7500000000000000000000000000000000000000000000000000"
+            )
+            .unwrap()
+        ),
+        &Rev::Unknown
+    );
+
+    assert_eq!(
+        bytemuck::checked::from_bytes::<Rev>(
+            &const_hex::decode_to_array::<_, 32>(
+                "7974726964000000000000000000000000000000000000000000000000000000"
+            )
+            .unwrap()
+        ),
+        &Rev::Dirty
+    );
+
+    assert_eq!(
+        bytemuck::checked::from_bytes::<Rev>(
+            &const_hex::decode_to_array::<_, 32>(
+                "6873616800000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000"
+            )
+            .unwrap()
+        ),
+        &Rev::Hash([0xff; 20])
+    );
 }

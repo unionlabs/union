@@ -6,7 +6,7 @@ use ibc_union_spec::{IbcUnion, path::StorePath};
 use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{error, instrument, warn};
+use tracing::{instrument, warn};
 use unionlabs::{
     bounded::BoundedI64,
     cosmos::ics23::commitment_proof::CommitmentProof,

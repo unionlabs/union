@@ -7,7 +7,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use tracing::{debug, error, field::display as as_display, info};
+use tracing::{debug, field::display as as_display, info};
 
 /// Bundles should have the following structure on the filesystem:
 ///

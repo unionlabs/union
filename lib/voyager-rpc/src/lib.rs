@@ -66,9 +66,9 @@ impl From<RpcError> for QueueError {
                 ty,
                 value.message,
                 if value.data.is_null() {
-                    format_args!("")
+                    String::new()
                 } else {
-                    format_args!(" ({})", value.data)
+                    format!(" ({})", value.data)
                 }
             )
         };
