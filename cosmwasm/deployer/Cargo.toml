@@ -12,36 +12,29 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-access-manager-types        = { workspace = true }
-anyhow                      = { workspace = true, features = ["std"] }
-bip32                       = { workspace = true }
-clap                        = { workspace = true, features = ["derive", "error-context", "help", "env"] }
-cometbft-rpc                = { workspace = true }
-cosmos-client               = { workspace = true }
-cosmos-signer               = { workspace = true }
-cosmwasm-std                = { workspace = true, features = ["std"] }
-cw-escrow-vault             = { workspace = true, features = ["library"] }
-cw20                        = { workspace = true }
-cw20-base                   = { workspace = true }
-embed-commit                = { workspace = true }
-flate2                      = "1.1.5"
-frissitheto                 = { workspace = true }
-futures                     = { workspace = true }
-hex-literal                 = { workspace = true }
-ibc-union                   = { workspace = true, features = ["library"] }
-ibc-union-light-client      = { workspace = true }
-ibc-union-msg               = { workspace = true }
-num-rational                = "0.4.2"
-on-zkgm-call-proxy          = { workspace = true, features = ["library"] }
-protos                      = { workspace = true }
-rand                        = { workspace = true }
-rand_chacha                 = "0.3.1"
-serde                       = { workspace = true, features = ["derive"] }
-serde_json                  = { workspace = true }
-sha2                        = { workspace = true }
-tokio                       = { workspace = true, features = ["full"] }
-tracing                     = { workspace = true }
-tracing-subscriber          = { workspace = true, features = ["env-filter", "fmt", "ansi"] }
-ucs03-zkgm                  = { workspace = true, features = ["library"] }
-ucs03-zkgm-token-minter-api = { workspace = true }
-unionlabs                   = { workspace = true, features = ["proto"] }
+access-manager-types   = { workspace = true }
+anyhow                 = { workspace = true, features = ["std"] }
+bip32                  = { workspace = true }
+clap                   = { workspace = true, features = ["derive", "error-context", "help", "env"] }
+cometbft-rpc           = { workspace = true }
+cosmos-client          = { workspace = true }
+cosmos-signer          = { workspace = true }
+cosmwasm-std           = { workspace = true, features = ["std"] }
+cw-escrow-vault        = { workspace = true, features = ["library"] }
+cw20                   = { workspace = true }
+embed-commit           = { workspace = true }
+flate2                 = "1.1.5"
+futures                = { workspace = true }
+hex-literal            = { workspace = true }
+ibc-union-light-client = { workspace = true }
+ibc-union-msg          = { workspace = true }
+protos                 = { workspace = true }
+rand_chacha            = "0.3.1"
+serde                  = { workspace = true, features = ["derive"] }
+serde_json             = { workspace = true }
+sha2                   = { workspace = true }
+tokio                  = { workspace = true, features = ["full"] }
+tracing                = { workspace = true }
+tracing-subscriber     = { workspace = true, features = ["env-filter", "fmt", "ansi"] }
+ucs03-zkgm             = { workspace = true, features = ["library"] }
+unionlabs              = { workspace = true, features = ["proto"] }

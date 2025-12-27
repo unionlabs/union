@@ -15,20 +15,18 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-bincode              = { workspace = true, features = ["derive"] }
-cosmwasm-event       = { workspace = true }
-cosmwasm-std         = { workspace = true }
-cw-account           = { workspace = true, features = ["library"] }
-cw-utils             = { workspace = true }
-depolama             = { workspace = true, features = ["iterator"] }
-embed-commit         = { workspace = true }
-frissitheto          = { workspace = true }
-lst                  = { workspace = true, features = ["library"] }
-schemars             = { workspace = true, optional = true, features = ["derive"] }
-serde                = { workspace = true, features = ["derive"] }
-thiserror            = { workspace = true }
-unionlabs-encoding   = { workspace = true, features = ["bincode"] }
-unionlabs-primitives = { workspace = true, features = ["bincode"] }
+cosmwasm-event     = { workspace = true }
+cosmwasm-std       = { workspace = true }
+cw-account         = { workspace = true, features = ["library"] }
+cw-utils           = { workspace = true }
+depolama           = { workspace = true, features = ["iterator"] }
+embed-commit       = { workspace = true }
+frissitheto        = { workspace = true }
+lst                = { workspace = true, features = ["library"] }
+schemars           = { workspace = true, optional = true, features = ["derive"] }
+serde              = { workspace = true, features = ["derive"] }
+thiserror          = { workspace = true }
+unionlabs-encoding = { workspace = true, features = ["bincode"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

@@ -21,7 +21,6 @@ prost          = { workspace = true }
 protos         = { workspace = true }
 serde          = { workspace = true, features = ["derive"] }
 serde_json     = { workspace = true }
-thiserror      = { workspace = true }
 tokio          = { workspace = true }
 tracing        = { workspace = true }
 unionlabs      = { workspace = true }

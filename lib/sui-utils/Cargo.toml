@@ -2,9 +2,6 @@
 name    = "sui-utils"
 version = "0.0.0"
 
-license = "Apache-2.0"
-readme  = "../README.md"
-
 authors    = { workspace = true }
 edition    = { workspace = true }
 publish    = { workspace = true }
@@ -14,7 +11,7 @@ repository = { workspace = true }
 bcs             = { workspace = true }
 move-core-types = { workspace = true }
 serde           = { workspace = true, features = ["derive"] }
-sui_sdk         = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+sui-sdk         = { workspace = true }
 thiserror       = { workspace = true }
 
 [lints]

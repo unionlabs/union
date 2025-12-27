@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 base64          = { workspace = true }
+bip32           = { workspace = true, features = ["alloc", "secp256k1"] }
 bip39           = "2.1.0"
 clap            = { workspace = true, features = ["derive", "error-context", "help"] }
 cosmwasm-std    = { workspace = true }
@@ -20,5 +21,4 @@ ed25519-compact = { version = "2.1.1", default-features = false, features = ["ed
 embed-commit    = { workspace = true }
 hex             = { workspace = true, features = ["std"] }
 strum           = { workspace = true, features = ["default", "derive"] }
-tiny-hderive    = "0.3.0"
 unionlabs       = { workspace = true }

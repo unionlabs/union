@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-async-sqlite         = "0.2.2"
+async-sqlite         = { workspace = true, features = ["default"] }
 base64               = { workspace = true }
 crossterm            = "0.27.0"
 embed-commit         = { workspace = true }

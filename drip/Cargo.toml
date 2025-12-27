@@ -15,11 +15,10 @@ workspace = true
 anyhow             = { workspace = true }
 async-graphql      = "7.0.17"
 async-graphql-axum = "7.0.17"
-async-sqlite       = { version = "0.2.2", features = ["bundled", "array", "vtab"] }
+async-sqlite       = { workspace = true, features = ["bundled", "array", "vtab"] }
 axum               = { workspace = true }
 chrono             = { workspace = true, features = ["clock"] }
 clap               = { workspace = true, features = ["derive"] }
-cometbft-rpc       = { workspace = true }
 cosmos-client      = { workspace = true }
 embed-commit       = { workspace = true }
 prost              = { workspace = true }

@@ -54,9 +54,9 @@ pub struct App {
 #[derive(Debug, Clone, PartialEq, Default, clap::ValueEnum, derive_more::Display)]
 pub enum LogFormat {
     #[default]
-    #[display(fmt = "text")]
+    #[display("text")]
     Text,
-    #[display(fmt = "json")]
+    #[display("json")]
     Json,
 }
 

@@ -16,7 +16,6 @@ workspace = true
 
 [dependencies]
 cosmwasm-std = { workspace = true }
-cw20         = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

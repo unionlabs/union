@@ -154,7 +154,7 @@ fn main() -> ExitCode {
                 })
         })
         .fold(BTreeMap::<_, Vec<_>>::new(), |mut acc, (package, dep)| {
-            acc.entry(dep).or_default().push(&**package);
+            acc.entry(dep).or_default().push(package.as_str());
             acc
         })
         .into_iter()

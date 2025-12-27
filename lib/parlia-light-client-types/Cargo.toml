@@ -17,9 +17,7 @@ bincode                     = { workspace = true, features = ["alloc", "derive"]
 ethereum-light-client-types = { workspace = true }
 ibc-union-spec              = { workspace = true }
 parlia-types                = { workspace = true }
-rlp                         = { workspace = true, features = ["derive"] }
 serde                       = { workspace = true, optional = true, features = ["derive"] }
-sha3                        = { workspace = true }
 unionlabs                   = { workspace = true, features = ["rlp"] }
 
 [dev-dependencies]

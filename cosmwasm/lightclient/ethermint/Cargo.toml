@@ -19,16 +19,14 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cometbft-types                = { workspace = true, features = ["hash"] }
-cosmwasm-std                  = { workspace = true, features = ["abort"] }
+cosmwasm-std                  = { workspace = true }
 embed-commit                  = { workspace = true }
-ethermint-light-client-types  = { workspace = true, features = ["serde", "bincode"] }
+ethermint-light-client-types  = { workspace = true, features = ["bincode"] }
 frissitheto                   = { workspace = true }
 ibc-union-light-client        = { workspace = true }
-ibc-union-msg                 = { workspace = true }
 ics23                         = { workspace = true }
-serde                         = { workspace = true, features = ["derive"] }
 tendermint-light-client       = { workspace = true, features = ["library"] }
-tendermint-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+tendermint-light-client-types = { workspace = true, features = ["ethabi", "bincode"] }
 tendermint-verifier           = { workspace = true }
 thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true }
@@ -40,3 +38,4 @@ lazy_static           = "1.5.0"
 serde_json            = { workspace = true }
 
 [features]
+default = []

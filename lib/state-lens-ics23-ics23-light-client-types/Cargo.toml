@@ -17,7 +17,6 @@ bincode                       = { workspace = true, optional = true, features = 
 ibc-union-spec                = { workspace = true }
 serde                         = { workspace = true, optional = true, features = ["derive"] }
 state-lens-light-client-types = { workspace = true }
-thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true }
 
 [dev-dependencies]

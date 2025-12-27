@@ -32,7 +32,6 @@ serde                       = { workspace = true, features = ["derive"] }
 serde-json-wasm             = { workspace = true }
 serde-utils                 = { workspace = true }
 thiserror                   = { workspace = true }
-token-factory-api           = { workspace = true }
 ucs03-solvable              = { workspace = true }
 ucs03-zkgm-token-minter-api = { workspace = true }
 ucs03-zkgmable              = { workspace = true }

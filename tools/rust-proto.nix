@@ -45,7 +45,6 @@
             dependencies = {
               prost = {
                 workspace = true;
-                features = [ "prost-derive" ];
               };
               serde = {
                 workspace = true;

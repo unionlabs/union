@@ -5,7 +5,9 @@ use sui_sdk::{
     types::{
         base_types::{ObjectID, SequenceNumber, SuiAddress},
         programmable_transaction_builder::ProgrammableTransactionBuilder,
-        transaction::{Argument, CallArg, Command, ObjectArg, TransactionKind},
+        transaction::{
+            Argument, CallArg, Command, ObjectArg, SharedObjectMutability, TransactionKind,
+        },
     },
 };
 
@@ -42,7 +44,7 @@ impl<'a> SuiQuery<'a> {
             params: vec![CallArg::Object(ObjectArg::SharedObject {
                 id: store_object_id,
                 initial_shared_version: store_initial_seq,
-                mutable: false,
+                mutability: SharedObjectMutability::Immutable,
             })],
         }
     }

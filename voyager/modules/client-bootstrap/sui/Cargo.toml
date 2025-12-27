@@ -13,16 +13,13 @@ workspace = true
 
 [dependencies]
 bcs                    = { workspace = true }
-cosmwasm-std           = { workspace = true }
 embed-commit           = { workspace = true }
-hex-literal            = { workspace = true }
 jsonrpsee              = { workspace = true, features = ["macros", "server", "tracing"] }
 reqwest                = { workspace = true }
 serde                  = { workspace = true, features = ["derive"] }
 serde_json             = { workspace = true }
 sui-light-client-types = { workspace = true, features = ["serde"] }
 sui-sdk                = { workspace = true }
-thiserror              = { workspace = true }
 tokio                  = { workspace = true }
 tracing                = { workspace = true }
 unionlabs              = { workspace = true }

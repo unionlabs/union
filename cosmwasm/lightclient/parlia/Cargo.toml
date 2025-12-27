@@ -22,15 +22,12 @@ cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm
 depolama                    = { workspace = true }
 embed-commit                = { workspace = true }
 ethereum-light-client       = { workspace = true, features = ["library"] }
-ethereum-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
+ethereum-light-client-types = { workspace = true, features = ["ethabi"] }
 evm-storage-verifier        = { workspace = true }
 frissitheto                 = { workspace = true }
 ibc-union-light-client      = { workspace = true }
-ibc-union-msg               = { workspace = true }
-ics23                       = { workspace = true }
-parlia-light-client-types   = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+parlia-light-client-types   = { workspace = true, features = ["ethabi", "bincode"] }
 parlia-types                = { workspace = true, features = ["bincode"] }
 parlia-verifier             = { workspace = true }
-serde                       = { workspace = true, features = ["derive"] }
 thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true }

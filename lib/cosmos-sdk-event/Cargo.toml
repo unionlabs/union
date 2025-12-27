@@ -13,7 +13,6 @@ workspace = true
 
 [dependencies]
 cometbft-types = { workspace = true }
-enumorph       = { workspace = true }
 serde          = { workspace = true }
 serde_json     = { workspace = true }
 thiserror      = { workspace = true }

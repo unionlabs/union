@@ -16,10 +16,8 @@ alloy                         = { workspace = true, optional = true, features = 
 bincode                       = { workspace = true, optional = true, features = ["alloc", "derive"] }
 consensus-primitives          = { workspace = true }
 ibc-union-spec                = { workspace = true }
-protos                        = { workspace = true, optional = true, features = ["proto_full", "serde"] }
 serde                         = { workspace = true, optional = true, features = ["derive"] }
 state-lens-light-client-types = { workspace = true }
-thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true, features = ["ethabi", "proto"] }
 
 [dev-dependencies]
@@ -31,5 +29,5 @@ unionlabs                               = { workspace = true, features = ["test-
 default = []
 
 bincode = ["dep:bincode", "unionlabs/bincode", "state-lens-light-client-types/bincode"]
-ethabi  = ["unionlabs/ethabi", "dep:alloy", "dep:protos", "state-lens-light-client-types/ethabi"]
+ethabi  = ["unionlabs/ethabi", "dep:alloy", "state-lens-light-client-types/ethabi"]
 serde   = ["dep:serde", "state-lens-light-client-types/serde"]

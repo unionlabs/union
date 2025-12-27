@@ -16,7 +16,6 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 access-manager-types = { workspace = true }
-bincode              = { workspace = true, features = ["derive"] }
 cosmwasm-std         = { workspace = true, features = ["cosmwasm_1_3", "staking"] }
 depolama             = { workspace = true, features = ["iterator"] }
 embed-commit         = { workspace = true }
@@ -24,12 +23,8 @@ frissitheto          = { workspace = true }
 schemars             = { workspace = true, optional = true }
 serde                = { workspace = true, features = ["derive"] }
 serde-json-wasm      = { workspace = true }
-serde-utils          = { workspace = true }
-sha2                 = { workspace = true }
-strum                = { workspace = true, features = ["derive"] }
 thiserror            = { workspace = true }
 unionlabs-encoding   = { workspace = true, features = ["bincode"] }
-unionlabs-primitives = { workspace = true, features = ["bincode", "serde", "generic-array-compat"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

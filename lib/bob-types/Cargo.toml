@@ -12,6 +12,5 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy       = { workspace = true, features = ["sol-types", "contract"] }
 hex-literal = { workspace = true }
 unionlabs   = { workspace = true }

@@ -23,7 +23,6 @@ serde_json             = { workspace = true }
 subset-of              = { workspace = true }
 sui-light-client-types = { workspace = true, features = ["serde", "bincode"] }
 sui-sdk                = { workspace = true }
-thiserror              = { workspace = true }
 tokio                  = { workspace = true }
 tracing                = { workspace = true }
 unionlabs              = { workspace = true }

@@ -17,8 +17,6 @@ base-light-client-types = { workspace = true, features = ["ethabi", "serde"] }
 evm-storage-verifier    = { workspace = true }
 ibc-union-spec          = { workspace = true }
 rlp                     = { workspace = true }
-sha3                    = { workspace = true }
-ssz                     = { workspace = true }
 thiserror               = { workspace = true }
 unionlabs               = { workspace = true }
 

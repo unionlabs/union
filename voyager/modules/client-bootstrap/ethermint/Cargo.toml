@@ -17,7 +17,7 @@ embed-commit                  = { workspace = true }
 ethermint-light-client-types  = { workspace = true, features = ["serde"] }
 ics23                         = { workspace = true }
 jsonrpsee                     = { workspace = true, features = ["macros", "server", "tracing"] }
-prost                         = { workspace = true, features = ["prost-derive"] }
+prost                         = { workspace = true, features = ["derive"] }
 protos                        = { workspace = true }
 serde                         = { workspace = true, features = ["derive"] }
 serde_json                    = { workspace = true }

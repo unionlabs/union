@@ -12,20 +12,16 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                       = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
-attested-light-client       = { workspace = true }
-attested-light-client-types = { workspace = true, features = ["serde"] }
-clap                        = { workspace = true, features = ["derive"] }
-cometbft-rpc                = { workspace = true }
-embed-commit                = { workspace = true }
-ibc-union-spec              = { workspace = true, features = ["serde"] }
-jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
-prost                       = { workspace = true }
-protos                      = { workspace = true }
-serde                       = { workspace = true, features = ["derive"] }
-serde_json                  = { workspace = true }
-thiserror                   = { workspace = true }
-tokio                       = { workspace = true }
-tracing                     = { workspace = true }
-unionlabs                   = { workspace = true }
-voyager-sdk                 = { workspace = true }
+alloy                 = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
+attested-light-client = { workspace = true }
+cometbft-rpc          = { workspace = true }
+embed-commit          = { workspace = true }
+ibc-union-spec        = { workspace = true, features = ["serde"] }
+jsonrpsee             = { workspace = true, features = ["macros", "server", "tracing"] }
+protos                = { workspace = true }
+serde                 = { workspace = true, features = ["derive"] }
+serde_json            = { workspace = true }
+tokio                 = { workspace = true }
+tracing               = { workspace = true }
+unionlabs             = { workspace = true }
+voyager-sdk           = { workspace = true }

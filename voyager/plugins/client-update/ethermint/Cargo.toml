@@ -16,7 +16,6 @@ cometbft-rpc                  = { workspace = true }
 cometbft-types                = { workspace = true }
 embed-commit                  = { workspace = true }
 enumorph                      = { workspace = true }
-ethermint-light-client-types  = { workspace = true, features = ["serde"] }
 jsonrpsee                     = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                        = { workspace = true }
 serde                         = { workspace = true, features = ["derive"] }

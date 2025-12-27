@@ -15,7 +15,7 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-cosmwasm-std   = { workspace = true, features = ["abort"] }
+cosmwasm-std   = { workspace = true }
 depolama       = { workspace = true }
 embed-commit   = { workspace = true }
 frissitheto    = { workspace = true }

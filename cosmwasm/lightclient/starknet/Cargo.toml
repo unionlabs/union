@@ -23,9 +23,7 @@ embed-commit                = { workspace = true }
 ethereum-light-client       = { workspace = true }
 frissitheto                 = { workspace = true }
 ibc-union-light-client      = { workspace = true }
-ibc-union-msg               = { workspace = true }
-serde                       = { workspace = true, features = ["derive"] }
-starknet-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+starknet-light-client-types = { workspace = true, features = ["ethabi", "bincode"] }
 starknet-storage-verifier   = { workspace = true }
 starknet-types              = { workspace = true }
 starknet-verifier           = { workspace = true }

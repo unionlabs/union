@@ -22,7 +22,6 @@ futures                          = { workspace = true }
 ibc-union-spec                   = { workspace = true, features = ["serde", "ethabi"] }
 jsonrpsee                        = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                           = { workspace = true }
-ripemd                           = { workspace = true }
 serde                            = { workspace = true, features = ["derive"] }
 serde_json                       = { workspace = true }
 sqlx                             = { workspace = true, features = ["macros", "postgres", "runtime-tokio"] }

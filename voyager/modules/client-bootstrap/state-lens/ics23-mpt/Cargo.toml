@@ -12,10 +12,6 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                                   = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
-beacon-api                              = { workspace = true }
-beacon-api-types                        = { workspace = true, features = ["serde"] }
-cometbft-rpc                            = { workspace = true }
 embed-commit                            = { workspace = true }
 ibc-union-spec                          = { workspace = true, features = ["serde"] }
 jsonrpsee                               = { workspace = true, features = ["macros", "server", "tracing"] }

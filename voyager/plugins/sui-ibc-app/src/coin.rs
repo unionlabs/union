@@ -4,7 +4,7 @@ use sui_sdk::types::{
     TypeTag,
     base_types::{ObjectID, ObjectRef},
     programmable_transaction_builder::ProgrammableTransactionBuilder,
-    transaction::{Argument, CallArg, Command, ObjectArg},
+    transaction::{Argument, CallArg, Command, ObjectArg, SharedObjectMutability},
 };
 
 pub async fn update_name(
@@ -88,7 +88,7 @@ async fn call_coin_setter<T: Serialize>(
         CallArg::Object(ObjectArg::SharedObject {
             id: metadata_ref.0,
             initial_shared_version: metadata_ref.1,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         CallArg::Pure(bcs::to_bytes(&data).unwrap()),
     ]

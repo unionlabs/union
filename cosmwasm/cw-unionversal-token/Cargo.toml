@@ -18,7 +18,6 @@ workspace = true
 access-managed            = { workspace = true }
 bincode                   = { workspace = true }
 cosmwasm-std              = { workspace = true, features = ["cosmwasm_1_3", "iterator"] }
-cw-storage-plus           = { workspace = true }
 cw20                      = { workspace = true }
 cw20-base                 = { workspace = true, features = ["library"] }
 cw20-ctx                  = { workspace = true }

@@ -18,16 +18,13 @@ test-include = []
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-base-light-client-types     = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+base-light-client-types     = { workspace = true, features = ["ethabi", "bincode"] }
 base-verifier               = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
 embed-commit                = { workspace = true }
 ethereum-light-client       = { workspace = true, features = ["library"] }
-ethereum-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
-evm-storage-verifier        = { workspace = true }
+ethereum-light-client-types = { workspace = true, features = ["ethabi"] }
 frissitheto                 = { workspace = true }
 ibc-union-light-client      = { workspace = true }
-ibc-union-msg               = { workspace = true }
-serde                       = { workspace = true, features = ["derive"] }
 thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true }

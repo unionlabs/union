@@ -19,27 +19,22 @@ cw-orch-interface = ["dep:cw-orch", "ibc-union-msg/cw-orch-interface"]
 library           = []
 
 [dependencies]
-access-managed   = { workspace = true }
-alloy-primitives = { workspace = true }
-alloy-sol-types  = { workspace = true }
-cosmwasm-event   = { workspace = true }
-cosmwasm-schema  = { workspace = true }
-cosmwasm-std     = { workspace = true, features = ["abort", "iterator"] }
-cw-orch          = { workspace = true, optional = true }
-depolama         = { workspace = true }
-embed-commit     = { workspace = true }
-ethabi           = { workspace = true }
-frissitheto      = { workspace = true }
-hex              = { workspace = true }
-ibc-union-msg    = { workspace = true }
-ibc-union-spec   = { workspace = true, features = ["ethabi", "serde", "bincode"] }
-pausable         = { workspace = true }
-serde            = { workspace = true, features = ["derive"] }
-serde-json-wasm  = { workspace = true }
-strum            = { workspace = true, features = ["derive"] }
-thiserror        = { workspace = true }
-unionlabs        = { workspace = true, features = ["ethabi", "bincode"] }
-upgradable       = { workspace = true }
+access-managed  = { workspace = true }
+alloy-sol-types = { workspace = true }
+cosmwasm-event  = { workspace = true }
+cosmwasm-std    = { workspace = true, features = ["abort", "iterator"] }
+cw-orch         = { workspace = true, optional = true }
+depolama        = { workspace = true }
+embed-commit    = { workspace = true }
+frissitheto     = { workspace = true }
+ibc-union-msg   = { workspace = true }
+ibc-union-spec  = { workspace = true, features = ["ethabi", "serde", "bincode"] }
+serde           = { workspace = true, features = ["derive"] }
+serde-json-wasm = { workspace = true }
+strum           = { workspace = true, features = ["derive"] }
+thiserror       = { workspace = true }
+unionlabs       = { workspace = true, features = ["ethabi", "bincode"] }
+upgradable      = { workspace = true }
 
 [dev-dependencies]
 access-manager-types = { workspace = true }

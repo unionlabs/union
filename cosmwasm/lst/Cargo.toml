@@ -11,30 +11,29 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-bincode         = { workspace = true, features = ["derive"] }
-cosmwasm-event  = { workspace = true }
-cosmwasm-schema = { workspace = true, optional = true }
-cosmwasm-std    = { workspace = true, features = ["cosmwasm_2_0"] }
-cw-utils        = { workspace = true }
-cw20            = { workspace = true }
-depolama        = { workspace = true, features = ["iterator"] }
-embed-commit    = { workspace = true }
-frissitheto     = { workspace = true }
-ibc-union-spec  = { workspace = true, features = ["serde", "bincode"] }
-itertools       = { workspace = true }
-# TODO: Add back when the unbonding period is queryable from the chain
-# prost                = { workspace = true, features = ["prost-derive"] }
+bincode              = { workspace = true, features = ["derive"] }
+cosmwasm-event       = { workspace = true }
+cosmwasm-schema      = { workspace = true, optional = true }
+cosmwasm-std         = { workspace = true, features = ["cosmwasm_2_0"] }
+cw-utils             = { workspace = true }
+cw20                 = { workspace = true }
+depolama             = { workspace = true, features = ["iterator"] }
+embed-commit         = { workspace = true }
+frissitheto          = { workspace = true }
+itertools            = { workspace = true }
 schemars             = { workspace = true, optional = true }
 serde                = { workspace = true }
-serde-json-wasm      = { workspace = true }
 serde-utils          = { workspace = true }
 sha2                 = { workspace = true }
 thiserror            = { workspace = true }
 unionlabs-encoding   = { workspace = true, features = ["bincode"] }
 unionlabs-primitives = { workspace = true, features = ["serde", "bincode", "generic-array-compat"] }
 
+# TODO: Add back when the unbonding period is queryable from the chain
+# prost                = { workspace = true }
+
 [dev-dependencies]
-hex-literal = { version = "1.0" }
+hex-literal = { workspace = true }
 
 [features]
 default  = []

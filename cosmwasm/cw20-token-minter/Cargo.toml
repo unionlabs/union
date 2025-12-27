@@ -25,9 +25,7 @@ cw20-base                   = { workspace = true }
 embed-commit                = { workspace = true }
 frissitheto                 = { workspace = true }
 ibc-union-spec              = { workspace = true }
-serde                       = { workspace = true, features = ["derive"] }
 thiserror                   = { workspace = true }
-token-factory-api           = { workspace = true }
 ucs03-zkgm-token-minter-api = { workspace = true }
 unionlabs                   = { workspace = true, features = ["schemars"] }
 

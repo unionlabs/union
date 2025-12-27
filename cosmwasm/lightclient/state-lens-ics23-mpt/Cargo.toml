@@ -16,9 +16,9 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cometbls-light-client                   = { workspace = true, features = ["library"] }
-cosmwasm-std                            = { workspace = true, features = ["abort"] }
+cosmwasm-std                            = { workspace = true }
 embed-commit                            = { workspace = true }
-ethereum-light-client-types             = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+ethereum-light-client-types             = { workspace = true, features = ["ethabi", "bincode"] }
 evm-storage-verifier                    = { workspace = true }
 frissitheto                             = { workspace = true }
 ibc-union-light-client                  = { workspace = true }
@@ -26,16 +26,15 @@ ibc-union-msg                           = { workspace = true }
 ibc-union-spec                          = { workspace = true }
 ics23                                   = { workspace = true }
 rlp                                     = { workspace = true }
-serde                                   = { workspace = true, features = ["derive"] }
-state-lens-ics23-mpt-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
-state-lens-light-client-types           = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+state-lens-ics23-mpt-light-client-types = { workspace = true, features = ["ethabi", "bincode"] }
+state-lens-light-client-types           = { workspace = true, features = ["ethabi", "bincode"] }
 thiserror                               = { workspace = true }
-unionlabs                               = { workspace = true, features = ["ethabi", "stargate", "bincode"] }
+unionlabs                               = { workspace = true, features = ["ethabi", "bincode"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
 
 [features]
 default = []
-# enabling this feature disables exposing the entrypoints and setting `#[global_allocator]`
+
 library = []
