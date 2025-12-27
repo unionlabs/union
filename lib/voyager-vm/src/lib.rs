@@ -17,7 +17,7 @@ use either::Either::{self, Left, Right};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tokio::time::sleep;
-use tracing::{debug, error, info, trace, warn};
+use tracing::{debug, info, trace, warn};
 use unionlabs::bounded::{BoundedI64, BoundedIntError};
 
 use crate::{filter::InterestFilter, pass::Pass};

@@ -10,7 +10,7 @@ use jsonrpsee::core::{
 };
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
-use tracing::{Instrument, debug, debug_span, error, instrument, trace};
+use tracing::{Instrument, debug, debug_span, instrument, trace};
 
 #[derive(Debug, Clone)]
 pub struct Client {

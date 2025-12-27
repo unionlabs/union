@@ -539,9 +539,11 @@
                       "${lib.optionalString release "-j1"} ${packageFilterArgs} ${cargoBuildExtraArgs}"
                       + (lib.optionalString (buildStdTarget != null)
                         # the leading space is important here!
-                        " -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort --target ${buildStdTarget}"
+                        " -Z build-std=std,panic_abort --target ${buildStdTarget}"
                       );
-                    RUSTFLAGS = rustflags;
+                    RUSTFLAGS =
+                      rustflags
+                      + (lib.optionalString (buildStdTarget != null) " -Zunstable-options -Cpanic=immediate-abort");
 
                     preBuild =
                       (lib.concatMapStringsSep "\n\n" (dir: ''

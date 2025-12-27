@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-bytemuck  = { version = "1.23", default-features = false, features = ["derive"] }
+bytemuck  = { version = "1.23", default-features = false, features = ["derive", "track_caller"] }
 const-hex = { version = "1.14.1", default-features = false }
 serde     = { workspace = true, optional = true }
 
