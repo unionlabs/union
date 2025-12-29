@@ -585,26 +585,6 @@ _: {
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
         }
-
-        # NOTE: These haven't been tested since testnet 8 (or earlier), and as such are unlikely to work properly
-        # {
-        #   network = "scroll-testnet";
-        #   rpc-url = "https://sepolia-rpc.scroll.io";
-        #   private-key = ''"$1"'';
-
-        #   verifier = ''--verify --verifier etherscan --verifier-url https://api-sepolia.scrollscan.com/api --etherscan-api-key "$2"'';
-        # }
-        # {
-        #   network = "arbitrum-testnet";
-        #   rpc-url = "https://sepolia-rollup.arbitrum.io/rpc";
-        #   private-key = ''"$1"'';
-        #   weth = "0x980b62da83eff3d4576c647993b0c1d7faf17c73";
-        # }
-        # {
-        #   network = "berachain-testnet";
-        #   rpc-url = "https://fabled-serene-mountain.bera-bartio.quiknode.pro/6ab3f499dcce3d52591ce97a5f07a13fae75deb1/";
-        #   private-key = ''"$1"'';
-        # }
       ];
 
       # use in a script that can do contract verification. this allows for overwriting the verification args via the FOUNDRY_ETHERSCAN env var when calling said script via nix run.

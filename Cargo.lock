@@ -7999,53 +7999,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "linea-light-client-types"
-version = "0.0.0"
-dependencies = [
- "ethereum-light-client-types",
- "hex-literal 1.1.0",
- "linea-types",
- "serde",
- "unionlabs",
-]
-
-[[package]]
-name = "linea-types"
-version = "0.0.0"
-dependencies = [
- "serde",
- "unionlabs",
-]
-
-[[package]]
-name = "linea-verifier"
-version = "0.0.0"
-dependencies = [
- "evm-storage-verifier",
- "gnark-mimc",
- "linea-light-client-types",
- "linea-types",
- "linea-zktrie",
- "rlp",
- "thiserror 2.0.17",
- "unionlabs",
-]
-
-[[package]]
-name = "linea-zktrie"
-version = "0.0.0"
-dependencies = [
- "gnark-mimc",
- "hex",
- "hex-literal 1.1.0",
- "linea-types",
- "serde",
- "serde_json",
- "thiserror 2.0.17",
- "unionlabs",
-]
-
-[[package]]
 name = "linked-hash-map"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11765,60 +11718,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
-name = "scroll-api"
-version = "0.0.0"
-dependencies = [
- "reqwest 0.11.27",
- "serde",
- "serde-utils",
- "serde_json",
- "tracing",
- "unionlabs",
-]
-
-[[package]]
-name = "scroll-codec"
-version = "0.0.0"
-dependencies = [
- "alloy-sol-types",
- "hex-literal 1.1.0",
- "sha3",
- "thiserror 2.0.17",
- "unionlabs",
-]
-
-[[package]]
-name = "scroll-light-client-types"
-version = "0.0.0"
-dependencies = [
- "ethereum-light-client-types",
- "hex-literal 1.1.0",
- "serde",
- "unionlabs",
-]
-
-[[package]]
-name = "scroll-rpc"
-version = "0.0.0"
-dependencies = [
- "jsonrpsee 0.26.0",
- "macros",
- "serde",
- "serde-utils",
- "serde_json",
- "tokio",
- "tracing-subscriber",
- "unionlabs",
-]
-
-[[package]]
-name = "scroll-types"
-version = "0.0.0"
-dependencies = [
- "unionlabs",
-]
-
-[[package]]
 name = "scrypt"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15212,14 +15111,12 @@ dependencies = [
  "ibc-union-spec",
  "jsonrpsee 0.26.0",
  "keccak-asm",
- "linea-light-client-types",
  "movement-light-client-types",
  "num_cpus",
  "parlia-light-client-types",
  "parlia-verifier",
  "protos",
  "rand 0.8.5",
- "scroll-light-client-types",
  "serde",
  "serde_json",
  "sha2 0.10.9",

@@ -871,7 +871,6 @@ files.extend-exclude = [
 "lightclient"             = "lightclient"
 "lightclients"            = "lightclients"
 "lightheader"             = "lightheader"
-"linea"                   = "linea"
 "linecap"                 = "linecap"
 "linejoin"                = "linejoin"
 "linkedliststack"         = "linkedliststack"

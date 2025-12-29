@@ -52,7 +52,6 @@
           };
         };
         portIncrease = 0;
-        has08Wasm = true;
       };
 
       devnet-stargaze = mkCosmosDevnet {
