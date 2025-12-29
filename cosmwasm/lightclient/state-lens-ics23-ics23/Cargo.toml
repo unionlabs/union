@@ -16,19 +16,18 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cometbls-light-client                     = { workspace = true }
-cosmwasm-std                              = { workspace = true, features = ["abort"] }
+cosmwasm-std                              = { workspace = true }
 embed-commit                              = { workspace = true }
 frissitheto                               = { workspace = true }
 ibc-union-light-client                    = { workspace = true }
 ibc-union-msg                             = { workspace = true }
 ibc-union-spec                            = { workspace = true }
 ics23                                     = { workspace = true }
-serde                                     = { workspace = true, features = ["derive"] }
-state-lens-ics23-ics23-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
-state-lens-light-client-types             = { workspace = true, features = ["serde", "ethabi", "bincode"] }
-tendermint-light-client-types             = { workspace = true, features = ["serde", "ethabi"] }
+state-lens-ics23-ics23-light-client-types = { workspace = true, features = ["ethabi", "bincode"] }
+state-lens-light-client-types             = { workspace = true, features = ["ethabi", "bincode"] }
+tendermint-light-client-types             = { workspace = true, features = ["ethabi"] }
 thiserror                                 = { workspace = true }
-unionlabs                                 = { workspace = true, features = ["ethabi", "stargate", "bincode"] }
+unionlabs                                 = { workspace = true, features = ["ethabi", "bincode"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

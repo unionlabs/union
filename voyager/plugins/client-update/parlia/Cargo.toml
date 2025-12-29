@@ -16,10 +16,8 @@ alloy                       = { workspace = true, features = ["rpc", "rpc-types"
 embed-commit                = { workspace = true }
 enumorph                    = { workspace = true }
 ethereum-light-client-types = { workspace = true, features = ["serde"] }
-futures                     = { workspace = true }
 ibc-union-spec              = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
-macros                      = { workspace = true }
 parlia-light-client-types   = { workspace = true, features = ["serde"] }
 parlia-types                = { workspace = true }
 parlia-verifier             = { workspace = true }

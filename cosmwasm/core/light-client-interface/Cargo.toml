@@ -22,8 +22,6 @@ ibc-union-spec = { workspace = true }
 macros         = { workspace = true }
 pausable       = { workspace = true }
 schemars       = { workspace = true, optional = true }
-serde          = { workspace = true }
-serde-utils    = { workspace = true }
 thiserror      = { workspace = true }
 unionlabs      = { workspace = true }
 upgradable     = { workspace = true }

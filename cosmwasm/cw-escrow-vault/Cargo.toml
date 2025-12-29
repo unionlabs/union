@@ -17,7 +17,6 @@ workspace = true
 [dependencies]
 access-managed       = { workspace = true }
 bincode              = { workspace = true }
-cosmwasm-schema      = { workspace = true }
 cosmwasm-std         = { workspace = true, features = ["cosmwasm_1_3"] }
 cw20                 = { workspace = true }
 depolama             = { workspace = true, features = ["iterator"] }

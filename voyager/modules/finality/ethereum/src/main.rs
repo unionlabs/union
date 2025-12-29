@@ -10,10 +10,10 @@ use beacon_api::{
     client::{BeaconApiClient, VersionedResponse},
     routes::light_client_finality_update::LightClientFinalityUpdateResponseTypes,
 };
-use beacon_api_types::{chain_spec::PresetBaseKind, custom_types::Slot};
+use beacon_api_types::chain_spec::PresetBaseKind;
 use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
-use tracing::{debug, instrument, trace};
+use tracing::{debug, instrument};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_sdk::{
     anyhow::{self, bail},
@@ -143,49 +143,6 @@ impl Module {
                 )
             },
         ))
-    }
-
-    // TODO: Deduplicate this from ethereum client-update plugin
-    #[instrument(skip_all, fields(block_number))]
-    async fn beacon_slot_of_execution_block_number(&self, block_number: u64) -> RpcResult<Slot> {
-        trace!("fetching beacon slot of execution block {block_number}");
-
-        let block = self
-            .provider
-            .get_block((block_number + 1).into())
-            .hashes()
-            .await
-            .map_err(RpcError::retryable("error fetching block"))?
-            .ok_or_else(|| RpcError::missing_state("error fetching block: block should exist"))?;
-
-        let beacon_slot = self
-            .beacon_api_client
-            .block(
-                block
-                    .header
-                    .parent_beacon_block_root
-                    .ok_or_else(|| {
-                        RpcError::missing_state("parent beacon block root should exist")
-                    })?
-                    .0
-                    .into(),
-            )
-            .await
-            .map_err(RpcError::retryable("error fetching beacon block"))?
-            .response
-            .fold(
-                |b| b.message.slot,
-                |b| b.message.slot,
-                |b| b.message.slot,
-                |b| b.message.slot,
-                |b| b.message.slot,
-                |b| b.message.slot,
-                |b| b.message.slot,
-            );
-
-        trace!("beacon slot of exution block {block_number} is {beacon_slot}");
-
-        Ok(beacon_slot)
     }
 }
 

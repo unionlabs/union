@@ -14,7 +14,6 @@ workspace = true
 [dependencies]
 alloy                          = { workspace = true, features = ["sol-types"] }
 bcs                            = { workspace = true }
-concurrent-keyring             = { workspace = true }
 embed-commit                   = { workspace = true }
 hex-literal                    = { workspace = true }
 ibc-union-spec                 = { workspace = true, features = ["serde"] }
@@ -22,7 +21,7 @@ jsonrpsee                      = { workspace = true, features = ["tracing", "ws-
 move-core-types                = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 sha3                           = { workspace = true }
-sui_sdk                        = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+sui-sdk                        = { workspace = true }
 tokio                          = { workspace = true }
 ucs03-zkgm                     = { workspace = true, features = ["library"] }
 unionlabs                      = { workspace = true }

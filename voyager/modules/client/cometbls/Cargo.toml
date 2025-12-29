@@ -18,7 +18,6 @@ embed-commit                = { workspace = true }
 gnark-key-parser            = { workspace = true, features = ["std"] }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
-num-bigint                  = { workspace = true }
 protos                      = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 serde_json                  = { workspace = true }

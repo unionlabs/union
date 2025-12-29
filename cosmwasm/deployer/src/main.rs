@@ -498,7 +498,7 @@ pub enum TokenMinterConfig {
     Cw20 {
         /// The path to the cw20 implementation contract code.
         ///
-        /// This contract MUST be compatible with [`frissitheto`], allowing instantiation through the migrate entrypoint, such that it can have a deterministic address.
+        /// This contract MUST be compatible with `frissitheto`, allowing instantiation through the migrate entrypoint, such that it can have a deterministic address.
         cw20_impl: PathBuf,
     },
     OsmosisTokenfactory {},

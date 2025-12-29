@@ -15,17 +15,15 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cosmwasm-std                   = { workspace = true, features = ["abort"] }
+cosmwasm-std                   = { workspace = true }
 embed-commit                   = { workspace = true }
 ethereum-light-client-types    = { workspace = true }
 evm-storage-verifier           = { workspace = true }
 frissitheto                    = { workspace = true }
 ibc-union-light-client         = { workspace = true }
-ibc-union-msg                  = { workspace = true }
 rlp                            = { workspace = true }
-serde                          = { workspace = true, features = ["derive"] }
 thiserror                      = { workspace = true }
-trusted-mpt-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+trusted-mpt-light-client-types = { workspace = true, features = ["ethabi", "bincode"] }
 unionlabs                      = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]

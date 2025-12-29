@@ -16,19 +16,15 @@ alloy                 = { workspace = true, features = ["rpc", "rpc-types", "tra
 anyhow                = { workspace = true, features = ["std"] }
 clap                  = { workspace = true, features = ["derive", "error-context", "help", "env"] }
 cometbft-rpc          = { workspace = true }
-cosmos-client         = { workspace = true }
 cosmwasm-std          = { workspace = true, features = ["std"] }
 create3               = { workspace = true }
 deployments           = { workspace = true }
 embed-commit          = { workspace = true }
 embed-commit-verifier = { workspace = true }
 protos                = { workspace = true }
-serde                 = { workspace = true, features = ["derive"] }
 serde_json            = { workspace = true }
 tokio                 = { workspace = true, features = ["full"] }
 tracing               = { workspace = true }
 tracing-subscriber    = { workspace = true, features = ["env-filter", "fmt", "ansi"] }
-ucs03-zkgm            = { workspace = true, features = ["library"] }
 ucs04                 = { workspace = true, features = ["serde"] }
 unionlabs             = { workspace = true, features = ["proto", "ethabi"] }
-voyager-primitives    = { workspace = true }

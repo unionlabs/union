@@ -19,7 +19,6 @@ alloy          = { workspace = true, optional = true, features = ["sol-types", "
 bincode        = { workspace = true, optional = true, features = ["alloc", "derive"] }
 ibc-union-spec = { workspace = true }
 serde          = { workspace = true, optional = true, features = ["derive"] }
-thiserror      = { workspace = true }
 tuple_join     = { version = "0.1.0" }
 unionlabs      = { workspace = true }
 

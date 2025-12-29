@@ -20,12 +20,10 @@ bob-verifier                = { workspace = true }
 embed-commit                = { workspace = true }
 enumorph                    = { workspace = true }
 ethereum-light-client-types = { workspace = true, features = ["serde"] }
-futures                     = { workspace = true }
 ibc-union-spec              = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
-serde_json                  = { workspace = true }
 tokio                       = { workspace = true }
 tracing                     = { workspace = true }
 unionlabs                   = { workspace = true }

@@ -12,19 +12,15 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                         = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
 embed-commit                  = { workspace = true }
 enumorph                      = { workspace = true }
 ibc-union-spec                = { workspace = true }
-ics23                         = { workspace = true }
 jsonrpsee                     = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                        = { workspace = true }
-protos                        = { workspace = true }
 serde                         = { workspace = true, features = ["derive"] }
 serde_json                    = { workspace = true }
 state-lens-light-client-types = { workspace = true, features = ["serde"] }
 tokio                         = { workspace = true }
 tracing                       = { workspace = true }
-tracing-subscriber            = { workspace = true }
 unionlabs                     = { workspace = true }
 voyager-sdk                   = { workspace = true }

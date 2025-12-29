@@ -25,12 +25,8 @@ cosmwasm-std     = { workspace = true, features = ["cosmwasm_1_2"] }
 cw-storage-plus  = { workspace = true }
 cw20             = { workspace = true }
 embed-commit     = { workspace = true }
-ethabi           = { workspace = true }
 frissitheto      = { workspace = true }
-ibc-union-msg    = { workspace = true }
 ibc-union-spec   = { workspace = true, features = ["serde", "ethabi"] }
 serde            = { workspace = true, features = ["derive"] }
-serde-json-wasm  = { workspace = true }
-serde-utils      = { workspace = true }
 thiserror        = { workspace = true }
 unionlabs        = { workspace = true, features = ["ethabi", "schemars"] }

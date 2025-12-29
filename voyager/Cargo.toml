@@ -18,7 +18,6 @@ workspace = true
 
 [dependencies]
 anyhow             = { workspace = true }
-axum               = { workspace = true, features = ["macros", "tokio", "json"] }
 clap               = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 derive_more        = { workspace = true }
 embed-commit       = { workspace = true }
@@ -30,8 +29,6 @@ opentelemetry      = { workspace = true }
 opentelemetry-otlp = { workspace = true, features = ["http-json", "metrics", "reqwest-blocking-client"] }
 opentelemetry_sdk  = { workspace = true }
 pg-queue           = { workspace = true }
-pin-utils          = "0.1.0"
-prometheus         = "0.13.4"
 reqwest            = { workspace = true, features = ["tokio-rustls", "json"] }
 schemars           = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
@@ -41,16 +38,12 @@ sqlx               = { workspace = true, features = ["postgres", "migrate", "tls
 thiserror          = { workspace = true }
 tikv-jemallocator  = "0.5"
 tokio              = { workspace = true, features = ["macros"] }
-tower              = { workspace = true }
-tower-http         = { workspace = true, features = ["cors"] }
 tracing            = { workspace = true, features = ["max_level_trace"] }
-tracing-futures    = { version = "0.2.5", features = ["futures-03"] }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 unionlabs          = { workspace = true, features = ["ethabi"] }
 voyager-client     = { workspace = true }
 voyager-core       = { workspace = true }
 voyager-message    = { workspace = true }
-voyager-plugin     = { workspace = true }
 voyager-primitives = { workspace = true }
 voyager-rpc        = { workspace = true }
 voyager-types      = { workspace = true }

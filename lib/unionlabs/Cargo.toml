@@ -13,34 +13,26 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-chrono                   = { workspace = true, features = ["alloc"] }
-cosmwasm-std             = { workspace = true, optional = true, features = ["std"] }
-derive_more              = { workspace = true, features = ["display"] }
-either                   = { workspace = true }
-frame-support-procedural = { workspace = true }
-hex                      = { workspace = true }
-macros                   = { workspace = true }
-prost                    = { workspace = true, features = ["std"] }
-protos                   = { workspace = true, features = ["proto_full", "serde"] }
-serde                    = { workspace = true, features = ["derive"] }
-serde-utils              = { workspace = true }
-serde_json               = { workspace = true, optional = true }
-sha2                     = { workspace = true }
-sha3                     = { workspace = true }
-static_assertions        = { workspace = true }
-thiserror                = { workspace = true }
-typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
-
-base64  = { workspace = true }
-bcs     = { workspace = true }
-bincode = { workspace = true, features = ["alloc", "derive"], optional = true }
-borsh   = { workspace = true, features = ["borsh-derive"], optional = true }
-bs58    = { workspace = true }
-# near-primitives-core = { version = "0.21", optional = true }
-near-sdk             = { workspace = true, optional = true }
+bcs                  = { workspace = true }
+bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
+borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
+bs58                 = { workspace = true }
+chrono               = { workspace = true, features = ["alloc"] }
+cosmwasm-std         = { workspace = true, optional = true, features = ["std"] }
+derive_more          = { workspace = true, features = ["display"] }
+macros               = { workspace = true }
+prost                = { workspace = true, features = ["std"] }
+protos               = { workspace = true, features = ["proto_full", "serde"] }
 schemars             = { workspace = true, features = ["derive"], optional = true }
-serde_bytes          = "0.11.17"
+serde                = { workspace = true, features = ["derive"] }
+serde-utils          = { workspace = true }
+serde_json           = { workspace = true, optional = true }
+sha2                 = { workspace = true }
+sha3                 = { workspace = true }
 solidity-slot        = { workspace = true }
+static_assertions    = { workspace = true }
+thiserror            = { workspace = true }
+typenum              = { workspace = true, features = ["const-generics", "no_std"] }
 unionlabs-encoding   = { workspace = true, features = ["proto", "json"] }
 unionlabs-primitives = { workspace = true, features = ["generic-array-compat", "serde", "base64", "base58"] }
 
@@ -50,7 +42,7 @@ rand        = "0.8.5"
 serde_json  = { workspace = true }
 
 [features]
-default = ["ethabi", "std", "stargate", "proto"]
+default = ["ethabi", "std", "proto"]
 
 cosmwasm = ["dep:cosmwasm-std"]
 ethabi = [
@@ -58,7 +50,6 @@ ethabi = [
   "unionlabs-primitives/alloy-sol-types-compat",
   "unionlabs-encoding/ethabi",
 ]
-# near = ["borsh", "near-sdk", "near-primitives-core"]
 std = ["sha2/std", "unionlabs-encoding/std"]
 
 fuzzing    = []
@@ -70,4 +61,3 @@ proto    = ["unionlabs-encoding/proto"]
 rlp      = ["unionlabs-primitives/rlp"]
 schemars = ["dep:schemars", "unionlabs-primitives/schemars"]
 ssz      = ["unionlabs-encoding/ssz"]
-stargate = ["cosmwasm", "cosmwasm-std/stargate"]

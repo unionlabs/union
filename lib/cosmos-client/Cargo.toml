@@ -20,7 +20,6 @@ num-traits    = "0.2.19"
 protos        = { workspace = true }
 serde         = { workspace = true, features = ["derive"] }
 serde-utils   = { workspace = true }
-serde_json    = { workspace = true }
 sha2          = { workspace = true }
 thiserror     = { workspace = true }
 tokio         = { workspace = true, features = ["full"] }

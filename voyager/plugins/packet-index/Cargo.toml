@@ -12,13 +12,12 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-embed-commit     = { workspace = true }
-enumorph         = { workspace = true }
-ibc-classic-spec = { workspace = true }
-ibc-union-spec   = { workspace = true, features = ["serde"] }
-jsonrpsee        = { workspace = true, features = ["macros", "server", "tracing"] }
-serde            = { workspace = true, features = ["derive"] }
-tokio            = { workspace = true }
-tracing          = { workspace = true }
-unionlabs        = { workspace = true }
-voyager-sdk      = { workspace = true }
+embed-commit   = { workspace = true }
+enumorph       = { workspace = true }
+ibc-union-spec = { workspace = true, features = ["serde"] }
+jsonrpsee      = { workspace = true, features = ["macros", "server", "tracing"] }
+serde          = { workspace = true, features = ["derive"] }
+tokio          = { workspace = true }
+tracing        = { workspace = true }
+unionlabs      = { workspace = true }
+voyager-sdk    = { workspace = true }

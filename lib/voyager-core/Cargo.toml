@@ -14,9 +14,7 @@ workspace = true
 [dependencies]
 anyhow                  = { workspace = true }
 axum                    = { workspace = true, features = ["macros", "tokio", "json", "http2"] }
-derive_builder          = "0.20.2"
 futures                 = { workspace = true }
-indexmap                = "2.9.0"
 itertools               = { workspace = true }
 jaq-core                = "2.2.0"
 jaq-json                = { version = "1.1.2", features = ["serde_json"] }
@@ -24,8 +22,6 @@ jaq-std                 = "2.1.1"
 jsonrpsee               = { workspace = true }
 moka                    = { workspace = true, features = ["future"] }
 opentelemetry           = { workspace = true }
-opentelemetry-otlp      = { workspace = true, features = ["http-json", "metrics", "reqwest-blocking-client"] }
-opentelemetry_sdk       = { workspace = true }
 pin-utils               = "0.1.0"
 schemars                = { workspace = true }
 serde                   = { workspace = true, features = ["derive"] }
@@ -38,7 +34,6 @@ tower-http              = { workspace = true, features = ["cors"] }
 tracing                 = { workspace = true }
 unionlabs               = { workspace = true }
 voyager-message         = { workspace = true }
-voyager-plugin          = { workspace = true }
 voyager-plugin-protocol = { workspace = true }
 voyager-primitives      = { workspace = true, features = ["schemars", "serde"] }
 voyager-rpc             = { workspace = true }

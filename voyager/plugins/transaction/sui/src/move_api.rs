@@ -10,7 +10,7 @@ use move_core_types::{ident_str, identifier::IdentStr};
 use sui_sdk::types::{
     base_types::{ObjectID, SequenceNumber, SuiAddress},
     programmable_transaction_builder::ProgrammableTransactionBuilder,
-    transaction::{CallArg, ObjectArg},
+    transaction::{CallArg, ObjectArg, SharedObjectMutability},
 };
 use sui_utils::SuiQuery;
 use unionlabs::primitives::{H256, encoding::HexPrefixed};
@@ -21,7 +21,7 @@ use crate::{Module, ModuleInfo};
 pub const SUI_CALL_ARG_CLOCK: CallArg = CallArg::Object(ObjectArg::SharedObject {
     id: ObjectID::from_single_byte(6),
     initial_shared_version: SequenceNumber::from_u64(1),
-    mutable: false,
+    mutability: SharedObjectMutability::Immutable,
 });
 
 pub const IBC_IDENT: &IdentStr = ident_str!("ibc");
@@ -40,7 +40,7 @@ pub fn create_client(
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             CallArg::Pure(bcs::to_bytes(&data.client_type.to_string()).unwrap()),
             (&data.client_state_bytes.into_vec()).into(),
@@ -64,7 +64,7 @@ pub fn update_client(
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             SUI_CALL_ARG_CLOCK.clone(),
             data.client_id.raw().into(),
@@ -89,7 +89,7 @@ pub fn connection_open_init(
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             data.client_id.raw().into(),
             data.counterparty_client_id.raw().into(),
@@ -112,7 +112,7 @@ pub fn connection_open_try(
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             data.counterparty_client_id.raw().into(),
             data.counterparty_connection_id.raw().into(),
@@ -138,7 +138,7 @@ pub fn connection_open_ack(
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             data.connection_id.raw().into(),
             data.counterparty_connection_id.raw().into(),
@@ -163,7 +163,7 @@ pub fn connection_open_confirm(
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             data.connection_id.raw().into(),
             (&data.proof_ack.into_vec()).into(),
@@ -188,12 +188,12 @@ pub fn channel_open_init(
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             CallArg::Object(ObjectArg::SharedObject {
                 id: module_info.stores[0].0.into(),
                 initial_shared_version: module_info.stores[0].1,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             (&data.port_id.into_vec()).into(),
             (&data.counterparty_port_id.into_vec()).into(),
@@ -219,12 +219,12 @@ pub fn channel_open_try(
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             CallArg::Object(ObjectArg::SharedObject {
                 id: module_info.stores[0].0.into(),
                 initial_shared_version: module_info.stores[0].1,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             data.channel.connection_id.raw().into(),
             data.channel.counterparty_channel_id.unwrap().raw().into(),
@@ -253,12 +253,12 @@ pub fn channel_open_ack(
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             CallArg::Object(ObjectArg::SharedObject {
                 id: module_info.stores[0].0.into(),
                 initial_shared_version: module_info.stores[0].1,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             data.channel_id.raw().into(),
             (&data.counterparty_version.into_bytes()).into(),
@@ -285,12 +285,12 @@ pub fn channel_open_confirm_call(
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             CallArg::Object(ObjectArg::SharedObject {
                 id: module_info.stores[0].0.into(),
                 initial_shared_version: module_info.stores[0].1,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             data.channel_id.raw().into(),
             (&data.proof_ack.into_vec()).into(),
@@ -314,7 +314,7 @@ pub fn packet_timeout_commitment_call(
             CallArg::Object(ObjectArg::SharedObject {
                 id: module.ibc_store.into(),
                 initial_shared_version: module.ibc_store_initial_seq,
-                mutable: true,
+                mutability: SharedObjectMutability::Mutable,
             }),
             SUI_CALL_ARG_CLOCK,
             (&data.proof.into_vec()).into(),

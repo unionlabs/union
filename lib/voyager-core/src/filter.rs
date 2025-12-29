@@ -139,6 +139,7 @@ impl InterestFilter<VoyagerMessage> for InterestFilters {
     skip_all,
     fields(%plugin_name)
 )]
+#[allow(clippy::result_unit_err)]
 pub fn run_filter<'a>(
     filter: &Filter<Native<Val>>,
     plugin_name: &'a str,

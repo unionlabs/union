@@ -15,7 +15,6 @@ workspace = true
 bincode              = { workspace = true, features = ["derive"] }
 cosmwasm-event       = { workspace = true }
 cosmwasm-std         = { workspace = true }
-depolama             = { workspace = true }
 schemars             = { workspace = true, optional = true }
 serde                = { workspace = true, features = ["derive"] }
 serde-json-wasm      = { workspace = true }

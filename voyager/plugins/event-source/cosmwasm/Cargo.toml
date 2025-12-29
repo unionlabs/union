@@ -21,11 +21,8 @@ enumorph         = { workspace = true }
 ibc-union-spec   = { workspace = true, features = ["tracing", "bincode", "serde"] }
 jsonrpsee        = { workspace = true, features = ["macros", "server", "tracing"] }
 macros           = { workspace = true }
-prost            = { workspace = true }
-protos           = { workspace = true }
 serde            = { workspace = true, features = ["derive"] }
 serde-utils      = { workspace = true }
-serde_json       = { workspace = true }
 sha2             = { workspace = true, features = ["std"] }
 thiserror        = { workspace = true }
 tokio            = { workspace = true }

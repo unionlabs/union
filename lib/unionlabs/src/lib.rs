@@ -34,9 +34,6 @@ pub use unionlabs_primitives as primitives;
 /// Wrapper types around protos defined in <https://github.com/cosmos/gogoproto/tree/main/protobuf/google/protobuf>, matching the proto module structure.
 pub mod google;
 
-// #[cfg(feature = "near")]
-// pub mod near;
-
 /// Defines types that wrap the IBC specification, matching the proto module structure. This also includes `union` extensions to ibc (i.e. types defined in `union.ibc`).
 pub mod ibc;
 

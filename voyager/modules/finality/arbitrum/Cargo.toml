@@ -14,9 +14,7 @@ workspace = true
 [dependencies]
 alloy           = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
 arbitrum-client = { workspace = true }
-arbitrum-types  = { workspace = true }
 embed-commit    = { workspace = true }
-ibc-union-spec  = { workspace = true, features = ["serde"] }
 jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
 serde           = { workspace = true, features = ["derive"] }
 tokio           = { workspace = true }

@@ -12,18 +12,14 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                     = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
-embed-commit              = { workspace = true }
-ibc-union-spec            = { workspace = true, features = ["serde", "ethabi"] }
-jsonrpsee                 = { workspace = true, features = ["macros", "server", "tracing"] }
-parlia-light-client-types = { workspace = true }
-parlia-types              = { workspace = true }
-parlia-verifier           = { workspace = true }
-serde                     = { workspace = true, features = ["derive"] }
-tokio                     = { workspace = true }
-tracing                   = { workspace = true }
-unionlabs                 = { workspace = true }
-voyager-sdk               = { workspace = true }
+alloy        = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
+embed-commit = { workspace = true }
+jsonrpsee    = { workspace = true, features = ["macros", "server", "tracing"] }
+serde        = { workspace = true, features = ["derive"] }
+tokio        = { workspace = true }
+tracing      = { workspace = true }
+unionlabs    = { workspace = true }
+voyager-sdk  = { workspace = true }
 
 
 [dev-dependencies]

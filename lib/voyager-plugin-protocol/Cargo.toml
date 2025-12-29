@@ -14,24 +14,19 @@ workspace = true
 [dependencies]
 anyhow                         = { workspace = true }
 futures                        = { workspace = true }
-itertools                      = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["server", "client", "async-client", "macros", "tracing"] }
 opentelemetry                  = { workspace = true }
-opentelemetry_sdk              = { workspace = true }
 reconnecting-jsonrpc-ws-client = { workspace = true }
 reth-ipc                       = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde_json                     = { workspace = true }
-thiserror                      = { workspace = true }
-tokio                          = { workspace = true, features = ["fs", "signal"] }
+tokio                          = { workspace = true, features = ["fs", "signal", "process"] }
 tokio-util                     = { workspace = true }
 tower                          = { workspace = true }
 tracing                        = { workspace = true }
 unionlabs                      = { workspace = true }
 voyager-client                 = { workspace = true }
-voyager-message                = { workspace = true }
 voyager-rpc                    = { workspace = true }
-voyager-types                  = { workspace = true }
 voyager-vm                     = { workspace = true }
 
 [features]

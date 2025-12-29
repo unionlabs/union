@@ -6,6 +6,7 @@ use access_manager_types::{
     manager::{self, error::AccessManagerError},
 };
 use anyhow::{Context, Result, anyhow, bail};
+use bip32::XPrv;
 use bip39::Mnemonic;
 use clap::Parser;
 use cometbft_rpc::rpc_types::{BlockResponse, GrpcAbciQueryError};
@@ -65,13 +66,14 @@ const DELEGATE_EXECUTE: RoleId = RoleId::new(8);
 
 fn mk_wallet(mnemonic: &str, bech32_prefix: &str) -> LocalSigner {
     LocalSigner::new(
-        tiny_hderive::bip32::ExtendedPrivKey::derive(
-            &mnemonic.parse::<Mnemonic>().unwrap().to_seed(""),
+        XPrv::derive_from_path(
+            mnemonic.parse::<Mnemonic>().unwrap().to_seed(""),
             // this is the default cosmossdk hd path
-            "m/44'/118'/0'/0/0",
+            &"m/44'/118'/0'/0/0".parse().unwrap(),
         )
         .unwrap()
-        .secret()
+        .private_key()
+        .to_bytes()
         .into(),
         bech32_prefix.to_owned(),
     )

@@ -18,7 +18,6 @@ test-include = ["cosmwasm/lightclient/ethereum/src/test"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-alloy-sol-types             = { workspace = true }
 ark-bls12-381               = { version = "0.5.0" }
 ark-ec                      = { version = "0.5.0" }
 ark-serialize               = { version = "0.5.0" }
@@ -27,14 +26,12 @@ bincode                     = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
 depolama                    = { workspace = true }
 embed-commit                = { workspace = true }
-ethereum-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+ethereum-light-client-types = { workspace = true, features = ["ethabi", "bincode"] }
 ethereum-sync-protocol      = { workspace = true }
 evm-storage-verifier        = { workspace = true }
 frissitheto                 = { workspace = true }
 ibc-union-light-client      = { workspace = true }
-ibc-union-msg               = { workspace = true }
 rlp                         = { workspace = true }
-serde                       = { workspace = true, features = ["derive"] }
 thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 

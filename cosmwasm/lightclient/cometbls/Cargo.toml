@@ -19,15 +19,13 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cometbls-groth16-verifier   = { workspace = true }
-cometbls-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+cometbls-light-client-types = { workspace = true, features = ["ethabi", "bincode"] }
 cosmwasm-std                = { workspace = true, features = ["abort", "iterator"] }
 embed-commit                = { workspace = true }
 frissitheto                 = { workspace = true }
 ibc-union-light-client      = { workspace = true }
-ibc-union-msg               = { workspace = true }
 ibc-union-spec              = { workspace = true }
 ics23                       = { workspace = true }
-serde                       = { workspace = true, features = ["derive"] }
 thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 

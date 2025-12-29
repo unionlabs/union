@@ -82,9 +82,9 @@ pub fn get_voyager_config(config_file_path: Option<&OsStr>) -> anyhow::Result<Co
 #[derive(Debug, Clone, Copy, PartialEq, Default, clap::ValueEnum, derive_more::Display)]
 pub enum LogFormat {
     #[default]
-    #[display(fmt = "text")]
+    #[display("text")]
     Text,
-    #[display(fmt = "json")]
+    #[display("json")]
     Json,
 }
 

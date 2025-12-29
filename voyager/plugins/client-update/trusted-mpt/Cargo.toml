@@ -13,15 +13,10 @@ workspace = true
 
 [dependencies]
 alloy                          = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
-beacon-api                     = { workspace = true }
-beacon-api-types               = { workspace = true, features = ["serde"] }
-bitvec                         = { workspace = true }
 ed25519-dalek                  = { workspace = true, features = ["default"] }
 embed-commit                   = { workspace = true }
 enumorph                       = { workspace = true }
 ethereum-light-client-types    = { workspace = true, features = ["serde"] }
-ethereum-sync-protocol-types   = { workspace = true }
-futures                        = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                         = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }

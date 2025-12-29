@@ -1,4 +1,5 @@
 use base64::{display::Base64Display, engine::general_purpose::STANDARD};
+use bip32::XPrv;
 use bip39::Mnemonic;
 use clap::{Parser, Subcommand};
 use unionlabs::primitives::{H160, H256};
@@ -75,13 +76,14 @@ fn main() {
                     .sk
                     .to_vec(),
                     KeyType::Secp256k1 => {
-                        tiny_hderive::bip32::ExtendedPrivKey::derive(
-                            &mnemonic.to_seed(""),
+                        XPrv::derive_from_path(
+                            mnemonic.to_seed(""),
                             // this is the default cosmossdk hd path
-                            "m/44'/118'/0'/0/0",
+                            &"m/44'/118'/0'/0/0".parse().unwrap(),
                         )
                         .unwrap()
-                        .secret()
+                        .private_key()
+                        .to_bytes()
                         .to_vec()
                     }
                 };

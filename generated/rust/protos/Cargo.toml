@@ -1,6 +1,6 @@
 [dependencies]
 [dependencies.prost]
-features  = ["prost-derive"]
+features  = ["derive"]
 workspace = true
 [dependencies.serde]
 features  = ["derive"]

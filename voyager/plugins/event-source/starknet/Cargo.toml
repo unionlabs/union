@@ -16,15 +16,10 @@ cainome-cairo-serde = "0.4.1"
 clap                = { workspace = true, features = ["derive"] }
 embed-commit        = { workspace = true }
 enumorph            = { workspace = true }
-ibc-union-spec      = { workspace = true, features = ["tracing", "bincode", "serde"] }
 jsonrpsee           = { workspace = true, features = ["macros", "server", "tracing"] }
 macros              = { workspace = true }
 serde               = { workspace = true, features = ["derive"] }
-serde-utils         = { workspace = true }
-serde_json          = { workspace = true }
-sha2                = { workspace = true, features = ["std"] }
 starknet            = { workspace = true }
-thiserror           = { workspace = true }
 tokio               = { workspace = true }
 tracing             = { workspace = true }
 unionlabs           = { workspace = true, features = ["bincode"] }

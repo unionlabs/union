@@ -12,26 +12,21 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy              = { workspace = true, features = ["sol-types"] }
 bcs                = { workspace = true }
 concurrent-keyring = { workspace = true }
 embed-commit       = { workspace = true }
 enumorph           = { workspace = true }
-fastcrypto         = { git = "https://github.com/MystenLabs/fastcrypto", rev = "d1fcb853196c3de7888ed8fad74f419b8c8fbe3b" }
-hex-literal        = { workspace = true }
+fastcrypto         = { workspace = true, features = ["default"] }
 ibc-union-spec     = { workspace = true, features = ["serde"] }
 jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
 macros             = { workspace = true }
 move-core-types    = { workspace = true }
+reqwest            = { workspace = true, features = ["rustls-tls"] }
 serde              = { workspace = true, features = ["derive"] }
-sha3               = { workspace = true }
 shared-crypto      = { git = "https://github.com/MystenLabs/sui" }
-# sui_json_rpc_api    = { git = "https://github.com/mystenlabs/sui", package = "sui-json-rpc-api" }
-reqwest     = { workspace = true, features = ["rustls-tls"] }
-sui-utils   = { workspace = true }
-sui_sdk     = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
-tokio       = { workspace = true }
-tracing     = { workspace = true }
-ucs03-zkgm  = { workspace = true, features = ["library"] }
-unionlabs   = { workspace = true }
-voyager-sdk = { workspace = true }
+sui-sdk            = { workspace = true }
+sui-utils          = { workspace = true }
+tokio              = { workspace = true }
+tracing            = { workspace = true }
+unionlabs          = { workspace = true }
+voyager-sdk        = { workspace = true }

@@ -1,14 +1,32 @@
 use core::fmt::Display;
 
-use frame_support_procedural::{CloneNoBound, DebugNoBound, EqNoBound, PartialEqNoBound};
 use unionlabs_primitives::{Bytes, FixedBytes, encoding::Encoding};
 
-#[derive(DebugNoBound, EqNoBound, PartialEqNoBound, CloneNoBound)]
 pub struct SuiFixedBytes<const N: usize, E: Encoding>(pub FixedBytes<N, E>);
 
 impl<const N: usize, E: Encoding> SuiFixedBytes<N, E> {
     pub fn new(bytes: FixedBytes<N, E>) -> Self {
         Self(bytes)
+    }
+}
+
+impl<const N: usize, E: Encoding> std::fmt::Debug for SuiFixedBytes<N, E> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("SuiFixedBytes").field(&self.0).finish()
+    }
+}
+
+impl<const N: usize, E: Encoding> Eq for SuiFixedBytes<N, E> {}
+
+impl<const N: usize, E: Encoding> PartialEq for SuiFixedBytes<N, E> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<const N: usize, E: Encoding> Clone for SuiFixedBytes<N, E> {
+    fn clone(&self) -> Self {
+        Self(self.0)
     }
 }
 

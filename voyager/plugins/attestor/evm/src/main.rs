@@ -393,7 +393,7 @@ impl Module {
         if tx_height != height {
             return Err(RpcError::fatal_from_message(format_args!(
                 "block number is inconsistent; event height \
-                    is {height} but tx height is {tx_height}"
+                is {height} but tx height is {tx_height}"
             )));
         }
 

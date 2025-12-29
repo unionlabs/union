@@ -566,6 +566,7 @@
               ++ (with pkgsUnstable; [
                 bun
                 pnpm_10
+                cargo-machete
                 deno
                 nixd
                 procs

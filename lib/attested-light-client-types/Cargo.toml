@@ -16,7 +16,6 @@ alloy                = { workspace = true, features = ["sol-types"], optional = 
 bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
 consensus-primitives = { workspace = true }
 serde                = { workspace = true, optional = true, features = ["derive"] }
-thiserror            = { workspace = true }
 unionlabs            = { workspace = true, features = ["rlp"] }
 
 [features]

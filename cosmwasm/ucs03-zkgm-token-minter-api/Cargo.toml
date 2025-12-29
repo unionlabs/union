@@ -12,11 +12,10 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy             = { workspace = true, features = ["sol-types"] }
-alloy-primitives  = { workspace = true }
-cosmwasm-schema   = { workspace = true }
-cosmwasm-std      = { workspace = true, features = ["std"] }
-enumorph          = { workspace = true }
-ibc-union-spec    = { workspace = true, features = ["schemars", "serde"] }
-token-factory-api = { workspace = true }
-unionlabs         = { workspace = true }
+alloy            = { workspace = true, features = ["sol-types"] }
+alloy-primitives = { workspace = true }
+cosmwasm-schema  = { workspace = true }
+cosmwasm-std     = { workspace = true, features = ["std"] }
+enumorph         = { workspace = true }
+ibc-union-spec   = { workspace = true, features = ["schemars", "serde"] }
+unionlabs        = { workspace = true }

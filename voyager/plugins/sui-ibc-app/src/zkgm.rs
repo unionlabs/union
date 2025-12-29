@@ -17,7 +17,7 @@ use sui_sdk::{
         base_types::ObjectRef,
         crypto::SuiKeyPair,
         dynamic_field::DynamicFieldName,
-        transaction::{Argument, CallArg, Command, ObjectArg},
+        transaction::{Argument, CallArg, Command, ObjectArg, SharedObjectMutability},
     },
 };
 use ucs03_zkgm::com::{Batch, TokenMetadata, TokenOrderV2, ZkgmPacket};
@@ -29,7 +29,7 @@ use super::*;
 pub const SUI_CALL_ARG_CLOCK: CallArg = CallArg::Object(ObjectArg::SharedObject {
     id: ObjectID::from_single_byte(6),
     initial_shared_version: SequenceNumber::from_u64(1),
-    mutable: false,
+    mutability: SharedObjectMutability::Immutable,
 });
 
 const TOKEN_BYTECODE: [&[u8]; 2] = [
@@ -95,22 +95,22 @@ pub fn recv_packet_call(
         CallArg::Object(ObjectArg::SharedObject {
             id: module.ibc_store.into(),
             initial_shared_version: module.ibc_store_initial_seq,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         CallArg::Object(ObjectArg::SharedObject {
             id: module_info.stores[0].0.into(),
             initial_shared_version: module_info.stores[0].1,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         CallArg::Object(ObjectArg::SharedObject {
             id: owned_vault_object_id,
             initial_shared_version: owned_vault_store_initial_seq,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         CallArg::Object(ObjectArg::SharedObject {
             id: escrow_vault_object_id,
             initial_shared_version: escrow_vault_store_initial_seq,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         SUI_CALL_ARG_CLOCK,
         CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
@@ -142,12 +142,12 @@ pub fn end_recv_call(
         CallArg::Object(ObjectArg::SharedObject {
             id: module.ibc_store.into(),
             initial_shared_version: module.ibc_store_initial_seq,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         CallArg::Object(ObjectArg::SharedObject {
             id: module_info.stores[0].0.into(),
             initial_shared_version: module_info.stores[0].1,
-            mutable: false,
+            mutability: SharedObjectMutability::Immutable,
         }),
         SUI_CALL_ARG_CLOCK,
         (&data.proof.into_vec()).into(),
@@ -227,22 +227,22 @@ pub fn acknowledge_packet_call(
         CallArg::Object(ObjectArg::SharedObject {
             id: module.ibc_store.into(),
             initial_shared_version: module.ibc_store_initial_seq,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         CallArg::Object(ObjectArg::SharedObject {
             id: module_info.stores[0].0.into(),
             initial_shared_version: module_info.stores[0].1,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         CallArg::Object(ObjectArg::SharedObject {
             id: owned_vault_object_id,
             initial_shared_version: owned_vault_store_initial_seq,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         CallArg::Object(ObjectArg::SharedObject {
             id: escrow_vault_object_id,
             initial_shared_version: escrow_vault_store_initial_seq,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
     ]
@@ -272,12 +272,12 @@ pub fn end_ack_call(
         CallArg::Object(ObjectArg::SharedObject {
             id: module.ibc_store.into(),
             initial_shared_version: module.ibc_store_initial_seq,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         CallArg::Object(ObjectArg::SharedObject {
             id: module_info.stores[0].0.into(),
             initial_shared_version: module_info.stores[0].1,
-            mutable: false,
+            mutability: SharedObjectMutability::Immutable,
         }),
         (&data.proof.into_vec()).into(),
         data.proof_height.into(),
@@ -337,17 +337,17 @@ pub fn timeout_packet_call(
         CallArg::Object(ObjectArg::SharedObject {
             id: module.ibc_store.into(),
             initial_shared_version: module.ibc_store_initial_seq,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         CallArg::Object(ObjectArg::SharedObject {
             id: module_info.stores[0].0.into(),
             initial_shared_version: module_info.stores[0].1,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         CallArg::Object(ObjectArg::SharedObject {
             id: vault_object_id,
             initial_shared_version: vault_store_initial_seq,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
     ]
     .into_iter()
@@ -375,12 +375,12 @@ pub fn end_timeout_call(
         CallArg::Object(ObjectArg::SharedObject {
             id: module.ibc_store.into(),
             initial_shared_version: module.ibc_store_initial_seq,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }),
         CallArg::Object(ObjectArg::SharedObject {
             id: module_info.stores[0].0.into(),
             initial_shared_version: module_info.stores[0].1,
-            mutable: false,
+            mutability: SharedObjectMutability::Immutable,
         }),
         (&data.proof.into_vec()).into(),
         data.proof_height.into(),
@@ -412,7 +412,7 @@ pub fn register_capability_call(
         ptb.input(CallArg::Object(ObjectArg::SharedObject {
             id: vault_object_id,
             initial_shared_version: initial_seq,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }))
         .unwrap(),
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
@@ -420,7 +420,7 @@ pub fn register_capability_call(
         ptb.input(CallArg::Object(ObjectArg::SharedObject {
             id: metadata_ref.0,
             initial_shared_version: metadata_ref.1,
-            mutable: true,
+            mutability: SharedObjectMutability::Mutable,
         }))
         .unwrap(),
         // owner is 0x0
