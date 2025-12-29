@@ -246,7 +246,6 @@
           self',
           pkgs,
           rust,
-          mkCrane,
           system,
           lib,
           ...

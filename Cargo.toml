@@ -28,17 +28,10 @@ members = [
   "lib/concurrent-keyring",
   "lib/gnark-key-parser",
   "lib/gnark-mimc",
-  # "lib/ibc-vm-rs",
   "lib/ics23",
-  "lib/linea-verifier",
-  "lib/linea-zktrie",
   "lib/macros",
   "lib/pg-queue",
-  # "lib/poseidon-rs",
   "lib/subset-of-derive",
-  "lib/scroll-api",
-  "lib/scroll-codec",
-  "lib/scroll-rpc",
   "lib/arbitrum-types",
   "lib/arbitrum-client",
   "lib/bob-types",
@@ -51,7 +44,6 @@ members = [
   "lib/unionlabs",
   "lib/unionlabs-primitives",
   "lib/unionlabs-encoding",
-  # "lib/zktrie-rs",
   "lib/galois-rpc",
   "lib/cosmos-sdk-event",
   "lib/frissitheto",
@@ -67,7 +59,6 @@ members = [
   "lib/ethereum-sync-protocol-types",
   "lib/evm-storage-verifier",
   "lib/parlia-verifier",
-  # "lib/scroll-verifier",
   "lib/tendermint-verifier",
 
   "lib/base-light-client-types",
@@ -82,8 +73,6 @@ members = [
   "lib/parlia-light-client-types",
   "lib/trusted-mpt-light-client-types",
   "lib/attested-light-client-types",
-  "lib/linea-light-client-types",
-  "lib/scroll-light-client-types",
   "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-ics23-light-client-types",
   "lib/state-lens-ics23-smt-light-client-types",
@@ -109,10 +98,6 @@ members = [
   # "cosmwasm/lightclient/state-lens-ics23-smt",
   "cosmwasm/lightclient/state-lens-ics23-ics23",
   "cosmwasm/lightclient/sui",
-
-  # these will all be re enabled and updated once ethereum-light-client is updated
-  # "cosmwasm/lightclient/scroll",
-  # "cosmwasm/lightclient/linea",
 
   "tools/devnet-utils",
   "tools/build-evm-deployer-tx",
@@ -248,7 +233,6 @@ members = [
   "lib/ibc-classic-spec",
   "lib/state-lens-light-client-types",
   "lib/create3",
-  "lib/linea-types",
   "cosmwasm/osmosis-tokenfactory-token-minter",
   "cosmwasm/cw20-token-minter",
   "cosmwasm/cw-account",
@@ -261,7 +245,6 @@ members = [
   "cosmwasm/cw20-base",
   "cosmwasm/cw20-wrapped-tokenfactory",
   "cosmwasm/on-zkgm-call-proxy",
-  "lib/scroll-types",
   "lib/fork-schedules",
   "lib/depolama",
 
@@ -406,9 +389,6 @@ ibc-union-light-client                    = { path = "cosmwasm/core/light-client
 ibc-union-msg                             = { path = "cosmwasm/core/msg", default-features = false }
 ibc-union-spec                            = { path = "lib/ibc-union-spec", default-features = false }
 ics23                                     = { path = "lib/ics23", default-features = false }
-linea-light-client-types                  = { path = "lib/linea-light-client-types", default-features = false }
-linea-types                               = { path = "lib/linea-types", default-features = false }
-linea-zktrie                              = { path = "lib/linea-zktrie", default-features = false }
 lst                                       = { path = "cosmwasm/lst", default-features = false }
 lst-staker                                = { path = "cosmwasm/lst-staker", default-features = false }
 macros                                    = { path = "lib/macros", default-features = false }
@@ -424,7 +404,6 @@ pausable                                  = { path = "cosmwasm/pausable", defaul
 pg-queue                                  = { path = "lib/pg-queue", default-features = false }
 protos                                    = { path = "generated/rust/protos", default-features = false }
 reconnecting-jsonrpc-ws-client            = { path = "lib/reconnecting-jsonrpc-ws-client", default-features = false }
-scroll-light-client-types                 = { path = "lib/scroll-light-client-types", default-features = false }
 serde-utils                               = { path = "lib/serde-utils", default-features = false }
 solidity-slot                             = { path = "lib/solidity-slot", default-features = false }
 ssz                                       = { path = "lib/ssz", default-features = false }
@@ -477,8 +456,6 @@ wasm-client-type                          = { path = "lib/wasm-client-type", def
 # aptos-verifier     = { path = "lib/aptos-verifier", default-features = false }
 # move-bindgen                   = { path = "tools/move-bindgen", default-features = false }
 # move-bindgen-derive            = { path = "lib/move-bindgen-derive", default-features = false }
-# poseidon-rs                               = { path = "lib/poseidon-rs", default-features = false }
-# zktrie                                    = { path = "lib/zktrie-rs", default-features = false }
 
 # =====================
 # external dependencies

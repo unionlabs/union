@@ -95,12 +95,6 @@ impl ClientType {
     /// [spec]: https://github.com/ethereum/consensus-specs
     pub const ETHEREUM: &'static str = "ethereum";
 
-    /// A client tracking the state of the [Scroll] zkEVM L2, settling on
-    /// Ethereum, verified by verifying the L2 settlement on the L1.
-    ///
-    /// [Scroll]: https://github.com/scroll-tech/scroll
-    pub const SCROLL: &'static str = "scroll";
-
     /// A client tracking the state of the [Arbitrum] optimistic L2, settling on
     /// Ethereum, verified by verifying the L2 settlement on the L1.
     ///
@@ -203,11 +197,6 @@ impl ConsensusType {
 
     /// Ethereum beacon chain consensus.
     pub const ETHEREUM: &'static str = "ethereum";
-
-    /// [Scroll] zkEVM L2, settling on Ethereum.
-    ///
-    /// [Scroll]: https://github.com/scroll-tech/scroll
-    pub const SCROLL: &'static str = "scroll";
 
     /// [Arbitrum] optimistic L2, settling on Ethereum.
     ///
@@ -393,7 +382,7 @@ pub struct ChainId;
 /// - 07-tendermint client on stargaze, tracking osmosis: `(ibc-go-v8/native, tendermint)`
 /// - 08-wasm client on babylon, tracking union: `(ibc-go-v8/08-wasm, cometbls, {"checksum":
 ///   "0x..."}))`
-/// - cometbls client on scroll, tracking union: `(ibc-solidity, cometbls)`
+/// - cometbls client on ethereum, tracking union: `(ibc-solidity, cometbls)`
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(
     feature = "serde",

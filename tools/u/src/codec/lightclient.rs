@@ -26,10 +26,8 @@ pub enum Cmd {
     #[command(visible_alias = "eth")]
     Ethereum(LightClientCodecCmdArgs),
     Ethermint(LightClientCodecCmdArgs),
-    Linea(LightClientCodecCmdArgs),
     Movement(LightClientCodecCmdArgs),
     Parlia(LightClientCodecCmdArgs),
-    Scroll(LightClientCodecCmdArgs),
     #[command(visible_alias = "ics23ics23")]
     StateLensIcs23Ics23(LightClientCodecCmdArgs),
     #[command(visible_alias = "ics23mpt")]
@@ -231,17 +229,11 @@ impl Cmd {
                 }
                 convert!(m, c)
             }
-            Cmd::Linea(c) => {
-                convert!(linea_light_client_types, c)
-            }
             Cmd::Movement(c) => {
                 convert!(movement_light_client_types, c)
             }
             Cmd::Parlia(c) => {
                 convert!(parlia_light_client_types, c)
-            }
-            Cmd::Scroll(c) => {
-                convert!(scroll_light_client_types, c)
             }
             Cmd::StateLensIcs23Ics23(c) => {
                 convert!(state_lens_ics23_ics23_light_client_types, c)
