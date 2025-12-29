@@ -20,7 +20,7 @@ reconnecting-jsonrpc-ws-client = { workspace = true }
 reth-ipc                       = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde_json                     = { workspace = true }
-tokio                          = { workspace = true, features = ["fs", "signal"] }
+tokio                          = { workspace = true, features = ["fs", "signal", "process"] }
 tokio-util                     = { workspace = true }
 tower                          = { workspace = true }
 tracing                        = { workspace = true }
