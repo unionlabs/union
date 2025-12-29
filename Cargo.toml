@@ -57,12 +57,6 @@ members = [
   "lib/frissitheto",
   "lib/parlia-types",
 
-
-  # "lib/near/near-ibc",
-  # "lib/near/near-light-client",
-  # "lib/near/dummy-ibc-app",
-  # "lib/near/near-ibc-tests",
-
   "lib/ibc-solidity",
 
   "lib/base-verifier",
@@ -527,7 +521,6 @@ itertools          = { version = "0.13" }
 jsonrpsee          = { version = "0.26.0", default-features = false }
 lazy_static        = { version = "1.5.0", default-features = false }
 moka               = { version = "0.12.10", default-features = false }
-near-sdk           = { version = "5.14.0", default-features = false }
 num-bigint         = { version = "0.4", default-features = false }
 opentelemetry      = { version = "0.29.1", default-features = false }
 opentelemetry-otlp = { version = "0.29.0", default-features = false }

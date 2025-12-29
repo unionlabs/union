@@ -9068,79 +9068,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "near-account-id"
-version = "2.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91f75ff8eee73815c247d0e17f3c0b705f0e993922a5548acd2ad377aeb67fca"
-dependencies = [
- "borsh",
- "serde",
-]
-
-[[package]]
-name = "near-gas"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cecd5d9463587f34f2b7ff4c7104297483a543be8a68a4a04a8ac96c419d1a1"
-dependencies = [
- "borsh",
- "serde",
-]
-
-[[package]]
-name = "near-sdk"
-version = "5.24.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5188eba9ee0383c2a28afee994e65c21e98823d18a32b8b3a7c8d6cdedfb119"
-dependencies = [
- "base64 0.22.1",
- "borsh",
- "bs58 0.5.1",
- "near-account-id",
- "near-gas",
- "near-sdk-macros",
- "near-sys",
- "near-token",
- "once_cell",
- "serde",
- "serde_json",
- "serde_with",
-]
-
-[[package]]
-name = "near-sdk-macros"
-version = "5.24.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4339b75a514ca2e6b67379be62a441f7e99a2c3813278f1b23d233b300f9f4f"
-dependencies = [
- "Inflector",
- "darling 0.20.11",
- "proc-macro2",
- "quote",
- "serde",
- "serde_json",
- "strum 0.26.3",
- "strum_macros 0.26.4",
- "syn 2.0.111",
-]
-
-[[package]]
-name = "near-sys"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b99e9ce0020190ea152f70d1849e54fc8fc123738e7447800ad818c78f5167cc"
-
-[[package]]
-name = "near-token"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34de6b54d82d0790b2a56b677e7b4ecb7f021a7e8559f8611065c890d56cfcda"
-dependencies = [
- "borsh",
- "serde",
-]
-
-[[package]]
 name = "neptune"
 version = "13.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15577,7 +15504,6 @@ dependencies = [
  "derive_more 2.1.1",
  "hex-literal 1.1.0",
  "macros",
- "near-sdk",
  "prost 0.12.6",
  "protos",
  "rand 0.8.5",

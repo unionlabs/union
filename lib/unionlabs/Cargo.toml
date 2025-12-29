@@ -13,28 +13,26 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-bcs               = { workspace = true }
-bincode           = { workspace = true, features = ["alloc", "derive"], optional = true }
-borsh             = { workspace = true, features = ["borsh-derive"], optional = true }
-bs58              = { workspace = true }
-chrono            = { workspace = true, features = ["alloc"] }
-cosmwasm-std      = { workspace = true, optional = true, features = ["std"] }
-derive_more       = { workspace = true, features = ["display"] }
-macros            = { workspace = true }
-prost             = { workspace = true, features = ["std"] }
-protos            = { workspace = true, features = ["proto_full", "serde"] }
-serde             = { workspace = true, features = ["derive"] }
-serde-utils       = { workspace = true }
-serde_json        = { workspace = true, optional = true }
-sha2              = { workspace = true }
-sha3              = { workspace = true }
-static_assertions = { workspace = true }
-thiserror         = { workspace = true }
-typenum           = { workspace = true, features = ["const-generics", "no_std"] }
-# near-primitives-core = { version = "0.21", optional = true }
-near-sdk             = { workspace = true, optional = true }
+bcs                  = { workspace = true }
+bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
+borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
+bs58                 = { workspace = true }
+chrono               = { workspace = true, features = ["alloc"] }
+cosmwasm-std         = { workspace = true, optional = true, features = ["std"] }
+derive_more          = { workspace = true, features = ["display"] }
+macros               = { workspace = true }
+prost                = { workspace = true, features = ["std"] }
+protos               = { workspace = true, features = ["proto_full", "serde"] }
 schemars             = { workspace = true, features = ["derive"], optional = true }
+serde                = { workspace = true, features = ["derive"] }
+serde-utils          = { workspace = true }
+serde_json           = { workspace = true, optional = true }
+sha2                 = { workspace = true }
+sha3                 = { workspace = true }
 solidity-slot        = { workspace = true }
+static_assertions    = { workspace = true }
+thiserror            = { workspace = true }
+typenum              = { workspace = true, features = ["const-generics", "no_std"] }
 unionlabs-encoding   = { workspace = true, features = ["proto", "json"] }
 unionlabs-primitives = { workspace = true, features = ["generic-array-compat", "serde", "base64", "base58"] }
 
@@ -52,7 +50,6 @@ ethabi = [
   "unionlabs-primitives/alloy-sol-types-compat",
   "unionlabs-encoding/ethabi",
 ]
-# near = ["borsh", "near-sdk", "near-primitives-core"]
 std = ["sha2/std", "unionlabs-encoding/std"]
 
 fuzzing    = []
