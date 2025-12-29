@@ -6,12 +6,10 @@
       pkgs,
       lib,
       self',
-      nix-filter,
       inputs',
       system,
       get-flake,
       mkCi,
-      mkNodeId,
       dbg,
       ensureAtRepositoryRoot,
       ...
@@ -23,25 +21,6 @@
         inherit pkgs dbg;
       };
       inherit (inputs'.nixpkgs-lnav.legacyPackages) lnav;
-
-      cosmwasmContracts = [
-        # {
-        #   code = self'.packages.ucs00-pingpong;
-        #   instances = [ ];
-        # }
-        # {
-        #   code = self'.packages.ucs01-relay;
-        #   instances = [ ];
-        # }
-        # {
-        #   code = self'.packages.ucs02-nft;
-        #   instances = [ ];
-        # }
-        # {
-        #   code = self'.packages.cw721-base;
-        #   instances = [ ];
-        # }
-      ];
 
       devnet-union = mkCosmosDevnet {
         node = self'.packages.uniond;
@@ -72,54 +51,6 @@
             };
           };
         };
-        lightClients = [
-          # self'.packages.trusted-mpt-light-client
-          # self'.packages.ethereum-light-client
-          # self'.packages.scroll-light-client
-          # self'.packages.arbitrum-light-client
-          # self'.packages.berachain-light-client
-          # self'.packages.ics08-movement
-        ];
-        cosmwasmContracts = [
-          # {
-          #   code = self'.packages.ucs00-pingpong;
-          #   instances = [ ];
-          # }
-          # {
-          #   code = self'.packages.ucs01-relay;
-          #   instances = [
-          #     {
-          #       message = {
-          #         default_timeout = 10000;
-          #         # Todo derive
-          #         gov_contract = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2";
-          #       };
-          #       # salt must be non-prefixed hex string
-          #       salt = "00";
-          #       label = "ucs01-relay";
-          #     }
-          #   ];
-          # }
-          # {
-          #   code = self'.packages.ucs02-nft;
-          #   instances = [{
-          #     message = {
-          #       # Must be the index of `cw721-base` within this contracts list
-          #       cw721_base_code_id = 4;
-          #       incoming_proxy = null;
-          #       outgoing_proxy = null;
-          #       pauser = null;
-          #       cw721_admin = null;
-          #     };
-          #     salt = "00";
-          #     label = "ucs02-nft";
-          #   }];
-          # }
-          # {
-          #   code = self'.packages.cw721-base;
-          #   instances = [ ];
-          # }
-        ];
         portIncrease = 0;
         has08Wasm = true;
       };
@@ -131,10 +62,6 @@
         denom = "ustars";
         keyType = "ed25519";
         validatorCount = 4;
-        lightClients = [
-          # self'.packages.cometbls-light-client
-        ];
-        inherit cosmwasmContracts;
         portIncrease = 100;
       };
 
@@ -145,10 +72,6 @@
         denom = "uosmo";
         keyType = "ed25519";
         validatorCount = 4;
-        lightClients = [
-          # self'.packages.cometbls-light-client
-        ];
-        inherit cosmwasmContracts;
         portIncrease = 200;
         sdkVersion = 47;
         genesisOverwrites = {
@@ -174,10 +97,6 @@
         validatorCount = 4;
         sdkVersion = 50;
         sdkPatchVersion = 8;
-        lightClients = [
-          # self'.packages.cometbls-light-client
-        ];
-        inherit cosmwasmContracts;
         portIncrease = 300;
       };
 
@@ -238,13 +157,6 @@
             --rpc.unsafe 
         '';
       };
-
-      allCosmosDevnets = [
-        devnet-union
-        devnet-osmosis
-        devnet-simd
-        devnet-stargaze
-      ];
 
       services = {
         devnet-union = devnet-union.services;
@@ -452,8 +364,7 @@
         // (mkArionBuild "devnet-stargaze" (system == "x86_64-linux"))
         // (mkArionBuild "devnet-osmosis" (system == "x86_64-linux"))
         // (mkArionBuild "devnet-eth" (system == "x86_64-linux"))
-        // (mkArionBuild "union-v1" (system == "x86_64-linux"))
-        // (builtins.foldl' (acc: elem: elem.scripts or { } // acc) { } allCosmosDevnets);
+        // (mkArionBuild "union-v1" (system == "x86_64-linux"));
 
       _module.args.networks.modules = modules;
     };

@@ -6,7 +6,6 @@
       pkgs,
       proto,
       crane,
-      system,
       config,
       ensureAtRepositoryRoot,
       mkCi,
