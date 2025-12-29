@@ -177,35 +177,36 @@ impl Module {
         let mut headers = vec![];
 
         let mut is_first = true;
-        for epoch in from..to {
-            info!(%epoch, "fetching epoch");
-            let query = json!({
-              "query": "query ($epoch_id: UInt53) { epoch(epochId: $epoch_id) { checkpoints(last: 1) { edges { node { sequenceNumber } } }  } }",
-              "variables": { "epoch_id": epoch }
-            });
+        let epoch_ids: Vec<u64> = (from..to).collect();
+        let query = json!({
+          "query": "query ($epoch_ids: [UInt53]) { multiGetEpochs(keys: $epoch_ids) { checkpoints(last: 1) { edges { node { sequenceNumber } } }  } }",
+          "variables": { "epoch_ids": epoch_ids}
+        });
 
-            let resp = client
-                .try_clone()
-                .expect("no body, so this will work")
-                .body(query.to_string())
-                .send()
-                .await
-                .map_err(RpcError::retryable("error fetching epoch checkpoint"))?
-                .error_for_status()
-                .map_err(RpcError::retryable(
-                    "error fetching epoch checkpoint: error status",
-                ))?
-                .text()
-                .await
-                .map_err(RpcError::retryable(
-                    "error fetching epoch checkpoint: error reading text from body",
-                ))?;
+        let resp = client
+            .try_clone()
+            .expect("no body, so this will work")
+            .body(query.to_string())
+            .send()
+            .await
+            .map_err(RpcError::retryable("error fetching epoch checkpoint"))?
+            .error_for_status()
+            .map_err(RpcError::retryable(
+                "error fetching epoch checkpoint: error status",
+            ))?
+            .text()
+            .await
+            .map_err(RpcError::retryable(
+                "error fetching epoch checkpoint: error reading text from body",
+            ))?;
 
-            info!(%resp);
+        info!(%resp);
 
-            let v: serde_json::Value = serde_json::from_str(&resp).unwrap();
+        let v: &serde_json::Value =
+            &serde_json::from_str::<serde_json::Value>(&resp).unwrap()["data"]["multiGetEpochs"];
 
-            let update_to = v["data"]["epoch"]["checkpoints"]["edges"][0]["node"]["sequenceNumber"]
+        for (i, _) in (from..to).enumerate() {
+            let update_to = v[i]["checkpoints"]["edges"][0]["node"]["sequenceNumber"]
                 .as_u64()
                 .unwrap();
 
