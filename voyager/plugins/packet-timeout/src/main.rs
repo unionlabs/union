@@ -55,7 +55,6 @@ impl Plugin for Module {
 
         PluginInfo {
             name: module.plugin_name(),
-            // TODO: Support IBC classic
             interest_filter: format!(
                 r#"
 if ."@type" == "data"
@@ -248,19 +247,18 @@ impl Module {
             counterparty_chain_id,
         }: WaitForTimeoutOrReceipt,
     ) -> RpcResult<Op<VoyagerMessage>> {
-        let counterparty_latest_height = voyager_client
-            .query_latest_height(counterparty_chain_id.clone(), false)
-            .await?;
-
-        info!("counterparty latest height: {counterparty_latest_height}");
-
         let receipt = voyager_client
             .maybe_query_ibc_state(
                 counterparty_chain_id.clone(),
-                QueryHeight::Specific(counterparty_latest_height),
+                QueryHeight::Latest,
                 BatchReceiptsPath::from_packets(&[event.packet()]),
             )
             .await?;
+
+        info!(
+            height = receipt.height.height(),
+            "counterparty latest height"
+        );
 
         match receipt.state {
             Some(receipt) => {
@@ -270,7 +268,11 @@ impl Module {
             None => {
                 debug!("packet not received yet");
 
-                if !event.packet.timeout_timestamp.is_zero() {
+                if event.packet.timeout_timestamp.is_zero() {
+                    Err(RpcError::fatal_from_message(
+                        "packet has no timeout timestamp - should be impossible",
+                    ))
+                } else {
                     let counterparty_timestamp = voyager_client
                         .query_latest_timestamp(counterparty_chain_id.clone(), false)
                         .await?;
@@ -283,15 +285,6 @@ impl Module {
                     }
 
                     Ok(self.mk_wait(chain_id, counterparty_chain_id, event))
-                } else {
-                    Ok(call(PluginMessage::new(
-                        self.plugin_name(),
-                        ModuleCall::WaitForTimeoutOrReceipt(WaitForTimeoutOrReceipt {
-                            event,
-                            chain_id,
-                            counterparty_chain_id,
-                        }),
-                    )))
                 }
             }
         }
