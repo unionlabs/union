@@ -3,29 +3,33 @@ use std::collections::VecDeque;
 use ibc_union_spec::{
     IbcUnion,
     datagram::{Datagram, MsgPacketTimeout},
-    event::{FullEvent, PacketSend},
+    event::FullEvent,
     path::BatchReceiptsPath,
 };
 use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tracing::{debug, info, instrument, warn};
+use tracing::{debug, info, instrument};
 use unionlabs::{self, never::Never};
 use voyager_sdk::{
     DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
     message::{
         PluginMessage, VoyagerMessage,
-        call::{SubmitTx, WaitForTrustedTimestamp},
+        call::{FetchUpdateHeaders, SubmitTx},
+        callback::AggregateSubmitTxFromOrderedHeaders,
         data::{Data, IbcDatagram},
     },
     plugin::Plugin,
-    primitives::{ChainId, IbcSpec, QueryHeight},
+    primitives::{IbcSpec, QueryHeight},
     rpc::{PluginServer, RpcError, RpcErrorExt, RpcResult, types::PluginInfo},
     types::{ProofType, RawClientId},
-    vm::{Op, call, defer, noop, pass::PassResult, seq},
+    vm::{Op, call, defer, defer_relative, noop, pass::PassResult, promise, seq},
 };
 
-use crate::call::{MakeMsgTimeout, ModuleCall, WaitForTimeoutOrReceipt};
+use crate::call::{
+    MakeMsgTimeout, MakeMsgTimeoutFromTrustedHeight, ModuleCall, UpdateClientToHeightTimestamp,
+    WaitForTimeoutOrReceipt,
+};
 
 pub mod call;
 
@@ -170,7 +174,7 @@ impl PluginServer<ModuleCall, Never> for Module {
 
                 let proof_unreceived = voyager_client
                     .query_ibc_proof(
-                        counterparty_chain_id,
+                        counterparty_chain_id.clone(),
                         QueryHeight::Specific(client_meta.counterparty_height),
                         BatchReceiptsPath::from_packets(&[event.packet().clone()]),
                     )
@@ -179,40 +183,189 @@ impl PluginServer<ModuleCall, Never> for Module {
 
                 match proof_unreceived.proof_type {
                     ProofType::NonMembership => {
-                        let client_info = voyager_client
-                            .client_info::<IbcUnion>(
-                                chain_id.clone(),
-                                event.packet.source_channel.connection.client_id,
-                            )
-                            .await?;
-
-                        let encoded_proof_commitment = voyager_client
-                            .encode_proof::<IbcUnion>(
-                                client_info.client_type,
-                                client_info.ibc_interface,
-                                proof_unreceived.proof,
-                            )
-                            .await?;
-
-                        Ok(call(SubmitTx {
-                            chain_id,
-                            datagrams: vec![IbcDatagram::new::<IbcUnion>(Datagram::from(
-                                MsgPacketTimeout {
-                                    packet: event.packet(),
-                                    proof: encoded_proof_commitment,
-                                    proof_height: client_meta.counterparty_height.height(),
-                                },
-                            ))],
-                        }))
+                        Ok(seq([
+                            // wait for the counterparty to finalize the timeout timestamp
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(UpdateClientToHeightTimestamp {
+                                    chain_id: chain_id.clone(),
+                                    counterparty_chain_id: counterparty_chain_id.clone(),
+                                    client_id: event.packet.source_channel.connection.client_id,
+                                    timestamp: event.packet.timeout_timestamp,
+                                }),
+                            )),
+                            // build the timeout tx once the client is updated
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(MakeMsgTimeoutFromTrustedHeight {
+                                    event,
+                                    chain_id,
+                                    counterparty_chain_id,
+                                }),
+                            )),
+                        ]))
                     }
                     ProofType::Membership => {
-                        warn!(
+                        info!(
                             packet_hash = %event.packet().hash(),
-                            "packet timed out, but it was already received on the counterparty"
+                            "packet already received",
                         );
 
                         Ok(noop())
                     }
+                }
+            }
+            ModuleCall::UpdateClientToHeightTimestamp(UpdateClientToHeightTimestamp {
+                chain_id,
+                counterparty_chain_id,
+                client_id,
+                timestamp,
+            }) => {
+                let latest_finalized_timestamp = voyager_client
+                    .query_latest_timestamp(chain_id.clone(), true)
+                    .await?;
+
+                if latest_finalized_timestamp < timestamp {
+                    Ok(seq([
+                        // if the latest finalized timestamp isn't high enough yet, wait a bit and try again
+                        defer_relative(60),
+                        call(PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::from(UpdateClientToHeightTimestamp {
+                                chain_id,
+                                counterparty_chain_id,
+                                client_id,
+                                timestamp,
+                            }),
+                        )),
+                    ]))
+                } else {
+                    let latest_finalized_height = voyager_client
+                        .query_latest_height(counterparty_chain_id.clone(), true)
+                        .await?;
+
+                    let client_info = voyager_client
+                        .client_info::<IbcUnion>(chain_id.clone(), client_id)
+                        .await?;
+
+                    let client_meta = voyager_client
+                        .client_state_meta::<IbcUnion>(
+                            chain_id.clone(),
+                            QueryHeight::Finalized,
+                            client_id,
+                        )
+                        .await?;
+
+                    // update the counterparty client
+                    Ok(promise(
+                        [call(FetchUpdateHeaders {
+                            client_type: client_info.client_type,
+                            chain_id: counterparty_chain_id.clone(),
+                            counterparty_chain_id: chain_id.clone(),
+                            client_id: RawClientId::new(client_id),
+                            update_from: client_meta.counterparty_height,
+                            update_to: latest_finalized_height,
+                        })],
+                        [],
+                        AggregateSubmitTxFromOrderedHeaders {
+                            ibc_spec_id: IbcUnion::ID,
+                            chain_id: chain_id.clone(),
+                            client_id: RawClientId::new(client_id),
+                        },
+                    ))
+                }
+            }
+            ModuleCall::MakeMsgTimeoutFromTrustedHeight(MakeMsgTimeoutFromTrustedHeight {
+                event,
+                chain_id,
+                counterparty_chain_id,
+            }) => {
+                let client_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
+                        chain_id.clone(),
+                        QueryHeight::Finalized,
+                        event.packet.source_channel.connection.client_id,
+                    )
+                    .await?;
+
+                let consensus_state_meta = voyager_client
+                    .consensus_state_meta::<IbcUnion>(
+                        chain_id.clone(),
+                        QueryHeight::Finalized,
+                        event.packet.source_channel.connection.client_id,
+                        client_meta.counterparty_height,
+                    )
+                    .await?;
+
+                if consensus_state_meta.timestamp >= event.packet.timeout_timestamp {
+                    let proof_unreceived = voyager_client
+                        .query_ibc_proof(
+                            counterparty_chain_id,
+                            QueryHeight::Specific(client_meta.counterparty_height),
+                            BatchReceiptsPath::from_packets(&[event.packet().clone()]),
+                        )
+                        .await?
+                        .into_result()?;
+
+                    match proof_unreceived.proof_type {
+                        ProofType::NonMembership => {
+                            let client_info = voyager_client
+                                .client_info::<IbcUnion>(
+                                    chain_id.clone(),
+                                    event.packet.source_channel.connection.client_id,
+                                )
+                                .await?;
+
+                            let encoded_proof_commitment = voyager_client
+                                .encode_proof::<IbcUnion>(
+                                    client_info.client_type,
+                                    client_info.ibc_interface,
+                                    proof_unreceived.proof,
+                                )
+                                .await?;
+
+                            Ok(call(SubmitTx {
+                                chain_id,
+                                datagrams: vec![IbcDatagram::new::<IbcUnion>(Datagram::from(
+                                    MsgPacketTimeout {
+                                        packet: event.packet(),
+                                        proof: encoded_proof_commitment,
+                                        proof_height: client_meta.counterparty_height.height(),
+                                    },
+                                ))],
+                            }))
+                        }
+                        ProofType::Membership => {
+                            info!(
+                                packet_hash = %event.packet().hash(),
+                                "packet already received",
+                            );
+
+                            Ok(noop())
+                        }
+                    }
+                } else {
+                    Ok(seq([
+                        // if the latest trusted timestamp isn't high enough yet, wait a bit and try again
+                        defer_relative(10),
+                        call(PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::from(UpdateClientToHeightTimestamp {
+                                chain_id: chain_id.clone(),
+                                counterparty_chain_id: counterparty_chain_id.clone(),
+                                client_id: event.packet.source_channel.connection.client_id,
+                                timestamp: event.packet.timeout_timestamp,
+                            }),
+                        )),
+                        call(PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::from(MakeMsgTimeoutFromTrustedHeight {
+                                event,
+                                chain_id,
+                                counterparty_chain_id,
+                            }),
+                        )),
+                    ]))
                 }
             }
         }
@@ -284,38 +437,21 @@ impl Module {
                         );
                     }
 
-                    Ok(self.mk_wait(chain_id, counterparty_chain_id, event))
+                    Ok(seq([
+                        // wait until the timestamp is hit
+                        defer(event.packet.timeout_timestamp.as_secs()),
+                        // then attempt to make the timeout message
+                        call(PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::from(MakeMsgTimeout {
+                                event,
+                                chain_id,
+                                counterparty_chain_id,
+                            }),
+                        )),
+                    ]))
                 }
             }
         }
-    }
-
-    fn mk_wait(
-        &self,
-        chain_id: ChainId,
-        counterparty_chain_id: ChainId,
-        event: PacketSend,
-    ) -> Op<VoyagerMessage> {
-        seq([
-            // wait until the timestamp is hit
-            defer(event.packet.timeout_timestamp.as_secs()),
-            // then wait for the counterparty client to be updated to a block >= the timestamp
-            call(WaitForTrustedTimestamp {
-                chain_id: chain_id.clone(),
-                ibc_spec_id: IbcUnion::ID,
-                client_id: RawClientId::new(event.packet.source_channel.connection.client_id),
-                timestamp: event.packet.timeout_timestamp,
-                finalized: false,
-            }),
-            // then make the timeout message
-            call(PluginMessage::new(
-                self.plugin_name(),
-                ModuleCall::from(MakeMsgTimeout {
-                    event,
-                    chain_id,
-                    counterparty_chain_id,
-                }),
-            )),
-        ])
     }
 }
