@@ -847,7 +847,6 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
             }) => {
                 let chain_height = self
                     .server
-                    // .with_id(Some(self.id))
                     .query_latest_height(&chain_id, finalized)
                     .await?;
 
@@ -884,7 +883,6 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
             }) => {
                 let chain_timestamp = self
                     .server
-                    // .with_id(Some(self.id))
                     .query_latest_timestamp(&chain_id, finalized)
                     .await?;
 
@@ -913,7 +911,6 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
             }) => {
                 let chain_height = self
                     .server
-                    // .with_id(Some(self.id))
                     .query_latest_height(&chain_id, finalized)
                     .await?;
 
@@ -936,7 +933,6 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
             }) => {
                 let trusted_client_state_meta = self
                     .server
-                    // .with_id(Some(self.id))
                     .client_state_meta(
                         &chain_id,
                         &ibc_spec_id,
@@ -992,7 +988,6 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
             }) => {
                 let trusted_client_state_meta = self
                     .server
-                    // .with_id(Some(self.id))
                     .client_state_meta(
                         &chain_id,
                         &ibc_spec_id,
@@ -1008,7 +1003,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                 let continuation = seq([
                     // REVIEW: Defer until `now + counterparty_chain.block_time()`? Would
                     // require a new method on chain
-                    defer(now() + 1),
+                    defer(now() + 10),
                     voyager_vm::call(WaitForTrustedTimestamp {
                         chain_id: chain_id.clone(),
                         ibc_spec_id: ibc_spec_id.clone(),
@@ -1022,7 +1017,6 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                     Some(trusted_client_state_meta) => {
                         let trusted_consensus_state_meta = self
                             .server
-                            // .with_id(Some(self.id))
                             .consensus_state_meta(
                                 &chain_id,
                                 &ibc_spec_id,
@@ -1066,7 +1060,6 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
             }) => {
                 let consensus_state_meta = self
                     .server
-                    // .with_id(Some(self.id))
                     .consensus_state_meta(
                         &chain_id,
                         &ibc_spec_id,
@@ -1156,7 +1149,6 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                     ..
                 } = self
                     .server
-                    // .with_id(Some(self.id))
                     .client_info(&chain_id, &ibc_spec_id, client_id.clone())
                     .await?
                     .ok_or_else(|| RpcError::missing_state("client not found"))?;

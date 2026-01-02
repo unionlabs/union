@@ -162,8 +162,13 @@ pub struct FetchUpdateHeaders {
     pub client_type: ClientType,
     /// The ID of the chain that is being tracked by the `self.client_id` client on
     /// `self.counterparty_chain_id`.
+    ///
+    /// This can also be referred to as the "tracked chain".
     pub chain_id: ChainId,
     /// The chain that the light client tracking `self.chain_id` is on.
+    ///
+    /// This can also be referred to as the "host chain".
+    #[doc(alias = "host_chain_id")]
     pub counterparty_chain_id: ChainId,
     /// The ID of the client that is being updated.
     pub client_id: RawClientId,
