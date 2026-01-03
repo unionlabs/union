@@ -6891,6 +6891,7 @@ dependencies = [
  "hex-literal 1.1.0",
  "ibc-union-msg",
  "ibc-union-spec",
+ "kimlik",
  "serde",
  "serde-json-wasm",
  "strum 0.27.2",
@@ -7864,6 +7865,24 @@ name = "keccak-const"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57d8d8ce877200136358e0bbff3a77965875db3af755a11e1fa6b1b3e2df13ea"
+
+[[package]]
+name = "kimlik"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std",
+ "depolama",
+]
+
+[[package]]
+name = "kimlik-verifier"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "embed-commit",
+ "wasmtime",
+]
 
 [[package]]
 name = "lalrpop"
