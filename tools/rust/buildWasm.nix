@@ -19,9 +19,15 @@ let
       contractFileNameWithoutExt,
     }:
     ''
-      ${pkgs.binaryen}/bin/wasm-opt target/wasm32-unknown-unknown/wasm-release/${contractFileNameWithoutExt}.wasm -Oz -o ${(crateCargoToml crateDirFromRoot).package.name}
+      ${pkgs.binaryen}/bin/wasm-opt \
+        target/wasm32-unknown-unknown/wasm-release/${contractFileNameWithoutExt}.wasm \
+        -Oz -o ${(crateCargoToml crateDirFromRoot).package.name}.wasm
 
-      ${pkgs.lib.meta.getExe pkgsUnstable.wasm-bindgen-cli_0_2_100} ${(crateCargoToml crateDirFromRoot).package.name} --out-dir $out --typescript --target web
+      ${pkgs.lib.meta.getExe pkgsUnstable.wasm-bindgen-cli_0_2_100} \
+        ${(crateCargoToml crateDirFromRoot).package.name}.wasm \
+        --out-dir $out \
+        --typescript \
+        --target web
     '';
   cargoBuildExtraArgs =
     features:
