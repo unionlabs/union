@@ -33,7 +33,6 @@ import {StateLensIcs23SmtClient} from
     "../contracts/clients/StateLensIcs23SmtClient.sol";
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/03-zkgm/Zkgm.sol";
-import "../contracts/apps/ucs/06-funded-dispatch/FundedDispatch.sol";
 import "../contracts/tge/Vesting.sol";
 import "../contracts/tge/UDrop.sol";
 import "../contracts/tge/QuickWithdrawal.sol";
@@ -56,7 +55,6 @@ struct Contracts {
     PingPong ucs00;
     ZkgmERC20 ucs03Erc20Impl;
     UCS03Zkgm ucs03;
-    UCS06FundedDispatch ucs06;
 }
 
 struct UCS03Parameters {
@@ -111,7 +109,6 @@ library LightClients {
 library Protocols {
     string constant UCS00 = "protocols/ucs00";
     string constant UCS03 = "protocols/ucs03";
-    string constant UCS06 = "protocols/ucs06";
 }
 
 abstract contract VersionedScript is Script {
@@ -604,26 +601,6 @@ abstract contract UnionScript is UnionBase {
         return zkgm;
     }
 
-    function deployUCS06(
-        Manager manager
-    ) internal returns (UCS06FundedDispatch) {
-        UCS06FundedDispatch fundedDispatch = UCS06FundedDispatch(
-            payable(
-                deployIfNotExists(
-                    Protocols.UCS06,
-                    abi.encode(
-                        address(new UCS06FundedDispatch()),
-                        abi.encodeCall(
-                            UCS06FundedDispatch.initialize, (address(manager))
-                        )
-                    ),
-                    "UCS06 FundedDispatch"
-                )
-            )
-        );
-        return fundedDispatch;
-    }
-
     function deployIBC(
         address owner,
         UCS03Parameters memory ucs03Params
@@ -643,7 +620,6 @@ abstract contract UnionScript is UnionBase {
         ProxyAccount accountImpl = deployProxyAccount();
         UCS03Zkgm ucs03 =
             deployUCS03(handler, manager, zkgmERC20, accountImpl, ucs03Params);
-        UCS06FundedDispatch ucs06 = deployUCS06(manager);
         Multicall multicall = deployMulticall(manager);
         Contracts memory contracts = Contracts({
             handler: handler,
@@ -655,7 +631,6 @@ abstract contract UnionScript is UnionBase {
             ucs00: ucs00,
             ucs03Erc20Impl: zkgmERC20,
             ucs03: ucs03,
-            ucs06: ucs06,
             multicall: multicall,
             manager: manager
         });
@@ -942,7 +917,6 @@ contract DeployIBC is UnionScript, VersionedScript {
         console.log("UCS00: ", address(contracts.ucs00));
         console.log("ZkgmERC20: ", address(contracts.ucs03Erc20Impl));
         console.log("UCS03: ", address(contracts.ucs03));
-        console.log("UCS06: ", address(contracts.ucs06));
         console.log("Multicall: ", address(contracts.multicall));
     }
 }
@@ -998,7 +972,6 @@ contract DeployDeployerAndIBC is UnionScript, VersionedScript {
         console.log("UCS00: ", address(contracts.ucs00));
         console.log("ZkgmERC20: ", address(contracts.ucs03Erc20Impl));
         console.log("UCS03: ", address(contracts.ucs03));
-        console.log("UCS06: ", address(contracts.ucs06));
         console.log("U: ", address(u));
         console.log("Multicall: ", address(contracts.multicall));
     }
@@ -2166,8 +2139,6 @@ contract DeployRoles is UnionScript {
         ZkgmERC20 ucs03Erc20Impl =
             ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
-        UCS06FundedDispatch ucs06 =
-            UCS06FundedDispatch(getDeployed(Protocols.UCS06));
         Multicall multicall = Multicall(getDeployed(LIB_SALT.MULTICALL));
         StateLensIcs23MptClient stateLensIcs23MptClient =
         StateLensIcs23MptClient(
@@ -2192,8 +2163,7 @@ contract DeployRoles is UnionScript {
             stateLensIcs23SmtClient: stateLensIcs23SmtClient,
             ucs00: ucs00,
             ucs03Erc20Impl: ucs03Erc20Impl,
-            ucs03: ucs03,
-            ucs06: ucs06
+            ucs03: ucs03
         });
     }
 
@@ -2222,8 +2192,6 @@ contract DeployRegisterClients is UnionScript {
         ZkgmERC20 ucs03Erc20Impl =
             ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
-        UCS06FundedDispatch ucs06 =
-            UCS06FundedDispatch(getDeployed(Protocols.UCS06));
         Multicall multicall = Multicall(getDeployed(LIB_SALT.MULTICALL));
         StateLensIcs23MptClient stateLensIcs23MptClient =
         StateLensIcs23MptClient(
@@ -2248,8 +2216,7 @@ contract DeployRegisterClients is UnionScript {
             stateLensIcs23SmtClient: stateLensIcs23SmtClient,
             ucs00: ucs00,
             ucs03Erc20Impl: ucs03Erc20Impl,
-            ucs03: ucs03,
-            ucs06: ucs06
+            ucs03: ucs03
         });
     }
 

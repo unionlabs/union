@@ -15240,24 +15240,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ucs06-funded-dispatch"
-version = "0.0.0"
-dependencies = [
- "alloy-primitives",
- "alloy-sol-types",
- "cosmwasm-schema",
- "cosmwasm-std",
- "cw-storage-plus",
- "cw20",
- "embed-commit",
- "frissitheto",
- "ibc-union-spec",
- "serde",
- "thiserror 2.0.17",
- "unionlabs",
-]
-
-[[package]]
 name = "uint"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
