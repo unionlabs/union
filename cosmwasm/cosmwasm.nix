@@ -10,6 +10,10 @@ _: {
       ...
     }:
     let
+      # Useful Commands
+      #
+      # jq '.body.messages = (.body.messages | map(.msg = (.msg | @base64d | fromjson)))'
+
       crane = mkCrane {
         root = ../.;
         # gitRev = "";
@@ -75,6 +79,8 @@ _: {
       # ucs04-chain-id : The UCS04 Chain ID of this chain.
       # name           : A Unique identifier for this chain. This will be used in the nix derivation
       #                  outputs (i.e. .#cosmwasm-scripts.<name>.<script>)
+      # multisig-admin : The multisig admin of the access manager contract. If the admin is not a
+      #                  multisig, but instead a hot wallet, then this will be null.
       # rpc-url        : A CometBFT JSON-RPC url for this chain.
       # deployer-key   : A bash expression that resolves to an 0x-prefixed private key. This is the
       #                  key that will be used for *new* deployments; only for address derivation.
@@ -91,6 +97,7 @@ _: {
         rec {
           ucs04-chain-id = "union.union-devnet-1";
           name = "union-devnet";
+          multisig-admin = null;
           rpc-url = "http://localhost:26657";
           # alice from the devnet keyring
           deployer-key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
@@ -114,6 +121,7 @@ _: {
         {
           ucs04-chain-id = "union.union-testnet-10";
           name = "union-testnet-10";
+          multisig-admin = "union10vj0jkkuxqjpf3qrwt37l8z8hpw3qfytreztaw";
           rpc-url = "https://rpc.rpc-node.union-testnet-10.union.build";
           # rpc-url = "https://union-testnet-rpc.polkachu.com";
           deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
@@ -331,6 +339,7 @@ _: {
         rec {
           ucs04-chain-id = "intento.intento-dev-1";
           name = "intento-devnet";
+          multisig-admin = null;
           rpc-url = "https://rpc-devnet.intento.zone/";
           deployer-key = ''"$(op item get intento-devnet-deployer --vault union-testnet-10 --field private-key --reveal)"'';
           ops-key = deployer-key;
@@ -669,6 +678,7 @@ _: {
         {
           name,
           ucs04-chain-id,
+          multisig-admin,
           rpc-url,
           gas-config,
           ops-key,
@@ -678,14 +688,19 @@ _: {
           name = "${name}-whitelist-relayers";
           runtimeInputs = [ cosmwasm-deployer ];
           text = ''
-            PRIVATE_KEY=${ops-key} \
+            ${pkgs.lib.optionalString (multisig-admin == null) ''PRIVATE_KEY=${ops-key} \''}
             RUST_LOG=info \
               cosmwasm-deployer \
               tx \
               whitelist-relayers \
-              --manager ${(getDeployment ucs04-chain-id).manager} \
+              --manager ${getDeployedContractAddress ucs04-chain-id "manager"} \
               --rpc-url ${rpc-url} \
-              ${mk-gas-args gas-config} "$@"
+              ${
+                pkgs.lib.optionalString (
+                  multisig-admin != null
+                ) ''--sender ${multisig-admin} --dump-to "$(mktemp --suffix .json)"''
+              } ${mk-gas-args gas-config} "$@"
+              
           '';
         };
 

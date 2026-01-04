@@ -10,7 +10,7 @@ use evm_storage_verifier::{
 };
 use unionlabs::{
     ethereum::{keccak256, slot::Slot},
-    primitives::{ByteArrayExt, H160, H256, U256, encoding::HexPrefixed},
+    primitives::{ByteArrayExt, H160, H256, U256},
 };
 
 #[derive(thiserror::Error, Debug, PartialEq, Clone)]
@@ -66,7 +66,7 @@ pub fn verify_header(
 
     let game_id = header.game_proof.value.to_be_bytes();
     // See https://github.com/ethereum-optimism/optimism/blob/4a7cb8a198a1f027e739d2e51dc170faf02b5d28/packages/contracts-bedrock/src/dispute/lib/LibUDT.sol#L70-L79
-    let game_account_address = H160::<HexPrefixed>::new(game_id.array_slice::<12, 20>());
+    let game_account_address = <H160>::new(game_id.array_slice::<12, 20>());
     let game_account_code_hash = keccak256(&header.game_account_code);
 
     // 3. Verify that the provided code is what's currently backing the game account.
@@ -82,8 +82,8 @@ pub fn verify_header(
     // the output root proof.
     verify_l2_header_is_related_to_output_root_proof(&header.output_root_proof, &header.l2_header)?;
 
-    let minimum_code_size = client_state.fault_dispute_game_code_root_claim_index as usize
-        + H256::<HexPrefixed>::BYTES_LEN;
+    let minimum_code_size =
+        client_state.fault_dispute_game_code_root_claim_index as usize + <H256>::BYTES_LEN;
     if header.game_account_code.len() < minimum_code_size {
         return Err(Error::InvalidCodeSize {
             expected_minimum: minimum_code_size,
@@ -93,9 +93,9 @@ pub fn verify_header(
     let output_root_proof_hash = compute_output_root_proof_hash(&header.output_root_proof);
 
     let root_claim_index = client_state.fault_dispute_game_code_root_claim_index;
-    let root_claim = H256::<HexPrefixed>::new(
+    let root_claim = <H256>::new(
         header.game_account_code
-            [root_claim_index as _..root_claim_index as usize + H256::<HexPrefixed>::BYTES_LEN]
+            [(root_claim_index as usize)..(root_claim_index as usize + <H256>::BYTES_LEN)]
             .try_into()
             .expect("impossible"),
     );

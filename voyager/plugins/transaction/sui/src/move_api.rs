@@ -13,7 +13,7 @@ use sui_sdk::types::{
     transaction::{CallArg, ObjectArg, SharedObjectMutability},
 };
 use sui_utils::SuiQuery;
-use unionlabs::primitives::{H256, encoding::HexPrefixed};
+use unionlabs::primitives::H256;
 use voyager_sdk::rpc::{RpcError, RpcResult};
 
 use crate::{Module, ModuleInfo};
@@ -69,7 +69,7 @@ pub fn update_client(
             SUI_CALL_ARG_CLOCK.clone(),
             data.client_id.raw().into(),
             (&data.client_message.into_vec()).into(),
-            CallArg::Pure(H256::<HexPrefixed>::default().into_bytes().to_vec()),
+            CallArg::Pure(<H256>::default().into_bytes().to_vec()),
         ],
     )
     .map_err(RpcError::fatal_from_message)

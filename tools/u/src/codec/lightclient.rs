@@ -19,6 +19,7 @@ use crate::Format;
 pub enum Cmd {
     #[command(visible_alias = "arb")]
     Arbitrum(LightClientCodecCmdArgs),
+    Base(LightClientCodecCmdArgs),
     #[command(visible_alias = "bera")]
     Berachain(LightClientCodecCmdArgs),
     Bob(LightClientCodecCmdArgs),
@@ -208,6 +209,9 @@ impl Cmd {
         match self {
             Cmd::Arbitrum(c) => {
                 convert!(arbitrum_light_client_types, c)
+            }
+            Cmd::Base(c) => {
+                convert!(base_light_client_types, c)
             }
             Cmd::Berachain(c) => {
                 convert!(berachain_light_client_types, c)

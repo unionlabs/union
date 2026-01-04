@@ -21,5 +21,7 @@ thiserror               = { workspace = true }
 unionlabs               = { workspace = true }
 
 [dev-dependencies]
-hex         = { workspace = true }
-hex-literal = { workspace = true }
+base-light-client-types = { workspace = true, features = ["bincode"] }
+hex                     = { workspace = true }
+hex-literal             = { workspace = true }
+unionlabs               = { workspace = true, features = ["bincode"] }
