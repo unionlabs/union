@@ -7,9 +7,11 @@ import
     "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
 
 import "solady/utils/LibBytes.sol";
+import "solady/utils/EfficientHashLib.sol";
 
 import "./internal/Versioned.sol";
 import "./apps/ucs/03-zkgm/ISolver.sol";
+import "./apps/ucs/03-zkgm/TokenBucket.sol";
 import "./core/04-channel/IBCPacket.sol";
 
 contract UnionversalToken is
@@ -17,6 +19,7 @@ contract UnionversalToken is
     UUPSUpgradeable,
     AccessManagedUpgradeable,
     ERC20Upgradeable,
+    TokenBucket,
     Versioned,
     ISolver
 {
@@ -132,10 +135,13 @@ contract UnionversalToken is
         uint256 path,
         uint32 channelId,
         bytes calldata token,
-        FungibleCounterparty calldata counterparty
+        FungibleCounterparty calldata counterparty,
+        uint256 capacity,
+        uint256 refillRate
     ) public restricted {
         _getUStorage().fungibleCounterparties[path][channelId][token] =
             counterparty;
+        setBucketConfig(path, channelId, token, capacity, refillRate, false);
     }
 
     function whitelistIntent(
@@ -145,6 +151,34 @@ contract UnionversalToken is
         for (uint256 i = 0; i < packetHashes.length; i++) {
             _getUStorage().intentWhitelist[packetHashes[i]] = whitelist;
         }
+    }
+
+    function getRateLimitAddress(
+        uint256 path,
+        uint32 channelId,
+        bytes calldata baseToken
+    ) public view returns (address) {
+        return address(
+            bytes20(
+                EfficientHashLib.hash(abi.encode(path, channelId, baseToken))
+            )
+        );
+    }
+
+    function setBucketConfig(
+        uint256 path,
+        uint32 channelId,
+        bytes calldata token,
+        uint256 capacity,
+        uint256 refillRate,
+        bool reset
+    ) public restricted {
+        _setBucketConfig(
+            getRateLimitAddress(path, channelId, token),
+            capacity,
+            refillRate,
+            reset
+        );
     }
 
     function solve(
@@ -177,6 +211,12 @@ contract UnionversalToken is
         if (order.quoteAmount > order.baseAmount) {
             revert UnionversalToken_BaseAmountMustCoverQuoteAmount();
         }
+
+        address rateLimitAddress = getRateLimitAddress(
+            path, packet.destinationChannelId, order.baseToken
+        );
+
+        _rateLimit(rateLimitAddress, order.quoteAmount);
 
         // Incentive relayer.
         uint256 fee = order.baseAmount - order.quoteAmount;
