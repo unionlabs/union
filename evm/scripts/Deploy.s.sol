@@ -2730,3 +2730,100 @@ contract SafeUpgradeLoopbackClient is BaseUpgrade {
         upgradeCall = new bytes(0);
     }
 }
+
+contract SafeUpgradeUnionversalToken is BaseUpgrade {
+    constructor() BaseUpgrade(true, false) {}
+
+    function upgradeParameters()
+        internal
+        override
+        returns (
+            address targetContract,
+            address newImplementation,
+            bytes memory upgradeCall
+        )
+    {
+        bytes memory salt = vm.envBytes("SALT");
+        targetContract = getDeployed(string(salt));
+        newImplementation = address(new UnionversalToken());
+        upgradeCall = new bytes(0);
+    }
+}
+
+contract DeployUnionversalToken is UnionScript, VersionedScript {
+    using LibString for *;
+
+    bytes salt;
+    string name;
+    string symbol;
+    uint8 decimals;
+
+    constructor() {
+        salt = vm.envBytes("SALT");
+        name = vm.envString("NAME");
+        symbol = vm.envString("SYMBOL");
+        decimals = uint8(vm.envUint("DECIMALS"));
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        address manager = getDeployed(IBC_SALT.MANAGER);
+        address ucs03 = getDeployed(Protocols.UCS03);
+
+        vm.startBroadcast(privateKey);
+        UnionversalToken token = UnionversalToken(
+            deploy(
+                string(salt),
+                abi.encode(
+                    address(new UnionversalToken()),
+                    abi.encodeCall(
+                        UnionversalToken.initialize,
+                        (manager, ucs03, name, symbol, decimals, salt)
+                    )
+                )
+            )
+        );
+        vm.stopBroadcast();
+
+        console.log("UnionversalToken: ", address(token));
+    }
+}
+
+contract DryDeployUnionversalToken is UnionScript, VersionedScript {
+    using LibString for *;
+
+    bytes salt;
+    string name;
+    string symbol;
+    uint8 decimals;
+
+    constructor() {
+        salt = vm.envBytes("SALT");
+        name = vm.envString("NAME");
+        symbol = vm.envString("SYMBOL");
+        decimals = uint8(vm.envUint("DECIMALS"));
+    }
+
+    function run() public {
+        address manager = getDeployed(IBC_SALT.MANAGER);
+        address ucs03 = getDeployed(Protocols.UCS03);
+
+        vm.startPrank(getSender());
+        UnionversalToken token = UnionversalToken(
+            deploy(
+                string(salt),
+                abi.encode(
+                    address(new UnionversalToken()),
+                    abi.encodeCall(
+                        UnionversalToken.initialize,
+                        (manager, ucs03, name, symbol, decimals, salt)
+                    )
+                )
+            )
+        );
+        vm.stopPrank();
+
+        console.log("UnionversalToken: ", address(token));
+    }
+}

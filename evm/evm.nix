@@ -715,7 +715,7 @@ _: {
               NATIVE_TOKEN_NAME=${native-token-name} \
               NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
               NATIVE_TOKEN_DECIMALS=${toString native-token-decimals} \
-              PRIVATE_KEY=${private-key} \
+              PRIVATE_KEY=''${PRIVATE_KEY:-${private-key}} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
               FOUNDRY_LIBS='["libs"]' \
@@ -852,7 +852,7 @@ _: {
               NATIVE_TOKEN_NAME=${native-token-name} \
               NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
               NATIVE_TOKEN_DECIMALS=${toString native-token-decimals} \
-              PRIVATE_KEY=${private-key} \
+              PRIVATE_KEY=''${PRIVATE_KEY:-${private-key}} \
               FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployDeployerAndIBC \
@@ -1019,7 +1019,7 @@ _: {
                     NATIVE_TOKEN_NAME=${native-token-name} \
                     NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
                     NATIVE_TOKEN_DECIMALS=${toString native-token-decimals} \
-                    PRIVATE_KEY=${private-key} \
+                    PRIVATE_KEY=''${PRIVATE_KEY:-${private-key}} \
                     FOUNDRY_LIBS='["libs"]' \
                     FOUNDRY_PROFILE="script" \
                       forge verify-contract \
@@ -1092,7 +1092,7 @@ _: {
               NATIVE_TOKEN_DECIMALS=${toString native-token-decimals} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
-              PRIVATE_KEY=${private-key} \
+              PRIVATE_KEY=''${PRIVATE_KEY:-${private-key}} \
               FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:Deploy${kind} \
@@ -1183,7 +1183,7 @@ _: {
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
               OWNER="${pkgs.lib.optionalString dry "$argc_owner_pk"}" \
-              PRIVATE_KEY=${private-key} \
+              PRIVATE_KEY=''${PRIVATE_KEY:-${private-key}} \
               FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString safe "Safe"}${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
@@ -1392,6 +1392,7 @@ _: {
                     eudrop = "EUDrop";
                     quick-withdrawal = "QuickWithdrawal";
                     z-asset = "ZAsset";
+                    unionversal-token = "UnionversalToken";
                   }
                 )
                 # other various deployment scripts
@@ -1452,6 +1453,7 @@ _: {
                         quick-withdrawal = "QuickWithdrawal";
                         z-asset = "ZAsset";
                         loopback-client = "LoopbackClient";
+                        unionversal-token = "UnionversalToken";
                       }
                   )
                 ))
