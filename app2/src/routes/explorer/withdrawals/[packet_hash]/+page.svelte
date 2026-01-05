@@ -38,6 +38,8 @@ const withdrawalData = $derived(pipe(
         query GetWithdrawalByPacketHash($packet_hash: String!) @cached(ttl: 10) {
           v2_withdraws(args: { p_packet_hash: $packet_hash }) {
             packet_hash
+            withdraw_success
+            delivery_success
             packet_shape
             source_universal_chain_id
             destination_universal_chain_id
@@ -112,7 +114,11 @@ const withdrawalData = $derived(pipe(
         </div>
       </div>
     {:then w}
-      {@const status = w.withdraw_recv_timestamp
+      {@const status = w.withdraw_success === true && w.delivery_success === true
+        ? "success"
+        : w.withdraw_success === false || w.delivery_success === false
+        ? "failure"
+        : w.withdraw_recv_timestamp
         ? "success"
         : w.withdraw_timeout_timestamp
         ? "failure"
