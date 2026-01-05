@@ -3,7 +3,7 @@ import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Tabs from "$lib/components/ui/Tabs.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
-import { DESTINATION_CHANNEL_ID } from "$lib/stake/config"
+import { lstConfig } from "$lib/stake/config.svelte.ts"
 import { predictProxy } from "$lib/stake/instantiate2"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { Utils } from "@unionlabs/sdk"
@@ -78,7 +78,7 @@ const proxyDustData = runPromiseExit$(() => {
         Effect.gen(function*() {
           const proxy = yield* predictProxy({
             path: 0n,
-            channel: DESTINATION_CHANNEL_ID,
+            channel: lstConfig.DESTINATION_CHANNEL_ID,
             sender: address,
           })
 

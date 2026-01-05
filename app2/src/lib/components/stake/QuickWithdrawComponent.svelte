@@ -6,6 +6,7 @@ import UInput from "$lib/components/ui/UInput.svelte"
 import { runPromiseExit$ } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { switchChain } from "$lib/services/transfer-ucs03-evm/chain"
+import { lstConfig } from "$lib/stake/config.svelte.ts"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { wallets as WalletStore } from "$lib/stores/wallets.svelte"
 import { safeOpts } from "$lib/transfer/shared/services/handlers/safe"
@@ -19,7 +20,6 @@ import { extractErrorDetails } from "@unionlabs/sdk/utils/index"
 import { BigDecimal, Data, Effect, Layer, Match, pipe } from "effect"
 import * as O from "effect/Option"
 import { createPublicClient, custom, http } from "viem"
-import { mainnet } from "viem/chains"
 import QuickAmountButtons from "./QuickAmountButtons.svelte"
 import StatusDisplay from "./StatusDisplay.svelte"
 
@@ -132,9 +132,22 @@ const expectedUAmount = $derived<O.Option<BigDecimal.BigDecimal>>(pipe(
 runPromiseExit$(() =>
   shouldCheckActive
     ? Effect.gen(function*() {
+      const viemChain = yield* pipe(
+        evmChain,
+        Effect.flatMap(chain =>
+          pipe(
+            chain.toViemChain(),
+            O.match({
+              onNone: () => Effect.fail(new Error("No viem chain available")),
+              onSome: Effect.succeed,
+            }),
+          )
+        ),
+      )
+
       const publicClient = createPublicClient({
-        chain: mainnet,
-        transport: http("https://rpc.1.ethereum.chain.kitchen"),
+        chain: viemChain,
+        transport: http(lstConfig.EVM_RPC_ENDPOINT),
       })
 
       const active = yield* pipe(
@@ -222,7 +235,7 @@ const checkAndSubmitAllowance = (sender: `0x${string}`, sendAmount: bigint) =>
     Effect.tap(() => Effect.sleep("500 millis")),
   )
 
-const executeQuickWithdraw = (sender: `0x${string}`, sendAmount: bigint) =>
+const executeQuickWithdraw = (sender: `0x${string}`, sendAmount: bigint, viemChain: any) =>
   Effect.gen(function*() {
     quickWithdrawState = QuickWithdrawState.ConfirmingWithdraw()
 
@@ -238,7 +251,7 @@ const executeQuickWithdraw = (sender: `0x${string}`, sendAmount: bigint) =>
       functionName: "withdraw",
       args: [sendAmount],
       account: sender,
-      chain: mainnet,
+      chain: viemChain,
     })
 
     quickWithdrawState = QuickWithdrawState.WithdrawSubmitted({ txHash })
@@ -279,7 +292,19 @@ runPromiseExit$(() =>
 
       quickWithdrawState = QuickWithdrawState.SwitchingChain()
 
-      const VIEM_CHAIN = mainnet
+      const VIEM_CHAIN = yield* pipe(
+        evmChain,
+        Effect.flatMap(chain =>
+          pipe(
+            chain.toViemChain(),
+            O.match({
+              onNone: () => Effect.fail(new Error("No viem chain available")),
+              onSome: Effect.succeed,
+            }),
+          )
+        ),
+      )
+
       const connectorClient = yield* getWagmiConnectorClient
       const isSafeWallet = getLastConnectedWalletId() === "safe"
 
@@ -311,7 +336,11 @@ runPromiseExit$(() =>
         Effect.tapError((error) => Effect.logError("Approval flow failed", error)),
       )
 
-      const { txHash, receivedAmount } = yield* executeQuickWithdraw(sender.address, sendAmount)
+      const { txHash, receivedAmount } = yield* executeQuickWithdraw(
+        sender.address,
+        sendAmount,
+        VIEM_CHAIN,
+      )
         .pipe(
           Effect.provide(walletClient),
           Effect.provide(publicClient),
