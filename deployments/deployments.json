@@ -184,6 +184,12 @@
         "height": 35397312,
         "commit": "446cad9253e6d574ac64712d8f1a33b0cdf5e74a"
       },
+      "0xb018DFe65df030562E6f069f3804c0C763B49306": {
+        "name": "lightclients/loopback",
+        "salt": "0x6C69676874636C69656E74732F6C6F6F706261636B",
+        "height": 38734066,
+        "commit": "b6fb37f9a861ab96299c5a60f7719701e763387b"
+      },
       "0xba5ed44733953d79717f6269357c77718c8ba5ed": {
         "name": "u",
         "salt": "0x12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047",
@@ -567,6 +573,11 @@
         "name": "u",
         "salt": "0x12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047",
         "commit": "de20a1abc78dd0c04118d869599adb485036c779"
+      },
+      "0xA1a1d0B9182339e86e80db519218eA03Ec09a1A1": {
+        "name": "atone",
+        "salt": "0x70ef87838bea3fb7d2db6cf5b1951ef5e644bb7392af2530485ea2917a696e27",
+        "commit": "446cad9253e6d574ac64712d8f1a33b0cdf5e74a"
       },
       "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
         "name": "core",
