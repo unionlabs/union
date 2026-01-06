@@ -477,8 +477,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .await
                     .unwrap();
 
-                println!("events: {:?}, contract: {:?}", events, self.ibc_contract);
-
                 if events.data.is_empty() {
                     Ok(seq([
                         call(WaitForHeightRelative {
