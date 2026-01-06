@@ -108,54 +108,24 @@ const withdrawalData = runPromiseExit$(() => {
             Effect.flatMap(Schema.decodeUnknown(BatchResponseSchema)),
           )
 
-          const processRequest = (request: UnstakeRequest) =>
-            Effect.gen(function*() {
-              const batch = batchesResponse.batches.find(b => b.batch_id === request.batch_id)
-              if (!batch || batch.batch.status !== "received") {
-                return O.none<{ batchId: string; withdrawableAmount: BigDecimal.BigDecimal }>()
-              }
+          const processRequest = (request: UnstakeRequest) => {
+            const batch = batchesResponse.batches.find(b => b.batch_id === request.batch_id)
+            if (!batch || batch.batch.status !== "received") {
+              return O.none<{ batchId: string; withdrawableAmount: BigDecimal.BigDecimal }>()
+            }
 
-              return yield* pipe(
-                O.all([
-                  BigDecimal.fromString(request.amount),
-                  BigDecimal.fromString(batch.batch.total_lst_to_burn),
-                  BigDecimal.fromString(batch.batch.received_native_unstaked),
-                ]),
-                O.match({
-                  onNone: () =>
-                    Effect.succeed(
-                      O.none<{ batchId: string; withdrawableAmount: BigDecimal.BigDecimal }>(),
-                    ),
-                  onSome: ([userAmount, totalLstToBurn, receivedNativeUnstaked]) =>
-                    Effect.gen(function*() {
-                      const userShare = BigDecimal.isZero(totalLstToBurn)
-                        ? BigDecimal.fromBigInt(0n)
-                        : yield* BigDecimal.divide(
-                          BigDecimal.multiply(userAmount, receivedNativeUnstaked),
-                          totalLstToBurn,
-                        ).pipe(
-                          Effect.mapError(() =>
-                            new Error("Division by zero in user share calculation")
-                          ),
-                        )
-
-                      return O.some({
-                        batchId: request.batch_id,
-                        withdrawableAmount: userShare,
-                      })
-                    }),
-                }),
-              )
-            })
-
-          const userBatchOptions = yield* Effect.all(
-            unstakeRequests.map(processRequest),
-            { concurrency: "unbounded" },
-          )
+            return pipe(
+              BigDecimal.fromString(request.amount),
+              O.map(withdrawableAmount => ({
+                batchId: request.batch_id,
+                withdrawableAmount,
+              })),
+            )
+          }
 
           const userBatches = pipe(
-            userBatchOptions,
-            A.filterMap((opt) => opt),
+            unstakeRequests,
+            A.filterMap(processRequest),
           )
 
           return { userBatches }
