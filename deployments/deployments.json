@@ -927,8 +927,8 @@
         "name": "lst-hub",
         "salt": "0x6c73742f6575",
         "height": 2930850,
-        "commit": "1f47b869af7af0465be5de0214f2368904487257",
-        "code_id": 68
+        "commit": "a818f4db1a67592b0c040066dd1a6ad5b598eebe",
+        "code_id": 93
       },
       "union1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs4hj904": {
         "name": "lightclients/state-lens/ics23/mpt",
