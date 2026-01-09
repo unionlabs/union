@@ -1,6 +1,6 @@
 /// *
 /// ExistenceProof takes a key and a value and a set of steps to perform on it.
-/// The result of peforming all these steps will provide a "root hash", which can
+/// The result of performing all these steps will provide a "root hash", which can
 /// be compared to the value in a header.
 ///
 /// Since it is computationally infeasible to produce a hash collission for any of the used

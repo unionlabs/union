@@ -46,7 +46,7 @@ pub struct Validator {
     pub min_self_delegation: String,
     /// strictly positive if this validator's unbonding has been stopped by external modules
     pub unbonding_on_hold_ref_count: i64,
-    /// list of unbonding ids, each uniquely identifing an unbonding of this validator
+    /// list of unbonding ids, each uniquely identifying an unbonding of this validator
     pub unbonding_ids: Vec<u64>,
 }
 
