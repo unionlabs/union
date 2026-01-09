@@ -14,6 +14,24 @@ import { TransactionHash } from "./transaction.js"
 export const PacketHash = S.String.pipe(S.pattern(/^0x[0-9a-f]{64}$/)).pipe(S.brand("PacketHash"))
 export type PacketHash = typeof PacketHash.Type
 
+export const LenientPacketHash = S.Union(
+  S.String.pipe(S.pattern(/^0x[0-9a-fA-F]{64}$/)).pipe(S.brand("HexPrefixed")),
+  S.String.pipe(S.pattern(/^[0-9a-fA-F]{64}$/)).pipe(S.brand("HexUnprefixed")),
+).pipe(
+  S.brand("LenientPacketHash"),
+)
+export type LenientPacketHash = typeof LenientPacketHash.Type
+
+export const PacketHashFromLenient = Schema.transform(
+  LenientPacketHash,
+  PacketHash,
+  {
+    strict: true,
+    decode: (lenientPacketHash) => literal === "on", // Always succeeds here
+    encode: (packetHash) => LenientPacketHash,
+  },
+)
+
 export class PacketListItem extends S.Class<PacketListItem>("PacketListItem")({
   packet_hash: PacketHash,
   channel_version: ChannelVersion,

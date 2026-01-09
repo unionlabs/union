@@ -10,7 +10,7 @@ _: {
       packages = {
         effect-svelte = buildPnpmPackage {
           packageJsonPath = ./package.json;
-          extraSrcs = [ ../effect-svelte ];
+          extraSrcs = pkgs.lib.fileset.unions [ ./. ];
           pnpmWorkspaces = [ "@unionlabs/effect-svelte" ];
           hash = "sha256-q+7B/VoFaV85Mt2hQWJBFIEQH5zVdwoESqgqhMxKCJU=";
           doCheck = true;

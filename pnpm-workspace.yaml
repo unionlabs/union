@@ -10,8 +10,11 @@ packages:
   - ts-sdk-evm
   - zkgm-dev
   - ts-sdk-sui
+
 allowUnusedPatches: true
+
 autoInstallPeers: false
+
 catalog:
   '@babel/cli': ^7.28.3
   '@babel/core': ^7.28.4
@@ -37,6 +40,7 @@ catalog:
   glob: ^11.0.3
   madge: ^8.0.0
   react: ^18.3.1
+  smol-toml: ^1.6.0
   starknet: ^7.6.4
   tstyche: ^4.3.0
   tsx: ^4.19.4
@@ -44,7 +48,9 @@ catalog:
   viem: ^2.33.3
   vite: ^6.1.1
   vitest: 3.2.4
+
 catalogMode: strict
+
 catalogs:
   peer:
     '@effect/experimental': '>=0.55'
@@ -59,8 +65,11 @@ catalogs:
     eslint-plugin-svelte: ^3.5.1
     svelte: ^5.33.18
     svelte-check: ^4.2.1
+
 engineStrict: true
+
 minimumReleaseAge: 2880
+
 overrides:
   '@cosmjs/math': 0.33.1
   ansi-regex: <6.2.1
@@ -82,16 +91,21 @@ overrides:
   supports-hyperlinks: <4.1.1
   viem: 2.33.3
   wrap-ansi: <9.0.1
+
 patchedDependencies:
   '@cosmjs/amino@0.33.1': patches/@cosmjs__amino@0.33.1.patch
   '@cosmjs/stargate': patches/@cosmjs__stargate.patch
   '@cosmjs/tendermint-rpc@0.33.1': patches/@cosmjs__tendermint-rpc@0.33.1.patch
   '@effect/docgen': patches/@effect__docgen.patch
+
 peerDependencyRules:
   allowedVersions:
     graphiql-explorer@0.9.0>graphql: '*'
     graphiql-explorer@0.9.0>react: '*'
     graphiql-explorer@0.9.0>react-dom: '*'
+
 resolvePeersFromWorkspaceRoot: false
+
 sharedWorkspaceLockfile: true
+
 strictPeerDependencies: true

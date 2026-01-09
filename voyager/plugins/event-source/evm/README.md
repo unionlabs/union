@@ -1,5 +1,7 @@
 # Voyager EVM Event Source Plugin
 
+pleaselsdflkjs
+
 This plugin provides event sourcing for EVM-compatible chains. All events are
 read through the [`Ethereum JSON-RPC API`][ethrpc], specifically the
 [`eth_getLogs`] method. In order to run this plugin, both a state module and a
@@ -13,11 +15,10 @@ finality module is relied upon for when to consider state finalized. This means
 that this plugin can be used for any EVM-compatible chain, regardless of the
 consensus or actual execution environment.
 
-This plugin complies with the Voyager indexing plugin interface,
+<!-- TODO: Link -->
 
-<!-- TODO: Link --> and as such can be triggered via the CLI with
-
-`voyager index`.
+This plugin complies with the Voyager indexing plugin interface, and as such can
+be triggered via the CLI with `voyager index`.
 
 ## Config
 
@@ -25,7 +26,7 @@ This plugin complies with the Voyager indexing plugin interface,
   plugin will fetch events from, as a string. `rpc_url` will be checked against
   this on startup (via `eth_chainId`).
 - `ibc_handler_address`: _H160_. The address of the Union `IBCHandler` smart
-  contract on this chain. All events will be fetched from this contract. NOTE:
+  contract on this chain. All events will be fetched from this contract.
   Canonical deployments can be found [here][deployments].
 - `chunk_block_fetch_size`: _u64_. The maximum amount of blocks to fetch per
   unroll step. The default value is 10, however for faster chains this value may

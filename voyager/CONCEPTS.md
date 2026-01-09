@@ -1,3 +1,7 @@
+---
+title: Concepts
+---
+
 # Concepts
 
 ![voyager ibc architecture](./doc/ibc-architecture.svg)

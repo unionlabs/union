@@ -11,8 +11,8 @@ _: {
         zkgm-dev = buildPnpmPackage {
           hash = "sha256-ipHoA3ZIv4DGXdvjd0wGqGjsdZn8qrJRx8zAMYhs76M=";
           packageJsonPath = ./package.json;
-          extraSrcs = [
-            ../zkgm-dev
+          extraSrcs = pkgs.lib.fileset.unions [
+            ./.
           ];
           pnpmWorkspaces = [
             "zkgm-dev"
