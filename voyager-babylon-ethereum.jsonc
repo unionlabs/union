@@ -1,0 +1,338 @@
+{
+  "modules": {
+    "state": [
+      // Required to read state on Babylon Genesis.
+      {
+        "path": "PLUGIN_DIR/voyager-state-module-cosmwasm",
+        "info": {
+          "chain_id": "bbn-1",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "rpc_url": "BABYLON_RPC_URL",
+          "ibc_host_contract_address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f"
+        }
+      },
+      // Required to read state on Ethereum.
+      {
+        "path": "PLUGIN_DIR/voyager-state-module-ethereum",
+        "info": {
+          "chain_id": "1",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "ibc_handler_address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+          "rpc_url": "ETHEREUM_RPC_URL"
+        }
+      }, // Required to read state on Union.
+      {
+        "path": "PLUGIN_DIR/voyager-state-module-cosmwasm",
+        "info": {
+          "chain_id": "union-1",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "rpc_url": "UNION_RPC_URL",
+          "ibc_host_contract_address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf"
+        }
+      }
+    ],
+    "proof": [
+      // Required to query state proofs from Babylon Genesis.
+      {
+        "path": "PLUGIN_DIR/voyager-proof-module-cosmwasm",
+        "info": {
+          "chain_id": "bbn-1",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "rpc_url": "BABYLON_RPC_URL",
+          "ibc_host_contract_address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f"
+        }
+      },
+      // Required to query state proofs from Ethereum.
+      {
+        "path": "PLUGIN_DIR/voyager-proof-module-ethereum",
+        "info": {
+          "chain_id": "1",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "rpc_url": "ETHEREUM_RPC_URL",
+          "ibc_handler_address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7"
+        }
+      },
+      // Required to query state proofs from Union.
+      {
+        "path": "PLUGIN_DIR/voyager-proof-module-cosmwasm",
+        "info": {
+          "chain_id": "union-1",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "rpc_url": "UNION_RPC_URL",
+          "ibc_host_contract_address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf"
+        }
+      }
+    ],
+    "consensus": [
+      // Required to query finality info from Babylon Genesis.
+      {
+        "path": "PLUGIN_DIR/voyager-finality-module-tendermint",
+        "info": {
+          "chain_id": "bbn-1",
+          "consensus_type": "tendermint"
+        },
+        "config": {
+          "rpc_url": "BABYLON_RPC_URL"
+        }
+      },
+      // Required to query finality info from Ethereum.
+      {
+        "path": "PLUGIN_DIR/voyager-consensus-module-ethereum",
+        "info": {
+          "chain_id": "1",
+          "consensus_type": "ethereum"
+        },
+        "config": {
+          "rpc_url": "ETHEREUM_RPC_URL",
+          "beacon_rpc_url": "ETHEREUM_BEACON_RPC_URL"
+        }
+      },
+      // Required to query finality info from Union.
+      {
+        "path": "PLUGIN_DIR/voyager-finality-module-cometbls",
+        "info": {
+          "chain_id": "union-1",
+          "consensus_type": "cometbls"
+        },
+        "config": {
+          "rpc_url": "UNION_RPC_URL"
+        }
+      }
+    ],
+    "client": [
+      // Required to handle the lightclient codec for the Union client on Ethereum.
+      {
+        "path": "PLUGIN_DIR/voyager-client-module-cometbls",
+        "info": {
+          "client_type": "cometbls",
+          "consensus_type": "cometbls",
+          "ibc_interface": "ibc-solidity",
+          "ibc_spec_id": "ibc-union"
+        }
+      },
+      // Required to handle the lightclient codec for the Union client on Babylon Genesis.
+      {
+        "path": "PLUGIN_DIR/voyager-client-module-cometbls",
+        "info": {
+          "client_type": "cometbls",
+          "consensus_type": "cometbls",
+          "ibc_interface": "ibc-cosmwasm",
+          "ibc_spec_id": "ibc-union"
+        }
+      },
+      // Required to handle the lightclient codec for the Ethereum client on Union.
+      {
+        "path": "PLUGIN_DIR/voyager-client-module-ethereum",
+        "info": {
+          "client_type": "ethereum",
+          "consensus_type": "ethereum",
+          "ibc_interface": "ibc-cosmwasm",
+          "ibc_spec_id": "ibc-union"
+        }
+      },
+      // Required to handle the lightclient codec for the Babylon Genesis client on Union.
+      {
+        "path": "PLUGIN_DIR/voyager-client-module-tendermint",
+        "info": {
+          "client_type": "tendermint",
+          "consensus_type": "tendermint",
+          "ibc_interface": "ibc-solidity",
+          "ibc_spec_id": "ibc-union"
+        }
+      }
+    ],
+    // No client bootstrap modules are required, since all necessary clients already exist between Babylon Genesis and Ethereum.
+    "client_bootstrap": []
+  },
+  "plugins": [
+    // Required to index IBC events on Babylon Genesis.
+    {
+      "path": "PLUGIN_DIR/voyager-event-source-plugin-cosmwasm",
+      "config": {
+        "chain_id": "bbn-1",
+        "rpc_url": "BABYLON_RPC_URL",
+        "chunk_block_fetch_size": 1000,
+        "ibc_host_contract_address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f",
+        "refetch_delay": 20
+      }
+    },
+    // Required to index IBC events on Ethereum.
+    {
+      "path": "PLUGIN_DIR/voyager-event-source-plugin-evm",
+      "config": {
+        "chain_id": "1",
+        "ibc_handler_address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+        "rpc_url": "ETHEREUM_RPC_URL"
+      }
+    },
+    // Required to handle packets that have timed out.
+    {
+      "path": "PLUGIN_DIR/voyager-plugin-packet-timeout",
+      "config": {}
+    },
+    // Required to submit transactions on Babylon Genesis.
+    {
+      "path": "PLUGIN_DIR/voyager-transaction-plugin-cosmwasm",
+      "config": {
+        "chain_id": "bbn-1",
+        "ibc_host_contract_address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f",
+        "keyring": {
+          "name": "bbn-1",
+          "keys": [
+            // Currently only raw private keys are supported. Additional formats will be added in the future.
+            {
+              "type": "raw",
+              "name": "alice",
+              "key": "0x0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          ]
+        },
+        "max_tx_size": 500000,
+        "gas_config": {
+          "type": "fixed",
+          "config": {
+            "gas_price": "0.003",
+            "gas_denom": "ubbn",
+            "gas_multiplier": "1.1",
+            "max_gas": 100000000
+          }
+        },
+        "rpc_url": "BABYLON_RPC_URL"
+      }
+    },
+    // Required to sumbit transactions on Ethereum.
+    {
+      "path": "PLUGIN_DIR/voyager-transaction-plugin-evm",
+      "config": {
+        "chain_id": "1",
+        "ibc_handler_address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+        "multicall_address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "keyring": {
+          "name": "1",
+          "keys": [
+            {
+              "type": "raw",
+              "name": "alice",
+              "key": "0x0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          ]
+        },
+        "gas_multiplier": "1.3",
+        "rpc_url": "ETHEREUM_RPC_URL"
+      }
+    },
+    // Required to submit transactions on Union.
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
+      "config": {
+        "chain_id": "union-1",
+        "ibc_host_contract_address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
+        "keyring": {
+          "name": "union-1",
+          "keys": [
+            {
+              "type": "raw",
+              "name": "alice",
+              "key": "0x0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          ]
+        },
+        "max_tx_size": 500000,
+        "gas_config": {
+          "type": "feemarket",
+          "config": {
+            "max_gas": 10000000,
+            "gas_multiplier": "1.4"
+          }
+        },
+        "rpc_url": "UNION_RPC_URL"
+      }
+    },
+    // One transaction batch plugin needs to be loaded per chain. This plugin transforms IBC events to IBC messages along with the necessary lightclient updates.
+    {
+      "path": "PLUGIN_DIR/voyager-plugin-transaction-batch",
+      "config": {
+        "chain_id": "bbn-1",
+        "client_configs": {
+          "min_batch_size": 1,
+          "max_batch_size": 4,
+          "max_wait_time": {
+            "secs": 1,
+            "nanos": 0
+          }
+        }
+      }
+    },
+    {
+      "path": "PLUGIN_DIR/voyager-plugin-transaction-batch",
+      "config": {
+        "chain_id": "1",
+        "client_configs": {
+          "min_batch_size": 1,
+          "max_batch_size": 5,
+          "max_wait_time": {
+            "secs": 1,
+            "nanos": 0
+          }
+        }
+      }
+    },
+    // Required to update the Babylon Genesis client on Union.
+    {
+      "path": "PLUGIN_DIR/voyager-client-update-plugin-tendermint",
+      "config": {
+        "chain_id": "bbn-1",
+        "rpc_url": "BABYLON_RPC_URL"
+      }
+    },
+    // Required to update the Ethereum client on Union.
+    {
+      "enabled": true,
+      "path": "PLUGIN_DIR/voyager-client-update-plugin-ethereum",
+      "config": {
+        "chain_id": "1",
+        "ibc_handler_address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+        "rpc_url": "ETHEREUM_RPC_URL",
+        "beacon_rpc_url": "ETHEREUM_BEACON_RPC_URL"
+      }
+    }
+  ],
+  "voyager": {
+    "cache": {
+      "state": {
+        "capacity": 10000,
+        "time_to_idle": 60,
+        "time_to_live": 60
+      }
+    },
+    "ipc_client_request_timeout": {
+      "nanos": 0,
+      "secs": 60
+    },
+    "num_workers": 20,
+    "queue": {
+      // Point this to a postgres database, Voyager will create the necessary tables on startup.
+      "database_url": "postgres://postgres:postgrespassword@127.0.0.1:5432/default",
+      "idle_timeout": null,
+      "max_connections": 60,
+      "max_lifetime": null,
+      "min_connections": 50,
+      "optimize_batch_limit": 20,
+      "type": "pg-queue"
+    },
+    "optimizer_delay_milliseconds": 100
+  }
+}
