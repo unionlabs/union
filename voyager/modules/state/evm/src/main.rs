@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 #![warn(clippy::unwrap_used)]
 
 use std::sync::{Arc, LazyLock};
@@ -61,11 +62,11 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    /// The address of the `IBCHandler` smart contract.
-    pub ibc_handler_address: H160,
-
     /// The RPC endpoint for the execution chain.
     pub rpc_url: String,
+
+    /// The address of the `IBCHandler` smart contract.
+    pub ibc_handler_address: H160,
 
     #[serde(default)]
     pub max_query_window: Option<u64>,

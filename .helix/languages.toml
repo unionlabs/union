@@ -131,6 +131,11 @@ name             = "nix"
 scope            = "source.nix"
 shebangs         = []
 
+[[language]]
+formatter = { command = "deno", args = ["fmt", "-", "--ext", "md"] }
+name      = "markdown"
+# auto-format = true
+
 [[grammar]]
 name   = "astro"
 source = { git = "https://github.com/virchau13/tree-sitter-astro", rev = "4be180759ec13651f72bacee65fa477c64222a1a" }

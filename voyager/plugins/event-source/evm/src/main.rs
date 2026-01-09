@@ -1,3 +1,4 @@
+#![doc = include_str!("../README.md")]
 // #![warn(clippy::unwrap_used)] // allow for now
 
 use core::slice;

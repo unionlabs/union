@@ -83,7 +83,7 @@ Note that all attestations contain a height and a timestamp. Rather than having 
 
 An existing attestor service for EVM-compatible chains is provided via a [Voyager plugin][attestor-evm]. See the plugin's documentation for how to run the attestor service. Alternative implementations are welcome, both for EVM-compatible chains and other execution environments.
 
-## Light Client Flow
+## Light Client
 
 This contract fully supports the union IBC light client specification, as follows:
 

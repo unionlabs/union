@@ -15,6 +15,6 @@ This module only provides proofs for the `ibc-union` IBC specification.
 [cometbft]: https://cometbft.com
 [cosmossdk]: https://docs.cosmos.network/sdk
 [cosmwasm]: https://cosmwasm.com
-[deployments]: ../../../../deployments/deployments.json
+[deployments]: https://docs.union.build/protocol/deployments#ibc-cosmwasm
 [storekeys]: https://github.com/CosmWasm/wasmd/blob/v0.61.6/x/wasm/types/keys.go#L62
 [`abci_query`]: https://docs.cometbft.com/v0.38/rpc/#/ABCI/abci_query
