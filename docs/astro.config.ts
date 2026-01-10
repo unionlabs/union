@@ -5,7 +5,6 @@ import svelte from "@astrojs/svelte"
 import starlightUtils from "@lorenzo_lewis/starlight-utils"
 import tailwindcss from "@tailwindcss/vite"
 import { defineConfig, passthroughImageService } from "astro/config"
-import ecTwoSlash from "expressive-code-twoslash"
 import * as Fs from "node:fs/promises"
 import path from "node:path"
 import * as Toml from "smol-toml"
@@ -39,14 +38,24 @@ const copyExternalDocs = () => {
     }
   }
 
-  async function copyVoyagerFile(voyagerDirPath: string) {
-    console.log(voyagerDirPath)
+  async function copyVoyagerDir(dir: string) {
+    const voyagerDir = `../voyager/${dir}/`
 
+    for await (const rawPath of walk(voyagerDir)) {
+      const voyagerDirPath = rawPath.replace("../voyager/", "")
+      await copyVoyagerFile(voyagerDirPath)
+    }
+  }
+
+  async function copyVoyagerFile(voyagerDirPath: string) {
     // ignore rust files
     if (voyagerDirPath.endsWith(".rs") || voyagerDirPath.endsWith(".toml")) {
       return
     }
 
+    console.log({ voyagerDirPath })
+
+    const ext = path.extname(voyagerDirPath)
     if (path.basename(voyagerDirPath) === "README.md") {
       // stfu typescript
       const packageName = (Toml.parse(
@@ -62,23 +71,34 @@ const copyExternalDocs = () => {
         path.join("./src/content/docs/architecture/voyager", voyagerDirPath),
       )
 
-      console.log(finalPath)
-
-      await Fs.mkdir(
-        path.normalize(finalPath + "/.."),
-        {
-          recursive: true,
-        },
-      )
-
-      const title = path.basename(finalPath)
+      await Fs.mkdir(path.normalize(finalPath + "/.."), { recursive: true })
 
       await Fs.writeFile(
         finalPath + ".md",
-        `---\ntitle: ${title}\ndescription: ${packageName}\n---\n${readme}`,
+        `---\ntitle: "${packageName}"\n---\n${readme}`,
       )
-    } else {
-      // copy the file directly
+    } else if ((ext === ".json") || (ext === ".jsonc")) {
+      let finalPath = path.join("./src/content/docs/architecture/voyager/", voyagerDirPath)
+
+      console.log({ finalPath })
+
+      await Fs.mkdir(path.dirname(finalPath), { recursive: true })
+
+      let json = await Fs.readFile(path.join("../voyager", voyagerDirPath), "utf8")
+
+      await Fs.writeFile(
+        finalPath.replace(ext, ".mdx"),
+        `
+---
+title: "${path.basename(finalPath)}"
+---
+
+\`\`\`${ext.replace(".", "")}
+${json}
+\`\`\`
+
+`,
+      )
     }
   }
 
@@ -107,18 +127,13 @@ const copyExternalDocs = () => {
       "astro:config:setup": async () => {
         console.log("running copy external docs setup hook")
 
-        async function copyVoyagerDir(dir: string) {
-          const voyagerDir = `../voyager/${dir}/`
+        await Fs.rm("./src/content/docs/architecture/voyager/", { recursive: true, force: true })
 
-          for await (const rawPath of walk(voyagerDir)) {
-            const voyagerDirPath = rawPath.replace("../voyager/", "")
-            await copyVoyagerFile(voyagerDirPath)
-          }
-        }
+        await Fs.mkdir("./src/content/docs/architecture/voyager/doc/", { recursive: true })
 
-        await Fs.cp(
-          "../voyager/CONCEPTS.md",
+        await Fs.writeFile(
           "./src/content/docs/architecture/voyager/concepts.md",
+          "---\ntitle: Concepts\n---\n" + await Fs.readFile("../voyager/CONCEPTS.md", "utf8"),
         )
 
         await Fs.cp(
@@ -126,7 +141,10 @@ const copyExternalDocs = () => {
           "./src/content/docs/architecture/voyager/doc/ibc-architecture.svg",
         )
 
-        await Fs.cp("../voyager/README.md", "./src/content/docs/architecture/voyager/overview.md")
+        await Fs.writeFile(
+          "./src/content/docs/architecture/voyager/overview.md",
+          "---\ntitle: Overview\n---\n" + await Fs.readFile("../voyager/README.md", "utf8"),
+        )
 
         await copyVoyagerDir("plugins")
         await copyVoyagerDir("modules")

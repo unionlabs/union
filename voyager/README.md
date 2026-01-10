@@ -1,7 +1,3 @@
----
-title: Overview
----
-
 # Voyager Architecture
 
 Relaying is hard. There are several key properties to a reliable relayer, the
