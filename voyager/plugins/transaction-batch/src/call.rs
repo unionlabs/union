@@ -4,6 +4,7 @@ use std::cmp::Ordering;
 use enumorph::Enumorph;
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::{IbcUnion, query::PacketsByBatchHash};
+use itertools::Itertools;
 use macros::model;
 use serde_json::json;
 use tracing::{debug, info, instrument, warn};
@@ -18,7 +19,7 @@ use voyager_sdk::{
     primitives::{ChainId, QueryHeight},
     rpc::{RpcError, RpcResult},
     types::RawClientId,
-    vm::{Op, data, now, promise},
+    vm::{Op, conc, data, now, promise},
 };
 
 use crate::{
@@ -55,6 +56,13 @@ where
         module: &Module,
         voyager_client: &VoyagerClient,
     ) -> RpcResult<Op<VoyagerMessage>> {
+        #[derive(Debug)]
+        enum TargetHeights {
+            None,
+            Min(Height),
+            Exact(Vec<Height>),
+        }
+
         let client_state_meta = voyager_client
             .client_state_meta::<V>(
                 module.chain_id.clone(),
@@ -71,55 +79,57 @@ where
             .query_latest_height(client_state_meta.counterparty_chain_id.clone(), true)
             .await?;
 
-        let target_height = self
+        let target_heights = self
             .batches
             .iter()
             .flatten()
             .map(|e| e.provable_height)
-            .reduce(|acc, elem| match (elem, acc) {
-                (EventProvableHeight::Min(elem), EventProvableHeight::Min(acc)) => {
-                    // the min target height of a batch of `Min` events is the highest min height
-                    // given the batch [10, 11, 12]
-                    // the min height that all events are provable at is 12
-                    EventProvableHeight::Min(elem.max(acc))
+            .try_fold(TargetHeights::None, |acc, elem| match (elem, acc) {
+                (EventProvableHeight::Min(elem), TargetHeights::None) => {
+                    Ok(TargetHeights::Min(elem))
                 }
-                (EventProvableHeight::Exactly(elem), EventProvableHeight::Exactly(acc)) => {
-                    assert_eq!(elem, acc, "multiple exact heights in the batch");
-                    EventProvableHeight::Exactly(elem)
+                (EventProvableHeight::Exactly(elem), TargetHeights::None) => {
+                    Ok(TargetHeights::Exact(vec![elem]))
                 }
-                tuple => {
-                    panic!("cannot mix exact and min provable heights currently (found {tuple:?})");
+
+                (EventProvableHeight::Min(elem), TargetHeights::Min(acc)) => {
+                    Ok(TargetHeights::Min(elem.max(acc)))
                 }
-            })
-            .expect("batch has at least one event; qed;");
 
-        // at this point we assume that a valid update exists - we only ever enqueue this message behind the relevant WaitForHeight on the counterparty chain. to prevent explosions, we do a sanity check here.
-        {
-            let (EventProvableHeight::Min(target_height)
-            | EventProvableHeight::Exactly(target_height)) = target_height;
+                (EventProvableHeight::Exactly(elem), TargetHeights::Exact(acc)) => Ok(
+                    TargetHeights::Exact(acc.into_iter().chain([elem]).collect()),
+                ),
 
-            if latest_height < target_height {
-                // we treat this as a missing state error, since this message assumes the state exists.
-                return Err(RpcError::missing_state(format!(
-                    "the latest height of the counterparty chain ({counterparty_chain_id}) \
-                    is {latest_height} and the latest trusted height on the client tracking \
-                    it ({client_id}) on this chain ({self_chain_id}) is {trusted_height}. \
-                    in order to create an update for this client, we need to wait for the \
-                    counterparty chain to progress to the next consensus checkpoint greater \
-                    than the required target height {target_height}",
-                    counterparty_chain_id = client_state_meta.counterparty_chain_id,
-                    trusted_height = client_state_meta.counterparty_height,
-                    client_id = self.client_id,
-                    self_chain_id = module.chain_id,
-                ))
-                .with_data(json!({
-                    "current_timestamp": now(),
-                })));
-            }
-        }
+                (elem, acc) => Err(RpcError::fatal_from_message(format!(
+                    "cannot mix exact and min update heights in a \
+                    single instance of this plugin: {elem:?}, {acc:?}"
+                ))),
+            })?;
 
-        match target_height {
-            EventProvableHeight::Min(target_height) => {
+        let mut ops = vec![];
+
+        // TODO: Check the same for exact heights?
+        match target_heights {
+            TargetHeights::Min(target_height) => {
+                // at this point we assume that a valid update exists - we only ever enqueue this message behind the relevant WaitForHeight on the counterparty chain. to prevent explosions, we do a sanity check here.
+                if latest_height < target_height {
+                    // we treat this as a missing state error, since this message assumes the state exists.
+                    return Err(RpcError::missing_state(format!(
+                        "the latest height of the counterparty chain ({counterparty_chain_id}) \
+                        is {latest_height} and the latest trusted height on the client tracking \
+                        it ({client_id}) on this chain ({self_chain_id}) is {trusted_height}. \
+                        in order to create an update for this client, we need to wait for the \
+                        counterparty chain to progress to the next consensus checkpoint greater \
+                        than the required target height {target_height}",
+                        counterparty_chain_id = client_state_meta.counterparty_chain_id,
+                        trusted_height = client_state_meta.counterparty_height,
+                        client_id = self.client_id,
+                        self_chain_id = module.chain_id,
+                    ))
+                    .with_data(json!({
+                        "current_timestamp": now(),
+                    })));
+                }
                 if client_state_meta.counterparty_height >= target_height {
                     info!(
                         "client {client_id} has already been updated to a height \
@@ -128,28 +138,28 @@ where
                         client_id = self.client_id,
                     );
 
-                    make_msgs(
+                    ops.push(make_msgs(
                         module,
                         self.client_id,
                         self.batches,
                         None,
                         client_state_meta.clone(),
                         client_state_meta.counterparty_height,
-                    )
+                    )?);
                 } else {
-                    Ok(promise(
+                    ops.push(promise(
                         [call(FetchUpdateHeaders {
-                            client_type: client_info.client_type,
+                            client_type: client_info.client_type.clone(),
                             counterparty_chain_id: module.chain_id.clone(),
-                            chain_id: client_state_meta.counterparty_chain_id,
+                            chain_id: client_state_meta.counterparty_chain_id.clone(),
                             client_id: RawClientId::new(self.client_id.clone()),
                             update_from: client_state_meta.counterparty_height,
                             update_to: if latest_height.height() < target_height.height() {
                                 warn!(
                                     "latest height {latest_height} is less than the target \
-                                     height {target_height}, there may be something wrong \
-                                     with the rpc for {} - client {} will be updated to the \
-                                     target height instead of the latest height",
+                                    height {target_height}, there may be something wrong \
+                                    with the rpc for {} - client {} will be updated to the \
+                                    target height instead of the latest height",
                                     module.chain_id, self.client_id
                                 );
                                 target_height
@@ -162,61 +172,53 @@ where
                             module.plugin_name(),
                             ModuleCallback::from(MakeIbcMessagesFromUpdate::<V> {
                                 client_id: self.client_id.clone(),
-                                batches: self.batches,
+                                batches: self.batches.clone(),
                             }),
                         ),
-                    ))
+                    ));
                 }
             }
-            EventProvableHeight::Exactly(target_height) => {
-                match client_state_meta.counterparty_height.cmp(&target_height) {
-                    Ordering::Equal => {
-                        info!(
-                            "client {client_id} has already been updated to \
-                            the desired target height ({} == {target_height})",
-                            client_state_meta.counterparty_height,
-                            client_id = self.client_id,
-                        );
-                        make_msgs(
-                            module,
-                            self.client_id,
-                            self.batches,
-                            None,
-                            client_state_meta.clone(),
-                            client_state_meta.counterparty_height,
-                        )
-                    }
-                    Ordering::Less => Ok(promise(
-                        [call(FetchUpdateHeaders {
-                            client_type: client_info.client_type,
-                            counterparty_chain_id: module.chain_id.clone(),
-                            chain_id: client_state_meta.counterparty_chain_id,
-                            client_id: RawClientId::new(self.client_id.clone()),
-                            update_from: client_state_meta.counterparty_height,
-                            update_to: target_height,
-                        })],
-                        [],
-                        PluginMessage::new(
-                            module.plugin_name(),
-                            ModuleCallback::from(MakeIbcMessagesFromUpdate::<V> {
-                                client_id: self.client_id.clone(),
-                                batches: self.batches,
-                            }),
-                        ),
-                    )),
-                    // update backwards
-                    // currently this is only supported in sui, and as such has some baked-in assumptions about the semantics of when this branch is hit
-                    Ordering::Greater => {
-                        info!(
-                            "updating client to an earlier height ({} -> {target_height})",
-                            client_state_meta.counterparty_height
-                        );
+            TargetHeights::None => todo!(),
+            #[allow(unstable_name_collisions)]
+            TargetHeights::Exact(target_heights) => {
+                info!(
+                    "found exact heights: [{}]",
+                    target_heights
+                        .iter()
+                        .map(|h| h.to_string())
+                        .intersperse(",".to_string())
+                        .collect::<String>(),
+                );
 
-                        Ok(promise(
+                for events in self.batches {
+                    let EventProvableHeight::Exactly(target_height) = events[0].provable_height
+                    else {
+                        panic!("???")
+                    };
+
+                    match client_state_meta.counterparty_height.cmp(&target_height) {
+                        Ordering::Equal => {
+                            info!(
+                                "client {client_id} has already been updated to \
+                                the desired target height ({} == {target_height})",
+                                client_state_meta.counterparty_height,
+                                client_id = self.client_id,
+                            );
+
+                            ops.push(make_msgs(
+                                module,
+                                self.client_id.clone(),
+                                vec![events],
+                                None,
+                                client_state_meta.clone(),
+                                client_state_meta.counterparty_height,
+                            )?);
+                        }
+                        Ordering::Less => ops.push(promise(
                             [call(FetchUpdateHeaders {
-                                client_type: client_info.client_type,
+                                client_type: client_info.client_type.clone(),
                                 counterparty_chain_id: module.chain_id.clone(),
-                                chain_id: client_state_meta.counterparty_chain_id,
+                                chain_id: client_state_meta.counterparty_chain_id.clone(),
                                 client_id: RawClientId::new(self.client_id.clone()),
                                 update_from: client_state_meta.counterparty_height,
                                 update_to: target_height,
@@ -226,14 +228,43 @@ where
                                 module.plugin_name(),
                                 ModuleCallback::from(MakeIbcMessagesFromUpdate::<V> {
                                     client_id: self.client_id.clone(),
-                                    batches: self.batches,
+                                    batches: vec![events],
                                 }),
                             ),
-                        ))
+                        )),
+                        // update backwards
+                        // currently this is only supported in sui, and as such has some baked-in assumptions about the semantics of when this branch is hit
+                        Ordering::Greater => {
+                            info!(
+                                "updating client to an earlier height ({} -> {target_height})",
+                                client_state_meta.counterparty_height
+                            );
+
+                            ops.push(promise(
+                                [call(FetchUpdateHeaders {
+                                    client_type: client_info.client_type.clone(),
+                                    counterparty_chain_id: module.chain_id.clone(),
+                                    chain_id: client_state_meta.counterparty_chain_id.clone(),
+                                    client_id: RawClientId::new(self.client_id.clone()),
+                                    update_from: client_state_meta.counterparty_height,
+                                    update_to: target_height,
+                                })],
+                                [],
+                                PluginMessage::new(
+                                    module.plugin_name(),
+                                    ModuleCallback::from(MakeIbcMessagesFromUpdate::<V> {
+                                        client_id: self.client_id.clone(),
+                                        batches: vec![events],
+                                    }),
+                                ),
+                            ));
+                        }
                     }
                 }
             }
         }
+
+        Ok(conc(ops))
     }
 }
 

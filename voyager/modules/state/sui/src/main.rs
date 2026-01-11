@@ -61,7 +61,9 @@ pub struct Module {
 
     pub ibc_store: ObjectID,
 
-    pub ibc_contract: ObjectID,
+    pub initial_ibc_contract: ObjectID,
+
+    pub latest_ibc_contract: ObjectID,
 
     pub ibc_store_initial_seq: SequenceNumber,
 }
@@ -174,7 +176,7 @@ impl Module {
             .expect("there must be some events exist")
             .into_iter()
             .find_map(|e| {
-                if e.type_.address == self.ibc_contract.into()
+                if e.type_.address == self.initial_ibc_contract.into()
                     && e.type_.module.as_str() == "events"
                     && e.type_.name.as_str() == "PacketSend"
                 {
@@ -255,7 +257,8 @@ impl StateModule<IbcUnion> for Module {
             sui_client,
             rpc_url: config.rpc_url,
             ibc_store: config.ibc_store,
-            ibc_contract,
+            initial_ibc_contract: config.ibc_contract,
+            latest_ibc_contract: ibc_contract,
             ibc_store_initial_seq,
         })
     }
@@ -306,7 +309,7 @@ impl StateModuleServer<IbcUnion> for Module {
     ) -> RpcResult<Value> {
         let query = SuiQuery::new_with_store(
             &self.sui_client,
-            self.ibc_contract,
+            self.latest_ibc_contract,
             self.ibc_store,
             self.ibc_store_initial_seq,
         )
