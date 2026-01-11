@@ -3,7 +3,7 @@ use core::str::FromStr;
 use bytemuck::CheckedBitPattern;
 
 /// The git rev of the code, as supplied at build time. On `wasm32` targets, this is available via the `commit_hash` export.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, CheckedBitPattern)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, CheckedBitPattern)]
 #[repr(u64)]
 #[rustfmt::skip]
 pub enum Rev {
@@ -49,8 +49,18 @@ impl Rev {
     }
 }
 
+impl core::fmt::Debug for Rev {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Unknown => write!(f, "Unknown"),
+            Self::Dirty => write!(f, "Dirty"),
+            Self::Hash(_) => write!(f, "Hash({self})"),
+        }
+    }
+}
+
 impl core::fmt::Display for Rev {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Rev::Unknown => f.write_str("unknown"),
             Rev::Dirty => f.write_str("dirty"),

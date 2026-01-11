@@ -72,22 +72,16 @@ fn derive_cosmwasm(deployer: &Bech32<H160>, salt: String) -> Bech32<H256> {
     )
 }
 
-fn derive_evm(sender: H160, deployer: H160, namespace: &'static str, salt: &str) -> H160 {
+fn derive_evm(sender: H160, deployer: H160, namespace: &'static str, salt: Option<&str>) -> H160 {
     create3::predict_deterministic_address(
         deployer.into(),
-        keccak256(
-            sender
-                .into_iter()
-                .chain(
-                    if salt.is_empty() {
-                        namespace.to_owned()
-                    } else {
-                        format!("{namespace}/{salt}")
-                    }
-                    .bytes(),
-                )
-                .collect::<Vec<_>>(),
-        ),
+        keccak256(format!(
+            "{sender}/{}",
+            match salt {
+                None => namespace.to_owned(),
+                Some(salt) => format!("{namespace}/{salt}"),
+            }
+        )),
     )
     .into()
 }
@@ -103,7 +97,8 @@ async fn do_main() -> Result<()> {
     let args = Args::parse();
 
     let file = std::fs::read_to_string(&args.path)?;
-    let mut deployments = serde_json::from_str::<Deployments>(&file)?;
+    let mut deployments =
+        serde_json::from_str::<Deployments>(&file).context("reading deployments file")?;
 
     let deployment = deployments
         .get_mut(&args.id)
@@ -167,7 +162,7 @@ async fn do_main() -> Result<()> {
                 .await?;
 
             contracts
-                .entry(derive_evm(*sender, *deployer, "ibc-is-based", ""))
+                .entry(derive_evm(*sender, *deployer, "ibc-is-based", None))
                 .or_insert(DeployedContract {
                     name: "core".to_owned(),
                     salt: Some(b"ibc-is-based".into()),
@@ -178,7 +173,12 @@ async fn do_main() -> Result<()> {
 
             for client_type in &args.lightclient {
                 contracts
-                    .entry(derive_evm(*sender, *deployer, "lightclients", client_type))
+                    .entry(derive_evm(
+                        *sender,
+                        *deployer,
+                        "lightclients",
+                        Some(client_type),
+                    ))
                     .or_insert(DeployedContract {
                         name: format!("lightclients/{client_type}"),
                         salt: Some(format!("lightclients/{client_type}").into_bytes().into()),
@@ -220,6 +220,8 @@ async fn do_main() -> Result<()> {
                     });
             }
 
+            dbg!(&contracts);
+
             for (address, deployment) in contracts {
                 if args.update_deployment_heights {
                     deployment.height =
@@ -240,7 +242,7 @@ async fn do_main() -> Result<()> {
 
     std::fs::write(
         &args.path,
-        serde_json::to_string_pretty(&deployments).unwrap(),
+        serde_json::to_string_pretty(&deployments).unwrap() + "\n",
     )?;
 
     Ok(())
@@ -293,13 +295,18 @@ alloy::sol! {
 }
 
 async fn get_commit_evm(provider: &impl Provider<AnyNetwork>, address: H160) -> Result<Rev> {
-    let client = Versioned::new(address.get().into(), provider);
+    let client = Versioned::new(dbg!(address).get().into(), provider);
 
-    Ok(match client.gitRev().call().await?.as_str() {
-        "dirty" => Rev::Dirty,
-        "unknown" => Rev::Unknown,
-        hash => Rev::Hash(*hash.parse::<H160>()?.get()),
-    })
+    match client.gitRev().call().await {
+        Ok(rev) => rev.as_str().parse().context("parsing gitRev() response"),
+        Err(err) => {
+            if err.to_string().contains("execution reverted") {
+                Ok(Rev::Unknown)
+            } else {
+                Err(err).context("calling gitRev()")
+            }
+        }
+    }
 }
 
 async fn get_init_height(

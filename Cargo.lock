@@ -3627,6 +3627,7 @@ dependencies = [
  "cw-escrow-vault",
  "cw20",
  "embed-commit",
+ "embed-commit-verifier",
  "flate2",
  "futures",
  "hex-literal 1.1.0",

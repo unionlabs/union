@@ -531,7 +531,7 @@ _: {
           ucs04-chain-id = "base.8453";
 
           name = "base";
-          rpc-url = "https://base-mainnet.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB";
+          rpc-url = "https://base-mainnet.g.alchemy.com/v2/6PCr1n8dJeYbE2Z9LrXScs05hLTYiVFl";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x4200000000000000000000000000000000000006";
           rate-limit-enabled = "true";
