@@ -19,8 +19,8 @@ _: {
         site = mkCi false (buildPnpmPackage {
           hash = "sha256-WkDdok2luYp/q1s2cb4Aa7iWzKsifJ7HpRKMnf0pTG4=";
           packageJsonPath = ./package.json;
-          extraSrcs = [
-            ../site
+          extraSrcs = pkgs.lib.fileset.unions [
+            ./.
           ];
           pnpmWorkspaces = [
             "site"

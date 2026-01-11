@@ -21,24 +21,22 @@ args@{
 }:
 
 let
-  src =
-    with pkgs.lib.fileset;
-    (toSource {
-      root = ./../..;
-      fileset = unions (
-        [
-          ../../package.json
-          ../../pnpm-lock.yaml
-          ../../patches
-          ../../pnpm-workspace.yaml
-          ../../tsconfig.base.json
-          ../../tsconfig.build.json
-          ../../vitest.setup.ts
-          ../../vitest.shared.ts
-        ]
-        ++ extraSrcs
-      );
-    });
+  fs = pkgs.lib.fileset;
+  src = fs.toSource {
+    root = ./../..;
+    fileset = fs.union extraSrcs (
+      fs.unions [
+        ../../package.json
+        ../../pnpm-lock.yaml
+        ../../patches
+        ../../pnpm-workspace.yaml
+        ../../tsconfig.base.json
+        ../../tsconfig.build.json
+        ../../vitest.setup.ts
+        ../../vitest.shared.ts
+      ]
+    );
+  };
   packageJson = pkgs.lib.importJSON packageJsonPath;
   pname = packageJson.name;
   inherit (packageJson) version;
@@ -166,7 +164,7 @@ let
       );
 in
 pkgs.buildNpmPackage (
-  args
+  (builtins.removeAttrs args [ "extraSrcs" ])
   // rec {
     inherit
       pname

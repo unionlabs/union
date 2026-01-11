@@ -5,12 +5,18 @@ import svelte from "@astrojs/svelte"
 import starlightUtils from "@lorenzo_lewis/starlight-utils"
 import tailwindcss from "@tailwindcss/vite"
 import { defineConfig, passthroughImageService } from "astro/config"
-import ecTwoSlash from "expressive-code-twoslash"
+import type { PathLike } from "fs"
+import * as Fs from "node:fs/promises"
+import path from "node:path"
+import { remark } from "remark"
+import remarkParse from "remark-parse"
+import remarkStringify from "remark-stringify"
+import * as Toml from "smol-toml"
 import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
 import starlightThemeRapide from "starlight-theme-rapide"
 import Icons from "unplugin-icons/vite"
-import { loadEnv } from "vite"
+import { loadEnv, type ViteDevServer } from "vite"
 import examplesToPages from "./integrations/examples-to-pages.js"
 import { markdownConfiguration } from "./markdown.config.ts"
 
@@ -23,6 +29,179 @@ const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
   process.cwd(),
   "",
 )
+
+async function processReadme(repoPath: string, cb?: (repoAbsolutePath: string) => string | null) {
+  const readme = await Fs.readFile(path.join("../", repoPath))
+
+  const ast = remark()
+    .use(remarkParse, {
+      gfm: true,
+    })
+    .parse(readme)
+
+  ast.children.forEach((value, index, array) => {
+    // modify all local links to either be github links or fix the url slugging if the linked file is json/jsonc
+    if (value.type === "definition" && !value.url.startsWith("http")) {
+      const fileExt = path.extname(value.url)
+      if ((fileExt === ".json") || (fileExt === ".jsonc")) {
+        // @ts-ignore
+        array[index].url! = value.url.replace(fileExt, "")
+      } else {
+        const repoAbsolutePath = path.normalize(
+          path.join(path.dirname(repoPath), value.url),
+        )
+        console.log({ voyagerDirPath: repoPath, valueUrl: value.url, repoAbsolutePath })
+        // @ts-ignore
+        array[index].url! = "https://github.com/unionlabs/union/tree/main/" + repoAbsolutePath
+        // if theres a callback provided, and it returns a value, override the url with that provided value
+        if (cb) {
+          const url = cb(repoAbsolutePath)
+          if (url) {
+            // @ts-ignore
+            array[index].url! = url
+          }
+        }
+      }
+    }
+  })
+
+  return remark().use(remarkStringify).stringify(ast)
+}
+
+const copyExternalDocs = () => {
+  async function* walk(dir: string): AsyncGenerator<string> {
+    for await (const d of await Fs.opendir(dir)) {
+      const entry = path.join(dir, d.name)
+      if (d.isDirectory()) {
+        yield* walk(entry)
+      } else if (d.isFile()) {
+        yield entry
+      }
+    }
+  }
+
+  async function copyVoyagerDir(dir: string) {
+    const voyagerDir = `../voyager/${dir}/`
+
+    for await (const rawPath of walk(voyagerDir)) {
+      const voyagerDirPath = rawPath.replace("../voyager/", "")
+      await copyVoyagerFile(voyagerDirPath)
+    }
+  }
+
+  async function copyVoyagerFile(voyagerDirPath: string) {
+    // ignore rust files
+    if (voyagerDirPath.endsWith(".rs") || voyagerDirPath.endsWith(".toml")) {
+      return
+    }
+
+    console.log({ voyagerDirPath })
+
+    const ext = path.extname(voyagerDirPath)
+    if (path.basename(voyagerDirPath) === "README.md") {
+      // stfu typescript
+      const packageName = (Toml.parse(
+        await Fs.readFile(
+          path.join("../voyager", `${voyagerDirPath.replace("README.md", "Cargo.toml")}`),
+          "utf8",
+        ),
+      ).package as Toml.TomlTable)["name"]
+
+      const cleanedReadme = await processReadme(path.join("voyager", voyagerDirPath))
+
+      const finalPath = path.dirname(
+        path.join("./src/content/docs/architecture/voyager", voyagerDirPath),
+      )
+
+      await Fs.mkdir(path.normalize(finalPath + "/.."), { recursive: true })
+
+      await Fs.writeFile(
+        finalPath + ".md",
+        `---\ntitle: "${packageName}"\n---\n${cleanedReadme}`,
+      )
+    } else if ((ext === ".json") || (ext === ".jsonc")) {
+      let finalPath = path.join("./src/content/docs/architecture/voyager/", voyagerDirPath)
+
+      console.log({ finalPath })
+
+      await Fs.mkdir(path.dirname(finalPath), { recursive: true })
+
+      let json = await Fs.readFile(path.join("../voyager", voyagerDirPath), "utf8")
+
+      await Fs.writeFile(
+        finalPath.replace(ext, ".mdx"),
+        `
+---
+title: "${path.basename(voyagerDirPath)}"
+---
+
+\`\`\`${ext.replace(".", "")}
+${json}
+\`\`\`
+
+`,
+      )
+    }
+  }
+
+  return {
+    name: "copy-external-docs",
+    hooks: {
+      "astro:server:setup": (options: {
+        server: ViteDevServer
+      }) => {
+        options.server.watcher
+          .add("voyager/")
+
+        options.server.watcher
+          .on("add", (path) => console.log(`File ${path} has been added`))
+          .on("addDir", (path) => console.log(`Dir ${path} has been added`))
+          .prependListener("change", async (path) => {
+            console.log(`change: ${path}`)
+            if (path.startsWith("voyager/")) {
+              await copyVoyagerFile(path.replace("voyager/", ""))
+                .catch(e => {
+                  console.log("hmr error:", e)
+                })
+            }
+          })
+      },
+      "astro:config:setup": async () => {
+        console.log("running copy external docs setup hook")
+
+        await Fs.rm("./src/content/docs/architecture/voyager/", { recursive: true, force: true })
+
+        await Fs.mkdir("./src/content/docs/architecture/voyager/doc/", { recursive: true })
+
+        await Fs.writeFile(
+          "./src/content/docs/architecture/voyager/concepts.md",
+          "---\ntitle: Concepts\n---\n"
+            + await processReadme("voyager/CONCEPTS.md"),
+        )
+
+        await Fs.cp(
+          "../voyager/doc/ibc-architecture.svg",
+          "./src/content/docs/architecture/voyager/doc/ibc-architecture.svg",
+        )
+
+        await Fs.writeFile(
+          "./src/content/docs/architecture/voyager/overview.md",
+          "---\ntitle: Overview\n---\n"
+            + await processReadme("voyager/README.md", repoAbsolutePath => {
+              if (repoAbsolutePath === "voyager/CONCEPTS.md") {
+                return "./concepts"
+              } else {
+                return null
+              }
+            }),
+        )
+
+        await copyVoyagerDir("plugins")
+        await copyVoyagerDir("modules")
+      },
+    },
+  }
+}
 
 // @ts-ignore
 export default defineConfig({
@@ -45,6 +224,11 @@ export default defineConfig({
         { find: "path", replacement: "rollup-plugin-node-polyfills/polyfills/path" },
       ],
     },
+    server: {
+      watch: {
+        cwd: "../.",
+      },
+    },
     plugins: [
       Icons({
         compiler: "svelte",
@@ -55,6 +239,10 @@ export default defineConfig({
         autoInstall: true,
       }),
       tailwindcss(),
+      // viteStaticCopy({
+      //   targets: [
+      //   ],
+      // }),
     ],
     ssr: {
       noExternal: ["monaco-editor"],
@@ -79,6 +267,7 @@ export default defineConfig({
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
   prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
   integrations: [
+    copyExternalDocs(),
     starlight({
       title: "Union",
       lastUpdated: true,
@@ -200,6 +389,20 @@ export default defineConfig({
                   items: [
                     { label: "Overview", link: "/architecture/voyager/overview" },
                     { label: "Concepts", link: "/architecture/voyager/concepts" },
+                    {
+                      label: "Plugins",
+                      collapsed: true,
+                      autogenerate: {
+                        directory: "/architecture/voyager/plugins",
+                      },
+                    },
+                    {
+                      label: "Modules",
+                      collapsed: true,
+                      autogenerate: {
+                        directory: "/architecture/voyager/modules",
+                      },
+                    },
                   ],
                 },
               ],
@@ -443,7 +646,9 @@ export default defineConfig({
           },
         }),
         starlightHeadingBadges(),
-        starlightLinksValidator(),
+        starlightLinksValidator({
+          exclude: ["./concepts", "./example-config"],
+        }),
       ],
       customCss: [
         "./src/styles/index.css",

@@ -52,35 +52,61 @@ let addr_link = (chain_id: string, addr: string) => {
       console.error("???", chain_id, addr)
   }
 }
+
+const deploymentsByIbcInterface = Object
+  .entries(deployments)
+  .reduce(
+    (acc, [network, deployment]) => {
+      acc[deployment.ibc_interface] ??= {}
+      acc[deployment.ibc_interface][network] = deployment
+      return acc
+    },
+    {} as Record<string, Record<string, (typeof deployments)[keyof typeof deployments]>>,
+  )
 </script>
 
-{#each Object.entries(deployments) as [network, values]}
-  <h3 class="font-mono">
-    {network}
-  </h3>
-  <Table.Root class="w-full border border-neutral-500 rounded-sm">
-    <Table.Row class="w-full">
-      <Table.Cell>
-        Address
-      </Table.Cell>
-      <Table.Cell>
-        Name
-      </Table.Cell>
-    </Table.Row>
-    {#each Object.entries(values.contracts).toSorted((a, b) => a[1].name < b[1].name ? -1 : 1) as
-      [address, data]
-    }
-      <Table.Row>
-        <Table.Cell class="font-mono">
-          <a
-            href={addr_link(network, address)}
-            target="_blank"
-          >{address}</a>
+{#each Object.entries(deploymentsByIbcInterface) as [ibc_interface, deployment]}
+  <h2
+    class="font-mono"
+    id={ibc_interface}
+  >
+    <a href="#{ibc_interface}">
+      {ibc_interface}
+    </a>
+  </h2>
+  {#each Object.entries(deployment) as [network, values]}
+    <h3
+      class="font-mono"
+      id="{ibc_interface}--{network}"
+    >
+      <a href="#{ibc_interface}--{network}">
+        {network}
+      </a>
+    </h3>
+    <Table.Root class="w-full border border-neutral-500 rounded-sm">
+      <Table.Row class="w-full">
+        <Table.Cell>
+          Address
         </Table.Cell>
-        <Table.Cell class="font-mono text-nowrap">
-          {data.name}
+        <Table.Cell>
+          Name
         </Table.Cell>
       </Table.Row>
-    {/each}
-  </Table.Root>
+      {#each Object.entries(values.contracts).toSorted((a, b) => a[1].name < b[1].name ? -1 : 1) as
+        [address, data]
+      }
+        <Table.Row>
+          <Table.Cell class="font-mono">
+            <a
+              href={addr_link(network, address)}
+              target="_blank"
+            >{address}</a>
+          </Table.Cell>
+          <Table.Cell class="font-mono text-nowrap">
+            {data.name}
+          </Table.Cell>
+        </Table.Row>
+      {/each}
+    </Table.Root>
+  {/each}
 {/each}

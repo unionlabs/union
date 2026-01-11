@@ -11,7 +11,7 @@ _: {
         ceremony = buildPnpmPackage {
           hash = "sha256-1R/7+vIllXY+KmNgxxH2fEHM4UzVmHDiDA3XqmODuJI=";
           packageJsonPath = ./package.json;
-          extraSrcs = [
+          extraSrcs = pkgs.lib.fileset.unions [
             ../ceremony
           ];
           pnpmWorkspaces = [

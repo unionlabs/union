@@ -1,5 +1,6 @@
 [package]
 name    = "voyager-proof-module-cosmwasm"
+readme  = "README.md"
 version = "0.0.0"
 
 authors      = { workspace = true }

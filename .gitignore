@@ -130,3 +130,6 @@ coverage/
 
 # cairo
 .snfoundry_cache/
+
+# docs
+docs/src/content/docs/architecture/voyager/*

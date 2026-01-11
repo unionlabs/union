@@ -75,7 +75,7 @@ export const StringFromHex = S.transform(Hex, S.String, {
   decode: hex => fromHex(hex, "string"),
   encode: s => toHex(s),
 })
-export type StringFromHex = typeof HexFromString.Type
+export type StringFromHex = typeof StringFromHex.Type
 
 /**
  * TODO: handle signed hex?

@@ -1,3 +1,5 @@
+import { pipe } from "effect"
+import * as M from "effect/Match"
 import * as S from "effect/Schema"
 import { AggregateCount } from "./aggregate-count.js"
 import { ChainId, UniversalChainId } from "./chain.js"
@@ -11,8 +13,62 @@ import { PortId } from "./port.js"
 import { SortOrder } from "./sort-order.js"
 import { TransactionHash } from "./transaction.js"
 
-export const PacketHash = S.String.pipe(S.pattern(/^0x[0-9a-f]{64}$/)).pipe(S.brand("PacketHash"))
+export const PacketHash = S.String.pipe(S.pattern(/^0x[0-9a-f]{64}$/), S.brand("PacketHash"))
 export type PacketHash = typeof PacketHash.Type
+
+export const LenientPacketHash = S.Union(
+  pipe(S.String, S.pattern(/^0x[0-9a-fA-F]{64}$/), (s) =>
+    S.transform(
+      s,
+      S.TaggedStruct("HexPrefixed", {
+        value: s,
+      }),
+      {
+        strict: true,
+        decode: (value) => ({
+          _tag: "HexPrefixed" as const,
+          value,
+        }),
+        encode: ({ value }) => value,
+      },
+    )),
+  pipe(S.String, S.pattern(/^[0-9a-fA-F]{64}$/), (s) =>
+    S.transform(
+      s,
+      S.TaggedStruct("HexUnprefixed", {
+        value: s,
+      }),
+      {
+        strict: true,
+        decode: (value) => ({
+          _tag: "HexUnprefixed" as const,
+          value,
+        }),
+        encode: ({ value }) => value,
+      },
+    )),
+).pipe(
+  S.brand("LenientPacketHash"),
+)
+export type LenientPacketHash = typeof LenientPacketHash.Type
+
+export const PacketHashFromLenient = S.transform(
+  LenientPacketHash,
+  PacketHash,
+  {
+    strict: true,
+    decode: (lenientPacketHash) =>
+      M.value(lenientPacketHash).pipe(
+        M.tagsExhaustive({
+          HexPrefixed: (hexPrefixed) =>
+            S.decodeUnknownSync(PacketHash)(hexPrefixed.value.toLowerCase()),
+          HexUnprefixed: (hexUnprefixed) =>
+            S.decodeUnknownSync(PacketHash)(`0x${hexUnprefixed.value.toLowerCase()}`),
+        }),
+      ),
+    encode: (packetHash) => S.decodeSync(LenientPacketHash)(packetHash),
+  },
+)
 
 export class PacketListItem extends S.Class<PacketListItem>("PacketListItem")({
   packet_hash: PacketHash,

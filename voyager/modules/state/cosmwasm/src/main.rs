@@ -1,4 +1,5 @@
-// #![warn(clippy::unwrap_used)]
+#![doc = include_str!("../README.md")]
+#![warn(clippy::unwrap_used)]
 
 use std::num::{NonZeroU8, NonZeroU32};
 
@@ -136,7 +137,7 @@ impl Module {
             .with_data(json!({ "tx_result": tx_result })));
         }
 
-        let tx = tx_result.txs.pop().unwrap();
+        let tx = tx_result.txs.pop().expect("len is > 1; qed;");
 
         let maybe_packet = tx.tx_result.events.iter().find_map(|event| {
             CosmosSdkEvent::<IbcEvent>::new(event.clone())
@@ -152,14 +153,15 @@ impl Module {
                         packet_hash: found_packet_hash,
                     } => (channel_id == found_channel_id
                         && packet_hash == found_packet_hash
-                        && e.contract_address.unwrap() == self.ibc_host_contract_address)
-                        .then_some(Packet {
-                            source_channel_id: packet_source_channel_id,
-                            destination_channel_id: packet_destination_channel_id,
-                            data: packet_data,
-                            timeout_height: MustBeZero,
-                            timeout_timestamp: packet_timeout_timestamp,
-                        }),
+                        && e.contract_address
+                            .is_some_and(|a| a == self.ibc_host_contract_address))
+                    .then_some(Packet {
+                        source_channel_id: packet_source_channel_id,
+                        destination_channel_id: packet_destination_channel_id,
+                        data: packet_data,
+                        timeout_height: MustBeZero,
+                        timeout_timestamp: packet_timeout_timestamp,
+                    }),
                     _ => None,
                 })
         });
@@ -177,7 +179,7 @@ impl Module {
         Ok(PacketByHashResponse {
             packet,
             tx_hash: tx.hash.into_encoding(),
-            provable_height: tx.height.unwrap().get() + 1,
+            provable_height: tx.height.expect("tx must have a height; qed;").get() + 1,
         })
     }
 
@@ -214,7 +216,7 @@ impl Module {
             .with_data(json!({ "tx_result": tx_result })));
         };
 
-        let tx = tx_result.txs.pop().unwrap();
+        let tx = tx_result.txs.pop().expect("len is > 1; qed;");
 
         let maybe_ack = tx.tx_result.events.iter().find_map(|event| {
             CosmosSdkEvent::<IbcEvent>::new(event.clone())
@@ -226,8 +228,9 @@ impl Module {
                         acknowledgement,
                     } => (channel_id == found_channel_id
                         && packet_hash == found_packet_hash
-                        && e.contract_address.unwrap() == self.ibc_host_contract_address)
-                        .then_some(acknowledgement),
+                        && e.contract_address
+                            .is_some_and(|a| a == self.ibc_host_contract_address))
+                    .then_some(acknowledgement),
                     _ => None,
                 })
         });
@@ -244,7 +247,7 @@ impl Module {
         Ok(PacketAckByHashResponse {
             ack: ack.into_encoding(),
             tx_hash: tx.hash.into_encoding(),
-            provable_height: tx.height.unwrap().get() + 1,
+            provable_height: tx.height.expect("tx must have a height; qed;").get() + 1,
         })
     }
 
@@ -555,7 +558,8 @@ impl StateModuleServer<IbcUnion> for Module {
                     .into_iter()
                     .filter_map(|event| {
                         CosmosSdkEvent::<IbcEvent>::new(event).ok().and_then(|e| {
-                            (e.contract_address.unwrap() == self.ibc_host_contract_address)
+                            e.contract_address
+                                .is_some_and(|a| a == self.ibc_host_contract_address)
                                 .then_some(e.event)
                         })
                     })
@@ -576,7 +580,7 @@ impl StateModuleServer<IbcUnion> for Module {
                 Ok(into_value(PacketsByBatchHashResponse {
                     packets,
                     tx_hash: tx.hash.into_encoding(),
-                    provable_height: tx.height.unwrap().get() + 1,
+                    provable_height: tx.height.expect("tx must have a height; qed;").get() + 1,
                 }))
             }
             Query::PacketAckByHash(PacketAckByHash {

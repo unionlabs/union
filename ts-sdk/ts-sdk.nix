@@ -18,9 +18,7 @@ _: {
           pnpmWorkspaces = [
             "@unionlabs/sdk"
           ];
-          extraSrcs = [
-            ../ts-sdk
-          ];
+          extraSrcs = pkgs.lib.fileset.unions [ ./. ];
           doCheck = true;
           buildPhase = ''
             runHook preBuild
@@ -42,9 +40,7 @@ _: {
           pnpmWorkspaces = [
             "@unionlabs/sdk"
           ];
-          extraSrcs = [
-            ../ts-sdk
-          ];
+          extraSrcs = pkgs.lib.fileset.unions [ ./. ];
           buildPhase = ''
             runHook preBuild
             pnpm --filter=@unionlabs/sdk docgen

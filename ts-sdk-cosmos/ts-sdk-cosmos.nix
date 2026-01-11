@@ -2,6 +2,7 @@ _: {
   perSystem =
     {
       buildPnpmPackage,
+      pkgs,
       ...
     }:
     let
@@ -12,7 +13,7 @@ _: {
         ts-sdk-cosmos = buildPnpmPackage {
           inherit hash;
           packageJsonPath = ./package.json;
-          extraSrcs = [
+          extraSrcs = pkgs.lib.fileset.unions [
             ../ts-sdk
             ../ts-sdk-cosmos
           ];
@@ -38,7 +39,7 @@ _: {
         ts-sdk-cosmos-docs = buildPnpmPackage {
           inherit hash;
           packageJsonPath = ./package.json;
-          extraSrcs = [
+          extraSrcs = pkgs.lib.fileset.unions [
             ../ts-sdk
             ../ts-sdk-cosmos
           ];

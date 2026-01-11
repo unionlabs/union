@@ -64,10 +64,11 @@
               )
             );
 
-          # get any includes specified in package.include, normalized to the repo root.
+          # get any includes specified in package.include and package.readme, normalized to the repo root.
           #
           # [package]
-          # include = [".sqlx", "README.md"]
+          # readme  = "README.md"
+          # include = [".sqlx"]
           #
           # sig :: { string : attrs } -> [string]
           getIncludes =
@@ -77,7 +78,12 @@
               lib.flatten (
                 map (
                   memberName:
-                  map (include: "${memberName}/${include}") (memberCargoTomls.${memberName}.package.include or [ ])
+                  map (include: "${memberName}/${include}") (
+                    (memberCargoTomls.${memberName}.package.include or [ ])
+                    ++ (lib.optionals (memberCargoTomls.${memberName}.package ? readme) [
+                      memberCargoTomls.${memberName}.package.readme
+                    ])
+                  )
                 ) (builtins.attrNames memberCargoTomls)
               )
             );

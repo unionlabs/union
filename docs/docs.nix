@@ -13,12 +13,13 @@ _: {
         vips
         pkg-config
       ];
+      fs = pkgsUnstable.lib.fileset;
     in
     {
       packages = {
         docs = mkCi false (buildPnpmPackage {
-          extraSrcs = [
-            ../docs
+          extraSrcs = fs.unions [
+            ./.
             ../ts-sdk
             ../ts-sdk-evm
             ../ts-sdk-cosmos
@@ -26,8 +27,16 @@ _: {
             ../versions
             ../deployments
             ../lib/ucs04/well-known.json
+            (fs.fileFilter (
+              file:
+              (builtins.any file.hasExt [
+                "md"
+                "svg"
+                "toml"
+              ])
+            ) ../voyager)
           ];
-          hash = "sha256-HAFB0pu/MhHd4MbIeIzoWV7sDeZfYCp5ZF4rVPzppG4=";
+          hash = "sha256-FbV3bXQgt3gB0x3NOaeMFhOkx2QFcTHEaardzCG/RQI=";
           packageJsonPath = ./package.json;
           pnpmWorkspaces = [
             "docs"

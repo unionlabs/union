@@ -9,7 +9,7 @@ _: {
       packages = {
         ts-sdk-sui = buildPnpmPackage {
           packageJsonPath = ./package.json;
-          extraSrcs = [
+          extraSrcs = pkgs.lib.fileset.unions [
             ../ts-sdk
             ../ts-sdk-sui
           ];

@@ -24,3 +24,5 @@ pnpm-debug.log*
 .wrangler
 .stackbit
 .eslintcache
+
+./src/content/docs/architecture/voyager/*

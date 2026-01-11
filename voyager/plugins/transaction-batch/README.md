@@ -26,7 +26,7 @@ For all events on chain `32382` that are related to client `1`, events will be b
 - the batch size will be `min_batch_size..=max_batch_size` (inclusive)
 - if `max_batch_size` is not hit (if there aren't enough events), then messages will be held for no longer than `max_wait_time`. "Overdue" message batches skip directly to [client updates](#client-updates).
 - messages are sorted by their age within batches:
-  ```
+  ```plaintext
   [[1, 2, 3], [4, 5, 6]]
   ```
 

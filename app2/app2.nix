@@ -30,7 +30,7 @@ _: {
       packages = {
         app2 = buildPnpmPackage rec {
           packageJsonPath = ./package.json;
-          extraSrcs = [
+          extraSrcs = pkgs.lib.fileset.unions [
             ../app2
             ../effect-svelte
             ../ts-sdk

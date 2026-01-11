@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 use std::{collections::VecDeque, ops::Deref, panic::AssertUnwindSafe, path::PathBuf, sync::Arc};
 
 use alloy::{
