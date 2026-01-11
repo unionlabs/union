@@ -17,24 +17,22 @@ most important of which being:
   <https://github.com/clemensgg/xion-relayer-postmortem>)
 
 Voyager takes a novel approach to solving these problems. Internally, everything
-is modeled as a finite state machine,
-([`voyager-vm`](/lib/voyager-vm/README.md)), which is stored in postgres to
-ensure transactional integrity ([`pg-queue`](/lib/pg-queue/README.md)). Every
-chain query, transaction submission, and even the data itself is represented as
-a state within the queue. This design solves two of the properties mentioned
-above out of the box: **Data Integrity** and **Quick Startup Times**. Since no
-state is stored in Voyager itself, it is able to crash and restart exactly where
-it left off, making startup times lightning fast; and since every message is
-processed within a postgres transaction, we are guaranteed that the data we're
-working with is correct (barring a bug in the business logic, of course). The
-final property, **Speed**, is also solved by this design - since each message
-fully encapsulates all the state it needs to operate, multiple messages can
-safely be executed in parallel. This means, for instance, that while one worker
-is fetching events from a block, another could be submitting a light client
-update, and another could be generating a state proof, and so on.
+is modeled as a finite state machine, ([`voyager-vm`]), which is stored in
+postgres to ensure transactional integrity ([`pg-queue`]). Every chain query,
+transaction submission, and even the data itself is represented as a state
+within the queue. This design solves two of the properties mentioned above out
+of the box: **Data Integrity** and **Quick Startup Times**. Since no state is
+stored in Voyager itself, it is able to crash and restart exactly where it left
+off, making startup times lightning fast; and since every message is processed
+within a postgres transaction, we are guaranteed that the data we're working
+with is correct (barring a bug in the business logic, of course). The final
+property, **Speed**, is also solved by this design - since each message fully
+encapsulates all the state it needs to operate, multiple messages can safely be
+executed in parallel. This means, for instance, that while one worker is
+fetching events from a block, another could be submitting a light client update,
+and another could be generating a state proof, and so on.
 
-For more information on voyager's architecture, see
-[CONCEPTS.md](/voyager/CONCEPTS.md)
+More information on voyager's architecture can be found [here][concepts].
 
 ## Light Clients
 
@@ -63,3 +61,7 @@ the case of Ethereum L2s is the height of the beacon chain), and L2 clients are
 can only be updated to heights that the L1 client it tracks has a consensus
 state for. As such, the finality time for L2s is the L2 settlement period + L1
 finality time.
+
+[concepts]: ./CONCEPTS.md
+[`pg-queue`]: ../lib/pg-queue
+[`voyager-vm`]: ../lib/voyager-vm

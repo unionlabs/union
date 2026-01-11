@@ -5,8 +5,12 @@ import svelte from "@astrojs/svelte"
 import starlightUtils from "@lorenzo_lewis/starlight-utils"
 import tailwindcss from "@tailwindcss/vite"
 import { defineConfig, passthroughImageService } from "astro/config"
+import type { PathLike } from "fs"
 import * as Fs from "node:fs/promises"
 import path from "node:path"
+import { remark } from "remark"
+import remarkParse from "remark-parse"
+import remarkStringify from "remark-stringify"
 import * as Toml from "smol-toml"
 import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
@@ -25,6 +29,44 @@ const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
   process.cwd(),
   "",
 )
+
+async function processReadme(repoPath: string, cb?: (repoAbsolutePath: string) => string | null) {
+  const readme = await Fs.readFile(path.join("../", repoPath))
+
+  const ast = remark()
+    .use(remarkParse, {
+      gfm: true,
+    })
+    .parse(readme)
+
+  ast.children.forEach((value, index, array) => {
+    // modify all local links to either be github links or fix the url slugging if the linked file is json/jsonc
+    if (value.type === "definition" && !value.url.startsWith("http")) {
+      const fileExt = path.extname(value.url)
+      if ((fileExt === ".json") || (fileExt === ".jsonc")) {
+        // @ts-ignore
+        array[index].url! = value.url.replace(fileExt, "")
+      } else {
+        const repoAbsolutePath = path.normalize(
+          path.join(path.dirname(repoPath), value.url),
+        )
+        console.log({ voyagerDirPath: repoPath, valueUrl: value.url, repoAbsolutePath })
+        // @ts-ignore
+        array[index].url! = "https://github.com/unionlabs/union/tree/main/" + repoAbsolutePath
+        // if theres a callback provided, and it returns a value, override the url with that provided value
+        if (cb) {
+          const url = cb(repoAbsolutePath)
+          if (url) {
+            // @ts-ignore
+            array[index].url! = url
+          }
+        }
+      }
+    }
+  })
+
+  return remark().use(remarkStringify).stringify(ast)
+}
 
 const copyExternalDocs = () => {
   async function* walk(dir: string): AsyncGenerator<string> {
@@ -65,7 +107,7 @@ const copyExternalDocs = () => {
         ),
       ).package as Toml.TomlTable)["name"]
 
-      const readme = await Fs.readFile(path.join("../voyager", voyagerDirPath))
+      const cleanedReadme = await processReadme(path.join("voyager", voyagerDirPath))
 
       const finalPath = path.dirname(
         path.join("./src/content/docs/architecture/voyager", voyagerDirPath),
@@ -75,7 +117,7 @@ const copyExternalDocs = () => {
 
       await Fs.writeFile(
         finalPath + ".md",
-        `---\ntitle: "${packageName}"\n---\n${readme}`,
+        `---\ntitle: "${packageName}"\n---\n${cleanedReadme}`,
       )
     } else if ((ext === ".json") || (ext === ".jsonc")) {
       let finalPath = path.join("./src/content/docs/architecture/voyager/", voyagerDirPath)
@@ -90,7 +132,7 @@ const copyExternalDocs = () => {
         finalPath.replace(ext, ".mdx"),
         `
 ---
-title: "${path.basename(finalPath)}"
+title: "${path.basename(voyagerDirPath)}"
 ---
 
 \`\`\`${ext.replace(".", "")}
@@ -133,7 +175,8 @@ ${json}
 
         await Fs.writeFile(
           "./src/content/docs/architecture/voyager/concepts.md",
-          "---\ntitle: Concepts\n---\n" + await Fs.readFile("../voyager/CONCEPTS.md", "utf8"),
+          "---\ntitle: Concepts\n---\n"
+            + await processReadme("voyager/CONCEPTS.md"),
         )
 
         await Fs.cp(
@@ -143,7 +186,14 @@ ${json}
 
         await Fs.writeFile(
           "./src/content/docs/architecture/voyager/overview.md",
-          "---\ntitle: Overview\n---\n" + await Fs.readFile("../voyager/README.md", "utf8"),
+          "---\ntitle: Overview\n---\n"
+            + await processReadme("voyager/README.md", repoAbsolutePath => {
+              if (repoAbsolutePath === "voyager/CONCEPTS.md") {
+                return "./concepts"
+              } else {
+                return null
+              }
+            }),
         )
 
         await copyVoyagerDir("plugins")
@@ -596,7 +646,9 @@ export default defineConfig({
           },
         }),
         starlightHeadingBadges(),
-        starlightLinksValidator(),
+        starlightLinksValidator({
+          exclude: ["./concepts", "./example-config"],
+        }),
       ],
       customCss: [
         "./src/styles/index.css",

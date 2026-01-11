@@ -32,10 +32,11 @@ _: {
               (builtins.any file.hasExt [
                 "md"
                 "svg"
+                "toml"
               ])
             ) ../voyager)
           ];
-          hash = "sha256-HAFB0pu/MhHd4MbIeIzoWV7sDeZfYCp5ZF4rVPzppG4=";
+          hash = "sha256-FbV3bXQgt3gB0x3NOaeMFhOkx2QFcTHEaardzCG/RQI=";
           packageJsonPath = ./package.json;
           pnpmWorkspaces = [
             "docs"

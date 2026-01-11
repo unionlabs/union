@@ -3,7 +3,7 @@ name    = "ssz"
 version = "0.0.0"
 
 license = "Apache-2.0"
-readme  = "../README.md"
+readme  = "README.md"
 
 authors    = { workspace = true }
 edition    = { workspace = true }

@@ -69,6 +69,15 @@ catalogs:
     react:
       specifier: ^18.3.1
       version: 18.3.1
+    remark:
+      specifier: ^15.0.1
+      version: 15.0.1
+    remark-parse:
+      specifier: ^11.0.0
+      version: 11.0.0
+    remark-stringify:
+      specifier: ^11.0.0
+      version: 11.0.0
     smol-toml:
       specifier: ^1.6.0
       version: 1.6.0
@@ -574,9 +583,6 @@ importers:
       remark-math:
         specifier: ^6.0.0
         version: 6.0.0
-      remark-parse:
-        specifier: ^11.0.0
-        version: 11.0.0
       remark-rehype:
         specifier: ^11.1.2
         version: 11.1.2
@@ -731,6 +737,15 @@ importers:
       postcss-import:
         specifier: ^16.1.0
         version: 16.1.1(postcss@8.5.6)
+      remark:
+        specifier: 'catalog:'
+        version: 15.0.1
+      remark-parse:
+        specifier: 'catalog:'
+        version: 11.0.0
+      remark-stringify:
+        specifier: 'catalog:'
+        version: 11.0.0
       smol-toml:
         specifier: 'catalog:'
         version: 1.6.0
@@ -9029,6 +9044,9 @@ packages:
 
   remark-toc@9.0.0:
     resolution: {integrity: sha512-KJ9txbo33GjDAV1baHFze7ij4G8c7SGYoY8Kzsm2gzFpbhL/bSoVpMMzGa3vrNDSWASNd/3ppAqL7cP2zD6JIA==}
+
+  remark@15.0.1:
+    resolution: {integrity: sha512-Eht5w30ruCXgFmxVUSlNWQ9iiimq07URKeFS3hNc8cUWy1llX4KDWfyEDZRycMc+znsN9Ux5/tJ/BFdgdOwA3A==}
 
   remarkable@1.7.4:
     resolution: {integrity: sha512-e6NKUXgX95whv7IgddywbeN/ItCkWbISmc2DiqHJb0wTrqZIexqdco5b8Z3XZoo/48IdNVKM9ZCvTPJ4F5uvhg==}
@@ -21084,6 +21102,15 @@ snapshots:
     dependencies:
       '@types/mdast': 4.0.4
       mdast-util-toc: 7.1.0
+
+  remark@15.0.1:
+    dependencies:
+      '@types/mdast': 4.0.4
+      remark-parse: 11.0.0
+      remark-stringify: 11.0.0
+      unified: 11.0.5
+    transitivePeerDependencies:
+      - supports-color
 
   remarkable@1.7.4:
     dependencies:
