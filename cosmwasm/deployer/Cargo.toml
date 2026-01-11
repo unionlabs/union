@@ -23,6 +23,7 @@ cosmwasm-std           = { workspace = true, features = ["std"] }
 cw-escrow-vault        = { workspace = true, features = ["library"] }
 cw20                   = { workspace = true }
 embed-commit           = { workspace = true }
+embed-commit-verifier  = { workspace = true }
 flate2                 = "1.1.5"
 futures                = { workspace = true }
 hex-literal            = { workspace = true }

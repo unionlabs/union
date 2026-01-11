@@ -17,6 +17,7 @@ use cosmos_client::{
 };
 use cosmos_signer::CosmosSigner;
 use cosmwasm_std::{Addr, Decimal, Uint256};
+use embed_commit::Rev;
 use flate2::{Compression, write::GzEncoder};
 use futures::{TryStreamExt, future::OptionFuture, stream::FuturesOrdered};
 use hex_literal::hex;
@@ -45,7 +46,7 @@ use unionlabs::{
         msg_update_instantiate_config::MsgUpdateInstantiateConfig,
     },
     google::protobuf::any::Any,
-    primitives::{Bech32, Bytes, H160, H256, U256},
+    primitives::{Bech32, Bytes, H160, H256, U256, encoding::HexUnprefixed},
 };
 
 const RELAYER: RoleId = RoleId::new(1);
@@ -71,6 +72,8 @@ enum App {
         /// Permisioned cosmwasm chains require special handling of instantiate permissions in order to deploy the stack.
         #[arg(long)]
         permissioned: bool,
+        #[arg(long, default_value_t = false)]
+        allow_dirty: bool,
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
@@ -110,6 +113,8 @@ enum App {
         /// Whether or not the salt should be interpreted as hex.
         #[arg(long)]
         salt_hex: bool,
+        #[arg(long, default_value_t = false)]
+        allow_dirty: bool,
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
@@ -124,6 +129,8 @@ enum App {
         initial_admin: Bech32<Bytes>,
         #[arg(long)]
         output: Option<PathBuf>,
+        #[arg(long, default_value_t = false)]
+        allow_dirty: bool,
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
@@ -158,6 +165,8 @@ enum App {
         message: Value,
         #[arg(long, default_value_t = false)]
         force: bool,
+        #[arg(long, default_value_t = false)]
+        allow_dirty: bool,
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
@@ -183,6 +192,8 @@ enum App {
         message: Value,
         #[arg(long, default_value_t = false)]
         force: bool,
+        #[arg(long, default_value_t = false)]
+        allow_dirty: bool,
         #[command(flatten)]
         gas_config: GasFillerArgs,
     },
@@ -235,6 +246,8 @@ enum App {
         gas_config: GasFillerArgs,
         #[arg(long)]
         output: Option<PathBuf>,
+        #[arg(long, default_value_t = false)]
+        allow_dirty: bool,
     },
     ProxyCodeId {
         #[arg(long)]
@@ -567,6 +580,7 @@ async fn do_main() -> Result<()> {
             manager,
             permissioned,
             gas_config,
+            allow_dirty,
         } => {
             deploy_full(
                 rpc_url,
@@ -575,6 +589,7 @@ async fn do_main() -> Result<()> {
                 output,
                 manager,
                 permissioned,
+                allow_dirty,
                 gas_config,
             )
             .await?;
@@ -684,8 +699,9 @@ async fn do_main() -> Result<()> {
             message,
             force,
             gas_config,
+            allow_dirty,
         } => {
-            let (new_checksum, new_bytecode) = read_bytecode(new_bytecode)?;
+            let (new_checksum, new_bytecode) = read_bytecode(new_bytecode, allow_dirty)?;
 
             let ctx = Deployer::new(
                 rpc_url,
@@ -765,9 +781,10 @@ async fn do_main() -> Result<()> {
             sender,
             message,
             force,
+            allow_dirty,
             gas_config,
         } => {
-            let new_bytecode = std::fs::read(new_bytecode).context("reading new bytecode")?;
+            let (new_checksum, new_bytecode) = read_bytecode(new_bytecode, allow_dirty)?;
 
             let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
 
@@ -782,7 +799,7 @@ async fn do_main() -> Result<()> {
                 bail!(
                     "contract {address} has not yet been initiated, it must be fully deployed before it can be migrated"
                 )
-            } else if checksum == sha2(&new_bytecode) {
+            } else if checksum == new_checksum {
                 if force {
                     info!(
                         "contract {address} has already been migrated to this bytecode, migrating anyways since --force was passed"
@@ -799,7 +816,7 @@ async fn do_main() -> Result<()> {
                 .tx(
                     MsgStoreCode {
                         sender: ctx.wallet().address().map_data(Into::into),
-                        wasm_byte_code: new_bytecode.clone().into(),
+                        wasm_byte_code: new_bytecode.into_encoding(),
                         instantiate_permission: None,
                     },
                     "",
@@ -950,10 +967,11 @@ async fn do_main() -> Result<()> {
             private_key,
             bytecode,
             rpc_url,
+            allow_dirty,
             gas_config,
             output,
         } => {
-            let (_, bytecode) = read_bytecode(bytecode)?;
+            let (_, bytecode) = read_bytecode(bytecode, allow_dirty)?;
 
             let deployer = Deployer::new(rpc_url.clone(), private_key, &gas_config).await?;
 
@@ -985,9 +1003,10 @@ async fn do_main() -> Result<()> {
             init_msg,
             salt,
             salt_hex,
+            allow_dirty,
             gas_config,
         } => {
-            let (_, bytecode) = read_bytecode(bytecode)?;
+            let (_, bytecode) = read_bytecode(bytecode, allow_dirty)?;
 
             let deployer = Deployer::new(rpc_url.clone(), private_key, &gas_config).await?;
 
@@ -1010,10 +1029,11 @@ async fn do_main() -> Result<()> {
             private_key,
             bytecode,
             initial_admin,
+            allow_dirty,
             output,
             gas_config,
         } => {
-            let (_, bytecode) = read_bytecode(bytecode)?;
+            let (_, bytecode) = read_bytecode(bytecode, allow_dirty)?;
 
             let deployer = Deployer::new(rpc_url.clone(), private_key, &gas_config).await?;
 
@@ -1310,8 +1330,25 @@ async fn do_main() -> Result<()> {
     Ok(())
 }
 
-fn read_bytecode(bytecode: PathBuf) -> Result<(H256, Bytes)> {
+fn read_bytecode(bytecode: PathBuf, allow_dirty: bool) -> Result<(H256, Bytes)> {
     let bytecode = std::fs::read(bytecode).context("reading bytecode path")?;
+
+    if !allow_dirty {
+        match embed_commit_verifier::extract_wasm(&bytecode)? {
+            Some(Rev::Unknown) => {
+                bail!("git rev is unknown")
+            }
+            Some(Rev::Dirty) => {
+                bail!("git rev is dirty")
+            }
+            Some(Rev::Hash(hash)) => {
+                info!("git rev is {}", H160::<HexUnprefixed>::new(hash))
+            }
+            None => {
+                bail!("git rev not found")
+            }
+        }
+    }
 
     let checksum = sha2(&bytecode);
 
@@ -1322,6 +1359,7 @@ fn read_bytecode(bytecode: PathBuf) -> Result<(H256, Bytes)> {
     Ok((checksum, bytecode.into()))
 }
 
+#[expect(clippy::too_many_arguments)]
 async fn deploy_full(
     rpc_url: String,
     private_key: H256,
@@ -1329,6 +1367,7 @@ async fn deploy_full(
     output: Option<PathBuf>,
     manager: Bech32<H256>,
     permissioned: bool,
+    allow_dirty: bool,
     gas_config: GasFillerArgs,
 ) -> Result<()> {
     let contracts = serde_json::from_slice::<ContractPaths>(
@@ -1345,7 +1384,7 @@ async fn deploy_full(
 
     let core_address = ctx
         .deploy_and_initiate(
-            read_bytecode(contracts.core)?.1,
+            read_bytecode(contracts.core, allow_dirty)?.1,
             bytecode_base_code_id,
             ibc_union_msg::msg::InitMsg {
                 access_managed_init_msg: access_managed_init_msg.clone(),
@@ -1369,7 +1408,7 @@ async fn deploy_full(
     for (client_type, path) in contracts.lightclient {
         let address = ctx
             .deploy_and_initiate(
-                read_bytecode(path)?.1,
+                read_bytecode(path, allow_dirty)?.1,
                 bytecode_base_code_id,
                 ibc_union_light_client::msg::InitMsg {
                     ibc_host: core_address.to_string(),
@@ -1600,7 +1639,7 @@ async fn deploy_full(
             }
 
             ctx.deploy_and_initiate(
-                read_bytecode(ucs03_config.path)?.1,
+                read_bytecode(ucs03_config.path, allow_dirty)?.1,
                 bytecode_base_code_id,
                 ucs03_zkgm::msg::InitMsg {
                     config: ucs03_zkgm::msg::Config {
@@ -1623,7 +1662,7 @@ async fn deploy_full(
         if let Some(escrow_vault_path) = contracts.escrow_vault {
             let escrow_vault_address = ctx
                 .deploy_and_initiate(
-                    read_bytecode(escrow_vault_path)?.1,
+                    read_bytecode(escrow_vault_path, allow_dirty)?.1,
                     bytecode_base_code_id,
                     cw_escrow_vault::msg::InstantiateMsg {
                         zkgm: Addr::unchecked(ucs03_address.to_string()),

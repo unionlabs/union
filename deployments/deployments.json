@@ -184,6 +184,12 @@
         "height": 35397312,
         "commit": "446cad9253e6d574ac64712d8f1a33b0cdf5e74a"
       },
+      "0xb018dfe65df030562e6f069f3804c0c763b49306": {
+        "name": "lightclients/loopback",
+        "salt": "0x6c69676874636c69656e74732f6c6f6f706261636b",
+        "height": 38734066,
+        "commit": "b6fb37f9a861ab96299c5a60f7719701e763387b"
+      },
       "0xba5ed44733953d79717f6269357c77718c8ba5ed": {
         "name": "u",
         "salt": "0x12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047",
@@ -563,6 +569,11 @@
         "height": 22236429,
         "commit": "7113f2661025803021f819add09995fce2f58abf"
       },
+      "0xa1a1d0b9182339e86e80db519218ea03ec09a1a1": {
+        "name": "atone",
+        "salt": "0x70ef87838bea3fb7d2db6cf5b1951ef5e644bb7392af2530485ea2917a696e27",
+        "commit": "446cad9253e6d574ac64712d8f1a33b0cdf5e74a"
+      },
       "0xba5ed44733953d79717f6269357c77718c8ba5ed": {
         "name": "u",
         "salt": "0x12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047",
@@ -748,6 +759,13 @@
         "commit": "3f4f862141d7cc5361bb6aec28c0d84c42683abb",
         "code_id": 1866
       },
+      "osmo13jcvgpy2cjl6tg7zz5pcr9pv6lgqz70h7n64krjve7mp7tsexvys82mlqs": {
+        "name": "proxy-account-factory",
+        "salt": "0x70726f78792d6163636f756e742d666163746f7279",
+        "height": 48917025,
+        "commit": "33c0624979271ac9a16ca27a8798099e62394083",
+        "code_id": 1855
+      },
       "osmo1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqata4fx": {
         "name": "core",
         "salt": "0x6962632d69732d6261736564",
@@ -775,6 +793,12 @@
         "height": 50151319,
         "commit": "3f4f862141d7cc5361bb6aec28c0d84c42683abb",
         "code_id": 1861
+      },
+      "osmo1at0ne9aywh35pmlz0exl5fl3ljwpey4gc620yyxthqspdw9e60mslfjxm3": {
+        "name": "atone",
+        "salt": "0x62848041ba49141096961bdfd2ffc9a1149cd15ad42b0faede546ede6619408e",
+        "height": 52253582,
+        "code_id": 1876
       }
     }
   },
