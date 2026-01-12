@@ -220,7 +220,7 @@ module escrow_vault::escrow_vault {
 
         if (quote_amount > 0) {
             let receiver = bcs::new(receiver).peel_address();
-            vault.unescrow<T>(fee as u64, receiver, ctx);
+            vault.unescrow<T>(quote_amount as u64, receiver, ctx);
         };
 
         (counterparty_beneficiary, 0)
