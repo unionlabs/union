@@ -819,7 +819,7 @@ _: {
                     cosmwasm-deployer \
                     migrate \
                     --rpc-url ${rpc-url} \
-                    --address ${getDeployedContractAddress ucs04-chain-id "core"} \
+                    --address ${getDeployedContractAddress ucs04-chain-id} \
                     --new-bytecode ${(mk-app app).release} \
                     ${mk-gas-args gas-config} "$@"
                 '';
@@ -843,7 +843,7 @@ _: {
                   cosmwasm-deployer \
                   upgrade \
                   --rpc-url ${rpc-url} \
-                  --address ${(getDeployedContractAddress ucs04-chain-id).core.address} \
+                  --address ${getDeployedContractAddress ucs04-chain-id "core"} \
                   --new-bytecode ${ibc-union.release} \
                   ${mk-gas-args gas-config} "$@"
               '';
@@ -927,7 +927,7 @@ _: {
               cosmwasm-deployer \
               setup-roles \
               --rpc-url ${rpc-url} \
-              --manager ${(getDeployedContractAddress ucs04-chain-id).manager} \
+              --manager ${getDeployedContractAddress ucs04-chain-id "manager"} \
               --addresses <(ibc-union-contract-addresses ${(getDeployment ucs04-chain-id).deployer}) \
               ${mk-gas-args gas-config} \
               "$@"
