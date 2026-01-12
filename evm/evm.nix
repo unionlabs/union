@@ -575,7 +575,7 @@ _: {
           rpc-url = "https://arb-mainnet.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
-          rate-limit-enabled = "false";
+          rate-limit-enabled = "true";
 
           native-token-name = "Ether";
           native-token-symbol = "ETH";
