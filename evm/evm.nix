@@ -1273,6 +1273,10 @@ _: {
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/StateLensIcs23SmtClient.sol/StateLensIcs23SmtClient.json \
                   ${contracts}/out/StateLensIcs23SmtClient.sol/StateLensIcs23SmtLib.json > lightclient.state-lens-ics23-smt.json
+
+                jq --compact-output --slurp 'map(.abi) | add' \
+                  ${contracts}/out/LoopbackClient.sol/LoopbackClient.json \
+                  ${contracts}/out/LoopbackClient.sol/LoopbackClient.json > lightclient.loopback.json
               ''
           );
 
