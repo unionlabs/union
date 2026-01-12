@@ -7,35 +7,42 @@
       "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
         "name": "lightclients/state-lens/ics23/ics23",
         "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
-        "commit": "c2c6c2c8e11910ccd5ca6bc3db1055364a21af8a"
+        "height": 420578940,
+        "commit": "6fadb697bee413c025e87b5edf79c0d9f836cce6"
       },
       "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4": {
         "name": "manager",
-        "salt": "0x6d616e61676572"
+        "salt": "0x6d616e61676572",
+        "height": 420578844
       },
       "0x473b540b38f02db8109d5bf4f80f0e03e4e31805": {
         "name": "lightclients/state-lens/ics23/mpt",
         "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
-        "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+        "height": 420578920,
+        "commit": "6fadb697bee413c025e87b5edf79c0d9f836cce6"
       },
       "0x5fbe74a283f7954f10aa04c2edf55578811aeb03": {
         "name": "protocols/ucs03",
         "salt": "0x70726f746f636f6c732f7563733033",
-        "commit": "5a54fb0e68a9284297e42902354cfb41f4b81bf9"
+        "height": 420579040,
+        "commit": "6fadb697bee413c025e87b5edf79c0d9f836cce6"
       },
       "0x70276995f225df69936eaec02ddece998a9e3662": {
         "name": "multicall",
-        "salt": "0x6c69622f6d756c746963616c6c2d7632"
+        "salt": "0x6c69622f6d756c746963616c6c2d7632",
+        "height": 420579077
       },
       "0x7700ea295f62989d2c98721389a521c96fe3c4c0": {
         "name": "lightclients/cometbls",
         "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
-        "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
+        "height": 420578883,
+        "commit": "6fadb697bee413c025e87b5edf79c0d9f836cce6"
       },
       "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
         "name": "core",
         "salt": "0x6962632d69732d6261736564",
-        "commit": "d03dc6ee0e753ddb5938b23a76f09cf4572f577a"
+        "height": 420578864,
+        "commit": "6fadb697bee413c025e87b5edf79c0d9f836cce6"
       }
     }
   },
