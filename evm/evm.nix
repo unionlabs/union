@@ -1276,7 +1276,7 @@ _: {
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/LoopbackClient.sol/LoopbackClient.json \
-                  ${contracts}/out/LoopbackClient.sol/LoopbackClient.json > lightclients-loopback.json
+                  ${contracts}/out/LoopbackClient.sol/LoopbackClientLib.json > lightclients-loopback.json
               ''
           );
 
