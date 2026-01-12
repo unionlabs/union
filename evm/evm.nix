@@ -1253,30 +1253,30 @@ _: {
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/Zkgm.sol/AbiExport.json \
-                  ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > app.ucs03.json
+                  ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > protocols.ucs03.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/UDrop.sol/UDrop.json > udrop.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/CometblsClient.sol/CometblsClient.json \
-                  ${contracts}/out/CometblsClient.sol/CometblsClientLib.json > lightclient.cometbls.json
+                  ${contracts}/out/CometblsClient.sol/CometblsClientLib.json > lightclients.cometbls.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptClient.json \
-                  ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptLib.json > lightclient.state-lens-ics23-mpt.json
+                  ${contracts}/out/StateLensIcs23MptClient.sol/StateLensIcs23MptLib.json > lightclients.state-lens-ics23-mpt.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Client.json \
-                  ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Lib.json > lightclient.state-lens-ics23-ics23.json
+                  ${contracts}/out/StateLensIcs23Ics23Client.sol/StateLensIcs23Ics23Lib.json > lightclients.state-lens-ics23-ics23.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/StateLensIcs23SmtClient.sol/StateLensIcs23SmtClient.json \
-                  ${contracts}/out/StateLensIcs23SmtClient.sol/StateLensIcs23SmtLib.json > lightclient.state-lens-ics23-smt.json
+                  ${contracts}/out/StateLensIcs23SmtClient.sol/StateLensIcs23SmtLib.json > lightclients.state-lens-ics23-smt.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
                   ${contracts}/out/LoopbackClient.sol/LoopbackClient.json \
-                  ${contracts}/out/LoopbackClient.sol/LoopbackClient.json > lightclient.loopback.json
+                  ${contracts}/out/LoopbackClient.sol/LoopbackClient.json > lightclients.loopback.json
               ''
           );
 
