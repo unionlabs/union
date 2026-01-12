@@ -879,6 +879,36 @@ _: {
           };
         };
 
+      migrate-admin-to-self =
+        {
+          ucs04-chain-id,
+          name,
+          rpc-url,
+          gas-config,
+          deployer-key,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "migrate-admin-to-self-${name}";
+          runtimeInputs = [
+            cosmwasm-deployer
+            ibc-union-contract-addresses
+          ];
+          text = ''
+            PRIVATE_KEY=${deployer-key} \
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              migrate-admin-to-self \
+              --rpc-url ${rpc-url} \
+              --addresses <(ibc-union-contract-addresses ${(getDeployment ucs04-chain-id).deployer}) \
+              ${mk-gas-args gas-config} "$@"
+          '';
+          meta = {
+            description = "Migrate a contract's admin to itself on ${ucs04-chain-id}.";
+            longDescription = "Migrate a contract's admin to itself on ${ucs04-chain-id} in order to be compatible with Upgradable::Upgrade.";
+          };
+        };
+
       migrate-contract =
         {
           ucs04-chain-id,
@@ -1072,6 +1102,7 @@ _: {
                       set-bucket-config = set-bucket-config chain;
                       deploy-contract = deploy-contract chain;
                       migrate-contract = migrate-contract chain;
+                      migrate-admin-to-self = migrate-admin-to-self chain;
                       setup-roles = setup-roles chain;
                     }
                     // (chain-migration-scripts chain)
