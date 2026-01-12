@@ -1518,13 +1518,13 @@ fn channel_open_try(
 
     let connection = ensure_connection_state(deps.as_ref(), channel.connection_id)?;
 
-    let connection_id = connection
+    let counterparty_connection_id = connection
         .counterparty_connection_id
         .expect("connection is open; qed;");
 
     let expected_channel = Channel {
         state: ChannelState::Init,
-        connection_id,
+        connection_id: counterparty_connection_id,
         counterparty_channel_id: None,
         counterparty_port_id: port_id.as_bytes().into(),
         version: counterparty_version.clone(),
@@ -1572,14 +1572,14 @@ fn channel_open_try(
             channel_id,
             counterparty_port_id: channel.counterparty_port_id.as_encoding(),
             counterparty_channel_id,
-            connection_id,
+            connection_id: channel.connection_id,
             counterparty_version: &counterparty_version,
         })
         .add_message(wasm_execute(
             port_id,
             &ModuleMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
                 caller: info.sender.into_string(),
-                connection_id,
+                connection_id: channel.connection_id,
                 channel_id,
                 version: channel.version,
                 counterparty_version,

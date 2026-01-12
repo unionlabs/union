@@ -60,17 +60,16 @@ fn send_packet_ok() {
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
     channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
 
-    let msg = MsgSendPacket {
-        source_channel_id: ChannelId!(1),
-        timeout_timestamp: Timestamp::from_nanos(1000000),
-        data: vec![0, 1, 2].into(),
-    };
     assert!(
         execute(
             deps.as_mut(),
             mock_env(),
-            message_info(&mock_addr(SENDER), &[]),
-            ExecuteMsg::PacketSend(msg)
+            message_info(&mock_addr(MODULE), &[]),
+            ExecuteMsg::PacketSend(MsgSendPacket {
+                source_channel_id: ChannelId!(1),
+                timeout_timestamp: Timestamp::from_nanos(1000000),
+                data: vec![0, 1, 2].into(),
+            })
         )
         .is_ok()
     )
@@ -660,7 +659,7 @@ fn acknowledge_packet_ok() {
     // Create channel
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -699,7 +698,7 @@ fn acknowledge_packet_ok() {
     execute(
         deps.as_mut(),
         mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
+        message_info(&mock_addr(MODULE), &[]),
         ExecuteMsg::PacketSend(msg),
     )
     .expect("send packet ok");
@@ -772,7 +771,7 @@ fn acknowledge_packet_tampered() {
     // Create channel
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -811,7 +810,7 @@ fn acknowledge_packet_tampered() {
     execute(
         deps.as_mut(),
         mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
+        message_info(&mock_addr(MODULE), &[]),
         ExecuteMsg::PacketSend(msg),
     )
     .expect("send packet ok");
@@ -884,7 +883,7 @@ fn acknowledge_packet_not_sent() {
     // Create channel
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -1000,7 +999,7 @@ fn timeout_packet_timestamp_ok() {
     execute(
         deps.as_mut(),
         env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
+        message_info(&mock_addr(MODULE), &[]),
         ExecuteMsg::PacketSend(msg),
     )
     .expect("send packet ok");
@@ -1088,7 +1087,7 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
     execute(
         deps.as_mut(),
         env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
+        message_info(&mock_addr(MODULE), &[]),
         ExecuteMsg::PacketSend(msg),
     )
     .expect("send packet ok");
@@ -1167,7 +1166,7 @@ fn write_acknowledgement_ok() {
     // Create channel
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -1232,7 +1231,7 @@ fn write_acknowledgement_ok() {
         execute(
             deps.as_mut(),
             env.clone(),
-            message_info(&mock_addr(SENDER), &[]),
+            message_info(&mock_addr(MODULE), &[]),
             ExecuteMsg::WriteAcknowledgement(msg),
         )
         .is_ok()
@@ -1355,7 +1354,7 @@ fn write_acknowledgement_module_is_not_channel_owner() {
         execute(
             deps.as_mut(),
             env.clone(),
-            message_info(&mock_addr(SENDER), &[]),
+            message_info(&mock_addr(MODULE), &[]),
             ExecuteMsg::WriteAcknowledgement(msg),
         )
         .is_err_and(|err| { matches!(err, ContractError::Unauthorized { .. }) })
@@ -1409,7 +1408,7 @@ fn write_acknowledgement_packet_not_received() {
     // Create channel
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -1453,7 +1452,7 @@ fn write_acknowledgement_packet_not_received() {
         execute(
             deps.as_mut(),
             mock_env(),
-            message_info(&mock_addr(SENDER), &[]),
+            message_info(&mock_addr(MODULE), &[]),
             ExecuteMsg::WriteAcknowledgement(msg),
         )
         .is_err_and(|err| { matches!(err, ContractError::PacketNotReceived) })
@@ -1511,7 +1510,7 @@ fn write_acknowledgement_already_exists() {
     // Create channel
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -1576,7 +1575,7 @@ fn write_acknowledgement_already_exists() {
         execute(
             deps.as_mut(),
             env.clone(),
-            message_info(&mock_addr(SENDER), &[]),
+            message_info(&mock_addr(MODULE), &[]),
             ExecuteMsg::WriteAcknowledgement(msg),
         )
         .is_ok()
@@ -1595,7 +1594,7 @@ fn write_acknowledgement_already_exists() {
         execute(
             deps.as_mut(),
             env.clone(),
-            message_info(&mock_addr(SENDER), &[]),
+            message_info(&mock_addr(MODULE), &[]),
             ExecuteMsg::WriteAcknowledgement(msg),
         )
         .is_err_and(|err| { matches!(err, ContractError::AlreadyAcknowledged) })
@@ -1653,7 +1652,7 @@ fn batch_send_ok() {
     // Create channel
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -1691,7 +1690,7 @@ fn batch_send_ok() {
     execute(
         deps.as_mut(),
         env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
+        message_info(&mock_addr(MODULE), &[]),
         ExecuteMsg::PacketSend(msg),
     )
     .expect("send packet is ok");
@@ -1703,7 +1702,7 @@ fn batch_send_ok() {
     execute(
         deps.as_mut(),
         env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
+        message_info(&mock_addr(MODULE), &[]),
         ExecuteMsg::PacketSend(msg),
     )
     .expect("send packet is ok");
@@ -1784,7 +1783,7 @@ fn batch_send_packet_not_sent() {
     // Create channel
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -1893,7 +1892,7 @@ fn batch_acks_ok() {
     // Create channel
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -1956,7 +1955,7 @@ fn batch_acks_ok() {
     execute(
         deps.as_mut(),
         env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
+        message_info(&mock_addr(MODULE), &[]),
         ExecuteMsg::WriteAcknowledgement(msg),
     )
     .expect("write ack is ok");
@@ -1993,7 +1992,7 @@ fn batch_acks_ok() {
     execute(
         deps.as_mut(),
         env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
+        message_info(&mock_addr(MODULE), &[]),
         ExecuteMsg::WriteAcknowledgement(msg),
     )
     .expect("write ack is ok");
@@ -2075,7 +2074,7 @@ fn batch_acks_packet_not_received() {
     // Create channel
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -2185,7 +2184,7 @@ fn batch_acks_tampered_packet() {
     // Create channel
     channel_open_init(deps.as_mut()).expect("channel open init is ok");
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -2248,7 +2247,7 @@ fn batch_acks_tampered_packet() {
     execute(
         deps.as_mut(),
         env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
+        message_info(&mock_addr(MODULE), &[]),
         ExecuteMsg::WriteAcknowledgement(msg),
     )
     .expect("write ack is ok");
@@ -2285,7 +2284,7 @@ fn batch_acks_tampered_packet() {
     execute(
         deps.as_mut(),
         env.clone(),
-        message_info(&mock_addr(SENDER), &[]),
+        message_info(&mock_addr(MODULE), &[]),
         ExecuteMsg::WriteAcknowledgement(msg),
     )
     .expect("write ack is ok");

@@ -19,11 +19,6 @@ use crate::{
     state::{ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates, ClientTypes},
 };
 
-const CLIENT_TYPE: &str = "union";
-const CLIENT_ADDRESS: &str = "unionclient";
-const SENDER: &str = "unionsender";
-const RELAYER: &str = "unionrelayer";
-
 #[test]
 fn register_client_ok() {
     let mut deps = mock_dependencies();
