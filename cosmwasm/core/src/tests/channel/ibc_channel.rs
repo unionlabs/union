@@ -1,10 +1,11 @@
 use access_managed::Restricted;
-use cosmwasm_std::{testing::mock_dependencies, to_json_binary};
+use cosmwasm_std::{testing::mock_dependencies, to_json_binary, wasm_execute};
 use depolama::StorageExt;
 use ibc_union_msg::{
     lightclient::{
         VerificationQueryMsg, VerifyCreationQuery, VerifyCreationResponse, VerifyMembershipQuery,
     },
+    module::{self, IbcUnionMsg},
     msg::{
         InitMsg, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
         RestrictedExecuteMsg,
@@ -14,15 +15,12 @@ use ibc_union_spec::Channel;
 
 use super::*;
 use crate::{
-    contract::init,
-    state::{ChannelOwner, Channels},
+    contract::{
+        events::{ChannelOpenAck, ChannelOpenTry},
+        init,
+    },
+    state::{ChannelOwner, Channels, Connections},
 };
-
-const SENDER: &str = "unionsender";
-const RELAYER: &str = "unionrelayer";
-const MANAGER: &str = "manager";
-
-const VERSION: &str = "version";
 
 #[test]
 fn channel_open_init_ok() {
@@ -64,7 +62,7 @@ fn channel_open_init_ok() {
     connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
 
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -123,7 +121,7 @@ fn channel_open_init_channel_claimed() {
 
     assert_eq!(
         deps.storage.read::<ChannelOwner>(&ChannelId!(1)).unwrap(),
-        mock_addr(SENDER)
+        mock_addr(MODULE)
     );
 }
 
@@ -212,18 +210,26 @@ fn channel_open_try_ok() {
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
+
     register_client(deps.as_mut()).expect("register client ok");
     create_client(deps.as_mut()).expect("create client ok");
 
     connection_open_try(deps.as_mut()).expect("connection open try is ok");
     connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
 
+    deps.storage
+        .update::<Connections, StdError, _>(&ConnectionId!(1), |connection| {
+            connection.counterparty_connection_id = Some(ConnectionId!(45));
+            Ok(())
+        })
+        .unwrap();
+
     let msg = MsgChannelOpenTry {
-        port_id: mock_addr(SENDER).into_string(),
+        port_id: mock_addr(MODULE).into_string(),
         channel: Channel {
             state: ChannelState::TryOpen,
             connection_id: ConnectionId!(1),
-            counterparty_channel_id: Some(ChannelId!(1)),
+            counterparty_channel_id: Some(ChannelId!(123)),
             counterparty_port_id: vec![1].into(),
             version: VERSION.to_owned(),
         },
@@ -233,16 +239,41 @@ fn channel_open_try_ok() {
         relayer: mock_addr(RELAYER).into_string(),
     };
 
-    assert!(
+    assert_eq!(
         execute(
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
             ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenTry(msg))),
         )
-        .is_ok()
+        .unwrap(),
+        Response::new()
+            .add_event(ChannelOpenTry {
+                port_id: &mock_addr(MODULE),
+                channel_id: ChannelId!(1),
+                counterparty_port_id: &[1].into(),
+                counterparty_channel_id: ChannelId!(123),
+                connection_id: ConnectionId!(1),
+                counterparty_version: VERSION,
+            })
+            .add_message(
+                wasm_execute(
+                    mock_addr(MODULE),
+                    &module::ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenTry {
+                        caller: mock_addr(SENDER).to_string(),
+                        connection_id: ConnectionId!(1),
+                        channel_id: ChannelId!(1),
+                        version: VERSION.to_owned(),
+                        counterparty_version: VERSION.to_owned(),
+                        relayer: mock_addr(RELAYER).to_string(),
+                    }),
+                    vec![]
+                )
+                .unwrap()
+            )
     )
 }
+
 #[test]
 fn channel_open_try_invalid_state() {
     let mut deps = mock_dependencies();
@@ -283,7 +314,7 @@ fn channel_open_try_invalid_state() {
     connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
 
     let msg = MsgChannelOpenTry {
-        port_id: mock_addr(SENDER).into_string(),
+        port_id: mock_addr(MODULE).into_string(),
         channel: Channel {
             state: ChannelState::Open,
             connection_id: ConnectionId!(1),
@@ -356,7 +387,7 @@ fn channel_open_try_channel_claimed() {
     connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
 
     let msg = MsgChannelOpenTry {
-        port_id: mock_addr(SENDER).into_string(),
+        port_id: mock_addr(MODULE).into_string(),
         channel: Channel {
             state: ChannelState::TryOpen,
             connection_id: ConnectionId!(1),
@@ -379,7 +410,7 @@ fn channel_open_try_channel_claimed() {
 
     assert_eq!(
         deps.storage.read::<ChannelOwner>(&ChannelId!(1)).unwrap(),
-        mock_addr(SENDER)
+        mock_addr(MODULE)
     );
 }
 
@@ -423,7 +454,7 @@ fn channel_open_try_commitment_saved() {
     connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
 
     let msg = MsgChannelOpenTry {
-        port_id: mock_addr(SENDER).into_string(),
+        port_id: mock_addr(MODULE).into_string(),
         channel: Channel {
             state: ChannelState::TryOpen,
             connection_id: ConnectionId!(1),
@@ -496,7 +527,7 @@ fn channel_open_ack_ok() {
     connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
 
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -510,23 +541,52 @@ fn channel_open_ack_ok() {
     )
     .expect("channel open init is ok");
 
+    deps.storage
+        .update::<Connections, StdError, _>(&ConnectionId!(1), |connection| {
+            connection.counterparty_connection_id = Some(ConnectionId!(45));
+            Ok(())
+        })
+        .unwrap();
+
     let msg = MsgChannelOpenAck {
         channel_id: ChannelId!(1),
         counterparty_version: VERSION.to_owned(),
-        counterparty_channel_id: ChannelId!(1),
+        counterparty_channel_id: ChannelId!(123),
         proof_try: vec![1, 2, 3].into(),
         proof_height: 1,
         relayer: mock_addr(RELAYER).to_string(),
     };
 
-    assert!(
+    assert_eq!(
         execute(
             deps.as_mut(),
             mock_env(),
             message_info(&mock_addr(SENDER), &[]),
             ExecuteMsg::Restricted(Restricted::wrap(RestrictedExecuteMsg::ChannelOpenAck(msg))),
         )
-        .is_ok()
+        .unwrap(),
+        Response::new()
+            .add_event(ChannelOpenAck {
+                port_id: &mock_addr(MODULE),
+                channel_id: ChannelId!(1),
+                counterparty_port_id: &[1].into(),
+                counterparty_channel_id: ChannelId!(123),
+                connection_id: ConnectionId!(1),
+            })
+            .add_message(
+                wasm_execute(
+                    mock_addr(MODULE),
+                    &module::ExecuteMsg::IbcUnionMsg(IbcUnionMsg::OnChannelOpenAck {
+                        caller: mock_addr(SENDER).to_string(),
+                        channel_id: ChannelId!(1),
+                        counterparty_channel_id: ChannelId!(123),
+                        counterparty_version: VERSION.to_owned(),
+                        relayer: mock_addr(RELAYER).to_string(),
+                    }),
+                    vec![]
+                )
+                .unwrap()
+            )
     )
 }
 
@@ -631,7 +691,7 @@ fn channel_open_ack_commitment_saved() {
     connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
 
     let msg = MsgChannelOpenInit {
-        port_id: mock_addr(SENDER).to_string(),
+        port_id: mock_addr(MODULE).to_string(),
         counterparty_port_id: vec![1].into(),
         connection_id: ConnectionId!(1),
         version: VERSION.to_owned(),
@@ -714,7 +774,7 @@ fn channel_open_confirm_ok() {
     connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
 
     let msg = MsgChannelOpenTry {
-        port_id: mock_addr(SENDER).into_string(),
+        port_id: mock_addr(MODULE).into_string(),
         channel: Channel {
             state: ChannelState::TryOpen,
             connection_id: ConnectionId!(1),
@@ -794,7 +854,7 @@ fn channel_open_try_invalid_counterparty() {
     connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
 
     let msg = MsgChannelOpenTry {
-        port_id: mock_addr(SENDER).into_string(),
+        port_id: mock_addr(MODULE).into_string(),
         channel: Channel {
             state: ChannelState::TryOpen,
             connection_id: ConnectionId!(1),
@@ -919,7 +979,7 @@ fn channel_open_confirm_commitment_saved() {
     connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
 
     let msg = MsgChannelOpenTry {
-        port_id: mock_addr(SENDER).into_string(),
+        port_id: mock_addr(MODULE).into_string(),
         channel: Channel {
             state: ChannelState::TryOpen,
             connection_id: ConnectionId!(1),
