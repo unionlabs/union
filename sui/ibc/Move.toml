@@ -1,7 +1,7 @@
 [package]
 edition      = "2024.beta"
 name         = "ibc"
-published-at = "0x44ea56bb6a5661d707dadf8400464fbf10b35314fb03f51b9ba420cb4e53180e"
+published-at = "0xf3f8b866e62cc6e17cb894a7b91d9aaa877ca54da6a35b6c16fbfafea6cb7d43"
 
 [addresses]
 ibc = "0x0"
