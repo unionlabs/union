@@ -1,5 +1,5 @@
 [package]
-name    = "voyager-state-module-ethereum"
+name    = "voyager-state-module-evm"
 readme  = "README.md"
 version = "0.0.0"
 

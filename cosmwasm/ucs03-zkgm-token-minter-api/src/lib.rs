@@ -4,7 +4,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Binary, Event, Uint128};
 use enumorph::Enumorph;
 use ibc_union_spec::ChannelId;
-use unionlabs::primitives::{Bytes, H256, encoding::HexPrefixed};
+use unionlabs::primitives::{Bytes, H256};
 
 pub const EVENT_WRAPPED_TOKEN: &str = "create_wrapped_token";
 pub const EVENT_WRAPPED_TOKEN_ATTR_CHANNEL_ID: &str = "channel_id";
@@ -33,15 +33,15 @@ pub fn new_wrapped_token_event(
         .add_attribute(EVENT_WRAPPED_TOKEN_ATTR_CHANNEL_ID, channel_id.to_string())
         .add_attribute(
             EVENT_WRAPPED_TOKEN_ATTR_BASE_TOKEN,
-            Bytes::<HexPrefixed>::from(base_token).to_string(),
+            <Bytes>::from(base_token).to_string(),
         )
         .add_attribute(
             EVENT_WRAPPED_TOKEN_ATTR_QUOTE_TOKEN,
-            Bytes::<HexPrefixed>::from(quote_token_denom.as_bytes()).to_string(),
+            <Bytes>::from(quote_token_denom.as_bytes()).to_string(),
         )
         .add_attribute(
             EVENT_WRAPPED_TOKEN_ATTR_METADATA,
-            Bytes::<HexPrefixed>::from(metadata).to_string(),
+            <Bytes>::from(metadata).to_string(),
         )
         .add_attribute(EVENT_WRAPPED_TOKEN_ATTR_KIND, (kind as u8).to_string())
 }

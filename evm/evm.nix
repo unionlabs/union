@@ -17,9 +17,19 @@ _: {
       # use this to override the git rev. useful if verifying a contract off of a commit and the worktree is dirty for unrelated reasons (for example, changing an rpc)
       # gitRevToUse = "";
 
+      # Get the full deployments object for a chain.
       getDeployment =
         ucs04-chain-id:
         (builtins.fromJSON (builtins.readFile ../deployments/deployments.json)).${ucs04-chain-id};
+
+      # Get a deployed contract address by name on a chain.
+      getDeployedContractAddress =
+        ucs04-chain-id: name:
+        (pkgs.lib.lists.findSingle ({ value, ... }: value.name == name)
+          (throw "no deployment found for ${name} on ${ucs04-chain-id}")
+          (throw "many deployments found for ${name} on ${ucs04-chain-id}")
+          (pkgs.lib.attrsToList (getDeployment ucs04-chain-id).contracts)
+        ).name;
 
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
@@ -751,7 +761,7 @@ _: {
               do
                 cast \
                   send \
-                  ${(getDeployment ucs04-chain-id).manager} \
+                  ${getDeployedContractAddress ucs04-chain-id "manager"} \
                   "function grantRole(uint64,address,uint32)" \
                   1 "$relayer" 0 \
                   --private-key ${private-key} \

@@ -15092,6 +15092,7 @@ dependencies = [
  "arbitrum-client",
  "arbitrum-light-client-types",
  "arbitrum-types",
+ "base-light-client-types",
  "base64 0.22.1",
  "bcs",
  "bech32 0.11.1",
@@ -17137,7 +17138,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-state-module-ethereum"
+name = "voyager-state-module-evm"
 version = "0.0.0"
 dependencies = [
  "alloy",

@@ -286,8 +286,12 @@ enum TxCmd {
     WhitelistRelayers {
         #[arg(long)]
         rpc_url: String,
-        #[arg(long, env)]
-        private_key: H256,
+        #[arg(long, env, required_unless_present("dump_to"))]
+        private_key: Option<H256>,
+        #[arg(long, conflicts_with = "private_key")]
+        dump_to: Option<PathBuf>,
+        #[arg(long, conflicts_with = "private_key")]
+        sender: Option<Bech32>,
         #[arg(long)]
         manager: Bech32<H256>,
         /// The relayer(s) to whitelist.
@@ -1057,37 +1061,61 @@ async fn do_main() -> Result<()> {
             TxCmd::WhitelistRelayers {
                 rpc_url,
                 private_key,
+                dump_to,
+                sender,
                 manager,
                 relayer,
                 gas_config,
             } => {
-                let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
+                let deployer =
+                    Deployer::new(rpc_url, private_key.unwrap_or(sha2("")), &gas_config).await?;
 
                 info!("whitelisting {} relayers", relayer.len());
 
-                let tx_hash = ctx
-                    .broadcast_tx_commit(
-                        relayer.iter().map(|relayer| {
-                            Any(MsgExecuteContract {
-                                sender: ctx.wallet().address().map_data(Into::into),
-                                contract: manager.clone(),
-                                msg: serde_json::to_vec(&AccessManagerExecuteMsg::GrantRole {
-                                    role_id: RELAYER,
-                                    account: Addr::unchecked(relayer.to_string()),
-                                    execution_delay: 0,
-                                })
-                                .unwrap()
-                                .into(),
-                                funds: vec![],
+                let messages = relayer
+                    .iter()
+                    .map(|relayer| {
+                        Any(MsgExecuteContract {
+                            sender: sender
+                                .clone()
+                                .map_or(deployer.wallet().address().map_data(Into::into), |s| {
+                                    s.map_data(Into::into)
+                                }),
+                            contract: manager.clone(),
+                            msg: serde_json::to_vec(&AccessManagerExecuteMsg::GrantRole {
+                                role_id: RELAYER,
+                                account: Addr::unchecked(relayer.to_string()),
+                                execution_delay: 0,
                             })
-                        }),
-                        "",
-                        gas_config.simulate,
-                    )
-                    .await?
-                    .hash;
+                            .unwrap()
+                            .into(),
+                            funds: vec![],
+                        })
+                    })
+                    .collect::<Vec<_>>();
 
-                info!(%tx_hash, "whitelisted {} relayers", relayer.len());
+                if let Some(dump_to) = dump_to {
+                    write_output(
+                        Some(dump_to.clone()),
+                        json!({
+                            "body": {
+                                "messages": messages,
+                            },
+                        }),
+                    )?;
+
+                    info!("raw tx body written to {}", dump_to.display());
+                } else {
+                    info!("setting up roles");
+
+                    let tx_hash = deployer
+                        .broadcast_tx_commit(messages, "", deployer.simulate)
+                        .await
+                        .context("migrate")?
+                        .hash;
+
+                    info!(%tx_hash, "whitelisted {} relayers", relayer.len());
+                }
             }
             TxCmd::SetBucketConfig {
                 rpc_url,

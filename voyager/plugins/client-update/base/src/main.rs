@@ -19,7 +19,7 @@ use tracing::{debug, info, instrument};
 use unionlabs::{
     ibc::core::client::height::Height,
     never::Never,
-    primitives::{ByteArrayExt, Bytes, H160, H256, U256, encoding::HexPrefixed},
+    primitives::{ByteArrayExt, Bytes, H160, H256, U256},
 };
 use voyager_sdk::{
     DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
@@ -580,7 +580,7 @@ impl Module {
         let game_id = game_proof.value.to_be_bytes();
         // TODO: introduce a gameId type with a tryfrom
         // See https://github.com/ethereum-optimism/optimism/blob/4a7cb8a198a1f027e739d2e51dc170faf02b5d28/packages/contracts-bedrock/src/dispute/lib/LibUDT.sol#L70-L79
-        let game_account_address = H160::<HexPrefixed>::new(game_id.array_slice::<12, 20>());
+        let game_account_address = <H160>::new(game_id.array_slice::<12, 20>());
 
         let game_account_proof = self
             .fetch_game_account_proof(l1_height, game_account_address)

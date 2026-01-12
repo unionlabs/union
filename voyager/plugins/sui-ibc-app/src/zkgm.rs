@@ -21,7 +21,7 @@ use sui_sdk::{
     },
 };
 use ucs03_zkgm::com::{Batch, TokenMetadata, TokenOrderV2, ZkgmPacket};
-use unionlabs::primitives::{Bytes, H256, encoding::HexPrefixed};
+use unionlabs::primitives::{Bytes, H256};
 use voyager_sdk::serde_json;
 
 use super::*;
@@ -424,10 +424,8 @@ pub fn register_capability_call(
         }))
         .unwrap(),
         // owner is 0x0
-        ptb.input(CallArg::Pure(
-            H256::<HexPrefixed>::default().into_bytes().to_vec(),
-        ))
-        .unwrap(),
+        ptb.input(CallArg::Pure(<H256>::default().into_bytes().to_vec()))
+            .unwrap(),
     ];
     ptb.command(Command::move_call(
         vault_address.into(),
@@ -669,7 +667,7 @@ pub async fn register_token_if_zkgm(
             let sui_metadata: SuiFungibleAssetMetadata =
                 bcs::from_bytes(&metadata.initializer).unwrap();
 
-            if sui_metadata.owner != H256::<HexPrefixed>::default() {
+            if sui_metadata.owner != <H256>::default() {
                 return Ok(None);
             }
 

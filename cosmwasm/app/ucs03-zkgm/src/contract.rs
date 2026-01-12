@@ -24,7 +24,7 @@ use ucs03_zkgm_token_minter_api::{
     new_wrapped_token_event,
 };
 use ucs03_zkgmable::{OnIntentZkgm, OnZkgm, Zkgmable};
-use unionlabs_primitives::{Bytes, H256, encoding::HexPrefixed};
+use unionlabs_primitives::{Bytes, H256};
 
 use crate::{
     ContractError,
@@ -2664,7 +2664,7 @@ pub fn reply(mut deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Cont
                         e.attributes
                             .iter()
                             .find(|a| a.key == Solver::market_maker_attr_key())
-                            .and_then(|a| Bytes::<HexPrefixed>::from_str(&a.value).ok())
+                            .and_then(|a| <Bytes>::from_str(&a.value).ok())
                     } else {
                         None
                     }

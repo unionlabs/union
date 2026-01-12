@@ -21,7 +21,7 @@ use sui_sdk::{
     },
 };
 use tracing::instrument;
-use unionlabs::primitives::{Bytes, encoding::HexPrefixed};
+use unionlabs::primitives::Bytes;
 use voyager_sdk::{
     DefaultCmd, ExtensionsExt, VoyagerClient,
     anyhow::{self},
@@ -126,7 +126,7 @@ impl Plugin for Module {
             keyring: ConcurrentKeyring::new(
                 config.keyring.name,
                 config.keyring.keys.into_iter().map(|config| {
-                    println!("{}", Bytes::<HexPrefixed>::new(config.value()));
+                    println!("{}", <Bytes>::new(config.value()));
                     let pk = SuiKeyPair::decode(
                         &String::from_utf8(config.value()).expect("priv keys are utf8 strings"),
                     )

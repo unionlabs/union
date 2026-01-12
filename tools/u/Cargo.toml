@@ -51,6 +51,7 @@ unionlabs          = { workspace = true, features = ["bcs", "bincode", "ethabi",
 voyager-primitives = { workspace = true, features = ["serde"] }
 
 arbitrum-light-client-types               = { workspace = true, features = ["serde", "bincode", "ethabi"] }
+base-light-client-types                   = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 berachain-light-client-types              = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 bob-light-client-types                    = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 cometbls-light-client-types               = { workspace = true, features = ["serde", "bincode", "ethabi"] }
