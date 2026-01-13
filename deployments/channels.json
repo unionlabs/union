@@ -107,6 +107,12 @@
       "tags": ["canonical", "tokenorder-v2"]
     }
   },
+  "base.84532": {
+    "3": {
+      "comments": "intento.intento-dev-1 channel 2",
+      "tags": ["canonical", "tokenorder-v2"]
+    }
+  },
   "bob.60808": {
     "1": {
       "comments": "babylon.bbn-1 channel 1",
