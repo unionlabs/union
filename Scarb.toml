@@ -1,6 +1,6 @@
 
 [workspace]
-members = ["cairo/ibc", "cairo/zkgm", "cairo/mock_client", "cairo/cometbls_light_client"]
+members = ["cairo/ibc", "cairo/zkgm", "cairo/mock_client", "cairo/cometbls_light_client", "cairo/starknet_light_client"]
 
 [workspace.dependencies]
 alexandria_bytes    = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }

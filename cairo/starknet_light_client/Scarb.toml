@@ -1,0 +1,23 @@
+[package]
+name = "starknet_light_client"
+version = "0.1.0"
+edition = "2024_07"
+
+# See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
+
+[dependencies]
+starknet = { workspace = true }
+ibc      = { workspace = true }
+
+[dev-dependencies]
+snforge_std = { workspace = true }
+assert_macros = "2.13.1"
+
+[[target.starknet-contract]]
+sierra = true
+
+[scripts]
+test = "snforge test"
+
+[tool.scarb]
+allow-prebuilt-plugins = ["snforge_std"]
