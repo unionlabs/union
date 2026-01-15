@@ -18,17 +18,17 @@ cometbls-light-client-types = { workspace = true, features = ["proto", "ethabi",
 embed-commit                = { workspace = true }
 garaga_rs                   = { git = "https://github.com/aeryz/garaga", rev = "6fb59ac369ab2bc4699e8ff7c09bdeee81cfcaca" }
 gnark-key-parser            = { workspace = true, features = ["std"] }
-ibc-union-spec              = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
+num-bigint                  = { workspace = true }
 protos                      = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 serde_json                  = { workspace = true }
+substrate-bn                = { version = "0.6", default-features = false }
 tokio                       = { workspace = true }
 tracing                     = { workspace = true }
 unionlabs                   = { workspace = true, features = ["bincode", "bcs"] }
 voyager-sdk                 = { workspace = true }
-substrate-bn                = { version = "0.6", default-features = false }
 
 
 [dev-dependencies]

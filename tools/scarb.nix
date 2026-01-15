@@ -14,7 +14,7 @@ _: {
       cairoVersion = "v2.13.1";
 
       python = pkgsUnstable.python312.override {
-        packageOverrides = final: prev: rec {
+        packageOverrides = _final: prev: rec {
           eth-keyfile = prev.buildPythonPackage rec {
             pname = "eth_keyfile";
             version = "0.8.1";
@@ -58,18 +58,20 @@ _: {
               prev.setuptools
               prev.setuptools-scm
             ];
-            propagatedBuildInputs = (with prev; [
-              cryptography
-              click
-              construct
-              hidapi
-              intelhex
-              pillow
-              protobuf
-              requests
-              tabulate
-              toml
-            ]) ++ [ ecdsa ];
+            propagatedBuildInputs =
+              (with prev; [
+                cryptography
+                click
+                construct
+                hidapi
+                intelhex
+                pillow
+                protobuf
+                requests
+                tabulate
+                toml
+              ])
+              ++ [ ecdsa ];
 
             # Regenerate protobuf bindings to lift the version upper-bound and enable
             # compatibility the current default protobuf library.
@@ -78,7 +80,7 @@ _: {
             '';
 
             pythonImportsCheck = [ "ledgerwallet" ];
-            
+
             postPatch = ''
               substituteInPlace pyproject.toml \
                 --replace-fail '"protobuf >=3.20,<4"' '"protobuf >=3.20"'
@@ -102,8 +104,7 @@ _: {
         sha256 = "sha256-cX4sDoPpn7Wr1lcR3BsGWOMIUGK+G7BHwqiGJumDbsQ=";
       };
 
-      cairo-src =
-      pkgs.fetchFromGitHub {
+      cairo-src = pkgs.fetchFromGitHub {
         name = "cairo-src";
         owner = "starkware-libs";
         repo = "cairo";
@@ -402,42 +403,6 @@ _: {
               };
             })
         );
-      };
-
-      starknet-py = pyPkgs.buildPythonPackage rec {
-        # starknet-py==0.28.0-rc.3
-        # don't ask me why the format is different
-        pname = "starknet_py";
-        version = "0.26.2";
-
-        format = "pyproject";
-        build-system = [ pyPkgs.setuptools ];
-        dependencies =
-          (with pyPkgs; [
-            cython
-            typing-extensions
-            marshmallow-dataclass
-            marshmallow-oneofschema
-            lark
-            aiohttp
-            pycryptodome
-            asgiref
-            eth-keyfile
-            eth-keys
-            websockets
-            tkinter
-          ])
-          ++ [
-            crypto-cpp-py
-            poseidon-py
-          ];
-        doCheck = false;
-        cephSupport = false;
-        enableDocs = false;
-        src = pkgs.fetchPypi {
-          inherit pname version;
-          sha256 = "sha256-r60Oqx0Bmle7z/ez0Kb19a3qSWUPo61J8vq/XP3YGrE=";
-        };
       };
 
       starknet-py-unbroken = pyPkgs.buildPythonPackage rec {

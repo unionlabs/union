@@ -227,7 +227,7 @@ impl ClientModuleServer for Module {
     }
 
     #[instrument(skip_all)]
-    async fn encode_header(&self, e: &Extensions, header: Value) -> RpcResult<Bytes> {
+    async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<(cometbls_light_client_types::ChainId, H256, Header)>(header)
             .map_err(RpcError::fatal("unable to deserialize header"))
             .and_then(
@@ -359,12 +359,15 @@ fn prepare_zkp_for_cairo(
     let proof_commitment = make_g1_affine(zkp.proof_commitment);
     let proof_commitment_pok = make_g1_affine(zkp.proof_commitment_pok);
 
-    let proof = garaga_rs::calldata::cometbls_groth16::CometblsGroth16Proof::generate_calldata(
+    let _proof = garaga_rs::calldata::cometbls_groth16::CometblsGroth16Proof::generate_calldata(
         proof,
         vk,
         proof_commitment,
         proof_commitment_pok,
     );
+
+    // TODO(aeryz): The encoding of the proof is not determined yet. The `proof` type here returns a bunch of felt252's
+    // so we will probably pass it along as is.
 
     todo!()
 }

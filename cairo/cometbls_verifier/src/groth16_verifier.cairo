@@ -117,12 +117,17 @@ mod Groth16VerifierBN254 {
             mpcheck_hint,
         );
 
-        let _ = multi_pairing_check_bn254_2P_2F(
+        let res = multi_pairing_check_bn254_2P_2F(
             G1G2Pair { p: fph.proof_commitment, q: pedersen_g },
             G1G2Pair { p: fph.proof_commitment_pok, q: pedersen_g_root_sigma_neg },
             commitment_precomputed_lines.span(),
             commitment_mpcheck_hint,
         )?;
+
+        if !res {
+            return Result::Err('PAIRING_CHECK_FAILED');
+        }
+
         match check {
             Result::Ok(_) => Result::Ok(groth16_proof.public_inputs),
             Result::Err(error) => Result::Err(error),
