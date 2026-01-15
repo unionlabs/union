@@ -1,17 +1,19 @@
 [package]
-name = "starknet_light_client"
-version = "0.1.0"
 edition = "2024_07"
+name    = "loopback_light_client"
+version = "0.1.0"
 
 # See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
 
 [dependencies]
-starknet = { workspace = true }
-ibc      = { workspace = true }
+alexandria_bytes = { workspace = true }
+alexandria_math  = { workspace = true }
+ibc              = { workspace = true }
+starknet         = { workspace = true }
 
 [dev-dependencies]
-snforge_std = { workspace = true }
 assert_macros = "2.13.1"
+snforge_std   = { workspace = true }
 
 [[target.starknet-contract]]
 sierra = true

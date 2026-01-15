@@ -223,7 +223,7 @@ mod CometblsLightClient {
         }
 
         fn get_latest_height(self: @ContractState, client_id: ClientId) -> u64 {
-            0
+            self.client_states.read(client_id).expect(CLIENT_STATE_NOT_FOUND).latest_height
         }
     }
 

@@ -80,6 +80,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "loopback_light_client"
+version = "0.1.0"
+dependencies = [
+ "alexandria_bytes",
+ "alexandria_math",
+ "ibc",
+ "snforge_std",
+]
+
+[[package]]
 name = "mock_client"
 version = "0.1.0"
 dependencies = [
@@ -225,14 +235,6 @@ source = "registry+https://scarbs.xyz/"
 checksum = "sha256:85dd728289a4903e0e6f87f9ab9d27350b883e781b238bb117e7ee995e257ee2"
 dependencies = [
  "snforge_scarb_plugin",
-]
-
-[[package]]
-name = "starknet_light_client"
-version = "0.1.0"
-dependencies = [
- "ibc",
- "snforge_std",
 ]
 
 [[package]]
