@@ -46,23 +46,27 @@ impl Module {
                             .unwrap(),
                     ),
                 },
-                serde_json::to_value(Header {
-                    signed_header: LightHeader {
-                        height: prove_request.untrusted_header.height,
-                        time: prove_request.untrusted_header.time,
-                        validators_hash: prove_request
-                            .untrusted_header
-                            .validators_hash
-                            .into_encoding(),
-                        next_validators_hash: prove_request
-                            .untrusted_header
-                            .next_validators_hash
-                            .into_encoding(),
-                        app_hash: prove_request.untrusted_header.app_hash.into_encoding(),
+                serde_json::to_value((
+                    prove_request.untrusted_header.chain_id,
+                    response.trusted_validator_set_root,
+                    Header {
+                        signed_header: LightHeader {
+                            height: prove_request.untrusted_header.height,
+                            time: prove_request.untrusted_header.time,
+                            validators_hash: prove_request
+                                .untrusted_header
+                                .validators_hash
+                                .into_encoding(),
+                            next_validators_hash: prove_request
+                                .untrusted_header
+                                .next_validators_hash
+                                .into_encoding(),
+                            app_hash: prove_request.untrusted_header.app_hash.into_encoding(),
+                        },
+                        trusted_height: update_from,
+                        zero_knowledge_proof: response.proof.evm_proof.into(),
                     },
-                    trusted_height: update_from,
-                    zero_knowledge_proof: response.proof.evm_proof.into(),
-                })
+                ))
                 .unwrap(),
             )
         };

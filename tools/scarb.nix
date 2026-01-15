@@ -220,30 +220,30 @@ _: {
       garaga =
         let
           pname = "garaga";
-          version = "v1.0.1";
-          # src = pkgs.fetchFromGitHub {
-          #   name = pname;
-          #   owner = "keep-starknet-strange";
-          #   repo = pname;
-          #   rev = version;
-          #   sha256 = "sha256-C2uvmyApfQViSqEu22pP8bbIoQyBidHDCmN9/rh/p4Q=";
-          # };
-          src = /home/aeryz/dev/union/garaga;
+          version = "6fb59ac369ab2bc4699e8ff7c09bdeee81cfcaca";
+          # The following garaga fork include the changes to be able to generate proof calldata for cometbls
+          src = pkgs.fetchFromGitHub {
+            name = pname;
+            owner = "aeryz";
+            repo = pname;
+            rev = version;
+            sha256 = "sha256-24CC53c6A9cozYWbTMpbnB/7wrcRq4Z9jDWzuG8Yf1k=";
+          };
         in
         pyPkgs.buildPythonApplication {
           inherit pname version;
           format = "pyproject";
           nativeBuildInputs = [
             pyPkgs.pythonImportsCheckHook
-            pkgs.rustPlatform.cargoSetupHook
-            pkgs.rustPlatform.maturinBuildHook
+            pkgsUnstable.rustPlatform.cargoSetupHook
+            pkgsUnstable.rustPlatform.maturinBuildHook
           ];
           # preferWheel = true;
           # pythonImportsCheck = [ "garaga" ];
           cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
             inherit src;
             name = "${pname}-${version}";
-            hash = "sha256-XElPdIYE8yP2zcL9eHw5naztwVm8vdg+Bj+zxmX3ZjI=";
+            hash = "sha256-R0OitN0yUiY3+cc7jwov3lkDkDgxcfehBymiQm0mbPw=";
           };
           maturinBuildFlags = [
             "--features"

@@ -1,4 +1,3 @@
-use cometbft_types::types::header::Header;
 use enumorph::Enumorph;
 use macros::model;
 use subset_of::SubsetOf;
