@@ -576,6 +576,12 @@
         "height": 22236429,
         "commit": "7113f2661025803021f819add09995fce2f58abf"
       },
+      "0xb018dfe65df030562e6f069f3804c0c763b49306": {
+        "name": "lightclients/loopback",
+        "salt": "0x6c69676874636c69656e74732f6c6f6f706261636b",
+        "height": 24240105,
+        "commit": "892e9f565c8f1a0c4638235518b0e3907e974b20"
+      },
       "0xa1a1d0b9182339e86e80db519218ea03ec09a1a1": {
         "name": "atone",
         "salt": "0x70ef87838bea3fb7d2db6cf5b1951ef5e644bb7392af2530485ea2917a696e27",
