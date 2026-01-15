@@ -156,6 +156,7 @@ _: {
         {
           ucs04-chain-id = "union.union-1";
           name = "union";
+          multisig-admin = "union1n6gfu5nlf0fu0h026p9kwneupj629m9sjf8p6e";
           rpc-url = "https://rpc.rpc-node.union-1.union.build";
           deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
           ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
@@ -237,6 +238,7 @@ _: {
         {
           ucs04-chain-id = "osmosis.osmosis-1";
           name = "osmosis";
+          multisig-admin = "osmo1n6gfu5nlf0fu0h026p9kwneupj629m9ss94ez6";
           rpc-url = "https://osmosis-rpc.polkachu.com";
           deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
           ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
@@ -289,6 +291,7 @@ _: {
         {
           ucs04-chain-id = "babylon.bbn-1";
           name = "babylon";
+          multisig-admin = "bbn1n6gfu5nlf0fu0h026p9kwneupj629m9s0qhct3";
           rpc-url = "https://babylon-rpc.polkachu.com";
           deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
           ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
