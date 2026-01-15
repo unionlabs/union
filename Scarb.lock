@@ -80,6 +80,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "loopback_light_client"
+version = "0.1.0"
+dependencies = [
+ "alexandria_bytes",
+ "alexandria_math",
+ "ibc",
+ "snforge_std",
+]
+
+[[package]]
 name = "mock_client"
 version = "0.1.0"
 dependencies = [
