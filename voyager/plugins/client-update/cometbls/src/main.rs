@@ -590,7 +590,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ModuleData::from(ProveResponse {
                                 prove_response: response,
                                 update_from,
-                                header: request.untrusted_header,
+                                prove_request: request,
                             }),
                         )))
                     }

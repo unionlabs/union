@@ -6167,6 +6167,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "garaga_rs"
+version = "1.0.1"
+source = "git+https://github.com/aeryz/garaga?rev=6fb59ac369ab2bc4699e8ff7c09bdeee81cfcaca#6fb59ac369ab2bc4699e8ff7c09bdeee81cfcaca"
+dependencies = [
+ "arbitrary",
+ "getrandom 0.3.4",
+ "hex",
+ "itertools 0.14.0",
+ "lambdaworks-crypto 0.11.0",
+ "lambdaworks-math 0.11.0",
+ "lazy_static",
+ "num-bigint 0.4.6",
+ "num-integer",
+ "num-traits",
+ "rand 0.9.2",
+ "rayon",
+ "sha2 0.10.9",
+ "sha3",
+ "starknet-types-core 1.0.0",
+ "thiserror 2.0.17",
+]
+
+[[package]]
 name = "gatekeeper"
 version = "0.0.0"
 dependencies = [
@@ -7899,16 +7922,37 @@ dependencies = [
 
 [[package]]
 name = "lambdaworks-crypto"
+version = "0.11.0"
+source = "git+https://github.com/lambdaclass/lambdaworks.git?rev=be4a329#be4a329dad5c847a37ab3831b6fdee546b2d0af9"
+dependencies = [
+ "lambdaworks-math 0.11.0",
+ "serde",
+ "sha2 0.10.9",
+ "sha3",
+]
+
+[[package]]
+name = "lambdaworks-crypto"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "58b1a1c1102a5a7fbbda117b79fb3a01e033459c738a3c1642269603484fd1c1"
 dependencies = [
- "lambdaworks-math",
+ "lambdaworks-math 0.13.0",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "serde",
  "sha2 0.10.9",
  "sha3",
+]
+
+[[package]]
+name = "lambdaworks-math"
+version = "0.11.0"
+source = "git+https://github.com/lambdaclass/lambdaworks.git?rev=be4a329#be4a329dad5c847a37ab3831b6fdee546b2d0af9"
+dependencies = [
+ "rayon",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -12843,7 +12887,7 @@ dependencies = [
  "sha3",
  "starknet-core-derive",
  "starknet-crypto",
- "starknet-types-core",
+ "starknet-types-core 0.2.4",
 ]
 
 [[package]]
@@ -12872,7 +12916,7 @@ dependencies = [
  "rfc6979 0.4.0",
  "sha2 0.10.9",
  "starknet-curve",
- "starknet-types-core",
+ "starknet-types-core 0.2.4",
  "zeroize",
 ]
 
@@ -12882,7 +12926,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22c898ae81b6409532374cf237f1bd752d068b96c6ad500af9ebbd0d9bb712f6"
 dependencies = [
- "starknet-types-core",
+ "starknet-types-core 0.2.4",
 ]
 
 [[package]]
@@ -12998,14 +13042,27 @@ checksum = "90d23b1bc014ee4cce40056ab3114bcbcdc2dbc1e845bbfb1f8bd0bab63507d4"
 dependencies = [
  "blake2",
  "digest 0.10.7",
- "lambdaworks-crypto",
- "lambdaworks-math",
+ "lambdaworks-crypto 0.13.0",
+ "lambdaworks-math 0.13.0",
  "num-bigint 0.4.6",
  "num-integer",
  "num-traits",
  "rand 0.9.2",
  "serde",
  "zeroize",
+]
+
+[[package]]
+name = "starknet-types-core"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a12690813e587969cb4a9e7d8ebdb069d4bb7ec8d03275c5f719310c8e1f07c"
+dependencies = [
+ "generic-array",
+ "lambdaworks-math 0.13.0",
+ "num-bigint 0.4.6",
+ "num-integer",
+ "num-traits",
 ]
 
 [[package]]
@@ -16025,16 +16082,20 @@ version = "0.0.0"
 dependencies = [
  "alloy-sol-types",
  "bcs",
+ "cometbls-groth16-verifier",
  "cometbls-light-client-types",
  "embed-commit",
+ "garaga_rs",
  "gnark-key-parser",
  "hex",
  "hex-literal 1.1.0",
+ "ibc-union-spec",
  "jsonrpsee 0.26.0",
  "macros",
  "protos",
  "serde",
  "serde_json",
+ "substrate-bn",
  "tokio",
  "tracing",
  "unionlabs",

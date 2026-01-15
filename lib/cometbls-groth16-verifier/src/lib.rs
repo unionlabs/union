@@ -8,7 +8,7 @@ use core::marker::PhantomData;
 use ark_ff::vec;
 use byteorder::{BigEndian, ByteOrder};
 use cometbls_light_client_types::{ChainId, light_header::LightHeader};
-use constants::*;
+pub use constants::*;
 use hex_literal::hex;
 use sha3::Digest;
 use substrate_bn::G1;
@@ -191,31 +191,12 @@ pub enum Error {
     InvalidSliceLength,
 }
 
-pub fn verify_zkp(
+pub fn public_inputs(
     chain_id: &ChainId,
     trusted_validators_hash: H256,
     header: &LightHeader,
-    zkp: impl Into<Vec<u8>>,
-) -> Result<(), Error> {
-    verify_generic_zkp_2(
-        chain_id,
-        trusted_validators_hash,
-        header,
-        PEDERSEN_G,
-        PEDERSEN_G_ROOT_SIGMA_NEG,
-        ZKP::try_from(zkp.into().as_ref())?,
-    )
-}
-
-fn verify_generic_zkp_2(
-    chain_id: &ChainId,
-    trusted_validators_hash: H256,
-    header: &LightHeader,
-    g: substrate_bn::G2,
-    g_root_sigma_neg: substrate_bn::G2,
-    zkp: ZKP<BigEndian>,
-) -> Result<(), Error> {
-    // Constant + public inputs
+    zkp: &ZKP<BigEndian>,
+) -> Result<[substrate_bn::Fr; NB_PUBLIC_INPUTS], Error> {
     let decode_scalar = move |x: U256| -> Result<substrate_bn::Fr, Error> {
         substrate_bn::Fr::new(x.0.0.into()).ok_or(Error::InvalidPublicInput)
     };
@@ -256,11 +237,39 @@ fn verify_generic_zkp_2(
     );
     // drop the most significant byte to fit in bn254 F_r
     inputs_hash[0] = 0;
-    let public_inputs: [substrate_bn::Fr; NB_PUBLIC_INPUTS] = [
+    Ok([
         decode_scalar(U256::from_be_bytes(inputs_hash))?,
         decode_scalar(commitment_hash)?,
-    ];
+    ])
+}
+
+pub fn verify_zkp(
+    chain_id: &ChainId,
+    trusted_validators_hash: H256,
+    header: &LightHeader,
+    zkp: impl Into<Vec<u8>>,
+) -> Result<(), Error> {
+    verify_generic_zkp_2(
+        chain_id,
+        trusted_validators_hash,
+        header,
+        PEDERSEN_G,
+        PEDERSEN_G_ROOT_SIGMA_NEG,
+        ZKP::try_from(zkp.into().as_ref())?,
+    )
+}
+
+fn verify_generic_zkp_2(
+    chain_id: &ChainId,
+    trusted_validators_hash: H256,
+    header: &LightHeader,
+    g: substrate_bn::G2,
+    g_root_sigma_neg: substrate_bn::G2,
+    zkp: ZKP<BigEndian>,
+) -> Result<(), Error> {
+    // Constant + public inputs
     let initial_point = GAMMA_ABC_G1[0] + zkp.proof_commitment.into();
+    let public_inputs = public_inputs(chain_id, trusted_validators_hash, header, &zkp)?;
     let public_inputs_msm = public_inputs
         .into_iter()
         .zip(GAMMA_ABC_G1.into_iter().skip(1))

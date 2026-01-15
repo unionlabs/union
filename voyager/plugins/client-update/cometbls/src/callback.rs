@@ -31,23 +31,34 @@ impl Module {
     ) -> Op<VoyagerMessage> {
         let make_header = |ProveResponse {
                                update_from,
-                               header,
+                               prove_request,
                                prove_response: response,
                            }| {
             (
                 DecodedHeaderMeta {
                     height: Height::new_with_revision(
                         update_from.revision(),
-                        header.height.inner().try_into().unwrap(),
+                        prove_request
+                            .untrusted_header
+                            .height
+                            .inner()
+                            .try_into()
+                            .unwrap(),
                     ),
                 },
                 serde_json::to_value(Header {
                     signed_header: LightHeader {
-                        height: header.height,
-                        time: header.time,
-                        validators_hash: header.validators_hash.into_encoding(),
-                        next_validators_hash: header.next_validators_hash.into_encoding(),
-                        app_hash: header.app_hash.into_encoding(),
+                        height: prove_request.untrusted_header.height,
+                        time: prove_request.untrusted_header.time,
+                        validators_hash: prove_request
+                            .untrusted_header
+                            .validators_hash
+                            .into_encoding(),
+                        next_validators_hash: prove_request
+                            .untrusted_header
+                            .next_validators_hash
+                            .into_encoding(),
+                        app_hash: prove_request.untrusted_header.app_hash.into_encoding(),
                     },
                     trusted_height: update_from,
                     zero_knowledge_proof: response.proof.evm_proof.into(),

@@ -242,7 +242,7 @@ _: {
           cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
             inherit src;
             name = "${pname}-${version}";
-            hash = "sha256-Rj5DYqHQbLbVbtkLn/IC5BIeVVp6Oz7STWBGNzBQfR0=";
+            hash = "sha256-XElPdIYE8yP2zcL9eHw5naztwVm8vdg+Bj+zxmX3ZjI=";
           };
           maturinBuildFlags = [
             "--features"

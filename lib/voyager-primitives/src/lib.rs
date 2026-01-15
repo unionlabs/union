@@ -58,6 +58,9 @@ impl IbcInterface {
     /// Light clients running on Union's Sui Move IBC implementation
     pub const IBC_MOVE_SUI: &'static str = "ibc-move/sui";
 
+    /// Light clients running on Union's Cairo IBC implementation
+    pub const IBC_CAIRO: &'static str = "ibc-cairo";
+
     // lots more to come - near, fuel - stay tuned
 }
 

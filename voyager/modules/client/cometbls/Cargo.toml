@@ -13,9 +13,12 @@ workspace = true
 
 [dependencies]
 alloy-sol-types             = { workspace = true }
+cometbls-groth16-verifier   = { workspace = true }
 cometbls-light-client-types = { workspace = true, features = ["proto", "ethabi", "serde", "bincode"] }
 embed-commit                = { workspace = true }
+garaga_rs                   = { git = "https://github.com/aeryz/garaga", rev = "6fb59ac369ab2bc4699e8ff7c09bdeee81cfcaca" }
 gnark-key-parser            = { workspace = true, features = ["std"] }
+ibc-union-spec              = { workspace = true }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
 protos                      = { workspace = true }
@@ -25,6 +28,7 @@ tokio                       = { workspace = true }
 tracing                     = { workspace = true }
 unionlabs                   = { workspace = true, features = ["bincode", "bcs"] }
 voyager-sdk                 = { workspace = true }
+substrate-bn                = { version = "0.6", default-features = false }
 
 
 [dev-dependencies]

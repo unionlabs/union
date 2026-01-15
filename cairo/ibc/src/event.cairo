@@ -168,7 +168,7 @@ pub struct ChannelOpenConfirm {
     #[key]
     pub channel_id: ChannelId,
     pub counterparty_port_id: ByteArray,
-    pub counterpartyChannel_id: ChannelId,
+    pub counterparty_channel_id: ChannelId,
     pub connection_id: ConnectionId,
 }
 

@@ -14,6 +14,6 @@ pub enum ModuleData {
 #[model]
 pub struct ProveResponse {
     pub update_from: Height,
-    pub header: Header,
+    pub prove_request: galois_rpc::prove_request::ProveRequest,
     pub prove_response: galois_rpc::prove_response::ProveResponse,
 }
