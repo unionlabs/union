@@ -663,7 +663,7 @@ _: {
             RUST_LOG=info update-deployments \
               "deployments/deployments.json" \
               ${ucs04-chain-id} \
-              --rpc-url ${rpc-url} \
+              --rpc-url "''${RPC_URL:-${rpc-url}}" \
               --lightclient cometbls --lightclient state-lens/ics23/ics23 --lightclient state-lens/ics23/mpt \
                ${pkgs.lib.optionalString (u != null) "--u ${u}"} \
                ${pkgs.lib.optionalString (eu != null) "--eu ${eu}"} \
@@ -732,7 +732,7 @@ _: {
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployIBC \
                 -vvvv \
-                --rpc-url ${rpc-url} \
+                --rpc-url "''${RPC_URL:-${rpc-url}}" \
                 --broadcast "''${VERIFICATION_ARGS[@]}"
 
               popd
@@ -765,7 +765,7 @@ _: {
                   "function grantRole(uint64,address,uint32)" \
                   1 "$relayer" 0 \
                   --private-key ${private-key} \
-                  --rpc-url ${rpc-url}
+                  --rpc-url "''${RPC_URL:-${rpc-url}}"
 
                 echo "whitelisted relayer $relayer"
               done
@@ -814,7 +814,7 @@ _: {
                 "$argc_refill_rate" \
                 false \
                 --private-key ${private-key} \
-                --rpc-url ${rpc-url}
+                --rpc-url "''${RPC_URL:-${rpc-url}}"
 
               echo "set bucket config for $argc_denom"
             '';
@@ -867,7 +867,7 @@ _: {
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployDeployerAndIBC \
                 -vvvv \
-                --rpc-url ${rpc-url} \
+                --rpc-url "''${RPC_URL:-${rpc-url}}" \
                 --broadcast "''${VERIFICATION_ARGS[@]}"
 
               popd
@@ -880,7 +880,6 @@ _: {
         {
           chain-id,
           rpc-url,
-          private-key,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -912,7 +911,57 @@ _: {
                 forge verify-contract \
                   --force \
                   --watch "$1" "$2" \
-                  --rpc-url ${rpc-url} "''${VERIFICATION_ARGS[@]}"
+                  --rpc-url "''${RPC_URL:-${rpc-url}}" "''${VERIFICATION_ARGS[@]}"
+
+              popd
+              rm -rf "$OUT"
+            '';
+          }
+        );
+
+      # NOTE: Must verify against the implementation if verifying a proxy contract
+      # the implementation can be fetched with: `cast impl $ADDRESS -r $RPC_URL`
+      verify-against-commit =
+        {
+          chain-id,
+          rpc-url,
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
+          ...
+        }:
+        mkCi false (
+          pkgs.writeShellApplication {
+            name = "eth-verify";
+            runtimeInputs = [ wrappedForgeOnline ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+                with-verify-flag = false;
+              }}
+
+              OUT="$(mktemp -d)"
+              pushd "$OUT"
+
+              echo "fetching sources at $3..."
+
+              nix build "github:unionlabs/union/$3#evm-contracts"
+              cp --no-preserve=mode -r result/* .
+
+              nix build "github:unionlabs/union/$3#evm-contracts.out.src"
+              cp --no-preserve=mode -r result/* .
+
+              # shellcheck disable=SC2005
+              FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
+              VERIFICATION_KEY=${verification-key} \
+              FOUNDRY_LIBS='["libs"]' \
+                forge verify-bytecode \
+                  "$1" "$2" \
+                  --rpc-url "''${RPC_URL:-${rpc-url}}" "''${VERIFICATION_ARGS[@]}"
 
               popd
               rm -rf "$OUT"
@@ -958,7 +1007,7 @@ _: {
                   --force \
                   --watch "$1" "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy" \
                   --constructor-args "0x00" \
-                  --rpc-url ${rpc-url} "''${VERIFICATION_ARGS[@]}"
+                  --rpc-url "''${RPC_URL:-${rpc-url}}" "''${VERIFICATION_ARGS[@]}"
 
               popd
               rm -rf "$OUT"
@@ -1003,7 +1052,7 @@ _: {
               NATIVE_TOKEN_NAME=${native-token-name} \
               NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
               NATIVE_TOKEN_DECIMALS=${toString native-token-decimals} \
-                nix run .#evm-contracts-addresses -- "$1" "$2" ${rpc-url}
+                nix run .#evm-contracts-addresses -- "$1" "$2" "''${RPC_URL:-${rpc-url}}"
 
               PROJECT_ROOT=$(pwd)
               OUT="$(mktemp -d)"
@@ -1036,7 +1085,7 @@ _: {
                         --force \
                         --watch "$address" "$contract" \
                         --constructor-args "$args" \
-                        --rpc-url ${rpc-url} "''${VERIFICATION_ARGS[@]}" || true
+                        --rpc-url "''${RPC_URL:-${rpc-url}}" "''${VERIFICATION_ARGS[@]}" || true
                   fi
                 done
 
@@ -1107,7 +1156,7 @@ _: {
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:Deploy${kind} \
                 -vvvv \
-                --rpc-url "${rpc-url}" \
+                --rpc-url "''${RPC_URL:-${rpc-url}}" \
                 --broadcast "''${VERIFICATION_ARGS[@]}"
 
               popd
@@ -1381,6 +1430,7 @@ _: {
                   update-deployments-json = update-deployments-json chain;
                   whitelist-relayers = whitelist-relayers chain;
                   set-bucket-config = set-bucket-config chain;
+                  verify-against-commit = verify-against-commit chain;
                   # finalize-deployment = finalize-deployment chain;
                   # get-git-rev = get-git-rev chain;
                 }
