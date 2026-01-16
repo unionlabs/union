@@ -33,7 +33,7 @@ pub fn verify_header(
     evm_storage_verifier::verify_storage_proof(
         header.l1_contract_account_proof.storage_root,
         L2_BLOCK_HASH_SLOT,
-        &rlp::encode(&U256::from_be_bytes(header.l2_block.hash().to_be_bytes())),
+        U256::from_be_bytes(header.l2_block.hash().to_be_bytes()),
         &header.l1_block_hash_proof,
     )
     .map_err(Error::L1BlockHashProof)?;

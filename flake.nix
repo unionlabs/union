@@ -561,6 +561,7 @@
                 self'.packages.tdc
                 yq
                 perl
+                strace
               ])
               ++ (with pkgsUnstable; [
                 bun

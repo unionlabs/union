@@ -59,7 +59,7 @@ pub fn verify_header(
     verify_storage_proof(
         header.dispute_game_factory_account_proof.storage_root,
         game_slot,
-        &rlp::encode(&header.game_proof.value),
+        header.game_proof.value,
         &header.game_proof.proof,
     )
     .map_err(Error::InvalidOutputProposalStorageProof)?;

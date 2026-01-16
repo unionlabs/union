@@ -1,5 +1,7 @@
+use alloc::boxed::Box;
+
 use trie_db::TrieError;
-use unionlabs::primitives::{Bytes, H256};
+use unionlabs_primitives::{Bytes, H256};
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
@@ -10,7 +12,13 @@ pub enum Error {
     #[error("trie error ({0:?})")]
     Trie(Box<TrieError<H256, rlp::DecoderError>>),
     #[error("rlp decoding failed: {0:?}")]
-    RlpDecode(#[from] rlp::DecoderError),
+    RlpDecode(rlp::DecoderError),
+}
+
+impl From<rlp::DecoderError> for Error {
+    fn from(v: rlp::DecoderError) -> Self {
+        Self::RlpDecode(v)
+    }
 }
 
 // NOTE: Implemented here instead of via #[from] since Box<TrieError<H256, rlp::DecoderError>> doesn't implement core::error::Error
