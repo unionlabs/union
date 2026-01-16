@@ -520,101 +520,77 @@ _: {
         };
       };
 
-      get-git-rev =
+      verify-deployed-contract =
         {
-          ucs04-chain-id,
-          rpc-url,
+          name,
           ...
         }:
-        let
-          # minified version of the protos found in https://github.com/CosmWasm/wasmd/tree/2e748fb4b860ee109123827f287949447f2cded7/proto/cosmwasm/wasm/v1
-          cosmwasmProtoDefs = pkgs.writeTextDir "/cosmwasm.proto" ''
-            syntax = "proto3";
-            package cosmwasm;
+        pkgs.writeShellApplication {
+          name = "${name}-verify-contract-checksum";
+          runtimeInputs = [
+            self'.packages.embed-commit-verifier
+            self'.packages.cosmwasm-scripts.${name}.query-contract-bytecode
+          ];
+          text = ''
+            echo "fetching deployed bytecode of $1..."
 
-            message QueryContractInfoRequest {
-              string address = 1;
-            }
+            deployed=$(mktemp "XXXXX-$2.wasm")
 
-            message QueryContractInfoResponse {
-              ContractInfo contract_info = 2;
-            }
+            echo "deployed bytecode written to $deployed"
 
-            message ContractInfo {
-              uint64 code_id = 1;
-            }
+            query-contract-bytecode "$1" --output "$deployed"
 
-            message QueryCodeRequest {
-              uint64 code_id = 1;
-            }
+            rev="$(embed-commit-verifier extract "$deployed")"
 
-            message QueryCodeResponse {
-              bytes data = 2;
-            }
+            echo "contract $1 was built on commit $rev, rebuilding from source..."
 
-            message QuerySmartContractStateRequest {
-              string address = 1;
-              bytes query_data = 2;
-            }
+            nix build "github:unionlabs/union/$rev#$2.release"
 
-            message QuerySmartContractStateResponse {
-              bytes data = 1;
-            }
+            cmp --silent "$(realpath result)" "$deployed" || (echo "deployed bytecode does not match" && exit 1)
+
+            echo "deployed bytecode matches"
           '';
-        in
+        };
+
+      get-git-rev =
+        {
+          name,
+          ucs04-chain-id,
+          ...
+        }:
         pkgs.writeShellApplication {
           name = "get-git-rev";
           runtimeInputs = [
             self'.packages.embed-commit-verifier
+            self'.packages.cosmwasm-scripts.${name}.query-contract-bytecode
             pkgs.buf
             pkgs.xxd
             pkgs.curl
           ];
           text = ''
-            embed-commit-verifier extract <(curl -L \
-              --silent \
-              '${rpc-url}/abci_query?path=%22/cosmwasm.wasm.v1.Query/Code%22&data=0x'"$(
-                buf \
-                  convert \
-                  ${cosmwasmProtoDefs}/cosmwasm.proto \
-                  --type=cosmwasm.QueryCodeRequest \
-                  --from=<(
-                    echo "{\"code_id\":$(
-                      curl -L \
-                        --silent \
-                        '${rpc-url}/abci_query?path=%22/cosmwasm.wasm.v1.Query/ContractInfo%22&data=0x'"$(
-                          buf \
-                            convert \
-                            ${cosmwasmProtoDefs}/cosmwasm.proto \
-                            --type=cosmwasm.QueryContractInfoRequest \
-                            --from=<(echo "{\"address\":\"$1\"}")#format=json \
-                            | xxd -c 0 -ps
-                        )" \
-                        | jq .result.response.value -r \
-                        | base64 -d \
-                        | buf \
-                          convert \
-                          ${cosmwasmProtoDefs}/cosmwasm.proto \
-                          --type=cosmwasm.QueryContractInfoResponse \
-                          --from=-#format=binpb \
-                        | jq '.contractInfo.codeId | tonumber'
-                    )}"
-                  )#format=json \
-                  | xxd -c 0 -ps
-                )" \
-                | jq .result.response.value -r \
-                | base64 -d \
-                | buf \
-                  convert \
-                  ${cosmwasmProtoDefs}/cosmwasm.proto \
-                  --type=cosmwasm.QueryCodeResponse \
-                  --from=-#format=binpb \
-                | jq .data -r \
-                | base64 -d)
+            embed-commit-verifier extract <(query-contract-bytecode "$1")
           '';
           meta = {
             description = "Extract the embedded git rev from a contract on ${ucs04-chain-id}.";
             longDescription = "All of our deployed wasm binaries have the current git revision embedded at compile time. This script will fetch the wasm code of the provided contract and extract the embedded git rev. See the `embed-commit` crate for more information.";
+          };
+        };
+
+      query-contract-bytecode =
+        {
+          rpc-url,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "query-contract-bytecode";
+          runtimeInputs = [
+            cosmwasm-deployer
+          ];
+          text = ''
+            cosmwasm-deployer contract-bytecode --rpc-url ${rpc-url} --address "$1" "''${@:2}"
+          '';
+          meta = {
+            description = "Download the bytecode of a contract from the chain.";
           };
         };
 
@@ -1101,6 +1077,8 @@ _: {
                       deploy-manager = deploy-manager chain;
                       update-deployments-json = update-deployments-json chain;
                       get-git-rev = get-git-rev chain;
+                      verify-deployed-contract = verify-deployed-contract chain;
+                      query-contract-bytecode = query-contract-bytecode chain;
                       whitelist-relayers = whitelist-relayers chain;
                       set-bucket-config = set-bucket-config chain;
                       deploy-contract = deploy-contract chain;

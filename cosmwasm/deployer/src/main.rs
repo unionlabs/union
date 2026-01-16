@@ -1,7 +1,13 @@
 use core::fmt;
 use std::{
-    collections::BTreeMap, fmt::Display, io::Write, num::NonZeroU64, ops::Deref, path::PathBuf,
-    str::FromStr, sync::LazyLock,
+    collections::BTreeMap,
+    fmt::Display,
+    io::{Write, stdout},
+    num::NonZeroU64,
+    ops::Deref,
+    path::PathBuf,
+    str::FromStr,
+    sync::LazyLock,
 };
 
 use access_manager_types::{RoleId, Selector, manager::msg::ExecuteMsg as AccessManagerExecuteMsg};
@@ -22,7 +28,14 @@ use flate2::{Compression, write::GzEncoder};
 use futures::{TryStreamExt, future::OptionFuture, stream::FuturesOrdered};
 use hex_literal::hex;
 use ibc_union_light_client::upgradable::msg::Upgradable;
-use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
+use protos::{
+    cosmos::auth::v1beta1::{Bech32PrefixRequest, Bech32PrefixResponse},
+    cosmwasm::wasm::v1::{
+        ContractCodeHistoryOperationType, ContractInfo, QueryCodeRequest, QueryCodeResponse,
+        QueryContractHistoryRequest, QueryContractHistoryResponse, QueryContractInfoRequest,
+        QueryContractInfoResponse, QuerySmartContractStateRequest, QuerySmartContractStateResponse,
+    },
+};
 use rand_chacha::{
     ChaChaCore,
     rand_core::{SeedableRng, block::BlockRng},
@@ -256,6 +269,14 @@ enum App {
         private_key: H256,
         #[command(flatten)]
         gas_config: GasFillerArgs,
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
+    ContractBytecode {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long)]
+        address: Bech32<H256>,
         #[arg(long)]
         output: Option<PathBuf>,
     },
@@ -565,6 +586,45 @@ async fn do_main() -> Result<()> {
                 .await?
                 .unwrap();
             write_output(output, code_id)?;
+        }
+        App::ContractBytecode {
+            rpc_url,
+            address,
+            output,
+        } => {
+            let rpc = Rpc::new(rpc_url.clone()).await?;
+
+            let code_id = rpc
+                .client()
+                .grpc_abci_query::<_, QueryContractInfoResponse>(
+                    "/cosmwasm.wasm.v1.Query/ContractInfo",
+                    &QueryContractInfoRequest {
+                        address: address.to_string(),
+                    },
+                    None,
+                    false,
+                )
+                .await?
+                .into_result()?
+                .context("empty response")?
+                .contract_info
+                .context("empty response")?
+                .code_id;
+
+            let bytecode = rpc
+                .client()
+                .grpc_abci_query::<_, QueryCodeResponse>(
+                    "/cosmwasm.wasm.v1.Query/Code",
+                    &QueryCodeRequest { code_id },
+                    None,
+                    false,
+                )
+                .await?
+                .into_result()?
+                .context("empty response")?
+                .data;
+
+            write_output_raw(output, bytecode)?;
         }
         App::Addresses {
             deployer,
@@ -1165,9 +1225,9 @@ async fn do_main() -> Result<()> {
                 let client = cometbft_rpc::Client::new(rpc_url).await?;
 
                 let bech32_prefix = client
-                    .grpc_abci_query::<_, protos::cosmos::auth::v1beta1::Bech32PrefixResponse>(
+                    .grpc_abci_query::<_, Bech32PrefixResponse>(
                         "/cosmos.auth.v1beta1.Query/Bech32Prefix",
-                        &protos::cosmos::auth::v1beta1::Bech32PrefixRequest {},
+                        &Bech32PrefixRequest {},
                         None,
                         false,
                     )
@@ -1206,9 +1266,9 @@ async fn do_main() -> Result<()> {
                 let bech32_prefix = funder
                     .rpc()
                     .client()
-                    .grpc_abci_query::<_, protos::cosmos::auth::v1beta1::Bech32PrefixResponse>(
+                    .grpc_abci_query::<_, Bech32PrefixResponse>(
                         "/cosmos.auth.v1beta1.Query/Bech32Prefix",
-                        &protos::cosmos::auth::v1beta1::Bech32PrefixRequest {},
+                        &Bech32PrefixRequest {},
                         None,
                         false,
                     )
@@ -1972,11 +2032,15 @@ fn calculate_contract_addresses(
 fn write_output(path: Option<PathBuf>, data: impl Serialize) -> Result<()> {
     let data = serde_json::to_string(&data).unwrap();
 
+    write_output_raw(path, data)
+}
+
+fn write_output_raw(path: Option<PathBuf>, data: impl AsRef<[u8]>) -> Result<()> {
     match path {
         Some(output) => {
             std::fs::write(output, data)?;
         }
-        None => println!("{data}"),
+        None => stdout().write_all(data.as_ref())?,
     }
 
     Ok(())
@@ -2005,9 +2069,9 @@ impl Deployer {
 
         let bech32_prefix = rpc
             .client()
-            .grpc_abci_query::<_, protos::cosmos::auth::v1beta1::Bech32PrefixResponse>(
+            .grpc_abci_query::<_, Bech32PrefixResponse>(
                 "/cosmos.auth.v1beta1.Query/Bech32Prefix",
-                &protos::cosmos::auth::v1beta1::Bech32PrefixRequest {},
+                &Bech32PrefixRequest {},
                 None,
                 false,
             )
@@ -2031,16 +2095,13 @@ impl Deployer {
         Ok(ctx)
     }
 
-    async fn contract_info(
-        &self,
-        address: &Bech32<H256>,
-    ) -> Result<Option<protos::cosmwasm::wasm::v1::ContractInfo>> {
+    async fn contract_info(&self, address: &Bech32<H256>) -> Result<Option<ContractInfo>> {
         let result = self
             .rpc()
             .client()
-            .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryContractInfoResponse>(
+            .grpc_abci_query::<_, QueryContractInfoResponse>(
                 "/cosmwasm.wasm.v1.Query/ContractInfo",
-                &protos::cosmwasm::wasm::v1::QueryContractInfoRequest {
+                &QueryContractInfoRequest {
                     address: address.to_string(),
                 },
                 None,
@@ -2065,9 +2126,9 @@ impl Deployer {
         let result = self
             .rpc()
             .client()
-            .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryCodeResponse>(
+            .grpc_abci_query::<_, QueryCodeResponse>(
                 "/cosmwasm.wasm.v1.Query/Code",
-                &protos::cosmwasm::wasm::v1::QueryCodeRequest { code_id },
+                &QueryCodeRequest { code_id },
                 None,
                 false,
             )
@@ -2093,7 +2154,7 @@ impl Deployer {
                 let contract_code_history_entry = &ok.unwrap().entries[0];
 
                 if contract_code_history_entry.operation
-                    != protos::cosmwasm::wasm::v1::ContractCodeHistoryOperationType::Init as i32
+                    != ContractCodeHistoryOperationType::Init as i32
                 {
                     bail!(
                         "invalid state {} for first history entry",
@@ -2118,18 +2179,13 @@ impl Deployer {
     async fn contract_history(
         &self,
         address: Bech32<H256>,
-    ) -> Result<
-        Result<
-            Option<protos::cosmwasm::wasm::v1::QueryContractHistoryResponse>,
-            GrpcAbciQueryError,
-        >,
-    > {
+    ) -> Result<Result<Option<QueryContractHistoryResponse>, GrpcAbciQueryError>> {
         Ok(self
             .rpc()
             .client()
-            .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryContractHistoryResponse>(
+            .grpc_abci_query::<_, QueryContractHistoryResponse>(
                 "/cosmwasm.wasm.v1.Query/ContractHistory",
-                &protos::cosmwasm::wasm::v1::QueryContractHistoryRequest {
+                &QueryContractHistoryRequest {
                     address: address.to_string(),
                     ..Default::default()
                 },
@@ -2275,9 +2331,9 @@ impl Deployer {
         let bytecode_base_code_info = self
             .rpc()
             .client()
-            .grpc_abci_query::<_, protos::cosmwasm::wasm::v1::QueryCodeResponse>(
+            .grpc_abci_query::<_, QueryCodeResponse>(
                 "/cosmwasm.wasm.v1.Query/Code",
-                &protos::cosmwasm::wasm::v1::QueryCodeRequest {
+                &QueryCodeRequest {
                     code_id: bytecode_base_code_id.get(),
                 },
                 None,
