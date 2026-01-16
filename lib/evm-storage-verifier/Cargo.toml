@@ -15,16 +15,21 @@ workspace = true
 test-include = ["lib/evm-storage-verifier/src/test/"]
 
 [dependencies]
-hash-db            = { version = "0.16.0", default-features = false }
-hash256-std-hasher = { version = "0.15.2", default-features = false }
-memory-db          = { version = "0.32.0", default-features = false }
-rlp                = { workspace = true, features = ["derive", "std"] }
-sha3               = { workspace = true }
-thiserror          = { workspace = true }
-trie-db            = { version = "0.28", default-features = false }
-unionlabs          = { workspace = true, features = ["rlp"] }
+hash-db              = { version = "0.16.0", default-features = false }
+hash256-std-hasher   = { version = "0.15.2", default-features = false }
+memory-db            = { version = "0.32.0", default-features = false }
+rlp                  = { workspace = true, features = ["derive"] }
+sha3                 = { workspace = true }
+thiserror            = { workspace = true }
+trie-db              = { version = "0.28", default-features = false }
+unionlabs-primitives = { workspace = true, features = ["rlp"] }
 
 [dev-dependencies]
-alloy       = { workspace = true, features = ["rpc-types"] }
-hex-literal = { workspace = true }
-serde_json  = { workspace = true }
+alloy                = { workspace = true, features = ["rpc-types"] }
+hex-literal          = { workspace = true }
+serde_json           = { workspace = true }
+unionlabs-primitives = { workspace = true, features = ["rlp", "alloy-primitives-compat"] }
+
+[target.riscv32im-risc0-zkvm-elf.dependencies]
+openvm           = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.4.3" }
+openvm-keccak256 = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.4.3" }

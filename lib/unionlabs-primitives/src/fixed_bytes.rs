@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use core::{
     borrow::Borrow,
     cmp::Ordering,
@@ -202,6 +203,8 @@ impl<'de, const BYTES: usize, E: Encoding> serde::Deserialize<'de> for FixedByte
         D: serde::Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
+            use alloc::string::String;
+
             String::deserialize(deserializer)
                 .and_then(|s| s.parse().map_err(::serde::de::Error::custom))
         } else {
@@ -403,15 +406,17 @@ impl<'de, Context, Enc: Encoding, const BYTES: usize> bincode::BorrowDecode<'de,
 
 #[cfg(feature = "schemars")]
 impl<E: Encoding, const BYTES: usize> schemars::JsonSchema for FixedBytes<BYTES, E> {
-    fn schema_name() -> String {
-        format!("FixedBytes<{}, {BYTES}>", E::NAME)
+    fn schema_name() -> alloc::string::String {
+        alloc::format!("FixedBytes<{}, {BYTES}>", E::NAME)
     }
 
     fn schema_id() -> alloc::borrow::Cow<'static, str> {
-        format!("{}::{}", module_path!(), Self::schema_name()).into()
+        alloc::format!("{}::{}", module_path!(), Self::schema_name()).into()
     }
 
     fn json_schema(_: &mut schemars::r#gen::SchemaGenerator) -> schemars::schema::Schema {
+        use alloc::{boxed::Box, format};
+
         use schemars::schema::{InstanceType, Metadata, SchemaObject, SingleOrVec};
 
         SchemaObject {
@@ -431,11 +436,14 @@ impl<E: Encoding, const BYTES: usize> schemars::JsonSchema for FixedBytes<BYTES,
 
 #[cfg(test)]
 mod tests {
+    use alloc::string::ToString;
+
     use hex::FromHexError;
 
     use super::*;
     use crate::encoding::{
         Base58, Base58Error, Base64, Base64Error, HexPrefixedFromStrError, HexUnprefixed,
+        HexUnprefixedFromStrError,
     };
 
     const BASE64_STR: &str = "YWJjZA==";
@@ -497,7 +505,9 @@ mod tests {
 
         assert_eq!(
             H::from_str(HEX_UNPREFIXED_STR),
-            Err(FromHexError::InvalidStringLength)
+            Err(HexUnprefixedFromStrError::InvalidHex(
+                FromHexError::InvalidStringLength
+            ))
         );
     }
 
@@ -507,7 +517,9 @@ mod tests {
 
         assert_eq!(
             H::from_str(HEX_UNPREFIXED_STR),
-            Err(FromHexError::InvalidStringLength)
+            Err(HexUnprefixedFromStrError::InvalidHex(
+                FromHexError::InvalidStringLength
+            ))
         );
     }
 

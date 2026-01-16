@@ -18,18 +18,18 @@ base64           = { workspace = true, optional = true, features = ["std"] }
 bincode          = { workspace = true, optional = true, features = ["alloc"] }
 bs58             = { workspace = true, optional = true, features = ["std"] }
 generic-array    = { workspace = true, optional = true }
-hex              = { workspace = true, features = ["std"] }
+hex              = { workspace = true, features = ["alloc"] }
 primitive-types  = { workspace = true }
 rlp              = { workspace = true, optional = true }
 schemars         = { workspace = true, optional = true }
 serde            = { workspace = true, features = ["derive"], optional = true }
-serde_bytes      = { version = "0.11.17", optional = true }
+serde_bytes      = { version = "0.11.17", optional = true, default-features = false }
 subtle-encoding  = { workspace = true, features = ["bech32-preview"] }
 thiserror        = { workspace = true }
 typenum          = { workspace = true, optional = true }
 
 # TODO: This is only used for uint, replace with ruint
-uint = "0.9.5"
+uint = { version = "0.9.5", default-features = false }
 
 [dev-dependencies]
 serde_json           = { workspace = true }

@@ -206,6 +206,7 @@
         ./typescript-sdk/typescript-sdk.nix
         ./cosmwasm/cosmwasm.nix
         ./evm/evm.nix
+        ./tools/openvm.nix
         ./tools/rust-proto.nix
         ./tools/tools.nix
         ./tools/scarb.nix
@@ -545,6 +546,7 @@
                 nodejs
               ]
               ++ (with pkgs; [
+                self'.packages.cargo-openvm
                 clang
                 cargo-llvm-cov
                 bacon
@@ -561,6 +563,7 @@
                 self'.packages.tdc
                 yq
                 perl
+                strace
               ])
               ++ (with pkgsUnstable; [
                 bun

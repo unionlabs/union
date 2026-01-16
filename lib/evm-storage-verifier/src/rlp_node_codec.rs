@@ -16,7 +16,8 @@
 
 //! `NodeCodec` implementation for Rlp
 
-use std::{borrow::Borrow, marker::PhantomData, ops::Range};
+use alloc::vec::Vec;
+use core::{borrow::Borrow, marker::PhantomData, ops::Range};
 
 use hash_db::Hasher;
 use rlp::{DecoderError, Prototype, Rlp, RlpStream};
@@ -25,7 +26,7 @@ use trie_db::{
     ChildReference, NodeCodec, TrieLayout,
     node::{NibbleSlicePlan, NodeHandlePlan, NodePlan, Value, ValuePlan},
 };
-use unionlabs::primitives::H256;
+use unionlabs_primitives::H256;
 
 #[derive(Default, Clone)]
 pub struct EthLayout;
@@ -45,7 +46,6 @@ use hash256_std_hasher::Hash256StdHasher;
 pub struct KeccakHasher;
 
 impl Hasher for KeccakHasher {
-    // TODO: Use `unionlabs::ethereum::H256` here
     type Out = H256;
     type StdHasher = Hash256StdHasher;
     const LENGTH: usize = 32;
@@ -57,9 +57,18 @@ impl Hasher for KeccakHasher {
 
 /// Performs a Keccak-256 hash on the given input.
 pub fn keccak_256(input: &[u8]) -> [u8; 32] {
-    let mut hasher = Keccak256::new();
-    hasher.update(input);
-    hasher.finalize().into()
+    #[cfg(target_os = "zkvm")]
+    {
+        use openvm as _;
+
+        openvm_keccak256::keccak256(input)
+    }
+    #[cfg(not(target_os = "zkvm"))]
+    {
+        let mut hasher = Keccak256::new();
+        hasher.update(input);
+        hasher.finalize().into()
+    }
 }
 
 /// Concrete implementation of a `NodeCodec` with Rlp encoding, generic over the `Hasher`
@@ -97,7 +106,7 @@ fn encode_partial_inner_iter<'a>(
     } else {
         encoded_type
     };
-    std::iter::once(first).chain(partial_remaining)
+    core::iter::once(first).chain(partial_remaining)
 }
 
 fn decode_value_range(rlp: Rlp, mut offset: usize) -> Result<Range<usize>, DecoderError> {

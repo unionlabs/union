@@ -1,17 +1,20 @@
+#![cfg_attr(not(test), no_std)]
+
+use alloc::vec::Vec;
+
 use error::Error;
 use hash_db::HashDB;
 use memory_db::{HashKey, MemoryDB};
 use rlp::RlpDecodable;
 use trie_db::{Trie, TrieDBBuilder};
-use unionlabs::{
-    ensure,
-    primitives::{H160, H256, U256},
-};
+use unionlabs_primitives::{H160, H256, U256};
 
 use crate::rlp_node_codec::{EthLayout, KeccakHasher, keccak_256};
 
 pub mod error;
 mod rlp_node_codec;
+
+extern crate alloc;
 
 #[derive(Debug, Clone, RlpDecodable)]
 pub struct Account {
@@ -32,17 +35,19 @@ pub struct Account {
 pub fn verify_storage_proof(
     root: H256,
     key: U256,
-    expected_value: &[u8],
+    expected_value: U256,
     proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
 ) -> Result<(), Error> {
     match get_node(root, key.to_be_bytes(), proof)? {
-        Some(value) if value == expected_value => Ok(()),
+        Some(value) if rlp::decode::<U256>(&value).is_ok_and(|value| value == expected_value) => {
+            Ok(())
+        }
         Some(value) => Err(Error::ValueMismatch {
-            expected: expected_value.into(),
+            expected: rlp::encode(&expected_value).to_vec().into(),
             actual: value.into(),
         })?,
         None => Err(Error::ValueMissing {
-            value: expected_value.into(),
+            value: rlp::encode(&expected_value).to_vec().into(),
         })?,
     }
 }
@@ -79,13 +84,12 @@ pub fn verify_account_storage_root(
     match get_node(root, address.as_ref(), proof)? {
         Some(account) => {
             let account = rlp::decode::<Account>(account.as_ref()).map_err(Error::RlpDecode)?;
-            ensure(
-                &account.storage_root == storage_root,
-                Error::ValueMismatch {
+            if &account.storage_root != storage_root {
+                return Err(Error::ValueMismatch {
                     expected: storage_root.as_ref().into(),
                     actual: account.storage_root.into(),
-                },
-            )?;
+                });
+            };
             Ok(())
         }
         None => Err(Error::ValueMissing {
@@ -111,13 +115,12 @@ pub fn verify_account_code_hash(
     match get_node(root, address.as_ref(), proof)? {
         Some(account) => {
             let account = rlp::decode::<Account>(account.as_ref()).map_err(Error::RlpDecode)?;
-            ensure(
-                &account.code_hash == code_hash,
-                Error::ValueMismatch {
+            if &account.code_hash != code_hash {
+                return Err(Error::ValueMismatch {
                     expected: code_hash.as_ref().into(),
                     actual: account.code_hash.into(),
-                },
-            )?;
+                });
+            };
             Ok(())
         }
         None => Err(Error::ValueMissing {
@@ -150,7 +153,7 @@ mod tests {
 
         use alloy::rpc::types::EIP1186AccountProofResponse;
         use hex_literal::hex;
-        use unionlabs::primitives::H256;
+        use unionlabs_primitives::H256;
 
         pub static VALID_ABSENCE_PROOF: LazyLock<EIP1186AccountProofResponse> =
             LazyLock::new(|| {
@@ -258,9 +261,9 @@ mod tests {
                         .as_b256()
                         .0
                 ),
-                &data_7882953::VALID_ABSENCE_PROOF.storage_proof[0]
+                data_7882953::VALID_ABSENCE_PROOF.storage_proof[0]
                     .value
-                    .to_be_bytes::<32>(),
+                    .into(),
                 &data_7882953::VALID_ABSENCE_PROOF.storage_proof[0].proof,
             ),
             Err(Error::ValueMissing { .. })
@@ -278,12 +281,9 @@ mod tests {
                         .as_b256()
                         .0
                 ),
-                &rlp::encode(
-                    &data_7882953::VALID_STORAGE_PROOF.storage_proof[0]
-                        .value
-                        .to_be_bytes::<32>()
-                        .as_slice()
-                ),
+                data_7882953::VALID_STORAGE_PROOF.storage_proof[0]
+                    .value
+                    .into(),
                 &data_7882953::VALID_STORAGE_PROOF.storage_proof[0].proof,
             ),
             Ok(())
@@ -321,12 +321,9 @@ mod tests {
                         .as_b256()
                         .0
                 ),
-                &rlp::encode(
-                    &data_7882953::VALID_STORAGE_PROOF.storage_proof[0]
-                        .value
-                        .to_be_bytes::<32>()
-                        .as_slice()
-                ),
+                data_7882953::VALID_STORAGE_PROOF.storage_proof[0]
+                    .value
+                    .into(),
                 &data_7882953::VALID_STORAGE_PROOF.storage_proof[0].proof,
             ),
             Err(Error::Trie(_))
@@ -351,12 +348,9 @@ mod tests {
                         .as_b256()
                         .0
                 ),
-                &rlp::encode(
-                    &data_7882953::VALID_STORAGE_PROOF.storage_proof[0]
-                        .value
-                        .to_be_bytes::<32>()
-                        .as_slice()
-                ),
+                data_7882953::VALID_STORAGE_PROOF.storage_proof[0]
+                    .value
+                    .into(),
                 proof,
             ),
             Err(Error::Trie(_))
@@ -375,12 +369,9 @@ mod tests {
             verify_storage_proof(
                 H256::new(data_7882953::VALID_STORAGE_PROOF.storage_hash.0),
                 U256::from_be_bytes(key),
-                &rlp::encode(
-                    &data_7882953::VALID_STORAGE_PROOF.storage_proof[0]
-                        .value
-                        .to_be_bytes::<32>()
-                        .as_slice()
-                ),
+                data_7882953::VALID_STORAGE_PROOF.storage_proof[0]
+                    .value
+                    .into(),
                 &data_7882953::VALID_STORAGE_PROOF.storage_proof[0].proof,
             ),
             Err(Error::Trie(_))
@@ -403,7 +394,7 @@ mod tests {
                         .as_b256()
                         .0
                 ),
-                &rlp::encode(&value.as_slice()),
+                U256::from_be_bytes(value),
                 &data_7882953::VALID_STORAGE_PROOF.storage_proof[0].proof,
             ),
             Err(Error::ValueMismatch { .. })

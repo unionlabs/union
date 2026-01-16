@@ -286,6 +286,7 @@ members = [
   "lib/starknet-types",
   "lib/starknet-light-client-types",
   "lib/cosmwasm-event",
+  "openvm/evm-storage-verifier",
 ]
 
 [workspace.package]

@@ -41,6 +41,8 @@ impl<'de> serde::Deserialize<'de> for U256 {
     where
         D: serde::Deserializer<'de>,
     {
+        use alloc::{format, string::String};
+
         String::deserialize(deserializer)
             .and_then(|s| {
                 primitive_types::U256::from_dec_str(&s).map_err(|err| {
@@ -54,6 +56,8 @@ impl<'de> serde::Deserialize<'de> for U256 {
 #[cfg(feature = "serde")]
 #[allow(clippy::missing_errors_doc)]
 pub mod u256_big_endian_hex {
+    use alloc::string::String;
+
     use serde::de::{self, Deserialize};
 
     use crate::U256;
@@ -134,11 +138,13 @@ impl bincode::Encode for U256 {
 
 #[cfg(feature = "schemars")]
 impl schemars::JsonSchema for U256 {
-    fn schema_name() -> String {
-        "U256".to_owned()
+    fn schema_name() -> alloc::string::String {
+        "U256".into()
     }
 
     fn json_schema(_: &mut schemars::r#gen::SchemaGenerator) -> schemars::schema::Schema {
+        use alloc::{borrow::ToOwned, boxed::Box};
+
         use schemars::schema::{
             InstanceType, Metadata, SchemaObject, SingleOrVec, StringValidation,
         };
@@ -398,8 +404,14 @@ pub enum TryFromHexError {
     EmptyString,
     #[error(transparent)]
     TryFromBytes(#[from] TryFromBytesError),
-    #[error(transparent)]
-    Hex(#[from] hex::FromHexError),
+    #[error("{0}")]
+    Hex(hex::FromHexError),
+}
+
+impl From<hex::FromHexError> for TryFromHexError {
+    fn from(v: hex::FromHexError) -> Self {
+        Self::Hex(v)
+    }
 }
 
 impl FromStr for U256 {
@@ -409,6 +421,12 @@ impl FromStr for U256 {
         primitive_types::U256::from_dec_str(s).map(Self)
     }
 }
+
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
 
 pub use ::uint::FromDecStrErr;
 
