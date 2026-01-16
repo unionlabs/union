@@ -14,16 +14,19 @@ workspace = true
 [dependencies]
 cometbft-rpc                = { workspace = true }
 cometbft-types              = { workspace = true }
+cometbls-groth16-verifier   = { workspace = true }
 cometbls-light-client-types = { workspace = true, features = ["serde"] }
 embed-commit                = { workspace = true }
 enumorph                    = { workspace = true }
 galois-rpc                  = { workspace = true }
+garaga_rs                   = { git = "https://github.com/aeryz/garaga", rev = "6fb59ac369ab2bc4699e8ff7c09bdeee81cfcaca" }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                      = { workspace = true }
 num-bigint                  = { workspace = true }
 serde                       = { workspace = true, features = ["derive"] }
 serde_json                  = { workspace = true }
 subset-of                   = { workspace = true }
+substrate-bn                = { version = "0.6", default-features = false }
 thiserror                   = { workspace = true }
 tokio                       = { workspace = true }
 tracing                     = { workspace = true }
