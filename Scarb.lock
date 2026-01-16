@@ -259,6 +259,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "zasset"
+version = "0.1.0"
+dependencies = [
+ "ibc",
+ "loopback_light_client",
+ "snforge_std",
+]
+
+[[package]]
 name = "zkgm"
 version = "0.1.0"
 dependencies = [

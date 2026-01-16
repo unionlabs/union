@@ -1,20 +1,18 @@
 [package]
-edition = "2024_07"
-name    = "loopback_light_client"
+name = "zasset"
 version = "0.1.0"
+edition = "2024_07"
 
 # See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
-[lib]
 
 [dependencies]
-alexandria_bytes = { workspace = true }
-alexandria_math  = { workspace = true }
-ibc              = { workspace = true }
-starknet         = { workspace = true }
+starknet = "2.13.1"
+ibc      = { workspace = true }
+loopback_light_client = { workspace = true }
 
 [dev-dependencies]
+snforge_std = "0.53.0-rc.0"
 assert_macros = "2.13.1"
-snforge_std   = { workspace = true }
 
 [[target.starknet-contract]]
 sierra = true
@@ -24,3 +22,4 @@ test = "snforge test"
 
 [tool.scarb]
 allow-prebuilt-plugins = ["snforge_std"]
+
