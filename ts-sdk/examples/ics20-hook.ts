@@ -55,11 +55,13 @@ const SENDER_ATOMONE = Ucs05.CosmosDisplay.make({
   address: "atone19lnpcs0pvz9htcvm58jkp6ak55m49x5nr0w9qj",
 })
 const REFUND_RECEIVER_OSMOSIS = Ucs05.CosmosDisplay.make({
-  address: Schema.decodeSync(
+  address: Schema.decodeUnknownSync(
     Ucs05.Bech32FromCanonicalBytesWithPrefix(
       "osmo",
     ),
-  )(),
+  )(
+    Ucs05.anyDisplayToCanonical(SENDER_ATOMONE),
+  ),
 })
 const RECEIVER = Ucs05.EvmDisplay.make({
   address: "0x2c96e52fce14baa13868ca8182f8a7903e4e76e0",
@@ -178,7 +180,7 @@ const encodeUcs03 = (payload: {
 }) =>
   Effect.gen(function*() {
     const salt = yield* Utils.generateSalt("cosmos")
-    const timeout_timestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
+    const timeout_timestamp = "1"
     const instruction = yield* pipe(
       encodeInstruction(payload.instruction), //
       Effect.flatMap(Schema.encode(Ucs03.Ucs03WithInstructionFromHex)),
@@ -203,9 +205,10 @@ const createUcs03 = Effect.gen(function*() {
   return yield* TokenOrder.make({
     source: ethereumChain,
     destination: osmosisChain,
-    sender: yield* predictProxy(
-      yield* calculateIbcCallbackAddress(SENDER_ATOMONE.address, ATOMONE_TO_OSMOSIS_CHANNEL),
-    ),
+    // sender: yield* predictProxy(
+    //   yield* calculateIbcCallbackAddress(SENDER_ATOMONE.address, ATOMONE_TO_OSMOSIS_CHANNEL),
+    // ),
+    sender: REFUND_RECEIVER_OSMOSIS,
     receiver: RECEIVER,
     baseToken: ATONE_IBC_DENOM_ON_OSMOSIS,
     baseAmount: SEND_AMOUNT,
@@ -229,26 +232,30 @@ createUcs03.then(
 )
   .then(msg =>
     JSON.stringify({
+      // wasm: {
+      //   contract: PROXY_ACCOUNT_FACTORY.address,
+      //   msg: {
+      //     call_proxy: [
+      //       {
+      //         wasm: {
+      //           execute: {
+      //             contract_addr: ZKGM_ADDRESS,
+      //             msg: encodeBase64(JSON.stringify(msg)),
+      //             funds: [
+      //               {
+      //                 amount: SEND_AMOUNT.toString(),
+      //                 denom: ATONE_IBC_DENOM_ON_OSMOSIS.address,
+      //               },
+      //             ],
+      //           },
+      //         },
+      //       },
+      //     ],
+      //   },
+      // },
       wasm: {
-        contract: PROXY_ACCOUNT_FACTORY.address,
-        msg: {
-          call_proxy: [
-            {
-              wasm: {
-                execute: {
-                  contract_addr: ZKGM_ADDRESS,
-                  msg: encodeBase64(JSON.stringify(msg)),
-                  funds: [
-                    {
-                      amount: SEND_AMOUNT.toString(),
-                      denom: ATONE_IBC_DENOM_ON_OSMOSIS.address,
-                    },
-                  ],
-                },
-              },
-            },
-          ],
-        },
+        contract: ZKGM_ADDRESS,
+        msg,
       },
     })
   )
