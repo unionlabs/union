@@ -264,6 +264,7 @@ version = "0.1.0"
 dependencies = [
  "ibc",
  "loopback_light_client",
+ "openzeppelin",
  "snforge_std",
 ]
 

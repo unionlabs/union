@@ -1,18 +1,19 @@
 [package]
-name = "zasset"
-version = "0.1.0"
 edition = "2024_07"
+name    = "zasset"
+version = "0.1.0"
 
 # See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
 
 [dependencies]
-starknet = "2.13.1"
-ibc      = { workspace = true }
+ibc                   = { workspace = true }
 loopback_light_client = { workspace = true }
+openzeppelin          = { workspace = true }
+starknet              = "2.13.1"
 
 [dev-dependencies]
-snforge_std = "0.53.0-rc.0"
 assert_macros = "2.13.1"
+snforge_std   = "0.53.0-rc.0"
 
 [[target.starknet-contract]]
 sierra = true
@@ -22,4 +23,3 @@ test = "snforge test"
 
 [tool.scarb]
 allow-prebuilt-plugins = ["snforge_std"]
-
