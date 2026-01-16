@@ -5,7 +5,17 @@ if (typeof BigInt.prototype.toJSON !== "function") {
     return this.toString()
   }
 }
-import { Call, TokenOrder, Ucs03, Ucs05, Utils, ZkgmInstruction } from "@unionlabs/sdk"
+import {
+  Batch,
+  Call,
+  TokenOrder,
+  Ucs03,
+  Ucs05,
+  Utils,
+  ZkgmClient,
+  ZkgmClientRequest,
+  ZkgmInstruction,
+} from "@unionlabs/sdk"
 import { Cosmos } from "@unionlabs/sdk-cosmos"
 import { ChainRegistry } from "@unionlabs/sdk/ChainRegistry"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
@@ -20,20 +30,37 @@ import { pipe } from "effect/Function"
 import * as Match from "effect/Match"
 import * as ParseResult from "effect/ParseResult"
 import * as Schema from "effect/Schema"
-import { bytesToHex, fromHex, keccak256 } from "viem"
+import { bytesToHex, encodeAbiParameters, fromHex, keccak256 } from "viem"
+import { HexFromJson } from "../src/schema/hex"
 
 const OSMOSIS_CHAIN_ID = UniversalChainId.make("osmosis.osmosis-1")
 const ETHEREUM_CHAIN_ID = UniversalChainId.make("ethereum.1")
 
-const ATOMONE_TO_OSMOSIS_CHANNEL = "channel-2"
-const ATOMONE_TO_OSMOSIS_PORT = "transfer"
+const OSMOSIS_TO_ATOMONE_CHANNEL = "channel-94814"
 
-const ZKGM_ADDRESS = "osmo1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qs2uecc"
+const UCS03_EVM = Ucs05.EvmDisplay.make({ address: "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7" })
 
-const SOURCE_CHANNEL_ID = ChannelId.make(2)
+const SOURCE_CHANNEL_ID = ChannelId.make(6)
+const DESTINATION_CHANNEL_ID = ChannelId.make(2)
+const SEND_AMOUNT = 1n
+const RECEIVER_ATOMONE = Ucs05.CosmosDisplay.make({
+  address: "atone19lnpcs0pvz9htcvm58jkp6ak55m49x5nr0w9qj",
+})
+const SENDER_ETH = Ucs05.EvmDisplay.make({
+  address: "0x2c96e52fce14baa13868ca8182f8a7903e4e76e0",
+})
+
+const BYTECODE_BASE_CHECKSUM =
+  "0xec827349ed4c1fec5a9c3462ff7c979d4c40e7aa43b16ed34469d04ff835f2a1" as const
+// shaw256(b"module")
+const MODULE_HASH = "0x120970d812836f19888625587a4606a5ad23cef31c8684e601771552548fc6b9" as const
+const UCS03_ZKGM = Ucs05.CosmosDisplay.make({
+  address: "osmo1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qs2uecc",
+})
+const CANONICAL_ZKGM = Ucs05.anyDisplayToCanonical(UCS03_ZKGM)
 
 export const ATONE_SOLVER_ON_OSMOSIS_METADATA =
-  "000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000003f6f736d6f316174306e6539617977683335706d6c7a3065786c35666c336c6a7770657934676336323079797874687173706477396536306d736c666a786d33000000000000000000000000000000000000000000000000000000000000000000" as const
+  "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000003f6f736d6f316174306e6539617977683335706d6c7a3065786c35666c336c6a7770657934676336323079797874687173706477396536306d736c666a786d33000000000000000000000000000000000000000000000000000000000000000000" as const
 
 export const ATONE_SOLVER_ON_ETH_METADATA =
   "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014a1a1d0b9182339e86e80db519218ea03ec09a1a10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" as const
@@ -48,21 +75,6 @@ export const ATONE_ERC20 = Token.Erc20.make({
 
 const PROXY_ACCOUNT_FACTORY = Ucs05.CosmosDisplay.make({
   address: "osmo13jcvgpy2cjl6tg7zz5pcr9pv6lgqz70h7n64krjve7mp7tsexvys82mlqs",
-})
-
-const SEND_AMOUNT = 1n
-const SENDER_ATOMONE = Ucs05.CosmosDisplay.make({
-  address: "atone19lnpcs0pvz9htcvm58jkp6ak55m49x5nr0w9qj",
-})
-const REFUND_RECEIVER_OSMOSIS = Ucs05.CosmosDisplay.make({
-  address: Schema.decodeSync(
-    Ucs05.Bech32FromCanonicalBytesWithPrefix(
-      "osmo",
-    ),
-  )(),
-})
-const RECEIVER = Ucs05.EvmDisplay.make({
-  address: "0x2c96e52fce14baa13868ca8182f8a7903e4e76e0",
 })
 
 const sha256 = (data: BufferSource) =>
@@ -96,16 +108,11 @@ const calculateIbcCallbackAddress = Effect.fn("calculateIbcCallbackAddress")(
 )
 
 // proxy_account_factory::predict_call_proxy_account
-export const predictProxy = Effect.fn("predictProxy")(
+export const predictProxyFactoryProxyAddress = Effect.fn("predictProxyFactoryProxyAddress")(
   function*(sender: Ucs05.CosmosDisplay) {
-    const BYTECODE_BASE_CHECKSUM =
-      "0xec827349ed4c1fec5a9c3462ff7c979d4c40e7aa43b16ed34469d04ff835f2a1" as const
     const CANONICAL_PROXY_ACCOUNT_FACTORY = Ucs05.anyDisplayToCanonical(
       PROXY_ACCOUNT_FACTORY,
     )
-    // shaw256(b"module")
-    const MODULE_HASH =
-      "0x120970d812836f19888625587a4606a5ad23cef31c8684e601771552548fc6b9" as const
 
     const canonical_sender = fromHex(Ucs05.anyDisplayToCanonical(sender), "bytes")
     const salt = yield* sha256(canonical_sender.buffer)
@@ -141,6 +148,83 @@ export const predictProxy = Effect.fn("predictProxy")(
     )
 
     yield* Console.log({ address })
+
+    return Ucs05.CosmosDisplay.make({ address })
+  },
+)
+
+/**
+ * Generate a deterministic Union cosmos address from an EVM address using instantiate2
+ * This is used to create the receiver address for cross-chain operations
+ */
+export const predictProxy = Effect.fn("predictProxy")(
+  function*(options: { path: bigint; channel: ChannelId; sender: Ucs05.AnyDisplay }) {
+    const sender = yield* Ucs05.anyDisplayToZkgm(options.sender)
+    const abi = [
+      {
+        name: "path",
+        type: "uint256",
+        internalType: "uint256",
+      },
+      {
+        name: "channelId",
+        type: "uint32",
+        internalType: "uint32",
+      },
+      {
+        name: "sender",
+        type: "bytes",
+        internalType: "bytes",
+      },
+    ] as const
+
+    const salt = yield* pipe(
+      Effect.try(() =>
+        encodeAbiParameters(
+          abi,
+          [
+            options.path,
+            options.channel,
+            sender,
+          ] as const,
+        )
+      ),
+      Effect.map((encoded) => keccak256(encoded, "bytes")),
+    )
+
+    const u64toBeBytes = (n: bigint) => {
+      const buffer = new ArrayBuffer(8)
+      const view = new DataView(buffer)
+      view.setBigUint64(0, n)
+      return new Uint8Array(view.buffer)
+    }
+
+    const sha256 = Effect.fn((data: any) =>
+      Effect.tryPromise(() => globalThis.crypto.subtle.digest("SHA-256", data))
+    )
+
+    const address = yield* pipe(
+      Uint8Array.from(
+        [
+          ...fromHex(MODULE_HASH, "bytes"),
+          ...new TextEncoder().encode("wasm"),
+          0,
+          ...u64toBeBytes(32n),
+          ...fromHex(BYTECODE_BASE_CHECKSUM, "bytes"),
+          ...u64toBeBytes(32n),
+          ...fromHex(CANONICAL_ZKGM, "bytes"),
+          ...u64toBeBytes(32n),
+          ...salt,
+          ...u64toBeBytes(0n),
+        ],
+      ),
+      sha256,
+      Effect.map((r) => new Uint8Array(r)),
+      Effect.map(bytesToHex),
+      Effect.flatMap(
+        Schema.decode(Ucs05.Bech32FromCanonicalBytesWithPrefix("osmo")),
+      ),
+    )
 
     return Ucs05.CosmosDisplay.make({ address })
   },
@@ -200,11 +284,76 @@ const createUcs03 = Effect.gen(function*() {
   const osmosisChain = yield* ChainRegistry.byUniversalId(OSMOSIS_CHAIN_ID)
   const ethereumChain = yield* ChainRegistry.byUniversalId(ETHEREUM_CHAIN_ID)
 
-  return yield* TokenOrder.make({
+  const proxy = yield* predictProxy({
+    path: 0n,
+    channel: SOURCE_CHANNEL_ID,
+    sender: SENDER_ETH,
+  })
+
+  const salt = yield* Utils.generateSalt("cosmos")
+  const timeout_timestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
+
+  const tokenOrder = yield* TokenOrder.make({
     source: ethereumChain,
     destination: osmosisChain,
-    sender: yield* predictProxy(
-      yield* calculateIbcCallbackAddress(SENDER_ATOMONE.address, ATOMONE_TO_OSMOSIS_CHANNEL),
+    sender: SENDER_ETH,
+    receiver: proxy,
+    baseToken: ATONE_ERC20,
+    baseAmount: SEND_AMOUNT,
+    quoteToken: ATONE_IBC_DENOM_ON_OSMOSIS,
+    quoteAmount: SEND_AMOUNT,
+    kind: "solve",
+    metadata: ATONE_SOLVER_ON_OSMOSIS_METADATA,
+    version: 2,
+  })
+
+  const ibcTransferCall = {
+    ibc: {
+      transfer: {
+        channel_id: OSMOSIS_TO_ATOMONE_CHANNEL,
+        to_address: RECEIVER_ATOMONE,
+        amount: {
+          denom: ATONE_IBC_DENOM_ON_OSMOSIS.address,
+          amount: SEND_AMOUNT,
+        },
+        timeout: {
+          timestamp: timeout_timestamp,
+        },
+        memo: "",
+      },
+    },
+  }
+
+  const calls = Call.make({
+    sender: SENDER_ETH,
+    eureka: false,
+    contractAddress: proxy,
+    contractCalldata: yield* Schema.decode(HexFromJson)([
+      ibcTransferCall,
+    ]),
+  })
+
+  const batch = Batch.make([
+    tokenOrder,
+    calls,
+  ])
+
+  const request = ZkgmClientRequest.make({
+    source: ethereumChain,
+    destination: osmosisChain,
+    channelId: SOURCE_CHANNEL_ID,
+    ucs03Address: UCS03_EVM.address,
+    instruction: batch,
+  })
+
+  const client = yield* ZkgmClient.ZkgmClient
+  return yield* client.execute(request)
+
+  return yield* TokenOrder.make({
+    source: osmosisChain,
+    destination: ethereumChain,
+    sender: yield* predictProxyFactoryProxyAddress(
+      yield* calculateIbcCallbackAddress(SENDER_ATOMONE.address, OSMOSIS_TO_ATOMONE_CHANNEL),
     ),
     receiver: RECEIVER,
     baseToken: ATONE_IBC_DENOM_ON_OSMOSIS,
