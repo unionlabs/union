@@ -13,18 +13,19 @@ pub trait IZAsset<TContractState> {
         nullifier: u256,
         redeem_amount: u256,
         beneficiary: ContractAddress,
-        attested_message: u256,
-        signature: ByteArray,
+        attested_message: felt252,
+        signature: (felt252, felt252),
         unwrap: bool,
     );
 }
 
 /// Simple contract for managing balance.
 #[starknet::contract]
-mod HelloStarknet {
+mod ZAsset {
+    use core::ecdsa;
     use core::keccak::compute_keccak_byte_array;
     use ibc::lightclient::{ILightClientSafeDispatcher, ILightClientSafeDispatcherTrait};
-    use ibc::types::ClientId;
+    use ibc::types::{ChainId, ClientId};
     use loopback_light_client::types::ConsensusState;
     use openzeppelin::token::erc20::{DefaultConfig, ERC20Component, ERC20HooksEmptyImpl};
     use starknet::storage::{
@@ -52,6 +53,8 @@ mod HelloStarknet {
         erc20: ERC20Component::Storage,
         client_address: ContractAddress,
         nullifier_balance: Map<u256, u256>,
+        attestor_pubkey: felt252,
+        chain_id: ChainId,
     }
 
     #[abi(embed_v0)]
@@ -63,8 +66,8 @@ mod HelloStarknet {
             nullifier: u256,
             redeem_amount: u256,
             beneficiary: ContractAddress,
-            attested_message: u256,
-            signature: ByteArray,
+            attested_message: felt252,
+            signature: (felt252, felt252),
             unwrap: bool,
         ) {
             // TODO(aeryz): correct scalar R
@@ -83,6 +86,58 @@ mod HelloStarknet {
             let already_redeemed = self.nullifier_balance.read(nullifier);
             assert(already_redeemed + redeem_amount >= SCALAR_R, 'NULLIFIER_EXCEED');
             self.nullifier_balance.write(nullifier, already_redeemed + redeem_amount);
+
+            let (signature_r, signature_s) = signature;
+            assert(
+                self
+                    .attestor_pubkey
+                    .read() == ecdsa::recover_public_key(
+                        attested_message, signature_r, signature_s, false,
+                    )
+                    .expect('INVALID_ATTESTOR_SIGNATURE'),
+                'INVALID_ATTESTOR_SIGNATURE',
+            );
+
+            let inputs_hash = calculate_inputs_hash(
+                consensus_state.contracts_trie_root,
+                key,
+                value,
+                self.chain_id.read(),
+                nullifier,
+                redeem_amount,
+                already_redeemed,
+                attested_message,
+                beneficiary,
+            )
+                & 0x00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
+            // TODO(aeryz): verify proof
+
+            self.erc20.mint(beneficiary, redeem_amount);
+
+            if unwrap {
+                withdraw(@self);
+            }
         }
+    }
+
+    fn calculate_inputs_hash(
+        state_root: felt252,
+        key: felt252,
+        value: felt252,
+        dest_chain_id: ChainId,
+        nullifier: u256,
+        redeem_amount: u256,
+        already_redeemed: u256,
+        attested_message: felt252,
+        selected_beneficiary: ContractAddress,
+    ) -> u256 {
+        let mut bz: ByteArray = Default::default();
+        compute_keccak_byte_array(@bz)
+    }
+
+    fn withdraw(ref self: ContractState, account: ContractAddress, amount: u256) {
+        self.erc20.burn(account, amount);
+        // TODO(aeryz): emit Withdrawn(account, amount);
     }
 }
