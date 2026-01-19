@@ -63,12 +63,12 @@ pub fn keccak_256(input: &[u8]) -> [u8; 32] {
 
         openvm_keccak256::keccak256(input)
     }
-    #[cfg(not(target_os = "zkvm"))]
-    {
-        let mut hasher = Keccak256::new();
-        hasher.update(input);
-        hasher.finalize().into()
-    }
+    // #[cfg(not(target_os = "zkvm"))]
+    // {
+    //     let mut hasher = Keccak256::new();
+    //     hasher.update(input);
+    //     hasher.finalize().into()
+    // }
 }
 
 /// Concrete implementation of a `NodeCodec` with Rlp encoding, generic over the `Hasher`

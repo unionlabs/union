@@ -3,6 +3,7 @@ _: {
     {
       pkgs,
       pkgsUnstable,
+      system,
       crane,
       rust,
       dbg,
@@ -16,7 +17,13 @@ _: {
         }
       );
 
-      arch = "aarch64";
+      arch =
+        if system == "aarch64-linux" then
+          "aarch64"
+        else if system == "x86_64-linux" then
+          "x86_64"
+        else
+          throw "invalid system";
 
       openvm-version = "v1.4.3";
 
@@ -129,48 +136,52 @@ _: {
 
       '';
 
-      solc_0_8_19 = pkgs.gccStdenv.mkDerivation rec {
-        pname = "solc";
-        version = "0.8.19";
-        src = pkgs.fetchurl {
-          url = "https://github.com/nikitastupin/solc/raw/main/linux/aarch64/solc-v${version}";
-          hash = "sha256-5cBr9y7aGlD9f5HrPXF/CkvZsMASV8PnypBfwHOspfE=";
-        };
-        dontUnpack = true;
-        nativeBuildInputs = [
-          pkgs.stdenv.cc.cc.lib
-          pkgs.autoPatchelfHook
-        ];
-        installPhase = ''
-          runHook preInstall
-          mkdir -p $out/bin
-          cp ${src} $out/bin/solc
-          chmod +x $out/bin/solc
-          runHook postInstall
-        '';
-        meta = {
-          description = "Static binary of compiler for Ethereum smart contract language Solidity";
-          homepage = "https://github.com/ethereum/solidity";
-          mainProgram = "solc";
-          license = pkgs.lib.licenses.gpl3;
-        };
-      };
+      solc_0_8_19 =
+        if system == "aarch64-linux" then
+          pkgs.gccStdenv.mkDerivation rec {
+            pname = "solc";
+            version = "0.8.19";
+            src = pkgs.fetchurl {
+              url = "https://github.com/nikitastupin/solc/raw/main/linux/aarch64/solc-v${version}";
+              hash = "sha256-5cBr9y7aGlD9f5HrPXF/CkvZsMASV8PnypBfwHOspfE=";
+            };
+            dontUnpack = true;
+            nativeBuildInputs = [
+              pkgs.stdenv.cc.cc.lib
+              pkgs.autoPatchelfHook
+            ];
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out/bin
+              cp ${src} $out/bin/solc
+              chmod +x $out/bin/solc
+              runHook postInstall
+            '';
+            meta = {
+              description = "Static binary of compiler for Ethereum smart contract language Solidity";
+              homepage = "https://github.com/ethereum/solidity";
+              mainProgram = "solc";
+              license = pkgs.lib.licenses.gpl3;
+            };
+          }
+        else
+          pkgs.solc_0_8_27;
 
-      rustup =
-        let
-          rustup-renamed = pkgs.runCommand "rename-rustup" { } ''
-            mkdir $out
-            cp ${pkgs.rustup}/bin/.rustup-wrapped $out/rustup
-          '';
-        in
-        pkgs.writeShellApplication {
-          name = "rustup";
-          runtimeEnv.RUSTUP_HOME = rustup-home;
-          text = ''
-            ${rustup-renamed}/rustup "$@"
-          '';
-        };
     in
+    # rustup =
+    #   let
+    #     rustup-renamed = pkgs.runCommand "rename-rustup" { } ''
+    #       mkdir $out
+    #       cp ${pkgs.rustup}/bin/.rustup-wrapped $out/rustup
+    #     '';
+    #   in
+    #   pkgs.writeShellApplication {
+    #     name = "rustup";
+    #     runtimeEnv.RUSTUP_HOME = rustup-home;
+    #     text = ''
+    #       ${rustup-renamed}/rustup "$@"
+    #     '';
+    #   };
     {
       packages = {
         inherit solc_0_8_19;
@@ -179,7 +190,7 @@ _: {
           runtimeInputs = [
             # fake-rustup
             cargo-openvm
-            rustup
+            pkgs.rustup
             solc_0_8_19
           ];
           runtimeEnv = {
@@ -190,7 +201,7 @@ _: {
             cargo-openvm "$@"
           '';
         };
-        rustup = rustup;
+        # rustup = rustup;
       };
     };
 }

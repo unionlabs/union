@@ -32,13 +32,13 @@ fn main() {
     )
     .unwrap();
 
-    evm_storage_verifier::verify_storage_proof(
-        proof.storage_hash,
-        proof.key,
-        proof.value,
-        &proof.storage_proof,
-    )
-    .unwrap()
+    // evm_storage_verifier::verify_storage_proof(
+    //     proof.storage_hash,
+    //     proof.key,
+    //     proof.value,
+    //     &proof.storage_proof,
+    // )
+    // .unwrap()
 }
 
 #[cfg(test)]
