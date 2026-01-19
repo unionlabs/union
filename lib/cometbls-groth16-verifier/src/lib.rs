@@ -3,7 +3,7 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use core::marker::PhantomData;
+use core::{fmt::Display, marker::PhantomData};
 
 use ark_ff::vec;
 use byteorder::{BigEndian, ByteOrder};
@@ -190,6 +190,14 @@ pub enum Error {
     InvalidTimestamp,
     InvalidSliceLength,
 }
+
+impl Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
+
+impl core::error::Error for Error {}
 
 pub fn public_inputs(
     chain_id: &ChainId,

@@ -8,6 +8,7 @@ use garaga_rs::calldata::{
 };
 use macros::model;
 use num_bigint::BigUint;
+use serde_json::Value;
 use subset_of::SubsetOf;
 use substrate_bn::{AffineG1, AffineG2, Fq, G1, G2};
 use unionlabs::{
@@ -19,6 +20,7 @@ use voyager_sdk::{
         VoyagerMessage,
         data::{DecodedHeaderMeta, OrderedHeaders},
     },
+    rpc::{RpcError, RpcResult},
     vm::{Op, data},
 };
 
@@ -39,14 +41,15 @@ impl Module {
         &self,
         _: AggregateHeader,
         prove_responses: impl IntoIterator<Item = ProveResponse>,
-    ) -> Op<VoyagerMessage> {
+    ) -> RpcResult<Op<VoyagerMessage>> {
         let make_header = |ProveResponse {
                                update_from,
                                prove_request,
                                prove_response: response,
                                counterparty_chain_id,
-                           }| {
-            (
+                           }|
+         -> RpcResult<(DecodedHeaderMeta, Value)> {
+            Ok((
                 DecodedHeaderMeta {
                     height: Height::new_with_revision(
                         update_from.revision(),
@@ -83,17 +86,20 @@ impl Module {
                             response.trusted_validator_set_root,
                             &header,
                         )
-                        .unwrap();
+                        .map_err(RpcError::unprocessable)?;
                         header.zero_knowledge_proof = zkp;
                     }
 
                     serde_json::to_value(header).unwrap()
                 },
-            )
+            ))
         };
-        data(OrderedHeaders {
-            headers: prove_responses.into_iter().map(make_header).collect(),
-        })
+        Ok(data(OrderedHeaders {
+            headers: prove_responses
+                .into_iter()
+                .map(make_header)
+                .collect::<RpcResult<Vec<_>>>()?,
+        }))
     }
 }
 

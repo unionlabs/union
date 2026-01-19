@@ -624,7 +624,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         .try_into()
                         .unwrap()
                 }),
-            ),
+            )?,
         })
     }
 }
