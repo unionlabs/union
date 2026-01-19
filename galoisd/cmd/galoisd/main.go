@@ -17,6 +17,7 @@ func main() {
 	rootCmd.AddCommand(cmd.ExampleVerifyCmd())
 	rootCmd.AddCommand(cmd.QueryStats())
 	rootCmd.AddCommand(cmd.QueryStatsHealth())
+	rootCmd.AddCommand(cmd.ExportVk())
 	rootCmd.AddCommand(
 		cmd.Phase1InitCmd(),
 		cmd.Phase2InitCmd(),

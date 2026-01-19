@@ -137,6 +137,12 @@
               pkgs.protoc-gen-go-grpc
             ];
             text = ''
+              set -eo pipefail
+
+              ${ensureAtRepositoryRoot}
+              
+              cd galoisd
+
               find ${proto.galoisd} -type f -regex ".*proto" |\
               while read -r file; do
               echo "Generating $file"

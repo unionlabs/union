@@ -23,6 +23,7 @@ const (
 	UnionProverAPI_Verify_FullMethodName           = "/union.galois.api.v3.UnionProverAPI/Verify"
 	UnionProverAPI_GenerateContract_FullMethodName = "/union.galois.api.v3.UnionProverAPI/GenerateContract"
 	UnionProverAPI_QueryStats_FullMethodName       = "/union.galois.api.v3.UnionProverAPI/QueryStats"
+	UnionProverAPI_ExportVk_FullMethodName         = "/union.galois.api.v3.UnionProverAPI/ExportVk"
 	UnionProverAPI_Poll_FullMethodName             = "/union.galois.api.v3.UnionProverAPI/Poll"
 )
 
@@ -34,6 +35,7 @@ type UnionProverAPIClient interface {
 	Verify(ctx context.Context, in *VerifyRequest, opts ...grpc.CallOption) (*VerifyResponse, error)
 	GenerateContract(ctx context.Context, in *GenerateContractRequest, opts ...grpc.CallOption) (*GenerateContractResponse, error)
 	QueryStats(ctx context.Context, in *QueryStatsRequest, opts ...grpc.CallOption) (*QueryStatsResponse, error)
+	ExportVk(ctx context.Context, in *ExportVkRequest, opts ...grpc.CallOption) (*ExportVkResponse, error)
 	Poll(ctx context.Context, in *PollRequest, opts ...grpc.CallOption) (*PollResponse, error)
 }
 
@@ -81,6 +83,15 @@ func (c *unionProverAPIClient) QueryStats(ctx context.Context, in *QueryStatsReq
 	return out, nil
 }
 
+func (c *unionProverAPIClient) ExportVk(ctx context.Context, in *ExportVkRequest, opts ...grpc.CallOption) (*ExportVkResponse, error) {
+	out := new(ExportVkResponse)
+	err := c.cc.Invoke(ctx, UnionProverAPI_ExportVk_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *unionProverAPIClient) Poll(ctx context.Context, in *PollRequest, opts ...grpc.CallOption) (*PollResponse, error) {
 	out := new(PollResponse)
 	err := c.cc.Invoke(ctx, UnionProverAPI_Poll_FullMethodName, in, out, opts...)
@@ -98,6 +109,7 @@ type UnionProverAPIServer interface {
 	Verify(context.Context, *VerifyRequest) (*VerifyResponse, error)
 	GenerateContract(context.Context, *GenerateContractRequest) (*GenerateContractResponse, error)
 	QueryStats(context.Context, *QueryStatsRequest) (*QueryStatsResponse, error)
+	ExportVk(context.Context, *ExportVkRequest) (*ExportVkResponse, error)
 	Poll(context.Context, *PollRequest) (*PollResponse, error)
 	mustEmbedUnimplementedUnionProverAPIServer()
 }
@@ -117,6 +129,9 @@ func (UnimplementedUnionProverAPIServer) GenerateContract(context.Context, *Gene
 }
 func (UnimplementedUnionProverAPIServer) QueryStats(context.Context, *QueryStatsRequest) (*QueryStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryStats not implemented")
+}
+func (UnimplementedUnionProverAPIServer) ExportVk(context.Context, *ExportVkRequest) (*ExportVkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExportVk not implemented")
 }
 func (UnimplementedUnionProverAPIServer) Poll(context.Context, *PollRequest) (*PollResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Poll not implemented")
@@ -206,6 +221,24 @@ func _UnionProverAPI_QueryStats_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UnionProverAPI_ExportVk_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportVkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UnionProverAPIServer).ExportVk(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UnionProverAPI_ExportVk_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UnionProverAPIServer).ExportVk(ctx, req.(*ExportVkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UnionProverAPI_Poll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PollRequest)
 	if err := dec(in); err != nil {
@@ -246,6 +279,10 @@ var UnionProverAPI_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "QueryStats",
 			Handler:    _UnionProverAPI_QueryStats_Handler,
+		},
+		{
+			MethodName: "ExportVk",
+			Handler:    _UnionProverAPI_ExportVk_Handler,
 		},
 		{
 			MethodName: "Poll",

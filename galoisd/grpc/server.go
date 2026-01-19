@@ -521,6 +521,14 @@ func (p *proverServer) QueryStats(ctx context.Context, req *grpc.QueryStatsReque
 	}, nil
 }
 
+func (p *proverServer) ExportVk(ctx context.Context, _ *grpc.ExportVkRequest) (*grpc.ExportVkResponse, error) {
+	vkJson, err := json.Marshal(p.vk)
+	if err != nil {
+		return nil, err
+	}
+	return &grpc.ExportVkResponse{Vk: string(vkJson)}, nil
+}
+
 // Deprecated in favor of the Poll api
 func (p *proverServer) Prove(ctx context.Context, req *grpc.ProveRequest) (*grpc.ProveResponse, error) {
 	for true {
