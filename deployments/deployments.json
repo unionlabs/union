@@ -43,6 +43,12 @@
         "salt": "0x6962632d69732d6261736564",
         "height": 420578864,
         "commit": "6fadb697bee413c025e87b5edf79c0d9f836cce6"
+      },
+      "0xba5ed44733953d79717f6269357c77718c8ba5ed": {
+        "name": "u",
+        "salt": "0x12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047",
+        "height": 423018019,
+        "commit": "766ac2fb65a692eeecafc062fd23d2d9b1c6b7c4"
       }
     }
   },
