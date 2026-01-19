@@ -29,6 +29,7 @@ embed-commit    = { workspace = true }
 frissitheto     = { workspace = true }
 ibc-union-msg   = { workspace = true }
 ibc-union-spec  = { workspace = true, features = ["ethabi", "serde", "bincode"] }
+kimlik          = { workspace = true }
 serde           = { workspace = true, features = ["derive"] }
 serde-json-wasm = { workspace = true }
 strum           = { workspace = true, features = ["derive"] }
@@ -39,3 +40,6 @@ upgradable      = { workspace = true }
 [dev-dependencies]
 access-manager-types = { workspace = true }
 hex-literal          = { workspace = true }
+
+[build-dependencies]
+kimlik = { workspace = true }
