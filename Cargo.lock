@@ -9543,6 +9543,8 @@ dependencies = [
  "openvm",
  "serde",
  "serde_json",
+ "starknet-storage-verifier",
+ "starknet-types",
  "unionlabs-primitives",
 ]
 

@@ -12,12 +12,15 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-evm-storage-verifier = { workspace = true }
-openvm               = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.4.3", default-features = false }
-serde                = { workspace = true, features = ["derive"] }
-unionlabs-primitives = { workspace = true, features = ["serde"] }
+evm-storage-verifier      = { workspace = true }
+openvm                    = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.4.3", default-features = false }
+serde                     = { workspace = true, features = ["derive"] }
+starknet-storage-verifier = { workspace = true }
+starknet-types            = { workspace = true, features = ["serde"] }
+unionlabs-primitives      = { workspace = true, features = ["serde"] }
 
 [dev-dependencies]
 alloy                = { workspace = true, features = ["rpc-types", "rlp"] }
 serde_json           = { workspace = true }
+starknet-types       = { workspace = true, features = ["serde"] }
 unionlabs-primitives = { workspace = true, features = ["serde", "alloy-primitives-compat"] }

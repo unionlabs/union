@@ -1,8 +1,12 @@
-use std::collections::BTreeMap;
+#![cfg_attr(not(test), no_std)]
+
+extern crate alloc;
+
+use alloc::collections::BTreeMap;
 
 use bitvec::{order::Msb0, vec::BitVec};
 use starknet_crypto::{pedersen_hash, poseidon_hash};
-use starknet_types::{Felt, MerkleNode};
+pub use starknet_types::{Felt, MerkleNode};
 
 type CryptoFelt = starknet_crypto::Felt;
 
@@ -153,8 +157,6 @@ pub fn verify_proof<'a, H: FeltHash>(
     }
 
     if !proof.is_empty() {
-        dbg!(proof);
-
         return Err(Error::UnusedNodes);
     }
 
@@ -306,6 +308,8 @@ fn contract_membership() {
             .to_bytes_be(),
         )
     };
+
+    dbg!(&value);
 
     // contracts_proof.contract_leaves_data.storage_root
     let root = Felt::from_hex("0x2c6e3ddcdcf9bcd4b9e01c4b94408b6cf8b82ca9a1b40d808612483278b5afb")

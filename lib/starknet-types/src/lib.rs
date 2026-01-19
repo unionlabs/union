@@ -1,6 +1,10 @@
+#![cfg_attr(not(test), no_std, no_main)]
+
+extern crate alloc;
+
 // TODO: Check for size (must be < modulus)
 
-use std::fmt;
+use core::fmt;
 
 use ruint::{ParseError, aliases::U256};
 
@@ -120,7 +124,7 @@ impl<'de> serde::Deserialize<'de> for Felt {
         D: serde::Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
-            String::deserialize(deserializer).and_then(|s| {
+            alloc::string::String::deserialize(deserializer).and_then(|s| {
                 U256::from_str_radix(s.strip_prefix("0x").unwrap_or(&s), 16)
                     .map(Felt)
                     .map_err(serde::de::Error::custom)
