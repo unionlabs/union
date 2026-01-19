@@ -293,7 +293,7 @@ _: {
           ucs04-chain-id = "ethereum.11155111";
 
           name = "sepolia";
-          rpc-url = "https://eth-sepolia.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          rpc-url = "https://eth-sepolia.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
           rate-limit-enabled = "false";
@@ -314,7 +314,7 @@ _: {
           ucs04-chain-id = "ethereum.17000";
 
           name = "holesky";
-          rpc-url = "https://eth-holesky.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          rpc-url = "https://eth-holesky.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x94373a4919b3240d86ea41593d5eba789fef3848";
           rate-limit-enabled = "false";
@@ -441,7 +441,7 @@ _: {
           ucs04-chain-id = "arbitrum.421614";
 
           name = "arbitrum-sepolia";
-          rpc-url = "https://arb-sepolia.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          rpc-url = "https://arb-sepolia.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73";
           rate-limit-enabled = "false";
@@ -541,7 +541,7 @@ _: {
           ucs04-chain-id = "base.8453";
 
           name = "base";
-          rpc-url = "https://base-mainnet.g.alchemy.com/v2/6PCr1n8dJeYbE2Z9LrXScs05hLTYiVFl";
+          rpc-url = "https://base-mainnet.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x4200000000000000000000000000000000000006";
           rate-limit-enabled = "true";
@@ -562,7 +562,7 @@ _: {
           ucs04-chain-id = "sei.1329";
 
           name = "sei";
-          rpc-url = "https://sei-mainnet.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          rpc-url = "https://sei-mainnet.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0xe30fedd158a2e3b13e9badaeabafc5516e95e8c7";
           rate-limit-enabled = "false";
@@ -582,7 +582,7 @@ _: {
           ucs04-chain-id = "arbitrum.42161";
 
           name = "arbitrum";
-          rpc-url = "https://arb-mainnet.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          rpc-url = "https://arb-mainnet.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1";
           rate-limit-enabled = "true";
