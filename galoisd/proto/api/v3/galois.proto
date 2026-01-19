@@ -5,6 +5,7 @@ package union.galois.api.v3;
 import "cometbft/types/v1/types.proto";
 import "cometbft/types/v1/validator.proto";
 import "cometbft/types/v1/canonical.proto";
+import "google/protobuf/struct.proto";
 
 option go_package = "union/galois/rpc/grpc";
 
@@ -85,6 +86,12 @@ message QueryStatsResponse {
   CommitmentStats commitment_stats = 4;
 }
 
+message ExportVkRequest {}
+
+message ExportVkResponse {
+  google.protobuf.Struct vk = 1;  
+}
+
 message PollRequest {
   ProveRequest request = 1;
 }
@@ -113,6 +120,7 @@ service UnionProverAPI {
   rpc Verify(VerifyRequest) returns (VerifyResponse);
   rpc GenerateContract(GenerateContractRequest) returns (GenerateContractResponse);
   rpc QueryStats(QueryStatsRequest) returns (QueryStatsResponse);
+  rpc ExportVk(ExportVkRequest) returns (ExportVkResponse);
 
   rpc Poll(PollRequest) returns (PollResponse);
 }

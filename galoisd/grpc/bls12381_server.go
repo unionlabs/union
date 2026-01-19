@@ -34,6 +34,8 @@ import (
 	"github.com/consensys/gnark/std/recursion/groth16"
 	"github.com/holiman/uint256"
 	"github.com/rs/zerolog/log"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type proverServerBls12381 struct {
@@ -310,6 +312,18 @@ func (p *proverServerBls12381) QueryStats(ctx context.Context, req *grpc.QuerySt
 			NbPrivateCommitted: uint32(0),
 		},
 	}, nil
+}
+
+func (p *proverServerBls12381) ExportVk(ctx context.Context, _ *grpc.ExportVkRequest) (*grpc.ExportVkResponse, error) {
+	vkJson, err := json.Marshal(&p.vk)
+	if err != nil {
+		return nil, err
+	}
+	var s structpb.Struct
+	if err := protojson.Unmarshal(vkJson, &s); err != nil {
+		return nil, err
+	}
+	return &grpc.ExportVkResponse{Vk: &s}, nil
 }
 
 func loadOrCreateBls12381(r1csPath, pkPath, vkPath, innerR1csPath, innerPkPath, innerVkPath string) (cs_bls12381.R1CS, backend_bls12381.ProvingKey, backend_bls12381.VerifyingKey, cs_bn254.R1CS, backend_bn254.ProvingKey, backend_bn254.VerifyingKey, error) {

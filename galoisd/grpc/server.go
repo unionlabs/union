@@ -33,6 +33,8 @@ import (
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/rs/zerolog/log"
 )
@@ -519,6 +521,18 @@ func (p *proverServer) QueryStats(ctx context.Context, req *grpc.QueryStatsReque
 			NbPrivateCommitted: uint32(0),
 		},
 	}, nil
+}
+
+func (p *proverServer) ExportVk(ctx context.Context, _ *grpc.ExportVkRequest) (*grpc.ExportVkResponse, error) {
+	vkJson, err := json.MarshalIndent(&p.vk, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	var s structpb.Struct
+	if err := protojson.Unmarshal(vkJson, &s); err != nil {
+		return nil, err
+	}
+	return &grpc.ExportVkResponse{Vk: &s}, nil
 }
 
 // Deprecated in favor of the Poll api
