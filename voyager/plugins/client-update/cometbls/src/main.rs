@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{HashMap, HashSet, VecDeque},
     num::ParseIntError,
 };
 
@@ -67,6 +67,8 @@ pub struct Module {
     pub chain_revision: u64,
 
     pub prover_endpoints: Vec<String>,
+
+    pub cairo_chain_ids: HashSet<ChainId>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -122,6 +124,10 @@ impl Plugin for Module {
             chain_id: ChainId::new(chain_id),
             chain_revision,
             prover_endpoints: config.prover_endpoints,
+            cairo_chain_ids: ucs04::well_known::STARKNET_CHAIN_IDS
+                .iter()
+                .map(|id| ChainId::new(id.id().to_string()))
+                .collect(),
         })
     }
 
@@ -302,6 +308,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 ModuleCall::from(FetchUpdateBoot {
                                     update_from: fetch.update_from,
                                     update_to: fetch.update_to,
+                                    counterparty_chain_id: fetch.counterparty_chain_id.clone(),
                                 }),
                             ))
                         },
@@ -322,12 +329,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ModuleCall::FetchUpdateBoot(FetchUpdateBoot {
                 update_from,
                 update_to,
+                counterparty_chain_id,
             }) => Ok(promise(
                 [call(PluginMessage::new(
                     self.plugin_name(),
                     ModuleCall::FetchUpdate(FetchUpdate {
                         update_from,
                         update_to,
+                        counterparty_chain_id,
                     }),
                 ))],
                 [],
@@ -336,6 +345,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ModuleCall::FetchUpdate(FetchUpdate {
                 update_from,
                 update_to,
+                counterparty_chain_id,
             }) => {
                 if update_from.height() == update_to.height() {
                     info!("update from {update_from} to {update_to} is a noop");
@@ -351,6 +361,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ModuleCall::from(FetchUpdate {
                             update_from,
                             update_to: update_to_highest,
+                            counterparty_chain_id: counterparty_chain_id.clone(),
                         }),
                     ));
                     let continuation = call(PluginMessage::new(
@@ -358,6 +369,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ModuleCall::from(FetchUpdate {
                             update_from: update_to_highest,
                             update_to,
+                            counterparty_chain_id: counterparty_chain_id.clone(),
                         }),
                     ));
                     return Ok(seq([intermediate, continuation]));
@@ -496,7 +508,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             update_from,
                             request: ProveRequest {
                                 vote: CanonicalVote {
-                                    // REVIEW: Should this be hardcoded to precommit?
                                     ty: SignedMsgType::Precommit,
                                     height: signed_header.commit.height,
                                     round: BoundedI64::new_const(
@@ -529,6 +540,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 trusted_commit: trusted_validators_commit,
                                 untrusted_commit: untrusted_validators_commit,
                             },
+                            counterparty_chain_id,
                         }),
                     )),
                 ]))
@@ -536,6 +548,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ModuleCall::FetchProveRequest(FetchProveRequest {
                 update_from,
                 request,
+                counterparty_chain_id,
             }) => {
                 debug!("submitting prove request");
 
@@ -567,6 +580,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ModuleCall::from(FetchProveRequest {
                                 update_from,
                                 request: request.clone(),
+                                counterparty_chain_id: counterparty_chain_id.clone(),
                             }),
                         )),
                     ])
@@ -590,7 +604,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             ModuleData::from(ProveResponse {
                                 prove_response: response,
                                 update_from,
-                                header: request.untrusted_header,
+                                prove_request: request,
+                                counterparty_chain_id,
                             }),
                         )))
                     }
@@ -615,7 +630,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         .try_into()
                         .unwrap()
                 }),
-            ),
+            )?,
         })
     }
 }

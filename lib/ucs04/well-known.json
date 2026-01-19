@@ -18,6 +18,7 @@
   "scroll": ["534351"],
   "sei": ["pacific-1", "atlantic-2", "1328", "1329"],
   "stargaze": ["elgafar-1"],
+  "starknet": ["0x534e5f5345504f4c4941", "0x534e5f4d41494e"],
   "stride": ["stride-internal-1"],
   "sui": ["35834a8a", "4c78adac"],
   "union": ["union-testnet-8", "union-testnet-9", "union-testnet-10", "union-1"],

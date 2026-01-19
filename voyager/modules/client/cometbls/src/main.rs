@@ -32,6 +32,7 @@ pub enum SupportedIbcInterface {
     IbcMoveAptos,
     IbcMoveSui,
     IbcCosmwasm,
+    IbcCairo,
 }
 
 impl TryFrom<String> for SupportedIbcInterface {
@@ -44,6 +45,7 @@ impl TryFrom<String> for SupportedIbcInterface {
             IbcInterface::IBC_MOVE_APTOS => Ok(SupportedIbcInterface::IbcMoveAptos),
             IbcInterface::IBC_MOVE_SUI => Ok(SupportedIbcInterface::IbcMoveSui),
             IbcInterface::IBC_COSMWASM => Ok(SupportedIbcInterface::IbcCosmwasm),
+            IbcInterface::IBC_CAIRO => Ok(SupportedIbcInterface::IbcCairo),
             _ => Err(format!("unsupported IBC interface: `{value}`")),
         }
     }
@@ -57,6 +59,7 @@ impl SupportedIbcInterface {
             SupportedIbcInterface::IbcMoveSui => IbcInterface::IBC_MOVE_SUI,
             // SupportedIbcInterface::IbcGoV8_08Wasm => IbcInterface::IBC_GO_V8_08_WASM,
             SupportedIbcInterface::IbcCosmwasm => IbcInterface::IBC_COSMWASM,
+            SupportedIbcInterface::IbcCairo => IbcInterface::IBC_CAIRO,
         }
     }
 }
@@ -96,6 +99,7 @@ impl Module {
             SupportedIbcInterface::IbcSolidity
             | SupportedIbcInterface::IbcMoveAptos
             | SupportedIbcInterface::IbcMoveSui
+            | SupportedIbcInterface::IbcCairo
             | SupportedIbcInterface::IbcCosmwasm => {
                 ConsensusState::decode_as::<EthAbi>(consensus_state)
                     .map_err(RpcError::fatal("unable to decode consensus state"))
@@ -112,6 +116,9 @@ impl Module {
                     .map_err(RpcError::fatal("unable to decode client state"))
             }
             SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Bincode>(client_state)
+                .map_err(RpcError::fatal("unable to decode client state")),
+            // TODO(aeryz): cairo serde
+            SupportedIbcInterface::IbcCairo => ClientState::decode_as::<Bincode>(client_state)
                 .map_err(RpcError::fatal("unable to decode client state")),
         }
     }
@@ -185,6 +192,12 @@ impl ClientModuleServer for Module {
 
                     Ok(cs.encode_as::<Bincode>().into())
                 }
+                // TODO(aeryz): cairo serde
+                SupportedIbcInterface::IbcCairo => {
+                    ensure_null(metadata)?;
+
+                    Ok(cs.encode_as::<Bincode>().into())
+                }
             })
     }
 
@@ -200,6 +213,7 @@ impl ClientModuleServer for Module {
                 SupportedIbcInterface::IbcSolidity
                 | SupportedIbcInterface::IbcMoveAptos
                 | SupportedIbcInterface::IbcMoveSui
+                | SupportedIbcInterface::IbcCairo
                 | SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<EthAbi>().into(),
             })
     }
@@ -220,6 +234,7 @@ impl ClientModuleServer for Module {
                         .into();
                     Ok(header.encode_as::<Bcs>().into())
                 }
+                SupportedIbcInterface::IbcCairo => Ok(header.encode_as::<Bincode>().into()),
             })
     }
 
@@ -240,6 +255,7 @@ impl ClientModuleServer for Module {
                         .unwrap(),
                     )
                 }
+                SupportedIbcInterface::IbcCairo => proof.encode_as::<Bincode>(),
             })
             .map(Into::into)
     }

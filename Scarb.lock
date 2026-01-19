@@ -68,6 +68,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "cometbls_verifier"
+version = "0.1.0"
+dependencies = [
+ "garaga",
+ "snforge_std",
+]
+
+[[package]]
+name = "corelib_imports"
+version = "0.1.2"
+source = "git+https://github.com/keep-starknet-strange/garaga.git?tag=v1.0.1#aa91b6504c86995789edb4e78f9f9ba20571625c"
+
+[[package]]
+name = "garaga"
+version = "1.0.1"
+source = "git+https://github.com/keep-starknet-strange/garaga.git?tag=v1.0.1#aa91b6504c86995789edb4e78f9f9ba20571625c"
+dependencies = [
+ "corelib_imports",
+]
+
+[[package]]
 name = "ibc"
 version = "0.1.0"
 dependencies = [

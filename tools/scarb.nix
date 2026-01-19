@@ -13,7 +13,88 @@ _: {
 
       cairoVersion = "v2.13.1";
 
-      pyPkgs = pkgsUnstable.python312Packages;
+      python = pkgsUnstable.python312.override {
+        packageOverrides = _final: prev: rec {
+          eth-keyfile = prev.buildPythonPackage rec {
+            pname = "eth_keyfile";
+            version = "0.8.1";
+            # pyproject = true;
+            doCheck = false;
+            format = "setuptools";
+            src = prev.fetchPypi {
+              inherit pname version;
+              hash = "sha256-lwi8MfOGtSzKCWkjj/NbGscr16cYbyqEuGEQ08lzvsE=";
+            };
+          };
+          bip-utils = prev.buildPythonPackage rec {
+            pname = "bip_utils";
+            version = "2.8.0";
+            doCheck = false;
+            format = "setuptools";
+            src = prev.fetchPypi {
+              inherit pname version;
+              hash = "sha256-flzG7QtfCD9UtM3b6XerOumzWukDLQN+mKSTBZpm5/g=";
+            };
+          };
+          ecdsa = prev.buildPythonPackage rec {
+            pname = "ecdsa";
+            version = "0.18.0";
+            format = "setuptools";
+
+            src = pyPkgs.fetchPypi {
+              inherit pname version;
+              hash = "sha256-GQNIBBVZ4hsiodZc7khSgsoRpvgdUD/duE1QF+ntHkk=";
+            };
+
+            propagatedBuildInputs = [ pyPkgs.six ];
+            # Only needed for tests
+            nativeCheckInputs = [ pkgs.openssl ];
+          };
+          ledgerwallet = prev.buildPythonPackage rec {
+            pname = "ledgerwallet";
+            version = "0.5.3";
+            format = "pyproject";
+            buildInputs = [
+              prev.setuptools
+              prev.setuptools-scm
+            ];
+            propagatedBuildInputs =
+              (with prev; [
+                cryptography
+                click
+                construct
+                hidapi
+                intelhex
+                pillow
+                protobuf
+                requests
+                tabulate
+                toml
+              ])
+              ++ [ ecdsa ];
+
+            # Regenerate protobuf bindings to lift the version upper-bound and enable
+            # compatibility the current default protobuf library.
+            preBuild = ''
+              protoc --python_out=. --pyi_out=. ledgerwallet/proto/*.proto
+            '';
+
+            pythonImportsCheck = [ "ledgerwallet" ];
+
+            postPatch = ''
+              substituteInPlace pyproject.toml \
+                --replace-fail '"protobuf >=3.20,<4"' '"protobuf >=3.20"'
+            '';
+
+            src = prev.fetchPypi {
+              inherit pname version;
+              hash = "sha256-Hy06MwzFV170EA9nCNe+HNhqJ5WG4B+E9SfDoH/KqNE=";
+            };
+          };
+        };
+      };
+
+      pyPkgs = python.pkgs;
 
       scarb-src = pkgs.fetchFromGitHub {
         name = "scarb-src";
@@ -139,13 +220,14 @@ _: {
       garaga =
         let
           pname = "garaga";
-          version = "v0.18.2";
+          version = "6fb59ac369ab2bc4699e8ff7c09bdeee81cfcaca";
+          # The following garaga fork include the changes to be able to generate proof calldata for cometbls
           src = pkgs.fetchFromGitHub {
             name = pname;
-            owner = "keep-starknet-strange";
+            owner = "aeryz";
             repo = pname;
             rev = version;
-            sha256 = "sha256-PrVBwSnUxXa+iTkmiT5Dh6u8caVuncMbkZ6leRUw51Y=";
+            sha256 = "sha256-24CC53c6A9cozYWbTMpbnB/7wrcRq4Z9jDWzuG8Yf1k=";
           };
         in
         pyPkgs.buildPythonApplication {
@@ -153,15 +235,15 @@ _: {
           format = "pyproject";
           nativeBuildInputs = [
             pyPkgs.pythonImportsCheckHook
-            pkgs.rustPlatform.cargoSetupHook
-            pkgs.rustPlatform.maturinBuildHook
+            pkgsUnstable.rustPlatform.cargoSetupHook
+            pkgsUnstable.rustPlatform.maturinBuildHook
           ];
           # preferWheel = true;
           # pythonImportsCheck = [ "garaga" ];
           cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
             inherit src;
             name = "${pname}-${version}";
-            hash = "sha256-vnOVRMoZUVHCe4MKZJDfQpciUovaR2xLPqIUgi+50yU=";
+            hash = "sha256-R0OitN0yUiY3+cc7jwov3lkDkDgxcfehBymiQm0mbPw=";
           };
           maturinBuildFlags = [
             "--features"
@@ -179,7 +261,8 @@ _: {
               filelock
             ])
             ++ [
-              starknet-py
+              # starknet-py
+              starknet-py-unbroken
               sympy_1_12_1
             ];
         };
@@ -237,8 +320,8 @@ _: {
           pkgsUnstable.gtest.dev
         ];
         nativeCheckInputs = [
-          "${pkgs.gtest.src}/googlemock/src/gmock"
-          pkgs.gtest
+          "${pkgsUnstable.gtest.src}/googlemock/src/gmock"
+          pkgsUnstable.gtest
         ];
         doCheck = false;
         preConfigure = ''
@@ -322,16 +405,17 @@ _: {
         );
       };
 
-      starknet-py = pyPkgs.buildPythonPackage rec {
+      starknet-py-unbroken = pyPkgs.buildPythonPackage rec {
         # starknet-py==0.28.0-rc.3
         # don't ask me why the format is different
-        pname = "starknet_py";
-        version = "0.26.2";
+        pname = "starknet_py_unbroken";
+        version = "0.29.0rc3";
 
         format = "pyproject";
         build-system = [ pyPkgs.setuptools ];
         dependencies =
           (with pyPkgs; [
+            bip-utils
             cython
             typing-extensions
             marshmallow-dataclass
@@ -344,6 +428,8 @@ _: {
             eth-keys
             websockets
             tkinter
+            ledgerwallet
+            semver
           ])
           ++ [
             crypto-cpp-py
@@ -354,7 +440,7 @@ _: {
         enableDocs = false;
         src = pkgs.fetchPypi {
           inherit pname version;
-          sha256 = "sha256-r60Oqx0Bmle7z/ez0Kb19a3qSWUPo61J8vq/XP3YGrE=";
+          sha256 = "sha256-j8YHm8HUdASd591cfbO/+w997xTxt16IdJg9G9xU1yQ=";
         };
       };
     in

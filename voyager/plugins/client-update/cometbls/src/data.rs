@@ -1,8 +1,8 @@
-use cometbft_types::types::header::Header;
 use enumorph::Enumorph;
 use macros::model;
 use subset_of::SubsetOf;
 use unionlabs::ibc::core::client::height::Height;
+use voyager_sdk::primitives::ChainId;
 
 #[model]
 #[derive(Enumorph, SubsetOf)]
@@ -14,6 +14,7 @@ pub enum ModuleData {
 #[model]
 pub struct ProveResponse {
     pub update_from: Height,
-    pub header: Header,
+    pub prove_request: galois_rpc::prove_request::ProveRequest,
     pub prove_response: galois_rpc::prove_response::ProveResponse,
+    pub counterparty_chain_id: ChainId,
 }
