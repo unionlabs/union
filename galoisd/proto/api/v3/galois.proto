@@ -5,6 +5,7 @@ package union.galois.api.v3;
 import "cometbft/types/v1/types.proto";
 import "cometbft/types/v1/validator.proto";
 import "cometbft/types/v1/canonical.proto";
+import "google/protobuf/struct.proto";
 
 option go_package = "union/galois/rpc/grpc";
 
@@ -88,7 +89,7 @@ message QueryStatsResponse {
 message ExportVkRequest {}
 
 message ExportVkResponse {
-  string vk = 1;  
+  google.protobuf.Struct vk = 1;  
 }
 
 message PollRequest {

@@ -59,7 +59,7 @@
           {
             name = "galoisd";
             src = ./.;
-            vendorHash = "sha256-iPGjBvb4Yj+Nzsx2l2MayQ+L0tItOilRqtCRnszOyLA=";
+            vendorHash = "sha256-vOpZI2pXUBo3qz+XT4pbBuGvk5w5bBfC0A/vkE/j8+Q=";
             meta = {
               mainProgram = "galoisd";
             };
@@ -84,7 +84,7 @@
           {
             name = "libgalois";
             src = ./.;
-            vendorHash = "sha256-iPGjBvb4Yj+Nzsx2l2MayQ+L0tItOilRqtCRnszOyLA=";
+            vendorHash = "sha256-vOpZI2pXUBo3qz+XT4pbBuGvk5w5bBfC0A/vkE/j8+Q=";
             tags = [ "library" ];
             doCheck = false;
           }
@@ -140,7 +140,7 @@
               set -eo pipefail
 
               ${ensureAtRepositoryRoot}
-              
+
               cd galoisd
 
               find ${proto.galoisd} -type f -regex ".*proto" |\
