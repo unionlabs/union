@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{HashMap, HashSet, VecDeque},
     num::ParseIntError,
 };
 
@@ -67,6 +67,8 @@ pub struct Module {
     pub chain_revision: u64,
 
     pub prover_endpoints: Vec<String>,
+
+    pub cairo_chain_ids: HashSet<ChainId>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -122,6 +124,10 @@ impl Plugin for Module {
             chain_id: ChainId::new(chain_id),
             chain_revision,
             prover_endpoints: config.prover_endpoints,
+            cairo_chain_ids: ucs04::well_known::STARKNET_CHAIN_IDS
+                .iter()
+                .map(|id| ChainId::new(id.id().to_string()))
+                .collect(),
         })
     }
 

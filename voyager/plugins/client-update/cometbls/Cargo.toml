@@ -30,5 +30,6 @@ substrate-bn                = { version = "0.6", default-features = false }
 thiserror                   = { workspace = true }
 tokio                       = { workspace = true }
 tracing                     = { workspace = true }
+ucs04                       = { workspace = true, features = ["serde"] }
 unionlabs                   = { workspace = true }
 voyager-sdk                 = { workspace = true }

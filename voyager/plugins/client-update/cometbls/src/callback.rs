@@ -80,7 +80,7 @@ impl Module {
                         zero_knowledge_proof: response.proof.evm_proof.into(),
                     };
 
-                    if counterparty_chain_id.as_str() == "SN_SEPOLIA" {
+                    if self.cairo_chain_ids.contains(&counterparty_chain_id) {
                         let zkp = prepare_zkp_for_cairo(
                             &prove_request.vote.chain_id,
                             response.trusted_validator_set_root,
@@ -103,6 +103,9 @@ impl Module {
     }
 }
 
+/// This is required since we are using [garaga](https://github.com/keep-starknet-strange/garaga) to optimize
+/// the on-chain verification. Via `garaga`, we are computing some hints for the pairing checks to reduce the
+/// amount of on-chain compute we do.
 fn prepare_zkp_for_cairo(
     chain_id: &str,
     trusted_validators_hash: H256,

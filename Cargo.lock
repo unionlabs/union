@@ -16374,6 +16374,7 @@ dependencies = [
  "thiserror 2.0.17",
  "tokio",
  "tracing",
+ "ucs04",
  "unionlabs",
  "voyager-sdk",
 ]
