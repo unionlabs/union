@@ -88,6 +88,8 @@ fn main() {
             #![allow(clippy::enum_glob_use)]
             use super::{{UniversalChainId, Family::*, Id}};
             {}
+
+            {}
         }}
 
         /// Check whether the specified id is well-known.
@@ -115,6 +117,29 @@ fn main() {
                 ))
             )
             .collect::<String>(),
+    universal_chain_ids
+        .iter()
+        .map(|(family, chain_ids)| {
+            format!(
+                r#"
+                /// ```txt
+                /// chain_family_name: {family}
+                /// ```
+                pub const {}_CHAIN_IDS: [UniversalChainId; {}] = [{}];
+            "#,
+                family.to_uppercase(),
+                chain_ids.len(),
+                chain_ids
+                    .iter()
+                    .map(|chain_id| format!(
+                        "{}_{},",
+                        family.to_uppercase(),
+                        chain_id.to_uppercase().replace('-', "_")
+                    ))
+                    .collect::<String>()
+            )
+        })
+        .collect::<String>(),
         universal_chain_ids
             .iter()
             .flat_map(
