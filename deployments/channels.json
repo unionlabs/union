@@ -1,4 +1,46 @@
 {
+  "arbitrum.42161": {
+    "1": {
+      "comments": "union.union-1 channel 4",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "938092",
+          "PACKET_SEND_LC_UPDATE_L0": "321174"
+        },
+        "reverse": {
+          "PACKET_RECV": "1463397",
+          "PACKET_SEND_LC_UPDATE_L0": "321174"
+        }
+      },
+      "sla": {
+        "forward": "PT3H",
+        "reverse": "PT20M"
+      },
+      "tags": ["canonical", "tokenorder-v2"]
+    },
+    "2": {
+      "comments": "ethereum.1 channel 7",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "258650",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        },
+        "reverse": {
+          "PACKET_RECV": "532511",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "1028227"
+        }
+      },
+      "sla": {
+        "forward": "PT3H",
+        "reverse": "PT45M"
+      },
+      "tags": ["canonical", "tokenorder-v2"]
+    }
+  },
   "arbitrum.421614": {
     "1": {
       "comments": "union.union-testnet-10 channel 23",
