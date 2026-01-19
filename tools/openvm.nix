@@ -165,7 +165,7 @@ _: {
             };
           }
         else
-          pkgs.solc_0_8_27;
+          pkgs.solc_0_8_19;
 
     in
     # rustup =
@@ -198,6 +198,7 @@ _: {
             RUSTUP_LOG = "trace";
           };
           text = ''
+            which solc
             cargo-openvm "$@"
           '';
         };
