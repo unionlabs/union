@@ -3,8 +3,8 @@
 {
   perSystem =
     args@{
-      pkgsUnstable,
       pkgs,
+      pkgsUnstable,
       rust,
       dbg,
       gitRev,
@@ -545,7 +545,7 @@
                       "${lib.optionalString release "-j1"} ${packageFilterArgs} ${cargoBuildExtraArgs}"
                       + (lib.optionalString (buildStdTarget != null)
                         # the leading space is important here!
-                        " -Z build-std=std,panic_abort --target ${buildStdTarget}"
+                        " -Z build-std=std,core,alloc,panic_abort --target ${buildStdTarget}"
                       );
                     RUSTFLAGS =
                       rustflags
@@ -641,10 +641,16 @@
               crateCargoToml
               pkgs
               lib
-              rust
-              craneLib
-              dbg
-              gitRev
+              ;
+          };
+
+          buildWasm = import ./buildWasm.nix {
+            inherit
+              buildWorkspaceMember
+              crateCargoToml
+              pkgs
+              pkgsUnstable
+              lib
               ;
           };
 
@@ -654,6 +660,7 @@
             cargoWorkspaceSrc
             buildWorkspaceMember
             buildWasmContract
+            buildWasm
             allCargoTomls
             ;
           lib = craneLib;

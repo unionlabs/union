@@ -1,24 +1,22 @@
 <script lang="ts">
-import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import HeightComponent from "$lib/components/model/HeightComponent.svelte"
 import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
-import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
-import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import * as AppRuntime from "$lib/runtime"
 import { chains } from "$lib/stores/chains.svelte"
 import { packetDetails } from "$lib/stores/packets.svelte"
+import ucs03Wasm from "$wasm/ucs03-zkgm-packet_bg.wasm?url"
 import { getChain } from "@unionlabs/sdk/schema"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
+import { WasmTest } from "@unionlabs/sdk/WasmTest"
 import { Effect, Option } from "effect"
 import { pipe } from "effect/Function"
-import { getOrUndefined } from "effect/Option"
 import * as S from "effect/Schema"
-import { fromHex } from "viem"
+import { fromHex, hexToBytes } from "viem"
 import A from "../ui/A.svelte"
 
 const sourceChain = $derived(
@@ -41,6 +39,25 @@ const destinationChain = $derived(
         chainsData => getChain(chainsData, data.destination_universal_chain_id),
       ),
   ),
+)
+
+const wasmDetails = AppRuntime.runPromiseExit$(() =>
+  pipe(
+    WasmTest,
+    Effect.andThen((wasm) =>
+      pipe(
+        packetDetails.data,
+        Effect.flatMap((data) =>
+          pipe(
+            data.data,
+            hexToBytes,
+            wasm.decodePacket,
+          )
+        ),
+      )
+    ),
+    Effect.provide(WasmTest.Default(ucs03Wasm)),
+  )
 )
 </script>
 
@@ -220,6 +237,11 @@ const destinationChain = $derived(
     <div class="p-4">
       <Label>Raw Packet Data</Label>
       <LongMonoWord class="mt-2">{packetDetails.data.value.data}</LongMonoWord>
+    </div>
+
+    <div class="p-4">
+      <Label>Raw Packet Data (WASM)</Label>
+      <pre>{wasmDetails.current}</pre>
     </div>
 
     {#if Option.isSome(packetDetails.data.value.acknowledgement)}

@@ -1,9 +1,14 @@
+use alloc::{boxed::Box, format};
+
 use alloy_sol_types::SolType;
 use enumorph::Enumorph;
-use ucs03_zkgm::com::{INSTR_VERSION_0, OP_FORWARD};
 use unionlabs_primitives::{Bytes, U256};
 
-use crate::{Instruction, Result, root::Root};
+use crate::{
+    Instruction, Result,
+    com::{INSTR_VERSION_0, OP_FORWARD},
+    root::Root,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
 #[cfg_attr(
@@ -62,12 +67,12 @@ pub struct ForwardV0 {
 
 impl ForwardV0 {
     pub(crate) fn decode(operand: impl AsRef<[u8]>) -> Result<Self> {
-        let ucs03_zkgm::com::Forward {
+        let crate::com::Forward {
             path,
             timeout_height,
             timeout_timestamp,
             instruction,
-        } = ucs03_zkgm::com::Forward::abi_decode_params_validate(operand.as_ref())?;
+        } = crate::com::Forward::abi_decode_params_validate(operand.as_ref())?;
         Ok(Self {
             path: path.into(),
             timeout_height,
@@ -80,7 +85,7 @@ impl ForwardV0 {
         Instruction::new(
             OP_FORWARD,
             INSTR_VERSION_0,
-            ucs03_zkgm::com::Forward {
+            crate::com::Forward {
                 path: self.path.into(),
                 timeout_height: self.timeout_height,
                 timeout_timestamp: self.timeout_timestamp,

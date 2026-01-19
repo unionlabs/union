@@ -181,3 +181,11 @@ export * as Staking from "./Staking.js"
  * @since 2.0.0
  */
 // export * as GasPrice from "./GasPrice.js"
+//
+
+/**
+ * This module provides a WASM-bound decode/encode functionality.
+ *
+ * @since 2.0.0
+ */
+export * as WasmTest from "./WasmTest.js"

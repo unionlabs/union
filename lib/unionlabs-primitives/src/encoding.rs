@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use core::fmt;
 
 trait Sealed {}
@@ -65,8 +66,8 @@ impl Encoding for HexPrefixed {
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum HexPrefixedFromStrError {
-    #[error("invalid hex")]
-    InvalidHex(#[from] hex::FromHexError),
+    #[error("invalid hex: {0}")]
+    InvalidHex(hex::FromHexError),
     #[error("missing 0x prefix")]
     MissingPrefix,
 }
@@ -76,20 +77,24 @@ impl Sealed for HexUnprefixed {}
 impl Encoding for HexUnprefixed {
     const NAME: &'static str = "HexUnprefixed";
 
-    type Error = hex::FromHexError;
+    type Error = HexUnprefixedFromStrError;
 
     fn fmt(bytes: &[u8], f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&hex::encode(bytes))
     }
 
     fn decode<T: AsRef<[u8]>>(data: T) -> Result<Vec<u8>, Self::Error> {
-        hex::decode(data)
+        hex::decode(data).map_err(HexUnprefixedFromStrError)
     }
 
     fn decode_to_slice<T: AsRef<[u8]>>(data: T, out: &mut [u8]) -> Result<(), Self::Error> {
-        hex::decode_to_slice(data, out)
+        hex::decode_to_slice(data, out).map_err(HexUnprefixedFromStrError)
     }
 }
+
+#[derive(Debug, PartialEq, thiserror::Error)]
+#[error("{0}")]
+pub struct HexUnprefixedFromStrError(pub hex::FromHexError);
 
 #[cfg(feature = "base64")]
 pub struct Base64;

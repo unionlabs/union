@@ -1,3 +1,7 @@
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 use core::{convert::Infallible, fmt, str::FromStr};
 
 #[cfg(feature = "serde")]

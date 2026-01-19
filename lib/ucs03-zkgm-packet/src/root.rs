@@ -1,12 +1,14 @@
+use alloc::format;
+
 use alloy_sol_types::SolValue;
 use enumorph::Enumorph;
-use ucs03_zkgm::com::{OP_BATCH, OP_CALL, OP_FORWARD, OP_TOKEN_ORDER};
 use unionlabs_primitives::Bytes;
 
 use crate::{
     Instruction, Result,
     batch::{Batch, BatchAck, BatchShape},
     call::{Call, CallAck, CallShape},
+    com::{OP_BATCH, OP_CALL, OP_FORWARD, OP_TOKEN_ORDER},
     forward::{Forward, ForwardAck, ForwardShape},
     token_order::{TokenOrder, TokenOrderAck, TokenOrderShape},
 };
@@ -26,7 +28,7 @@ pub enum Root {
 
 impl Root {
     pub fn decode(bz: &[u8]) -> Result<Self> {
-        let instruction = ucs03_zkgm::com::Instruction::abi_decode_params_validate(bz)?;
+        let instruction = crate::com::Instruction::abi_decode_params_validate(bz)?;
 
         Self::from_raw(instruction)
     }
@@ -40,7 +42,7 @@ impl Root {
         }
     }
 
-    pub(crate) fn from_raw(instruction: ucs03_zkgm::com::Instruction) -> Result<Root> {
+    pub(crate) fn from_raw(instruction: crate::com::Instruction) -> Result<Root> {
         match instruction.opcode {
             OP_FORWARD => Forward::decode(instruction.version, instruction.operand).map(Into::into),
             OP_CALL => Call::decode(instruction.version, instruction.operand).map(Into::into),

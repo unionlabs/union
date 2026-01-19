@@ -1,6 +1,7 @@
 import { sveltekit } from "@sveltejs/kit/vite"
 import tailwindcss from "@tailwindcss/vite"
 import { svelteTesting } from "@testing-library/svelte/vite"
+import * as Path from "node:path"
 import { defineConfig } from "vite"
 
 export default defineConfig({
@@ -10,6 +11,16 @@ export default defineConfig({
   },
   plugins: [sveltekit(), tailwindcss()],
   build: { sourcemap: true },
+  assetsInclude: ["**/*.wasm"],
+  resolve: {
+    alias: {
+      $wasm: Path.resolve(__dirname, "../ts-sdk/src/internal/wasm"),
+      // "@unionlabs/sdk/ucs03.wasm": Path.resolve(
+      //   __dirname,
+      //   "../ts-sdk/src/internal/wasm/ucs03-zkgm-packet_bg.wasm",
+      // ),
+    },
+  },
   server: {
     allowedHosts: true,
   },

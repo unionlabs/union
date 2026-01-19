@@ -1,13 +1,17 @@
+use alloc::{borrow::ToOwned, format, string::String};
+
 use alloy_sol_types::SolValue;
 use enumorph::Enumorph;
-use ucs03_zkgm::com::{
-    FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, INSTR_VERSION_1, INSTR_VERSION_2, OP_TOKEN_ORDER,
-    TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE, TOKEN_ORDER_KIND_SOLVE,
-    TOKEN_ORDER_KIND_UNESCROW,
-};
 use unionlabs_primitives::{Bytes, U256};
 
-use crate::{Instruction, Result};
+use crate::{
+    Instruction, Result,
+    com::{
+        FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, INSTR_VERSION_1, INSTR_VERSION_2,
+        OP_TOKEN_ORDER, TOKEN_ORDER_KIND_ESCROW, TOKEN_ORDER_KIND_INITIALIZE,
+        TOKEN_ORDER_KIND_SOLVE, TOKEN_ORDER_KIND_UNESCROW,
+    },
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
 #[repr(u8)]
@@ -110,7 +114,7 @@ pub struct TokenOrderV1 {
 
 impl TokenOrderV1 {
     pub(crate) fn decode(operand: impl AsRef<[u8]>) -> Result<Self> {
-        let ucs03_zkgm::com::TokenOrderV1 {
+        let crate::com::TokenOrderV1 {
             sender,
             receiver,
             base_token,
@@ -121,7 +125,7 @@ impl TokenOrderV1 {
             base_token_path,
             quote_token,
             quote_amount,
-        } = ucs03_zkgm::com::TokenOrderV1::abi_decode_params_validate(operand.as_ref())?;
+        } = crate::com::TokenOrderV1::abi_decode_params_validate(operand.as_ref())?;
         Ok(Self {
             sender: sender.into(),
             receiver: receiver.into(),
@@ -140,7 +144,7 @@ impl TokenOrderV1 {
         Instruction::new(
             OP_TOKEN_ORDER,
             INSTR_VERSION_1,
-            ucs03_zkgm::com::TokenOrderV1 {
+            crate::com::TokenOrderV1 {
                 sender: self.sender.into(),
                 receiver: self.receiver.into(),
                 base_token: self.base_token.into(),
@@ -170,12 +174,12 @@ pub enum TokenOrderV1Ack {
 
 impl TokenOrderV1Ack {
     pub(crate) fn decode(ack: impl AsRef<[u8]>) -> Result<Self> {
-        let ucs03_zkgm::com::TokenOrderAck {
+        let crate::com::TokenOrderAck {
             fill_type,
             market_maker,
-        } = ucs03_zkgm::com::TokenOrderAck::abi_decode_params_validate(ack.as_ref())?;
+        } = crate::com::TokenOrderAck::abi_decode_params_validate(ack.as_ref())?;
 
-        match fill_type {
+        match U256::from(fill_type) {
             FILL_TYPE_PROTOCOL => {
                 if market_maker.is_empty() {
                     Ok(Self::Protocol)
@@ -195,12 +199,12 @@ impl TokenOrderV1Ack {
 
     pub(crate) fn encode(&self) -> Bytes {
         match self {
-            TokenOrderV1Ack::Protocol => ucs03_zkgm::com::TokenOrderAck {
-                fill_type: FILL_TYPE_PROTOCOL,
+            TokenOrderV1Ack::Protocol => crate::com::TokenOrderAck {
+                fill_type: FILL_TYPE_PROTOCOL.into(),
                 market_maker: Default::default(),
             },
-            TokenOrderV1Ack::MarketMaker { market_maker } => ucs03_zkgm::com::TokenOrderAck {
-                fill_type: FILL_TYPE_MARKETMAKER,
+            TokenOrderV1Ack::MarketMaker { market_maker } => crate::com::TokenOrderAck {
+                fill_type: FILL_TYPE_MARKETMAKER.into(),
                 market_maker: market_maker.clone().into(),
             },
         }
@@ -222,12 +226,12 @@ pub enum TokenOrderV2Ack {
 
 impl TokenOrderV2Ack {
     pub(crate) fn decode(ack: impl AsRef<[u8]>) -> Result<Self> {
-        let ucs03_zkgm::com::TokenOrderAck {
+        let crate::com::TokenOrderAck {
             fill_type,
             market_maker,
-        } = ucs03_zkgm::com::TokenOrderAck::abi_decode_params_validate(ack.as_ref())?;
+        } = crate::com::TokenOrderAck::abi_decode_params_validate(ack.as_ref())?;
 
-        match fill_type {
+        match U256::from(fill_type) {
             FILL_TYPE_PROTOCOL => {
                 if market_maker.is_empty() {
                     Ok(Self::Protocol)
@@ -247,12 +251,12 @@ impl TokenOrderV2Ack {
 
     pub(crate) fn encode(&self) -> Bytes {
         match self {
-            TokenOrderV2Ack::Protocol => ucs03_zkgm::com::TokenOrderAck {
-                fill_type: FILL_TYPE_PROTOCOL,
+            TokenOrderV2Ack::Protocol => crate::com::TokenOrderAck {
+                fill_type: FILL_TYPE_PROTOCOL.into(),
                 market_maker: Default::default(),
             },
-            TokenOrderV2Ack::MarketMaker { market_maker } => ucs03_zkgm::com::TokenOrderAck {
-                fill_type: FILL_TYPE_MARKETMAKER,
+            TokenOrderV2Ack::MarketMaker { market_maker } => crate::com::TokenOrderAck {
+                fill_type: FILL_TYPE_MARKETMAKER.into(),
                 market_maker: market_maker.clone().into(),
             },
         }
@@ -279,7 +283,7 @@ pub struct TokenOrderV2 {
 
 impl TokenOrderV2 {
     pub(crate) fn decode(operand: impl AsRef<[u8]>) -> Result<Self> {
-        let ucs03_zkgm::com::TokenOrderV2 {
+        let crate::com::TokenOrderV2 {
             sender,
             receiver,
             base_token,
@@ -288,7 +292,7 @@ impl TokenOrderV2 {
             quote_amount,
             kind,
             metadata,
-        } = ucs03_zkgm::com::TokenOrderV2::abi_decode_params_validate(operand.as_ref())?;
+        } = crate::com::TokenOrderV2::abi_decode_params_validate(operand.as_ref())?;
         Ok(Self {
             sender: sender.into(),
             receiver: receiver.into(),
@@ -306,7 +310,7 @@ impl TokenOrderV2 {
         Instruction::new(
             OP_TOKEN_ORDER,
             INSTR_VERSION_2,
-            ucs03_zkgm::com::TokenOrderV2 {
+            crate::com::TokenOrderV2 {
                 sender: self.sender.into(),
                 receiver: self.receiver.into(),
                 base_token: self.base_token.into(),
@@ -328,8 +332,8 @@ impl TokenOrderV2 {
 )]
 pub enum TokenOrderV2Metadata {
     Initialize(TokenMetadata),
-    Escrow(Bytes),
-    Unescrow(Bytes),
+    Escrow { data: Bytes },
+    Unescrow { data: Bytes },
     Solve(SolverMetadata),
 }
 
@@ -359,8 +363,8 @@ impl TokenOrderV2Metadata {
     pub(crate) fn decode(kind: u8, metadata: impl AsRef<[u8]>) -> Result<Self> {
         match kind {
             TOKEN_ORDER_KIND_INITIALIZE => Ok(
-                ucs03_zkgm::com::TokenMetadata::abi_decode_params_validate(metadata.as_ref()).map(
-                    |ucs03_zkgm::com::TokenMetadata {
+                crate::com::TokenMetadata::abi_decode_params_validate(metadata.as_ref()).map(
+                    |crate::com::TokenMetadata {
                          implementation,
                          initializer,
                      }| {
@@ -371,22 +375,26 @@ impl TokenOrderV2Metadata {
                     },
                 )?,
             ),
-            TOKEN_ORDER_KIND_ESCROW => Ok(Self::Escrow(metadata.as_ref().into())),
-            TOKEN_ORDER_KIND_UNESCROW => Ok(Self::Unescrow(metadata.as_ref().into())),
-            TOKEN_ORDER_KIND_SOLVE => Ok(
-                ucs03_zkgm::com::SolverMetadata::abi_decode_params_validate(metadata.as_ref())
-                    .map(
-                        |ucs03_zkgm::com::SolverMetadata {
-                             solverAddress,
-                             metadata,
-                         }| {
-                            Self::Solve(SolverMetadata {
-                                solver_address: solverAddress.into(),
-                                metadata: metadata.into(),
-                            })
-                        },
-                    )?,
-            ),
+            TOKEN_ORDER_KIND_ESCROW => Ok(Self::Escrow {
+                data: metadata.as_ref().into(),
+            }),
+            TOKEN_ORDER_KIND_UNESCROW => Ok(Self::Unescrow {
+                data: metadata.as_ref().into(),
+            }),
+            TOKEN_ORDER_KIND_SOLVE => Ok(crate::com::SolverMetadata::abi_decode_params_validate(
+                metadata.as_ref(),
+            )
+            .map(
+                |crate::com::SolverMetadata {
+                     solverAddress,
+                     metadata,
+                 }| {
+                    Self::Solve(SolverMetadata {
+                        solver_address: solverAddress.into(),
+                        metadata: metadata.into(),
+                    })
+                },
+            )?),
             invalid => Err(format!("invalid token order v2 metadata kind: {invalid}"))?,
         }
     }
@@ -398,27 +406,23 @@ impl TokenOrderV2Metadata {
                 initializer,
             }) => (
                 TOKEN_ORDER_KIND_INITIALIZE,
-                ucs03_zkgm::com::TokenMetadata::abi_encode_params(
-                    &ucs03_zkgm::com::TokenMetadata {
-                        implementation: implementation.into(),
-                        initializer: initializer.into(),
-                    },
-                )
+                crate::com::TokenMetadata::abi_encode_params(&crate::com::TokenMetadata {
+                    implementation: implementation.into(),
+                    initializer: initializer.into(),
+                })
                 .into(),
             ),
-            TokenOrderV2Metadata::Escrow(bytes) => (TOKEN_ORDER_KIND_ESCROW, bytes),
-            TokenOrderV2Metadata::Unescrow(bytes) => (TOKEN_ORDER_KIND_UNESCROW, bytes),
+            TokenOrderV2Metadata::Escrow { data } => (TOKEN_ORDER_KIND_ESCROW, data),
+            TokenOrderV2Metadata::Unescrow { data } => (TOKEN_ORDER_KIND_UNESCROW, data),
             TokenOrderV2Metadata::Solve(SolverMetadata {
                 solver_address,
                 metadata,
             }) => (
                 TOKEN_ORDER_KIND_SOLVE,
-                ucs03_zkgm::com::SolverMetadata::abi_encode_params(
-                    &ucs03_zkgm::com::SolverMetadata {
-                        solverAddress: solver_address.into(),
-                        metadata: metadata.into(),
-                    },
-                )
+                crate::com::SolverMetadata::abi_encode_params(&crate::com::SolverMetadata {
+                    solverAddress: solver_address.into(),
+                    metadata: metadata.into(),
+                })
                 .into(),
             ),
         }

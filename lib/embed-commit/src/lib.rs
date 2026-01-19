@@ -1,3 +1,5 @@
+#![no_std]
+
 use core::str::FromStr;
 
 use bytemuck::CheckedBitPattern;

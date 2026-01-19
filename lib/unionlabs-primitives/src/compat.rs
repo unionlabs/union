@@ -31,6 +31,8 @@ pub mod primitive_types_compat {
 
 #[cfg(feature = "generic-array-compat")]
 pub mod generic_array_compat {
+    use alloc::borrow::ToOwned;
+
     use generic_array::{ArrayLength, GenericArray};
     use typenum::{Const, ToUInt, U};
 
@@ -134,6 +136,8 @@ pub mod alloy_primitives_compat {
 
 #[cfg(feature = "alloy-sol-types-compat")]
 pub mod alloy_sol_types_compat {
+    use alloc::vec::Vec;
+
     use alloy_sol_types::{
         SolType, SolValue, Word,
         abi::token::WordToken,
