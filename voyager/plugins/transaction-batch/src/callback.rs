@@ -81,14 +81,8 @@ where
 
         let new_trusted_height = updates
             .as_ref()
-            .map(|updates| {
-                updates
-                    .headers
-                    .last()
-                    .expect("must have at least one update")
-                    .0
-                    .height
-            })
+            // in case there are no update headers provided, use the latest trusted height
+            .and_then(|updates| updates.headers.last().map(|(header, _)| header.height))
             .unwrap_or(client_state_meta.counterparty_height);
 
         make_msgs(
