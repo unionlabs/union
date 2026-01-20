@@ -46,7 +46,7 @@ pub mod v1 {
         verify_storage_proof(
             header.l1_account_proof.storage_root,
             v1::ROLLUP_CORE_LATEST_NODE_CREATED.slot(),
-            &rlp::encode(&header.l1_next_node_num_slot_proof.value),
+            header.l1_next_node_num_slot_proof.value,
             &header.l1_next_node_num_slot_proof.proof,
         )
         .map_err(Error::InvalidNextNodeNumSlotProof)?;
@@ -58,10 +58,10 @@ pub mod v1 {
         verify_storage_proof(
             header.l1_account_proof.storage_root,
             v1::rollup_core_nodes_confirm_data_slot(node_num),
-            &rlp::encode(&U256::from_be_bytes(
+            U256::from_be_bytes(
                 // TODO: Find where this value is calculated as the confirmData and link it
                 *header.l2_header.confirm_data_hash().get(),
-            )),
+            ),
             &header.l1_nodes_slot_proof.proof,
         )
         .map_err(Error::InvalidNodeConfirmDataProof)?;
@@ -125,7 +125,7 @@ pub mod v2 {
                 header.assertion_state.hash(),
                 header.inbox_acc,
             )),
-            &rlp::encode(&header.l1_assertions_proof.value),
+            header.l1_assertions_proof.value,
             &header.l1_assertions_proof.proof,
         )
         .map_err(Error::InvalidAssertionsProof)?;

@@ -238,7 +238,7 @@ pub fn verify_membership(
     verify_storage_proof(
         storage_root,
         storage_proof.key,
-        &rlp::encode(&storage_proof.value),
+        storage_proof.value,
         storage_proof.proof,
     )
     .map_err(Error::VerifyStorageProof)

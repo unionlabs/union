@@ -167,7 +167,7 @@ impl IbcClient for MovementLightClient {
             evm_storage_verifier::verify_storage_proof(
                 header.settlement_contract_proof.storage_root,
                 header.state_proof_hash_proof.key,
-                &rlp::encode(&expected_commitment),
+                expected_commitment,
                 &header.state_proof_hash_proof.proof,
             )
             .unwrap();

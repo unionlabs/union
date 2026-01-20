@@ -1,4 +1,7 @@
-use alloc::borrow::Cow;
+use alloc::{
+    borrow::{Cow, ToOwned},
+    vec::Vec,
+};
 use core::{
     array::TryFromSliceError, cmp::Ordering, fmt, marker::PhantomData, ops::Deref, str::FromStr,
 };
@@ -176,6 +179,8 @@ impl<'de, E: Encoding> serde::Deserialize<'de> for Bytes<E> {
         D: serde::Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
+            use alloc::string::String;
+
             String::deserialize(deserializer)
                 .and_then(|s| s.parse().map_err(::serde::de::Error::custom))
         } else {
@@ -368,15 +373,17 @@ impl<E: Encoding> rlp::Encodable for Bytes<E> {
 
 #[cfg(feature = "schemars")]
 impl<E: Encoding> schemars::JsonSchema for Bytes<E> {
-    fn schema_name() -> String {
-        format!("Bytes<{}>", E::NAME)
+    fn schema_name() -> alloc::string::String {
+        alloc::format!("Bytes<{}>", E::NAME)
     }
 
     fn schema_id() -> alloc::borrow::Cow<'static, str> {
-        format!("{}::{}", module_path!(), Self::schema_name()).into()
+        alloc::format!("{}::{}", module_path!(), Self::schema_name()).into()
     }
 
     fn json_schema(_: &mut schemars::r#gen::SchemaGenerator) -> schemars::schema::Schema {
+        use alloc::{boxed::Box, format};
+
         use schemars::schema::{InstanceType, Metadata, SchemaObject, SingleOrVec};
 
         SchemaObject {
@@ -396,6 +403,8 @@ impl<E: Encoding> schemars::JsonSchema for Bytes<E> {
 
 #[cfg(test)]
 mod tests {
+    use alloc::string::ToString;
+
     use super::*;
     use crate::encoding::{Base58, Base64, HexUnprefixed};
 
