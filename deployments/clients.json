@@ -4,6 +4,11 @@
       "client_type": "cometbls",
       "counterparty": "union.union-1",
       "refresh_rate": "500"
+    },
+    "2": {
+      "client_type": "ethereum",
+      "counterparty": "ethereum.1",
+      "refresh_rate": "500"
     }
   },
   "babylon.bbn-1": {
@@ -179,6 +184,11 @@
       "client_type": "state-lens/ics23/ics23",
       "counterparty": "osmosis.osmosis-1",
       "refresh_rate": "5000"
+    },
+    "10": {
+      "client_type": "state-lens/ics23/mpt",
+      "counterparty": "arbitrum.42161",
+      "refresh_rate": "50000"
     }
   },
   "ethereum.11155111": {
@@ -302,6 +312,11 @@
     "12": {
       "client_type": "tendermint",
       "counterparty": "osmosis.osmosis-1",
+      "refresh_rate": "5000"
+    },
+    "13": {
+      "client_type": "arbitrum",
+      "counterparty": "arbitrum.42161",
       "refresh_rate": "5000"
     }
   },

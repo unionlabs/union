@@ -921,6 +921,8 @@ _: {
         {
           ucs04-chain-id,
           name,
+          multisig-admin,
+          ops-key,
           rpc-url,
           gas-config,
           ...
@@ -932,14 +934,18 @@ _: {
             ibc-union-contract-addresses
           ];
           text = ''
+            ${pkgs.lib.optionalString (multisig-admin == null) ''PRIVATE_KEY=${ops-key} \''}
             RUST_LOG=info \
               cosmwasm-deployer \
               setup-roles \
               --rpc-url ${rpc-url} \
               --manager ${getDeployedContractAddress ucs04-chain-id "manager"} \
               --addresses <(ibc-union-contract-addresses ${(getDeployment ucs04-chain-id).deployer}) \
-              ${mk-gas-args gas-config} \
-              "$@"
+              ${
+                pkgs.lib.optionalString (
+                  multisig-admin != null
+                ) ''--sender ${multisig-admin} --dump-to "$(mktemp --suffix .json)"''
+              } ${mk-gas-args gas-config} "$@"
           '';
           meta = {
             description = "Setup access management roles on ${ucs04-chain-id}.";
