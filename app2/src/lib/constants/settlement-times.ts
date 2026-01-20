@@ -18,6 +18,10 @@ export const settlementDelays = {
     url: "https://etherscan.io/address/0x828C71bc1D7A34F32FfA624240633b6B7272C3D6",
     interval: "12 hours",
   },
+  "arbitrum.42161": {
+    url: "https://etherscan.io/address/0x4dceb440657f21083db8add07665f8ddbe1dcfc0",
+    interval: "2 hours",
+  },
 } as Record<UniversalChainId, SettlementInfo>
 
 export const finalityDelays = {
