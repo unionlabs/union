@@ -21,8 +21,11 @@ ibc-union-spec       = { workspace = true, features = ["serde"] }
 pausable             = { workspace = true }
 schemars             = { workspace = true, optional = true }
 serde                = { workspace = true, features = ["derive"] }
-unionlabs-primitives = { workspace = true, features = ["serde"] }
+unionlabs-primitives = { workspace = true, features = ["serde", "std"] }
 upgradable           = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
 
 [features]
 default = []

@@ -387,7 +387,7 @@ impl Module {
                                     ModuleCall::SubmitTransaction(msgs),
                                 )),
                                 // ensure that the first half gets included
-                                defer_relative(3),
+                                defer_relative(10),
                                 call(PluginMessage::new(
                                     self.plugin_name(),
                                     ModuleCall::SubmitTransaction(new_msgs),
@@ -406,6 +406,7 @@ impl Module {
                     {
                         Ok(tx_response) => {
                             info!(
+                                height = tx_response.height,
                                 tx_hash = %tx_response.hash,
                                 gas_used = %tx_response.tx_result.gas_used,
                                 batch.size = %batch_size,
@@ -667,10 +668,14 @@ fn process_msgs(
                     use ibc_union_spec::datagram::Datagram;
 
                     let mk_msg = |msg| {
+                        let execute_msg = serde_json::to_string(&msg).unwrap();
+
+                        trace!(%execute_msg);
+
                         mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                             sender: signer.to_string(),
                             contract: ibc_host_contract_address.to_string(),
-                            msg: serde_json::to_vec(&msg).unwrap(),
+                            msg: execute_msg.into_bytes(),
                             funds: vec![],
                         })
                     };

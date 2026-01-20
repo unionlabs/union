@@ -19,8 +19,10 @@ thiserror            = { workspace = true }
 unionlabs-primitives = { workspace = true }
 
 [dev-dependencies]
-blst         = "0.3.14"
-hex          = { workspace = true }
-hex-literal  = { workspace = true }
-parlia-types = { workspace = true, features = ["serde"] }
-serde_json   = { workspace = true }
+blst                      = "0.3.14"
+hex                       = { workspace = true }
+hex-literal               = { workspace = true }
+parlia-light-client-types = { workspace = true, features = ["bincode"] }
+parlia-types              = { workspace = true, features = ["serde"] }
+serde_json                = { workspace = true }
+unionlabs-encoding        = { workspace = true, features = ["bincode"] }

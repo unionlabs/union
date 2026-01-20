@@ -4,17 +4,20 @@ use std::collections::VecDeque;
 
 use alloy::{
     network::{AnyNetwork, AnyRpcBlock},
-    providers::{DynProvider, Provider, ProviderBuilder},
+    providers::{DynProvider, Provider, ProviderBuilder, layers::CacheLayer},
 };
-use ethereum_light_client_types::AccountProof;
+use futures::future::try_join_all;
 use ibc_union_spec::{ClientId, IbcUnion};
 use jsonrpsee::{Extensions, core::async_trait};
 use parlia_light_client_types::Header;
 use parlia_types::ParliaHeader;
-use parlia_verifier::EPOCH_LENGTH;
+use parlia_verifier::{
+    EPOCH_LENGTH, K_ANCESTOR_GENERATION_DEPTH, calculate_signing_valset_epoch_block_number,
+    check_supermajority, get_vote_attestation_from_header_extra_data,
+    parse_epoch_rotation_header_extra_data,
+};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
-use tracing::{info, instrument};
+use tracing::{info, instrument, warn};
 use unionlabs::{ibc::core::client::height::Height, never::Never, primitives::H160};
 use voyager_sdk::{
     DefaultCmd, anyhow,
@@ -27,7 +30,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType},
-    rpc::{PluginServer, RpcError, RpcErrorExt, RpcResult, types::PluginInfo},
+    rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
     vm::{self, Op, Visit, pass::PassResult},
 };
 
@@ -48,8 +51,6 @@ pub struct Module {
 
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
-
-    pub valset_size: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -89,6 +90,7 @@ impl Plugin for Module {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .network::<AnyNetwork>()
+                .layer(CacheLayer::new(config.max_cache_size))
                 .connect(&config.rpc_url)
                 .await?,
         );
@@ -99,12 +101,10 @@ impl Plugin for Module {
 
         let latest_block_number = provider.get_block_number().await?;
 
-        let (_, valset) = parlia_verifier::parse_epoch_rotation_header_extra_data(
+        let latest_epoch_block_number = latest_block_number - (latest_block_number % EPOCH_LENGTH);
+        let (_, valset) = parse_epoch_rotation_header_extra_data(
             &provider
-                .get_block_by_number(
-                    (latest_block_number - (latest_block_number % parlia_verifier::EPOCH_LENGTH))
-                        .into(),
-                )
+                .get_block_by_number(latest_epoch_block_number.into())
                 .await?
                 .unwrap()
                 .header
@@ -113,13 +113,12 @@ impl Plugin for Module {
 
         let valset_size = valset.len();
 
-        info!("valset size is {valset_size}");
+        info!("valset size is {valset_size} at block {latest_epoch_block_number}");
 
         Ok(Self {
             chain_id,
             provider,
             ibc_handler_address: config.ibc_handler_address,
-            valset_size,
         })
     }
 
@@ -215,23 +214,6 @@ impl PluginServer<ModuleCall, Never> for Module {
 }
 
 impl Module {
-    async fn fetch_ibc_contract_root_proof(&self, height: u64) -> RpcResult<AccountProof> {
-        let proof = self
-            .provider
-            .get_proof(self.ibc_handler_address.into(), vec![])
-            .block_id(height.into())
-            .await
-            .map_err(RpcError::retryable("error fetching ibc contract proof"))
-            .with_data(json!({
-                "height": height,
-                "ibc_handler_address": self.ibc_handler_address,
-            }))?;
-        Ok(AccountProof {
-            storage_root: proof.storage_hash.into(),
-            proof: proof.account_proof.into_iter().map(|x| x.into()).collect(),
-        })
-    }
-
     #[instrument(
         skip_all,
         fields(
@@ -258,7 +240,7 @@ impl Module {
 
         let mut headers: Vec<Header> = vec![];
 
-        for block in windows(update_from.height(), update_to.height()) {
+        for source_block_number in windows(update_from.height(), update_to.height()) {
             if headers.len() >= 10 {
                 let last = headers.last().unwrap().chain.first().unwrap().number;
 
@@ -282,64 +264,163 @@ impl Module {
                 )));
             }
 
-            info!("fetching update to {block}");
+            info!("fetching update to {source_block_number}");
 
-            let source = self
-                .provider
-                .get_block(block.into())
-                .await
-                .map_err(RpcError::retryable("error fetching source block"))?
-                .ok_or_else(|| {
-                    RpcError::missing_state("error fetching source block: block not found")
-                })?;
+            let fetch_block = async |number: u64| {
+                self.provider
+                    .get_block(number.into())
+                    .await
+                    .map_err(RpcError::retryable("error fetching block"))?
+                    .ok_or_else(|| RpcError::missing_state("error fetching block: block not found"))
+                    .map(convert_header)
+            };
 
-            let target = self
-                .provider
-                .get_block((block + 1).into())
-                .await
-                .map_err(RpcError::retryable("error fetching target block"))?
-                .ok_or_else(|| {
-                    RpcError::missing_state("error fetching target block: block not found")
-                })?;
+            let desired_source = fetch_block(source_block_number).await?;
 
-            let attestation = self
-                .provider
-                .get_block((block + 2).into())
-                .await
-                .map_err(RpcError::retryable("error fetching attestation block"))?
-                .ok_or_else(|| {
-                    RpcError::missing_state("error fetching attestation block: block not found")
-                })?;
+            let mut current_ancestor_depth = 0;
+
+            let mut is_ancestry_proof = false;
+
+            let (attestation, vote_attestation) = loop {
+                let attestation_block_number = source_block_number + 2 + current_ancestor_depth;
+
+                info!("checking for attestations in block {attestation_block_number}");
+
+                let attestation = fetch_block(attestation_block_number).await?;
+
+                match get_vote_attestation_from_header_extra_data(&attestation).map_err(
+                    RpcError::fatal(format!(
+                        "unable to parse extra data from block {attestation_block_number}"
+                    )),
+                )? {
+                    Some(vote_attestation) => {
+                        info!(
+                            current_ancestor_depth,
+                            is_ancestry_proof,
+                            "vote attestation found in block {attestation_block_number}"
+                        );
+
+                        let previous_epoch_block_number =
+                            calculate_previous_epoch_block_number(attestation_block_number);
+
+                        info!(previous_epoch_block_number);
+
+                        let previous_valset = parse_epoch_rotation_header_extra_data(
+                            &fetch_block(previous_epoch_block_number).await?.extra_data,
+                        )
+                        .map_err(RpcError::fatal(format!(
+                            "error parsing epoch rotation header extra data for \
+                            previous epoch ({previous_epoch_block_number})"
+                        )))?
+                        .1;
+
+                        info!(previous_valset_len = previous_valset.len());
+
+                        let signing_valset_epoch_block_number =
+                            calculate_signing_valset_epoch_block_number(
+                                attestation_block_number,
+                                previous_valset.len().try_into().unwrap(),
+                            );
+
+                        info!(signing_valset_epoch_block_number);
+
+                        let signing_valset = parse_epoch_rotation_header_extra_data(
+                            &fetch_block(signing_valset_epoch_block_number)
+                                .await?
+                                .extra_data,
+                        )
+                        .map_err(RpcError::fatal(format!(
+                            "error parsing epoch rotation header extra data for \
+                            signing epoch ({signing_valset_epoch_block_number})"
+                        )))?
+                        .1;
+
+                        info!(signing_valset_len = signing_valset.len());
+
+                        if check_supermajority(&vote_attestation, signing_valset.len()) {
+                            // if we're now looking for an ancestry proof, we just need any attestation, otherwise we need the source of the attestation to be the source block we're looking for
+                            if is_ancestry_proof {
+                                info!(
+                                    "found attestation for block {} at block {attestation_block_number} (desired source block is {source_block_number})",
+                                    vote_attestation.data.source_number
+                                );
+
+                                break (attestation, vote_attestation);
+                            }
+
+                            if vote_attestation.data.source_number == source_block_number {
+                                info!(
+                                    "found attestation for block {source_block_number} at block {attestation_block_number}"
+                                );
+
+                                break (attestation, vote_attestation);
+                            }
+                        } else {
+                            warn!("supermajority not reached on block {attestation_block_number}");
+                        }
+                    }
+                    None => {
+                        info!(
+                            current_ancestor_depth,
+                            "no vote attestation in block {attestation_block_number}"
+                        );
+                    }
+                };
+
+                if current_ancestor_depth == K_ANCESTOR_GENERATION_DEPTH {
+                    info!(
+                        "no attestation found for block {source_block_number}, client update will be an ancestry proof"
+                    );
+                    is_ancestry_proof = true;
+                }
+
+                current_ancestor_depth += 1;
+            };
+
+            let target = fetch_block(vote_attestation.data.target_number).await?;
 
             info!(
-                source_hash = %source.header.hash,
-                target_hash = %target.header.hash,
-                attestation_hash = %attestation.header.hash,
-                source_number = %source.header.number,
-                target_number = %target.header.number,
-                attestation_number = %attestation.header.number
+                is_ancestry_proof,
+                desired_source_hash = %desired_source.hash(),
+                target_hash = %target.hash(),
+                attestation_hash = %attestation.hash(),
+
+                desired_source_number = %desired_source.number,
+                target_number = %target.number,
+                attestation_number = %attestation.number
             );
 
-            let trusted_valset_epoch_number =
-                parlia_verifier::calculate_signing_valset_epoch_block_number(
-                    attestation.header.number,
-                    self.valset_size.try_into().unwrap(),
-                );
+            let attestation_block_number: u64 = attestation
+                .number
+                .try_into()
+                .expect("block number is < u64::MAX");
+
+            let previous_epoch_block_number =
+                calculate_previous_epoch_block_number(attestation_block_number);
+
+            let previous_valset = parse_epoch_rotation_header_extra_data(
+                &fetch_block(previous_epoch_block_number).await?.extra_data,
+            )
+            .map_err(RpcError::fatal(
+                "error parsing epoch rotation header extra data",
+            ))?
+            .1;
+
+            let trusted_valset_epoch_number = calculate_signing_valset_epoch_block_number(
+                attestation_block_number,
+                previous_valset.len().try_into().unwrap(),
+            );
 
             info!(%trusted_valset_epoch_number);
 
-            let ibc_account_proof = self
-                .fetch_ibc_contract_root_proof(source.header.number)
-                .await?;
-
             headers.push(Header {
                 trusted_valset_epoch_number,
-                chain: vec![
-                    convert_header(source),
-                    convert_header(target),
-                    convert_header(attestation),
-                ],
-                ibc_account_proof,
+                chain: try_join_all(
+                    (u64::try_from(desired_source.number).unwrap()
+                        ..=u64::try_from(attestation.number).unwrap())
+                        .map(fetch_block),
+                )
+                .await?,
             });
         }
 
@@ -362,8 +443,14 @@ impl Module {
     }
 }
 
+// previous multiple of epoch length for the previous epoch
+fn calculate_previous_epoch_block_number(attestation_block_number: u64) -> u64 {
+    ((attestation_block_number - EPOCH_LENGTH) / (EPOCH_LENGTH)) * EPOCH_LENGTH
+}
+
 fn convert_header(block: AnyRpcBlock) -> ParliaHeader {
     let block = block.0.into_inner();
+
     ParliaHeader {
         parent_hash: block.header.inner.parent_hash.into(),
         sha3_uncles: block.header.inner.ommers_hash.into(),
@@ -410,5 +497,15 @@ fn windows(from: u64, to: u64) -> impl Iterator<Item = u64> {
 
 #[test]
 fn test_windows() {
-    dbg!(windows(1, 9999).collect::<Vec<_>>());
+    assert_eq!(
+        windows(1, 9999).collect::<Vec<_>>(),
+        [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 9999]
+    );
+}
+
+#[test]
+fn test_calculate_previous_epoch_block_number() {
+    for (b, eb) in [(8001, 7000), (8000, 7000), (8999, 7000), (9000, 8000)] {
+        assert_eq!(eb, calculate_previous_epoch_block_number(b))
+    }
 }

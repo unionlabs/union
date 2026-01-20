@@ -4,11 +4,13 @@ use ibc_union_spec::{
     ChannelId, ClientId, ConnectionId,
     path::{
         BatchPacketsPath, BatchReceiptsPath, ChannelPath, ClientStatePath, ConnectionPath,
-        ConsensusStatePath,
+        ConsensusStatePath, MembershipProofPath, NonMembershipProofPath,
     },
 };
 use unionlabs::{
-    ethereum::ibc_commitment_key, ibc::core::client::height::Height, primitives::H256,
+    ethereum::ibc_commitment_key,
+    ibc::core::client::height::Height,
+    primitives::{Bytes, H256},
 };
 
 #[derive(Debug, Args)]
@@ -34,6 +36,18 @@ pub enum StorePath {
     BatchReceipts { batch_hash: H256 },
     #[command(visible_alias = "bp")]
     BatchPackets { batch_hash: H256 },
+    #[command(visible_alias = "mp")]
+    MembershipProof {
+        client_id: ClientId,
+        proof_height: u64,
+        path: Bytes,
+    },
+    #[command(visible_alias = "nmp")]
+    NonMembershipProof {
+        client_id: ClientId,
+        proof_height: u64,
+        path: Bytes,
+    },
 }
 
 impl Cmd {
@@ -49,6 +63,26 @@ impl Cmd {
             StorePath::Channel { channel_id } => ChannelPath { channel_id }.key(),
             StorePath::BatchReceipts { batch_hash } => BatchReceiptsPath { batch_hash }.key(),
             StorePath::BatchPackets { batch_hash } => BatchPacketsPath { batch_hash }.key(),
+            StorePath::MembershipProof {
+                client_id,
+                proof_height,
+                path,
+            } => MembershipProofPath {
+                client_id,
+                proof_height,
+                path,
+            }
+            .key(),
+            StorePath::NonMembershipProof {
+                client_id,
+                proof_height,
+                path,
+            } => NonMembershipProofPath {
+                client_id,
+                proof_height,
+                path,
+            }
+            .key(),
         };
 
         if self.evm_commitment_slot {

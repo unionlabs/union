@@ -136,7 +136,7 @@ impl Packet {
         use alloy_sol_types::SolValue;
         use unionlabs::ethereum::keccak256;
 
-        keccak256(vec![self].abi_encode())
+        keccak256(core::slice::from_ref(self).abi_encode())
     }
 }
 

@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(
     clippy::pedantic,
     clippy::std_instead_of_core,

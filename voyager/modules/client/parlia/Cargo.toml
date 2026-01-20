@@ -12,13 +12,12 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-embed-commit                = { workspace = true }
-ethereum-light-client-types = { workspace = true, features = ["serde", "bincode"] }
-jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
-parlia-light-client-types   = { workspace = true, features = ["serde", "bincode", "ethabi"] }
-serde                       = { workspace = true, features = ["derive"] }
-serde_json                  = { workspace = true }
-tokio                       = { workspace = true }
-tracing                     = { workspace = true }
-unionlabs                   = { workspace = true }
-voyager-sdk                 = { workspace = true }
+embed-commit              = { workspace = true }
+jsonrpsee                 = { workspace = true, features = ["macros", "server", "tracing"] }
+parlia-light-client-types = { workspace = true, features = ["serde", "bincode", "ethabi"] }
+serde                     = { workspace = true, features = ["derive"] }
+serde_json                = { workspace = true }
+tokio                     = { workspace = true }
+tracing                   = { workspace = true }
+unionlabs                 = { workspace = true }
+voyager-sdk               = { workspace = true }

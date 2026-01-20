@@ -1,6 +1,5 @@
-use ethereum_light_client_types::StorageProof;
 use jsonrpsee::{Extensions, core::async_trait};
-use parlia_light_client_types::{ClientState, ConsensusState, Header};
+use parlia_light_client_types::{ClientState, ConsensusState, Header, StateProof};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::instrument;
@@ -133,7 +132,7 @@ impl ClientModuleServer for Module {
 
     #[instrument]
     async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
-        serde_json::from_value::<StorageProof>(proof)
+        serde_json::from_value::<StateProof>(proof)
             .map_err(RpcError::fatal("unable to deserialize storage proof"))
             .map(|storage_proof| storage_proof.encode_as::<Bincode>().into())
     }

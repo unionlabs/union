@@ -6,7 +6,6 @@ use unionlabs::primitives::H256;
 pub struct ConsensusState {
     pub valset_epoch_block_number: u64,
     pub state_root: H256,
-    pub ibc_storage_root: H256,
     pub timestamp: Timestamp,
 }
 
@@ -22,7 +21,6 @@ pub mod ethabi {
         struct SolConsensusState {
             uint64 valset_epoch_block_number;
             bytes32 state_root;
-            bytes32 ibc_storage_root;
             uint64 timestamp;
         }
     }
@@ -32,7 +30,6 @@ pub mod ethabi {
             Self {
                 valset_epoch_block_number: value.valset_epoch_block_number,
                 state_root: value.state_root.get().into(),
-                ibc_storage_root: value.ibc_storage_root.get().into(),
                 timestamp: value.timestamp.as_nanos(),
             }
         }
@@ -43,7 +40,6 @@ pub mod ethabi {
             Self {
                 valset_epoch_block_number: value.valset_epoch_block_number,
                 state_root: H256::new(value.state_root.0),
-                ibc_storage_root: H256::new(value.ibc_storage_root.0),
                 timestamp: Timestamp::from_nanos(value.timestamp),
             }
         }

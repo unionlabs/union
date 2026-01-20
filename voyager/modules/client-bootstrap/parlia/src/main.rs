@@ -142,7 +142,7 @@ impl ClientBootstrapModuleServer for Module {
         config: Value,
     ) -> RpcResult<Value> {
         let config = serde_json::from_value::<ClientStateConfig>(config).map_err(
-            RpcError::retryable("unable to deserialize client state config"),
+            RpcError::retryable("unable to deserialize consensus state config"),
         )?;
 
         let valset_epoch_block_number =
@@ -162,15 +162,6 @@ impl ClientBootstrapModuleServer for Module {
 
         Ok(into_value(ConsensusState {
             state_root: block.header.state_root.into(),
-            ibc_storage_root: self
-                .provider
-                .get_proof(self.ibc_handler_address.into(), vec![])
-                .block_id(block.header.number.into())
-                .await
-                .unwrap()
-                .storage_hash
-                .0
-                .into(),
             timestamp: Timestamp::from_secs(block.header.timestamp),
             valset_epoch_block_number,
         }))

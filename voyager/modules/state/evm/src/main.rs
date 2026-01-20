@@ -27,7 +27,7 @@ use ibc_union_spec::{
 };
 use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Value, json};
 use tracing::{debug, info, instrument, trace};
 use unionlabs::{
     ibc::core::client::height::Height,
@@ -37,7 +37,7 @@ use voyager_sdk::{
     ExtensionsExt, anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
-    rpc::{RpcError, RpcResult, StateModuleServer, types::StateModuleInfo},
+    rpc::{RpcError, RpcErrorExt, RpcResult, StateModuleServer, types::StateModuleInfo},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -257,7 +257,12 @@ impl Module {
         }
 
         let connection = Connection::abi_decode_params_validate(&raw)
-            .map_err(RpcError::retryable("error decoding connection"))?;
+            .map_err(RpcError::retryable("error decoding connection"))
+            .with_data(json!({
+                "connection_id": connection_id,
+                "raw": raw,
+                "height": height,
+            }))?;
 
         if connection.state == ConnectionState::Open {
             info!("connection is open, caching");
@@ -321,7 +326,12 @@ impl Module {
         }
 
         let channel = Channel::abi_decode_params_validate(&raw)
-            .map_err(RpcError::retryable("error decoding channel"))?;
+            .map_err(RpcError::retryable("error decoding channel"))
+            .with_data(json!({
+                "channel_id": channel_id,
+                "raw": raw,
+                "height": height,
+            }))?;
 
         if channel.state == ChannelState::Open {
             info!("channel is open, caching");

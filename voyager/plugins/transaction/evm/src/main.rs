@@ -507,7 +507,9 @@ impl Module {
                 async move {
                     let receipt = ok.get_receipt().await?;
 
-                    info!(%tx_hash, "tx included");
+                    let block_number = receipt.block_number;
+
+                    info!(%tx_hash, block_number, "tx included");
 
                     let result = MulticallResult::decode_log_data(
                         receipt

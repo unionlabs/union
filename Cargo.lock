@@ -6955,6 +6955,7 @@ dependencies = [
  "pausable",
  "schemars 0.8.22",
  "serde",
+ "serde_json",
  "unionlabs-primitives",
  "upgradable",
 ]
@@ -9770,8 +9771,6 @@ dependencies = [
  "cosmwasm-std",
  "depolama",
  "embed-commit",
- "ethereum-light-client",
- "ethereum-light-client-types",
  "evm-storage-verifier",
  "frissitheto",
  "ibc-union-light-client",
@@ -9788,9 +9787,9 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.1",
- "ethereum-light-client-types",
  "hex-literal 1.1.0",
  "ibc-union-spec",
+ "parlia-light-client-types",
  "parlia-types",
  "serde",
  "unionlabs",
@@ -9818,10 +9817,12 @@ dependencies = [
  "consensus-primitives",
  "hex",
  "hex-literal 1.1.0",
+ "parlia-light-client-types",
  "parlia-types",
  "rlp",
  "serde_json",
  "thiserror 2.0.17",
+ "unionlabs-encoding",
  "unionlabs-primitives",
 ]
 
@@ -10466,6 +10467,41 @@ dependencies = [
  "anyhow",
  "prometheus",
  "protobuf",
+]
+
+[[package]]
+name = "proof-lens-light-client"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std",
+ "embed-commit",
+ "frissitheto",
+ "hex-literal 1.1.0",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "ibc-union-spec",
+ "proof-lens-light-client-types",
+ "serde_json",
+ "thiserror 2.0.17",
+ "unionlabs",
+]
+
+[[package]]
+name = "proof-lens-light-client-types"
+version = "0.0.0"
+dependencies = [
+ "alloy-sol-types",
+ "bcs",
+ "bincode 2.0.1",
+ "hex-literal 1.1.0",
+ "ibc-union-spec",
+ "proof-lens-light-client-types",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.17",
+ "unionlabs",
+ "unionlabs-encoding",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -15853,6 +15889,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-proof-lens"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.26.0",
+ "proof-lens-light-client-types",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-state-lens-ics23-ics23"
 version = "0.0.0"
 dependencies = [
@@ -16078,9 +16130,23 @@ name = "voyager-client-module-parlia"
 version = "0.0.0"
 dependencies = [
  "embed-commit",
- "ethereum-light-client-types",
  "jsonrpsee 0.26.0",
  "parlia-light-client-types",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-client-module-proof-lens"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "jsonrpsee 0.26.0",
+ "proof-lens-light-client-types",
  "serde",
  "serde_json",
  "tokio",
@@ -16372,12 +16438,30 @@ dependencies = [
  "alloy",
  "embed-commit",
  "enumorph",
- "ethereum-light-client-types",
+ "futures",
  "ibc-union-spec",
  "jsonrpsee 0.26.0",
  "parlia-light-client-types",
  "parlia-types",
  "parlia-verifier",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-client-update-plugin-proof-lens"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "enumorph",
+ "ibc-union-spec",
+ "jsonrpsee 0.26.0",
+ "macros",
+ "proof-lens-light-client-types",
  "serde",
  "serde_json",
  "tokio",
@@ -16950,6 +17034,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-plugin-transaction-batch-proof-lens"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "either",
+ "embed-commit",
+ "enumorph",
+ "futures",
+ "ibc-union-spec",
+ "itertools 0.13.0",
+ "jsonrpsee 0.26.0",
+ "macros",
+ "proof-lens-light-client-types",
+ "serde",
+ "serde_json",
+ "subset-of",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-plugin-zkgm-filter"
 version = "0.0.0"
 dependencies = [
@@ -17054,6 +17161,23 @@ dependencies = [
  "ethereum-light-client-types",
  "ibc-union-spec",
  "jsonrpsee 0.26.0",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-proof-module-parlia"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.26.0",
+ "parlia-light-client-types",
  "serde",
  "serde_json",
  "tokio",

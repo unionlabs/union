@@ -1,19 +1,14 @@
-#[cfg(test)]
-mod tests;
-
 use std::ops::{Mul, Sub};
 
 use consensus_primitives::{Duration, Timestamp};
-use parlia_types::{ParliaHeader, Valset, VoteAttestation, VoteData};
+use parlia_types::{ParliaHeader, Valset, VoteAttestation};
 use unionlabs_primitives::{ByteArrayExt, H160, H384, H768, U256};
 
-// post-maxwell
-pub const TURN_LENGTH: u64 = 16;
-pub const EPOCH_LENGTH: u64 = 1000;
+#[cfg(test)]
+mod tests;
 
-// pre-maxwell
-// pub const TURN_LENGTH: u64 = 8;
-// pub const EPOCH_LENGTH: u64 = 500;
+pub const TURN_LENGTH: u64 = 8;
+pub const EPOCH_LENGTH: u64 = 1000;
 
 pub const EXTRA_SEAL_LEN: usize = 65;
 pub const EXTRA_VANITY_LEN: usize = 32;
@@ -24,6 +19,9 @@ pub const VAL_COUNT_SIZE: usize = 1;
 pub const VAL_ENTRY_LEN: usize = <H160>::BYTES_LEN + <H384>::BYTES_LEN;
 
 pub const EXTRA_DATA_MIN_LEN: usize = EXTRA_VANITY_LEN + EXTRA_SEAL_LEN;
+
+/// <https://github.com/bnb-chain/BEPs/blob/54ee27fa7c068fc308fec4118aaa197b4d876d15/BEPs/BEP-590.md#41-aggregate-vote-rule-changes>
+pub const K_ANCESTOR_GENERATION_DEPTH: u64 = 3;
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum ExtraDataDecodeError {
@@ -46,7 +44,8 @@ pub fn parse_epoch_rotation_header_extra_data(
 
     let data = &data[EXTRA_VANITY_LEN..(data.len() - EXTRA_SEAL_LEN)];
 
-    let num = data[0];
+    let num = data[0] as usize;
+
     let vals = data[1..]
         .as_chunks::<VAL_ENTRY_LEN>()
         .0
@@ -58,20 +57,20 @@ pub fn parse_epoch_rotation_header_extra_data(
                 x.array_slice::<20, 48>().into(),
             )
         })
-        .take(num.into())
+        .take(num)
         .collect::<Vec<_>>();
 
-    if vals.len() != num as usize {
+    if vals.len() != num {
         return Err(ExtraDataDecodeError::NotEnoughVals);
     }
 
-    let turn_length = data[VAL_COUNT_SIZE + (VAL_ENTRY_LEN * num as usize)];
+    let turn_length = data[VAL_COUNT_SIZE + (VAL_ENTRY_LEN * num)];
     if turn_length as u64 != TURN_LENGTH {
         return Err(ExtraDataDecodeError::InvalidTurnLength(turn_length as u64));
     }
 
     let vote_attestation_rlp_data =
-        &data[(VAL_COUNT_SIZE + (VAL_ENTRY_LEN * num as usize) + NEXT_TURN_LENGTH_SIZE)..];
+        &data[(VAL_COUNT_SIZE + (VAL_ENTRY_LEN * num) + NEXT_TURN_LENGTH_SIZE)..];
 
     let va = if vote_attestation_rlp_data.is_empty() {
         None
@@ -103,15 +102,15 @@ pub fn parse_header_extra_data(
 pub fn get_vote_attestation_from_header_extra_data(
     header: &ParliaHeader,
 ) -> Result<Option<VoteAttestation>, ExtraDataDecodeError> {
-    if is_epoch_rotation_header(header) {
+    if is_epoch_rotation_block(header.number) {
         parse_epoch_rotation_header_extra_data(&header.extra_data).map(|x| x.0)
     } else {
         parse_header_extra_data(&header.extra_data)
     }
 }
 
-pub fn is_epoch_rotation_header(header: &ParliaHeader) -> bool {
-    header.number % U256::from(EPOCH_LENGTH) == U256::ZERO
+pub fn is_epoch_rotation_block(block_number: U256) -> bool {
+    block_number % U256::from(EPOCH_LENGTH) == U256::ZERO
 }
 
 pub fn calculate_signing_valset_epoch_block_number(h: u64, valset_size: u64) -> u64 {
@@ -137,8 +136,8 @@ pub enum Error<E> {
     ContextError(E),
     #[error("trusted valset not found for block {0}")]
     TrustedValsetNotFound(u64),
-    #[error("less than 2/3+1 of the valset signed the attestation")]
-    InsufficientParticipation,
+    #[error("supermajority not reached, less than 2/3+1 of the valset signed the attestation")]
+    SupermajorityNotReached,
     #[error("block number > u64::MAX")]
     BlockNumberTooLarge,
     #[error(
@@ -167,7 +166,7 @@ pub trait VerificationContext {
     ) -> Result<(), Self::Error>;
 }
 
-/// Given a chain of headers `C`, with source `S = C[-3]`, target `T = C[-2]`, and attestation `A = C[-1]`:
+/// Given a chain of headers `C`, with source `S = C[0]`, target `T = C[∈ 1..-1]`, and attestation `A = C[-1]`:
 /// 1. ensure that `A` is not expired
 /// 2. verify that `C` is a valid chain (i.e. `C[0] ∈ C[1] ∈ ... ∈ C[-2] ∈ C[-1]`)
 /// 3. ensure that `A` contains the vote data for `S` and `T`
@@ -180,9 +179,11 @@ pub fn verify_header<C: VerificationContext>(
     trusted_valset_epoch_block_number: u64,
     ctx: C,
 ) -> Result<(&ParliaHeader, Option<(u64, Valset)>), Error<C::Error>> {
-    let [rest @ .., source, target, attestation] = chain else {
+    if chain.len() < 3 {
         return Err(Error::NotEnoughHeaders);
-    };
+    }
+
+    let attestation = chain.last().expect("len is > 0; qed;");
 
     // 1.
     if attestation
@@ -196,35 +197,36 @@ pub fn verify_header<C: VerificationContext>(
     }
 
     // 2.
-    let oldest_parent_header = [target, source]
-        .into_iter()
-        .chain(rest.iter().rev())
-        .try_fold(attestation, |child, parent| {
-            if child.number == parent.number + U256::ONE && child.parent_hash == parent.hash() {
-                Ok(parent)
-            } else {
-                Err(Error::InvalidChain)
-            }
-        })?;
+    let oldest_parent_header =
+        chain
+            .iter()
+            .rev()
+            .skip(1)
+            .try_fold(attestation, |child, parent| {
+                if child.number == parent.number + U256::ONE && child.parent_hash == parent.hash() {
+                    Ok(parent)
+                } else {
+                    Err(Error::InvalidChain)
+                }
+            })?;
 
     // 3.
     let vote_attestation =
         get_vote_attestation_from_header_extra_data(attestation)?.ok_or(Error::NoAttestation)?;
 
-    let expected_vote_data = VoteData {
-        source_number: source
-            .number
-            .try_into()
-            .map_err(|()| Error::BlockNumberTooLarge)?,
-        source_hash: source.hash(),
-        target_number: target
-            .number
-            .try_into()
-            .map_err(|()| Error::BlockNumberTooLarge)?,
-        target_hash: target.hash(),
-    };
+    let attestation_block_number = attestation
+        .number
+        .try_into()
+        .map_err(|()| Error::BlockNumberTooLarge)?;
 
-    if vote_attestation.data != expected_vote_data {
+    let source_header = &chain[(chain.len() - 1)
+        - (attestation_block_number - vote_attestation.data.source_number) as usize];
+    let target_header = &chain[(chain.len() - 1)
+        - (attestation_block_number - vote_attestation.data.target_number) as usize];
+
+    if vote_attestation.data.source_hash != source_header.hash()
+        || vote_attestation.data.target_hash != target_header.hash()
+    {
         return Err(Error::InvalidAttestation);
     }
 
@@ -233,10 +235,7 @@ pub fn verify_header<C: VerificationContext>(
         .map_err(Error::ContextError)?;
 
     let epoch_block_number = calculate_signing_valset_epoch_block_number(
-        attestation
-            .number
-            .try_into()
-            .map_err(|()| Error::BlockNumberTooLarge)?,
+        attestation_block_number,
         trusted_valset.len().try_into().unwrap(),
     );
 
@@ -247,8 +246,8 @@ pub fn verify_header<C: VerificationContext>(
         });
     }
 
-    if vote_attestation.vote_address_set.count() as usize <= (trusted_valset.len() * 2) / 3 {
-        return Err(Error::InsufficientParticipation);
+    if !check_supermajority(&vote_attestation, trusted_valset.len()) {
+        return Err(Error::SupermajorityNotReached);
     }
 
     let signing_valset = trusted_valset
@@ -269,7 +268,7 @@ pub fn verify_header<C: VerificationContext>(
     .map_err(Error::ContextError)?;
 
     // 5.
-    let maybe_epoch_rotation_data = if is_epoch_rotation_header(oldest_parent_header) {
+    let maybe_epoch_rotation_data = if is_epoch_rotation_block(oldest_parent_header.number) {
         let (_, new_valset) =
             parse_epoch_rotation_header_extra_data(&oldest_parent_header.extra_data)?;
         Some((
@@ -284,4 +283,8 @@ pub fn verify_header<C: VerificationContext>(
     };
 
     Ok((oldest_parent_header, maybe_epoch_rotation_data))
+}
+
+pub fn check_supermajority(vote_attestation: &VoteAttestation, valset_size: usize) -> bool {
+    vote_attestation.vote_address_set.count() as usize > (valset_size * 2) / 3
 }

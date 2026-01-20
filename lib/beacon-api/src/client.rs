@@ -10,7 +10,7 @@ use moka::{future::Cache, ops::compute::Op};
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, value::RawValue};
-use tracing::{debug, info, trace};
+use tracing::{debug, info, instrument, trace};
 use unionlabs::{ErrorReporter, primitives::H256};
 
 use crate::{
@@ -58,6 +58,7 @@ impl BeaconApiClient {
         }
     }
 
+    #[instrument(skip_all)]
     pub async fn spec(&self) -> Result<Spec> {
         Ok(self
             .spec
@@ -74,6 +75,7 @@ impl BeaconApiClient {
             .into_value())
     }
 
+    #[instrument(skip_all)]
     pub async fn finality_update(
         &self,
     ) -> Result<VersionedResponse<LightClientFinalityUpdateResponseTypes>> {
@@ -81,16 +83,19 @@ impl BeaconApiClient {
             .await
     }
 
+    #[instrument(skip_all, fields(block_id))]
     pub async fn header(&self, block_id: BlockId) -> Result<BeaconBlockHeaderResponse> {
         self.get_json(format!("/eth/v1/beacon/headers/{block_id}"))
             .await
     }
 
+    #[instrument(skip_all, fields(block_id))]
     pub async fn block(&self, block_id: BlockId) -> Result<BeaconBlockResponse> {
         self.get_json(format!("/eth/v2/beacon/blocks/{block_id}"))
             .await
     }
 
+    #[instrument(skip_all, fields(finalized_root))]
     pub async fn bootstrap(
         &self,
         finalized_root: H256,
@@ -103,6 +108,7 @@ impl BeaconApiClient {
 
     // Light Client API
 
+    #[instrument(skip_all)]
     pub async fn genesis(&self) -> Result<GenesisData> {
         Ok(self
             .genesis
@@ -120,11 +126,14 @@ impl BeaconApiClient {
     }
 
     /// NOTE: Lodestar will return an empty array if count is 0, however other implementations return an error response.
+    #[instrument(skip_all, fields(start_period, count))]
     pub async fn light_client_updates(
         &self,
         start_period: u64,
         count: u64,
     ) -> Result<Vec<VersionedResponse<LightClientUpdateResponseTypes>>> {
+        debug!(start_period, count, "fetching light client updates");
+
         self.get_json(format!(
             "/eth/v1/beacon/light_client/updates?start_period={start_period}&count={count}"
         ))
@@ -132,6 +141,7 @@ impl BeaconApiClient {
     }
 
     /// Convenience method to fetch the execution height of a beacon height.
+    #[instrument(skip_all, fields(block_id))]
     pub async fn execution_height(&self, block_id: BlockId) -> Result<u64> {
         let height = match self.block(block_id.clone()).await?.response {
             VersionedResponse::Phase0(_block) => {
@@ -156,6 +166,7 @@ impl BeaconApiClient {
         Ok(height)
     }
 
+    #[instrument(skip_all, fields(slot))]
     pub async fn bootstrap_for_slot(
         &self,
         slot: Slot,
@@ -207,6 +218,7 @@ impl BeaconApiClient {
 
     // Helper functions
 
+    #[instrument(skip_all, fields(path))]
     async fn get_json<T: DeserializeOwned>(&self, path: impl Into<String>) -> Result<T> {
         let url = format!("{}{}", self.base_url, path.into());
 

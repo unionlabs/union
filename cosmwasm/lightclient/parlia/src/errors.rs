@@ -1,5 +1,5 @@
-use ethereum_light_client::client::EthereumLightClient;
 use ibc_union_light_client::IbcClientError;
+use unionlabs::primitives::FixedBytesError;
 
 use crate::client::{CwContextError, ParliaLightClient};
 
@@ -17,17 +17,23 @@ pub enum Error {
     #[error("misbehaviour headers were exactly equal")]
     MisbehaviourHeadersMustBeDifferent,
 
+    #[error("invalid storage proof key")]
+    InvalidKey(FixedBytesError),
+
+    #[error("invalid storage proof value")]
+    InvalidValue(FixedBytesError),
+
     #[error(transparent)]
     ParliaVerify(#[from] parlia_verifier::Error<CwContextError>),
 
-    #[error(transparent)]
-    EvmStorageVerify(#[from] evm_storage_verifier::error::Error),
+    #[error("invalid account storage root")]
+    VerifyAccountStorageRoot(#[source] evm_storage_verifier::error::Error),
 
-    #[error(transparent)]
-    Evm(#[from] ethereum_light_client::errors::Error),
+    #[error("invalid storage proof")]
+    VerifyStorageProof(#[source] evm_storage_verifier::error::Error),
 
-    #[error(transparent)]
-    EvmIbcClient(#[from] IbcClientError<EthereumLightClient>),
+    #[error("invalid storage absence proof")]
+    VerifyStorageAbsence(#[source] evm_storage_verifier::error::Error),
 }
 
 // required for IbcClient trait

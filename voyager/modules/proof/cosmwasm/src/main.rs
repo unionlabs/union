@@ -7,12 +7,12 @@ use ibc_union_spec::{
 use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{instrument, warn};
+use tracing::{debug, instrument, warn};
 use unionlabs::{
     bounded::BoundedI64,
     cosmos::ics23::commitment_proof::CommitmentProof,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
-    primitives::{Bech32, H256},
+    primitives::{Bech32, Bytes, H256},
 };
 use voyager_sdk::{
     anyhow, into_value,
@@ -83,6 +83,8 @@ impl ProofModuleServer<IbcUnion> for Module {
             .chain(IBC_UNION_COSMWASM_COMMITMENT_PREFIX)
             .chain(path.key())
             .collect::<Vec<_>>();
+
+        debug!(data = %<Bytes>::from(&data));
 
         let query_result = self
             .cometbft_client

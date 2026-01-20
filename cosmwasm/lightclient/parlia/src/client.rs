@@ -1,15 +1,17 @@
 use cosmwasm_std::{Addr, Empty};
-use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
     spec::{Status, Timestamp},
 };
-use parlia_light_client_types::{ClientState, ClientStateV1, ConsensusState, Header, Misbehaviour};
+use parlia_light_client_types::{
+    ClientState, ClientStateV1, ConsensusState, Header, Misbehaviour, StateProof,
+};
 use parlia_types::Valset;
 use parlia_verifier::VerificationContext;
 use unionlabs::{
     encoding::Bincode,
-    primitives::{H384, H768},
+    ethereum::ibc_commitment_key,
+    primitives::{H256, H384, H768, U256},
 };
 
 use crate::{errors::Error, store::ValsetStore};
@@ -31,7 +33,7 @@ impl IbcClient for ParliaLightClient {
 
     type CustomQuery = Empty;
 
-    type StorageProof = StorageProof;
+    type StorageProof = StateProof;
 
     fn verify_membership(
         ctx: IbcClientCtx<Self>,
@@ -41,13 +43,31 @@ impl IbcClient for ParliaLightClient {
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
-        ethereum_light_client::client::verify_membership(
-            key,
-            consensus_state.ibc_storage_root,
-            storage_proof,
-            value,
+        let ClientState::V1(client_state) = ctx.read_self_client_state()?;
+
+        // verify ibc storage root
+        evm_storage_verifier::verify_account_storage_root(
+            consensus_state.state_root,
+            &client_state.ibc_contract_address,
+            storage_proof.account_proof,
+            &storage_proof.storage_hash,
         )
-        .map_err(Into::<Error>::into)?;
+        .map_err(Error::VerifyAccountStorageRoot)?;
+
+        let commitment_key = ibc_commitment_key(key.try_into().map_err(Error::InvalidKey)?);
+
+        let value =
+            U256::from_be_bytes(*<H256>::try_from(value).map_err(Error::InvalidValue)?.get());
+
+        // verify ibc commitment
+        evm_storage_verifier::verify_storage_proof(
+            storage_proof.storage_hash,
+            commitment_key,
+            value,
+            storage_proof.storage_proof,
+        )
+        .map_err(Error::VerifyStorageProof)?;
+
         Ok(())
     }
 
@@ -58,12 +78,27 @@ impl IbcClient for ParliaLightClient {
         storage_proof: Self::StorageProof,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
-        ethereum_light_client::client::verify_non_membership(
-            key,
-            consensus_state.ibc_storage_root,
-            storage_proof,
+        let ClientState::V1(client_state) = ctx.read_self_client_state()?;
+
+        // verify ibc storage root
+        evm_storage_verifier::verify_account_storage_root(
+            consensus_state.state_root,
+            &client_state.ibc_contract_address,
+            storage_proof.account_proof,
+            &storage_proof.storage_hash,
         )
-        .map_err(Into::<Error>::into)?;
+        .map_err(Error::VerifyAccountStorageRoot)?;
+
+        let commitment_key = ibc_commitment_key(key.try_into().map_err(Error::InvalidKey)?);
+
+        // verify ibc commitment absence
+        evm_storage_verifier::verify_storage_absence(
+            storage_proof.storage_hash,
+            commitment_key,
+            storage_proof.storage_proof,
+        )
+        .map_err(Error::VerifyStorageAbsence)?;
+
         Ok(())
     }
 
@@ -80,29 +115,27 @@ impl IbcClient for ParliaLightClient {
     }
 
     fn status(
-        _ctx: IbcClientCtx<Self>,
-        ClientState::V1(_client_state): &Self::ClientState,
+        ctx: IbcClientCtx<Self>,
+        ClientState::V1(client_state): &Self::ClientState,
     ) -> Status {
-        // TODO: Re-enable these checks before we go to mainnet
-        Status::Active
-        // if client_state.frozen_height == 0 {
-        //     let consensus_state = ctx
-        //         .read_self_consensus_state(client_state.latest_height)
-        //         .unwrap();
+        if client_state.frozen_height == 0 {
+            let consensus_state = ctx
+                .read_self_consensus_state(client_state.latest_height)
+                .unwrap();
 
-        //     if consensus_state
-        //         .timestamp
-        //         .plus_duration(client_state.unbond_period)
-        //         .expect("should be ok")
-        //         < Timestamp::from_nanos(ctx.env.block.time.nanos())
-        //     {
-        //         Status::Expired
-        //     } else {
-        //         Status::Active
-        //     }
-        // } else {
-        //     Status::Frozen
-        // }
+            if consensus_state
+                .timestamp
+                .plus_duration(client_state.unbond_period)
+                .expect("should be ok")
+                < Timestamp::from_nanos(ctx.env.block.time.nanos())
+            {
+                Status::Expired
+            } else {
+                Status::Active
+            }
+        } else {
+            Status::Frozen
+        }
     }
 
     fn verify_creation(
@@ -142,22 +175,12 @@ impl IbcClient for ParliaLightClient {
         )
         .map_err(Into::<Error>::into)?;
 
-        // verify ibc storage root
-        evm_storage_verifier::verify_account_storage_root(
-            verified_header.state_root,
-            &client_state.ibc_contract_address,
-            header.ibc_account_proof.proof,
-            &header.ibc_account_proof.storage_root,
-        )
-        .map_err(Into::<Error>::into)?;
-
         let update_height = verified_header.number.try_into().expect("impossible");
 
         let mut consensus_state = ConsensusState {
             valset_epoch_block_number: header.trusted_valset_epoch_number,
             timestamp: verified_header.full_timestamp(),
             state_root: verified_header.state_root,
-            ibc_storage_root: header.ibc_account_proof.storage_root,
         };
 
         // valset rotated

@@ -12,18 +12,18 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                       = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
-embed-commit                = { workspace = true }
-enumorph                    = { workspace = true }
-ethereum-light-client-types = { workspace = true, features = ["serde"] }
-ibc-union-spec              = { workspace = true }
-jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
-parlia-light-client-types   = { workspace = true, features = ["serde"] }
-parlia-types                = { workspace = true }
-parlia-verifier             = { workspace = true }
-serde                       = { workspace = true, features = ["derive"] }
-serde_json                  = { workspace = true }
-tokio                       = { workspace = true }
-tracing                     = { workspace = true }
-unionlabs                   = { workspace = true }
-voyager-sdk                 = { workspace = true }
+alloy                     = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
+embed-commit              = { workspace = true }
+enumorph                  = { workspace = true }
+futures.workspace         = true
+ibc-union-spec            = { workspace = true }
+jsonrpsee                 = { workspace = true, features = ["macros", "server", "tracing"] }
+parlia-light-client-types = { workspace = true, features = ["serde"] }
+parlia-types              = { workspace = true }
+parlia-verifier           = { workspace = true }
+serde                     = { workspace = true, features = ["derive"] }
+serde_json                = { workspace = true }
+tokio                     = { workspace = true }
+tracing                   = { workspace = true }
+unionlabs                 = { workspace = true }
+voyager-sdk               = { workspace = true }

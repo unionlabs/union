@@ -31,6 +31,7 @@ import {StateLensIcs23MptClient} from
     "../contracts/clients/StateLensIcs23MptClient.sol";
 import {StateLensIcs23SmtClient} from
     "../contracts/clients/StateLensIcs23SmtClient.sol";
+import {ProofLensClient} from "../contracts/clients/ProofLensClient.sol";
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/03-zkgm/Zkgm.sol";
 import "../contracts/tge/Vesting.sol";
@@ -52,6 +53,7 @@ struct Contracts {
     StateLensIcs23MptClient stateLensIcs23MptClient;
     StateLensIcs23Ics23Client stateLensIcs23Ics23Client;
     StateLensIcs23SmtClient stateLensIcs23SmtClient;
+    ProofLensClient proofLensClient;
     PingPong ucs00;
     ZkgmERC20 ucs03Erc20Impl;
     UCS03Zkgm ucs03;
@@ -96,6 +98,7 @@ library LIGHT_CLIENT_SALT {
     string constant STATE_LENS_ICS23_ICS23 =
         "lightclients/state-lens/ics23/ics23";
     string constant STATE_LENS_ICS23_SMT = "lightclients/state-lens/ics23/smt";
+    string constant PROOF_LENS = "lightclients/proof-lens";
 }
 
 library LightClients {
@@ -104,6 +107,7 @@ library LightClients {
     string constant STATE_LENS_ICS23_MPT = "state-lens/ics23/mpt";
     string constant STATE_LENS_ICS23_ICS23 = "state-lens/ics23/ics23";
     string constant STATE_LENS_ICS23_SMT = "state-lens/ics23/smt";
+    string constant PROOF_LENS = "proof-lens";
 }
 
 library Protocols {
@@ -505,6 +509,24 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
+    function deployProofLensClient(
+        IBCHandler handler,
+        Manager manager
+    ) internal returns (ProofLensClient) {
+        return ProofLensClient(
+            deployIfNotExists(
+                LIGHT_CLIENT_SALT.PROOF_LENS,
+                abi.encode(
+                    address(new ProofLensClient(address(handler))),
+                    abi.encodeCall(
+                        ProofLensClient.initialize, (address(manager))
+                    )
+                ),
+                "ProofLensClient"
+            )
+        );
+    }
+
     function deployCometbls(
         IBCHandler handler,
         Manager manager
@@ -615,6 +637,8 @@ abstract contract UnionScript is UnionBase {
             deployStateLensIcs23Ics23Client(handler, manager);
         StateLensIcs23SmtClient stateLensIcs23SmtClient =
             deployStateLensIcs23SmtClient(handler, manager);
+        ProofLensClient proofLensClient =
+            deployProofLensClient(handler, manager);
         PingPong ucs00 = deployUCS00(handler, manager, 100000000000000);
         ZkgmERC20 zkgmERC20 = deployZkgmERC20();
         ProxyAccount accountImpl = deployProxyAccount();
@@ -628,6 +652,7 @@ abstract contract UnionScript is UnionBase {
             stateLensIcs23MptClient: stateLensIcs23MptClient,
             stateLensIcs23Ics23Client: stateLensIcs23Ics23Client,
             stateLensIcs23SmtClient: stateLensIcs23SmtClient,
+            proofLensClient: proofLensClient,
             ucs00: ucs00,
             ucs03Erc20Impl: zkgmERC20,
             ucs03: ucs03,
@@ -763,6 +788,24 @@ contract DeployStateLensIcs23MptClient is UnionScript, VersionedScript {
         console.log(
             "StateLensIcs23MptClient: ", address(stateLensIcs23MptClient)
         );
+    }
+}
+
+contract DeployProofLensClient is UnionScript, VersionedScript {
+    using LibString for *;
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC_SALT.BASED));
+
+        vm.startBroadcast(privateKey);
+        ProofLensClient proofLensClient =
+            deployProofLensClient(handler, manager);
+        vm.stopBroadcast();
+
+        console.log("ProofLensClient: ", address(proofLensClient));
     }
 }
 
@@ -1027,6 +1070,7 @@ contract GetDeployed is VersionedScript {
             getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_ICS23);
         address stateLensIcs23SmtClient =
             getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_SMT);
+        address proofLensClient = getDeployed(LIGHT_CLIENT_SALT.PROOF_LENS);
 
         address ucs00 = getDeployed(Protocols.UCS00);
         address ucs03 = getDeployed(Protocols.UCS03);
@@ -1072,6 +1116,13 @@ contract GetDeployed is VersionedScript {
                 abi.encodePacked(
                     "StateLensIcs23SmtClient: ",
                     stateLensIcs23SmtClient.toHexString()
+                )
+            )
+        );
+        console.log(
+            string(
+                abi.encodePacked(
+                    "ProofLensClient: ", proofLensClient.toHexString()
                 )
             )
         );
@@ -1401,6 +1452,17 @@ contract GetDeployed is VersionedScript {
         impls.serialize(
             implOf(stateLensIcs23SmtClient).toHexString(),
             implStateLensIcs23SmtClient
+        );
+
+        string memory implProofLensClient = "implProofLensClient";
+        implProofLensClient.serialize(
+            "contract",
+            string("contracts/clients/ProofLensClient.sol:ProofLensClient")
+        );
+        implProofLensClient =
+            implProofLensClient.serialize("args", abi.encode(handler));
+        impls.serialize(
+            implOf(proofLensClient).toHexString(), implProofLensClient
         );
 
         string memory implUCS00 = "implUCS00";
@@ -2089,6 +2151,46 @@ contract UpgradeStateLensIcs23SmtClient is VersionedScript {
     }
 }
 
+contract UpgradeProofLensClient is VersionedScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable privateKey;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        privateKey = vm.envUint("PRIVATE_KEY");
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        address handler = getDeployed(IBC_SALT.BASED);
+        ProofLensClient proofLensClient =
+            ProofLensClient(getDeployed(LIGHT_CLIENT_SALT.PROOF_LENS));
+        console.log(
+            string(
+                abi.encodePacked(
+                    "ProofLensClient: ", address(proofLensClient).toHexString()
+                )
+            )
+        );
+        vm.startBroadcast(privateKey);
+        address newImplementation = address(new ProofLensClient(handler));
+        proofLensClient.upgradeToAndCall(newImplementation, new bytes(0));
+        vm.stopBroadcast();
+    }
+}
+
 contract UpgradeU is BaseUpgrade {
     constructor() BaseUpgrade(false, false) {}
 
@@ -2152,6 +2254,8 @@ contract DeployRoles is UnionScript {
         StateLensIcs23SmtClient(
             getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_SMT)
         );
+        ProofLensClient proofLensClient =
+            ProofLensClient(getDeployed(LIGHT_CLIENT_SALT.PROOF_LENS));
         return Contracts({
             manager: manager,
             multicall: multicall,
@@ -2161,6 +2265,7 @@ contract DeployRoles is UnionScript {
             stateLensIcs23MptClient: stateLensIcs23MptClient,
             stateLensIcs23Ics23Client: stateLensIcs23Ics23Client,
             stateLensIcs23SmtClient: stateLensIcs23SmtClient,
+            proofLensClient: proofLensClient,
             ucs00: ucs00,
             ucs03Erc20Impl: ucs03Erc20Impl,
             ucs03: ucs03
@@ -2205,6 +2310,8 @@ contract DeployRegisterClients is UnionScript {
         StateLensIcs23SmtClient(
             getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_SMT)
         );
+        ProofLensClient proofLensClient =
+            ProofLensClient(getDeployed(LIGHT_CLIENT_SALT.PROOF_LENS));
         return Contracts({
             manager: manager,
             multicall: multicall,
@@ -2214,6 +2321,7 @@ contract DeployRegisterClients is UnionScript {
             stateLensIcs23MptClient: stateLensIcs23MptClient,
             stateLensIcs23Ics23Client: stateLensIcs23Ics23Client,
             stateLensIcs23SmtClient: stateLensIcs23SmtClient,
+            proofLensClient: proofLensClient,
             ucs00: ucs00,
             ucs03Erc20Impl: ucs03Erc20Impl,
             ucs03: ucs03
@@ -2229,36 +2337,44 @@ contract DeployRegisterClients is UnionScript {
 
         vm.startBroadcast(privateKey);
 
-        try contracts.handler.registerClient(
-            LightClients.COMETBLS, contracts.cometblsClient
-        ) {} catch Error(string memory reason) {
-            console.log(
-                "error deploying client ", LightClients.COMETBLS, ": ", reason
-            );
-        }
+        // try contracts.handler.registerClient(
+        //     LightClients.COMETBLS, contracts.cometblsClient
+        // ) {} catch Error(string memory reason) {
+        //     console.log(
+        //         "error deploying client ", LightClients.COMETBLS, ": ", reason
+        //     );
+        // }
+
+        // try contracts.handler.registerClient(
+        //     LightClients.STATE_LENS_ICS23_MPT, contracts.stateLensIcs23MptClient
+        // ) {} catch Error(string memory reason) {
+        //     console.log(
+        //         "error deploying client ", LightClients.STATE_LENS_ICS23_MPT, ": ", reason
+        //     );
+        // }
+
+        // try contracts.handler.registerClient(
+        //     LightClients.STATE_LENS_ICS23_ICS23,
+        //     contracts.stateLensIcs23Ics23Client
+        // ) {} catch Error(string memory reason) {
+        //     console.log(
+        //         "error deploying client ", LightClients.STATE_LENS_ICS23_ICS23, ": ", reason
+        //     );
+        // }
+
+        // try contracts.handler.registerClient(
+        //     LightClients.STATE_LENS_ICS23_SMT, contracts.stateLensIcs23SmtClient
+        // ) {} catch Error(string memory reason) {
+        //     console.log(
+        //         "error deploying client ", LightClients.STATE_LENS_ICS23_SMT, ": ", reason
+        //     );
+        // }
 
         try contracts.handler.registerClient(
-            LightClients.STATE_LENS_ICS23_MPT, contracts.stateLensIcs23MptClient
+            LightClients.PROOF_LENS, contracts.proofLensClient
         ) {} catch Error(string memory reason) {
             console.log(
-                "error deploying client ", LightClients.COMETBLS, ": ", reason
-            );
-        }
-
-        try contracts.handler.registerClient(
-            LightClients.STATE_LENS_ICS23_ICS23,
-            contracts.stateLensIcs23Ics23Client
-        ) {} catch Error(string memory reason) {
-            console.log(
-                "error deploying client ", LightClients.COMETBLS, ": ", reason
-            );
-        }
-
-        try contracts.handler.registerClient(
-            LightClients.STATE_LENS_ICS23_SMT, contracts.stateLensIcs23SmtClient
-        ) {} catch Error(string memory reason) {
-            console.log(
-                "error deploying client ", LightClients.COMETBLS, ": ", reason
+                "error deploying client ", LightClients.PROOF_LENS, ": ", reason
             );
         }
 

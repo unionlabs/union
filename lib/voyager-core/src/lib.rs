@@ -212,7 +212,7 @@ impl<Q: Queue<VoyagerMessage>> Engine<Q> {
             }
 
             for (_filter, plugin_name) in &self.interest_filters.filters {
-                info!(%plugin_name, "spawning optimizer");
+                debug!(%plugin_name, "spawning optimizer");
 
                 tasks.push(Box::pin(
                     AssertUnwindSafe(
