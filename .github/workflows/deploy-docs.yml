@@ -35,7 +35,7 @@ jobs:
     environment: 'docs-preview'
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - uses: cachix/install-nix-action@v31
@@ -76,7 +76,7 @@ jobs:
       npm_config_yes: true
     if: github.event_name == 'workflow_dispatch'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - uses: cachix/install-nix-action@v31
@@ -100,7 +100,7 @@ jobs:
     environment: 'docs-production'
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - uses: cachix/install-nix-action@v31
