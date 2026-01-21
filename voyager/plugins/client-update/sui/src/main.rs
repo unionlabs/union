@@ -1,5 +1,3 @@
-#![feature(iter_array_chunks)]
-
 use std::{collections::VecDeque, str::FromStr, time::Duration};
 
 use call::FetchUpdate;
