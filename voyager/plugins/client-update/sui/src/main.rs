@@ -1,4 +1,6 @@
-use std::{collections::VecDeque, str::FromStr};
+#![feature(iter_array_chunks)]
+
+use std::{collections::VecDeque, str::FromStr, time::Duration};
 
 use call::FetchUpdate;
 use jsonrpsee::{Extensions, core::async_trait};
@@ -177,39 +179,57 @@ impl Module {
         let mut headers = vec![];
 
         let mut is_first = true;
-        let epoch_ids: Vec<u64> = (from..to).collect();
-        let query = json!({
-          "query": "query ($epoch_ids: [UInt53]) { multiGetEpochs(keys: $epoch_ids) { checkpoints(last: 1) { edges { node { sequenceNumber } } }  } }",
-          "variables": { "epoch_ids": epoch_ids}
-        });
+        let epoch_ids: Vec<Vec<u64>> = (from..to)
+            .collect::<Vec<u64>>()
+            .chunks(10)
+            .map(|c| c.to_vec())
+            .collect();
 
-        let resp = client
-            .try_clone()
-            .expect("no body, so this will work")
-            .body(query.to_string())
-            .send()
-            .await
-            .map_err(RpcError::retryable("error fetching epoch checkpoint"))?
-            .error_for_status()
-            .map_err(RpcError::retryable(
-                "error fetching epoch checkpoint: error status",
-            ))?
-            .text()
-            .await
-            .map_err(RpcError::retryable(
-                "error fetching epoch checkpoint: error reading text from body",
-            ))?;
+        info!("epochs {epoch_ids:?}");
 
-        info!(%resp);
+        let mut update_to_heights = vec![];
+        for epoch_id_chunk in &epoch_ids {
+            info!(
+                "fetching the epoch chunk {}-{}",
+                epoch_id_chunk[0],
+                epoch_id_chunk[epoch_id_chunk.len() - 1]
+            );
+            let query = json!({
+              "query": "query ($epoch_ids: [UInt53]) { multiGetEpochs(keys: $epoch_ids) { checkpoints(last: 1) { edges { node { sequenceNumber } } }  } }",
+              "variables": { "epoch_ids": epoch_id_chunk }
+            });
 
-        let v: &serde_json::Value =
-            &serde_json::from_str::<serde_json::Value>(&resp).unwrap()["data"]["multiGetEpochs"];
+            let resp = client
+                .try_clone()
+                .expect("no body, so this will work")
+                .body(query.to_string())
+                .send()
+                .await
+                .map_err(RpcError::retryable("error fetching epoch checkpoint"))?
+                .error_for_status()
+                .map_err(RpcError::retryable(
+                    "error fetching epoch checkpoint: error status",
+                ))?
+                .text()
+                .await
+                .map_err(RpcError::retryable(
+                    "error fetching epoch checkpoint: error reading text from body",
+                ))?;
 
-        for (i, _) in (from..to).enumerate() {
-            let update_to = v[i]["checkpoints"]["edges"][0]["node"]["sequenceNumber"]
-                .as_u64()
-                .unwrap();
+            let v: &serde_json::Value = &serde_json::from_str::<serde_json::Value>(&resp).unwrap()
+                ["data"]["multiGetEpochs"];
 
+            for i in 0..epoch_id_chunk.len() {
+                let update_to = v[i]["checkpoints"]["edges"][0]["node"]["sequenceNumber"]
+                    .as_u64()
+                    .unwrap();
+                update_to_heights.push(update_to);
+            }
+
+            tokio::time::sleep(Duration::from_secs(2)).await;
+        }
+
+        for update_to in update_to_heights {
             if is_first && trusted_height == update_to {
                 is_first = false;
                 continue;
@@ -230,6 +250,8 @@ impl Module {
             ));
 
             trusted_height = update_to;
+
+            tokio::time::sleep(Duration::from_millis(500)).await;
         }
 
         Ok((trusted_height, headers))
