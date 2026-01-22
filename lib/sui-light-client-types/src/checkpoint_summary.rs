@@ -110,14 +110,10 @@ pub struct ECMHLiveObjectSetDigest {
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum CheckpointContents {
     V1(CheckpointContentsV1),
+    V2(CheckpointContentsV2),
 }
 
 impl CheckpointContents {
-    pub fn as_inner(self) -> CheckpointContentsV1 {
-        let CheckpointContents::V1(inner) = self;
-        inner
-    }
-
     #[cfg(feature = "serde")]
     pub fn digest(&self) -> Digest {
         use crate::fixed_bytes::SuiFixedBytes;
@@ -143,6 +139,25 @@ pub struct CheckpointContentsV1 {
     /// The length of this vector is same as length of transactions vector
     /// System transactions has empty signatures
     pub user_signatures: Vec<Vec<GenericSignature>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct CheckpointContentsV2 {
+    pub transactions: Vec<CheckpointTransactionContents>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct CheckpointTransactionContents {
+    pub digest: ExecutionDigests,
+
+    /// Each signature is paired with the version of the AddressAliases object
+    /// that was used to verify it. Signatures always appear here in the same
+    /// order as the `required_signers` of the input `Transaction`.
+    pub user_signatures: Vec<(GenericSignature, Option<u64>)>,
 }
 
 #[derive(Eq, PartialEq, Clone, Debug)]
