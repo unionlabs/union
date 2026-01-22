@@ -142,16 +142,28 @@ pub fn verify_membership(
     }
 
     // STEP 4: find the effect digest in `checkpoint_contents.transactions` to verify it exists
-    let CheckpointContents::V1(checkpoint_contents) = checkpoint_contents;
+    // let CheckpointContents::V1(checkpoint_contents) = checkpoint_contents;
+
     let effects_digest = effects.digest();
-    let _ = checkpoint_contents
-        .transactions
-        .iter()
-        .find(|e| e.effects == effects_digest)
-        .expect("execution digests do not contain the given effect");
+    match checkpoint_contents {
+        CheckpointContents::V1(ref checkpoint_contents) => {
+            let _ = checkpoint_contents
+                .transactions
+                .iter()
+                .find(|e| e.effects == effects_digest)
+                .ok_or(Error::EffectNotFound(effects_digest.0.into_encoding()))?;
+        }
+        CheckpointContents::V2(ref checkpoint_contents) => {
+            checkpoint_contents
+                .transactions
+                .iter()
+                .find(|e| e.digest.effects == effects_digest)
+                .ok_or(Error::EffectNotFound(effects_digest.0.into_encoding()))?;
+        }
+    }
 
     // STEP 5: compare the digest of `checkpoint_contents` with the `contents_digest` which is verified previously by the client
-    let calc_contents_digest = CheckpointContents::V1(checkpoint_contents.clone()).digest();
+    let calc_contents_digest = checkpoint_contents.digest();
     if contents_digest != calc_contents_digest {
         return Err(Error::ContentsDigestMismatch {
             given: contents_digest,
