@@ -38,17 +38,17 @@
         "height": 420578883,
         "commit": "6fadb697bee413c025e87b5edf79c0d9f836cce6"
       },
-      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
-        "name": "core",
-        "salt": "0x6962632d69732d6261736564",
-        "height": 420578864,
-        "commit": "6fadb697bee413c025e87b5edf79c0d9f836cce6"
-      },
       "0xba5ed44733953d79717f6269357c77718c8ba5ed": {
         "name": "u",
         "salt": "0x12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047",
         "height": 423018019,
         "commit": "766ac2fb65a692eeecafc062fd23d2d9b1c6b7c4"
+      },
+      "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 420578864,
+        "commit": "6fadb697bee413c025e87b5edf79c0d9f836cce6"
       }
     }
   },
@@ -549,6 +549,12 @@
     "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
     "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
     "contracts": {
+      "0x222c042e17d94f4c83720583c75a37242921ba1c": {
+        "name": "photon",
+        "salt": "0x7570686f746f6e",
+        "height": 24291713,
+        "commit": "7482275873190f3600a0d192babe830d4175c398"
+      },
       "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d": {
         "name": "lightclients/state-lens/ics23/ics23",
         "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6963733233",
