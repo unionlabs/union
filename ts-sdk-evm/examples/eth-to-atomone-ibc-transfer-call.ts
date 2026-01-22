@@ -73,6 +73,17 @@ export const ATONE_ERC20 = Token.Erc20.make({
   address: "0xA1a1d0B9182339e86e80db519218eA03Ec09a1A1",
 })
 
+export const PHOTON_SOLVER_ON_ETH_METADATA =
+  "0x000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014222c042e17d94f4c83720583c75a37242921ba1c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" as const
+
+export const PHOTON_IBC_DENOM_ON_OSMOSIS = Token.CosmosIbcClassic.make({
+  address: "ibc/D6E02C5AE8A37FC2E3AB1FC8AC168878ADB870549383DFFEA9FD020C234520A7",
+})
+
+export const PHOTON_ERC20 = Token.Erc20.make({
+  address: "0x222c042e17d94f4c83720583c75a37242921ba1c",
+})
+
 /**
  * Generate a deterministic Union cosmos address from an EVM address using instantiate2
  * This is used to create the receiver address for cross-chain operations
@@ -193,9 +204,9 @@ Effect.gen(function*() {
     destination: osmosisChain,
     sender: SENDER_ETH,
     receiver: proxy,
-    baseToken: ATONE_ERC20,
+    baseToken: PHOTON_ERC20,
     baseAmount: SEND_AMOUNT,
-    quoteToken: ATONE_IBC_DENOM_ON_OSMOSIS,
+    quoteToken: PHOTON_IBC_DENOM_ON_OSMOSIS,
     quoteAmount: SEND_AMOUNT,
     kind: "solve",
     metadata: ATONE_SOLVER_ON_OSMOSIS_METADATA,
@@ -208,7 +219,7 @@ Effect.gen(function*() {
         channel_id: OSMOSIS_TO_ATOMONE_CHANNEL,
         to_address: RECEIVER_ATOMONE.address,
         amount: {
-          denom: ATONE_IBC_DENOM_ON_OSMOSIS.address,
+          denom: PHOTON_IBC_DENOM_ON_OSMOSIS.address,
           amount: SEND_AMOUNT,
         },
         timeout: {
