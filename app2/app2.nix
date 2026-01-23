@@ -19,7 +19,8 @@ _: {
         pnpm_10
         imagemagick
       ];
-      PUBLIC_DATADOG_CLIENT_TOKEN = "pub69b8a3deb766e91a19b44cccf0c3352e";
+      PUBLIC_LOG_TOKEN = "9VE47r89qMgdbCzHbtRN8pTuQyU9cWVsZMnAwyGU";
+      PUBLIC_LOG_ENDPOINT = "https://logs.union.build/app";
       PUBLIC_GIT_REV = gitShortRev;
       PUBLIC_LAST_MODIFIED_DATE = lastModifiedDate;
       PUBLIC_LAST_MODIFIED_EPOCH = lastModified;
@@ -38,7 +39,7 @@ _: {
             ../ts-sdk-evm
             ../ts-sdk-sui
           ];
-          hash = "sha256-IyY4ALBfwVBGibjJFhLGtIN2OutgaRlndpmA+MzbF1g=";
+          hash = "sha256-ihwIWIgmF9XrEDf9rINtpR9OWLJmS4HtxYFsShY9e3g=";
           buildInputs = deps;
           nativeBuildInputs = buildInputs;
           pnpmWorkspaces = [
@@ -51,7 +52,8 @@ _: {
           ];
           buildPhase = ''
             runHook preBuild
-            export PUBLIC_DATADOG_CLIENT_TOKEN="${PUBLIC_DATADOG_CLIENT_TOKEN}"
+            export PUBLIC_LOG_TOKEN="${PUBLIC_LOG_TOKEN}"
+            export PUBLIC_LOG_ENDPOINT="${PUBLIC_LOG_ENDPOINT}"
             export PUBLIC_GIT_REV="${PUBLIC_GIT_REV}"
             export PUBLIC_LAST_MODIFIED_DATE="${PUBLIC_LAST_MODIFIED_DATE}"
             export PUBLIC_LAST_MODIFIED_EPOCH="${PUBLIC_LAST_MODIFIED_EPOCH}"
@@ -82,7 +84,8 @@ _: {
             text = ''
               ${ensureAtRepositoryRoot}
               cd app2/
-              export PUBLIC_DATADOG_CLIENT_TOKEN="${PUBLIC_DATADOG_CLIENT_TOKEN}"
+              export PUBLIC_LOG_TOKEN="${PUBLIC_LOG_TOKEN}"
+              export PUBLIC_LOG_ENDPOINT="${PUBLIC_LOG_ENDPOINT}"
               export PUBLIC_GIT_REV="${PUBLIC_GIT_REV}"
               export PUBLIC_LAST_MODIFIED_DATE="${PUBLIC_LAST_MODIFIED_DATE}"
               export PUBLIC_LAST_MODIFIED_EPOCH="${PUBLIC_LAST_MODIFIED_EPOCH}"
@@ -102,7 +105,8 @@ _: {
             text = ''
               ${ensureAtRepositoryRoot}
               cd app2/
-              export PUBLIC_DATADOG_CLIENT_TOKEN="${PUBLIC_DATADOG_CLIENT_TOKEN}"
+              export PUBLIC_LOG_TOKEN="${PUBLIC_LOG_TOKEN}"
+              export PUBLIC_LOG_ENDPOINT="${PUBLIC_LOG_ENDPOINT}"
               export PUBLIC_GIT_REV="${PUBLIC_GIT_REV}"
               export PUBLIC_LAST_MODIFIED_DATE="${PUBLIC_LAST_MODIFIED_DATE}"
               export PUBLIC_LAST_MODIFIED_EPOCH="${PUBLIC_LAST_MODIFIED_EPOCH}"

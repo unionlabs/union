@@ -10,9 +10,9 @@ export class GraphQLError extends S.TaggedError<GraphQLError>("GraphQLError")("G
   static fromUnknown(error: unknown) {
     return pipe(
       Match.value(error),
-      Match.when(Match.instanceOf(ClientError), this.fromClientError),
+      Match.when(Match.instanceOf(ClientError), (error) => GraphQLError.fromClientError(error)),
       Match.orElse((error) =>
-        this.make({
+        GraphQLError.make({
           cause: error,
           message: String(error) ?? "Unknown error",
           status: -1,
@@ -20,8 +20,9 @@ export class GraphQLError extends S.TaggedError<GraphQLError>("GraphQLError")("G
       ),
     )
   }
+
   static fromClientError(error: ClientError) {
-    return this.make({
+    return GraphQLError.make({
       message: error.message,
       status: error.response.status,
       errors: error.response.errors,

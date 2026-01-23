@@ -12,7 +12,7 @@ _: {
           packageJsonPath = ./package.json;
           extraSrcs = pkgs.lib.fileset.unions [ ./. ];
           pnpmWorkspaces = [ "@unionlabs/effect-svelte" ];
-          hash = "sha256-q+7B/VoFaV85Mt2hQWJBFIEQH5zVdwoESqgqhMxKCJU=";
+          hash = "sha256-CXZ+Vc7IkmrZkvKTyNiDCGQUKH2HJhGaHgHVZ69zv0E=";
           doCheck = true;
           buildPhase = ''
             runHook preBuild

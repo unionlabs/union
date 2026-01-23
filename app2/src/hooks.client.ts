@@ -43,7 +43,6 @@ const cleanupStorage = () => {
 
 export const init: ClientInit = async () => {
   await import("$lib/runtime").then(x => x.__init())
-  await import("$lib/logging/datadog").then(x => x.__init())
 
   try {
     cleanupStorage()
