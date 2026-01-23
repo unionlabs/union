@@ -22,13 +22,13 @@ export const TracingLive = Layer.unwrapEffect(
 
     const env = pipe(
       Match.value(ENV()),
-      Match.when("PRODUCTION", () => "production"),
-      Match.when("STAGING", () => "staging"),
-      Match.when("DEVELOPMENT", () => "development"),
+      Match.when("PRODUCTION", () => "production" as const),
+      Match.when("STAGING", () => "staging" as const),
+      Match.when("DEVELOPMENT", () => "development" as const),
       Match.exhaustive,
     )
 
-    if (env === "DEVELOPMENT") {
+    if (env === "development") {
       return WebSdk.layer(() => ({
         resource: {
           serviceName,
