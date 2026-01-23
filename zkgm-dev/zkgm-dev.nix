@@ -9,7 +9,7 @@ _: {
     {
       packages = {
         zkgm-dev = buildPnpmPackage {
-          hash = "sha256-ipHoA3ZIv4DGXdvjd0wGqGjsdZn8qrJRx8zAMYhs76M=";
+          hash = "sha256-mD9rS9Pu5FO6EVlZl0ubJDieVCTlnSK7+Xh+yOMQbrI=";
           packageJsonPath = ./package.json;
           extraSrcs = pkgs.lib.fileset.unions [
             ./.
