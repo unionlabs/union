@@ -2,7 +2,7 @@ import { ENV } from "$lib/constants"
 import { SupabaseClient } from "$lib/dashboard/client"
 import { GasPriceMap } from "$lib/gasprice"
 import { GraphQL } from "$lib/graphql/service"
-import * as Datadog from "$lib/logging/datadog"
+import * as Tracing from "$lib/logging/tracing"
 import * as SvelteConfigProvider from "$lib/services/SvelteConfigProvider.js"
 import { PriceOracle } from "@unionlabs/sdk"
 import { Indexer } from "@unionlabs/sdk/Indexer"
@@ -28,16 +28,14 @@ export default Layer.mergeAll(
   PriceOracle.layerExecutor,
   SupabaseClient.Default({ auth: { autoRefreshToken: true } }),
   IndexerLive,
+  Tracing.TracingLive,
   Logger.replace(
     Logger.defaultLogger,
-    Logger.zip(
-      Logger.prettyLogger({
-        colors: true,
-        mode: "browser",
-        stderr: true,
-      }),
-      Datadog.Logger,
-    ),
+    Logger.prettyLogger({
+      colors: true,
+      mode: "browser",
+      stderr: true,
+    }),
   ),
   minimumLogLevel,
 )
