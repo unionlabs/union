@@ -20,7 +20,7 @@ export const TracingLive = Layer.unwrapEffect(
     const serviceName = "app"
     const serviceVersion = PUBLIC_GIT_REV
 
-    const environment = pipe(
+    const env = pipe(
       Match.value(ENV()),
       Match.when("PRODUCTION", () => "production"),
       Match.when("STAGING", () => "staging"),
@@ -28,13 +28,13 @@ export const TracingLive = Layer.unwrapEffect(
       Match.exhaustive,
     )
 
-    if (environment === "DEVELOPMENT") {
+    if (env === "DEVELOPMENT") {
       return WebSdk.layer(() => ({
         resource: {
           serviceName,
           serviceVersion,
           attributes: {
-            "deployment.environment": environment,
+            env,
           },
         },
         logRecordProcessor: new SimpleLogRecordProcessor(new ConsoleLogRecordExporter()),
@@ -52,7 +52,7 @@ export const TracingLive = Layer.unwrapEffect(
 
     if (Option.isNone(endpoint) || Str.isEmpty(endpoint.value)) {
       yield* Effect.logWarning(
-        `The app is running in a ${environment} environment, but no OTEL logging endpoint is configured.`,
+        `The app is running in a ${env} environment, but no OTEL logging endpoint is configured.`,
       )
       return Layer.empty
     }
@@ -66,7 +66,7 @@ export const TracingLive = Layer.unwrapEffect(
         serviceName,
         serviceVersion,
         attributes: {
-          "deployment.environment": environment,
+          env,
         },
       },
       logRecordProcessor: new BatchLogRecordProcessor(
