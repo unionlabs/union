@@ -71,6 +71,7 @@ export const TracingLive = Layer.unwrapEffect(
       Match.when("DEVELOPMENT", () => "development" as const),
       Match.exhaustive,
     )
+
     if (env === "development") {
       return WebSdk.layer(() => ({
         resource: {
@@ -130,9 +131,10 @@ export const TracingLive = Layer.unwrapEffect(
           url: `${endpoint.value}/v1/traces`,
           headers,
           compression,
+          concurrencyLimit: 30,
         }),
         {
-          maxBatchBytes: 9_999,
+          maxBatchBytes: 24_999,
         },
       ),
       metricReader: new PeriodicExportingMetricReader({
