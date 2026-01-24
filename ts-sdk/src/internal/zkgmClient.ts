@@ -1,5 +1,17 @@
-import { Cause, Context, Effect, Exit, Fiber, Inspectable, Layer, Predicate, Stream } from "effect"
-import { dual } from "effect/Function"
+import {
+  Cause,
+  Context,
+  Effect,
+  Exit,
+  Fiber,
+  Inspectable,
+  Layer,
+  Option,
+  Predicate,
+  Stream,
+} from "effect"
+import * as FiberRef from "effect/FiberRef"
+import { constFalse, dual } from "effect/Function"
 import { globalValue } from "effect/GlobalValue"
 import { pipeArguments } from "effect/Pipeable"
 import type * as Client from "../ZkgmClient.js"
@@ -35,8 +47,41 @@ const ClientProto = {
   },
 }
 
-// const isClient = (u: unknown): u is Client.ZkgmClient.With<unknown, unknown> =>
-//   Predicate.hasProperty(u, TypeId)
+/** @internal */
+export const currentTracerDisabledWhen = globalValue(
+  Symbol.for("@unionlabs/sdk/ZkgmClient/tracerDisabledWhen"),
+  () => FiberRef.unsafeMake<Predicate.Predicate<ClientRequest.ZkgmClientRequest>>(constFalse),
+)
+
+/** @internal */
+export const withTracerDisabledWhen = dual<
+  (
+    predicate: Predicate.Predicate<ClientRequest.ZkgmClientRequest>,
+  ) => <E, R>(self: Client.ZkgmClient.With<E, R>) => Client.ZkgmClient.With<E, R>,
+  <E, R>(
+    self: Client.ZkgmClient.With<E, R>,
+    predicate: Predicate.Predicate<ClientRequest.ZkgmClientRequest>,
+  ) => Client.ZkgmClient.With<E, R>
+>(2, (self, pred) => transformResponse(self, Effect.locally(currentTracerDisabledWhen, pred)))
+
+/** @internal */
+export const SpanNameGenerator = Context.Reference<Client.SpanNameGenerator>()(
+  "@unionlabs/sdk/ZkgmClient/SpanNameGenerator",
+  {
+    defaultValue: () => (request: ClientRequest.ZkgmClientRequest) => `zkgm.client ${request.kind}`,
+  },
+)
+
+/** @internal */
+export const withSpanNameGenerator = dual<
+  (
+    f: (request: ClientRequest.ZkgmClientRequest) => string,
+  ) => <E, R>(self: Client.ZkgmClient.With<E, R>) => Client.ZkgmClient.With<E, R>,
+  <E, R>(
+    self: Client.ZkgmClient.With<E, R>,
+    f: (request: ClientRequest.ZkgmClientRequest) => string,
+  ) => Client.ZkgmClient.With<E, R>
+>(2, (self, f) => transformResponse(self, Effect.provideService(SpanNameGenerator, f)))
 
 interface ZkgmClientImpl<E, R> extends Client.ZkgmClient.With<E, R> {
   readonly preprocess: Client.ZkgmClient.Preprocess<E, R>
@@ -169,24 +214,83 @@ export const make = (
       Effect.withFiberRuntime((fiber) => {
         const scopedController = scopedRequests.get(request)
         const controller = scopedController ?? new AbortController()
-        // TODO: at some point, return encode request, return Either, map error to `ZkgmClientError`
-        const effect = f(request, controller.signal, fiber)
-        if (scopedController) {
-          return effect
+        const tracerDisabled = !fiber.getFiberRef(FiberRef.currentTracerEnabled)
+          || fiber.getFiberRef(currentTracerDisabledWhen)(request)
+        if (tracerDisabled) {
+          // TODO: at some point, return encode request, return Either, map error to `ZkgmClientError`
+          const effect = f(request, controller.signal, fiber)
+          if (scopedController) {
+            return effect
+          }
+          return Effect.uninterruptibleMask((restore) =>
+            Effect.matchCauseEffect(restore(effect), {
+              onSuccess(response) {
+                responseRegistry.register(response, controller)
+                return Effect.succeed(new InterruptibleResponse(response, controller))
+              },
+              onFailure(cause) {
+                if (Cause.isInterrupted(cause)) {
+                  controller.abort()
+                }
+                return Effect.failCause(cause)
+              },
+            })
+          )
         }
-        return Effect.uninterruptibleMask((restore) =>
-          Effect.matchCauseEffect(restore(effect), {
-            onSuccess(response) {
-              responseRegistry.register(response, controller)
-              return Effect.succeed(new InterruptibleResponse(response, controller))
-            },
-            onFailure(cause) {
-              if (Cause.isInterrupted(cause)) {
-                controller.abort()
-              }
-              return Effect.failCause(cause)
-            },
-          })
+
+        const ATTR_REQUEST_CHANNEL_ID = `zkgm.request.channelId`
+        const ATTR_REQUEST_UCS03_ADDRESS = `zkgm.request.ucs03Address`
+        const ATTR_REQUEST_INSTRUCTION_TAG = `zkgm.request.instruction.tag`
+        const ATTR_REQUEST_INSTRUCTION_VERSION = `zkgm.request.instruction.version`
+        const ATTR_REQUEST_KIND = "zkgm.request.kind"
+        const ATTR_REQUEST_DESTINATION = (key: string): string => `zkgm.request.destination.${key}`
+        const ATTR_REQUEST_SOURCE = (key: string): string => `zkgm.request.source.${key}`
+        const ATTR_RESPONSE_TX_HASH = `zkgm.response.txHash`
+        const ATTR_RESPONSE_SAFE_TX_HASH = `zkgm.response.safeTxHash`
+
+        const nameGenerator = Context.get(fiber.currentContext, SpanNameGenerator)
+        return Effect.useSpan(
+          nameGenerator(request),
+          { kind: "client", captureStackTrace: false },
+          (span) => {
+            span.attribute(ATTR_REQUEST_CHANNEL_ID, request.channelId)
+            span.attribute(ATTR_REQUEST_KIND, request.kind)
+            span.attribute(ATTR_REQUEST_UCS03_ADDRESS, request.ucs03Address)
+            span.attribute(ATTR_REQUEST_INSTRUCTION_TAG, request.instruction._tag)
+            span.attribute(ATTR_REQUEST_INSTRUCTION_VERSION, request.instruction.version)
+            span.attribute(
+              ATTR_REQUEST_DESTINATION("universal_chain_id"),
+              request.destination.universal_chain_id,
+            )
+            span.attribute(
+              ATTR_REQUEST_SOURCE("universal_chain_id"),
+              request.source.universal_chain_id,
+            )
+            return Effect.uninterruptibleMask((restore) =>
+              restore(f(request, controller.signal, fiber)).pipe(
+                Effect.withParentSpan(span),
+                Effect.matchCauseEffect({
+                  onSuccess: (response) => {
+                    span.attribute(ATTR_RESPONSE_TX_HASH, response.txHash)
+                    if (Option.isSome(response.safeHash)) {
+                      span.attribute(ATTR_RESPONSE_SAFE_TX_HASH, response.safeHash.value)
+                    }
+                    if (scopedController) {
+                      return Effect.succeed(response)
+                    }
+                    responseRegistry.register(response, controller)
+                    return Effect.succeed(new InterruptibleResponse(response, controller))
+                  },
+                  onFailure(cause) {
+                    if (!scopedController && Cause.isInterrupted(cause)) {
+                      controller.abort()
+                    }
+                    return Effect.failCause(cause)
+                  },
+                }),
+              )
+            )
+          },
         )
       })), Effect.succeed as Client.ZkgmClient.Preprocess<never, never>)
 
