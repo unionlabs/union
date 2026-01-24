@@ -339,7 +339,7 @@ export const getChainHeight = pipe(
  * @category utils
  * @since 2.0.0
  */
-export const getBalanceNow = Effect.fn("getBalanceNow")((
+export const getBalanceNow = Effect.fn("Cosmos.getBalanceNow")((
   address: `${string}1${string}`,
   denom: string,
 ) =>
@@ -353,11 +353,6 @@ export const getBalanceNow = Effect.fn("getBalanceNow")((
     ),
   )
 )
-
-// .pipe(
-//     Effect.timeout("10 seconds"),
-//     Effect.retry({ times: 5 }),
-//   )
 
 /**
  * Error type for HttpRequest execution failures
@@ -376,44 +371,46 @@ export class HttpRequestFailed extends Data.TaggedError("@unionlabs/sdk/Cosmos/H
  * @category utils
  * @since 2.0.0
  */
-export function queryContractSmartAtHeight<T = unknown>(
-  restEndpoint: string,
-  contractAddress: Ucs05.CosmosDisplay,
-  queryMsg: Record<string, unknown>,
-  height: number,
-) {
-  const base = restEndpoint.replace(/\/+$/, "")
-  const encoded = btoa(JSON.stringify(queryMsg))
-  const url = `${base}/cosmwasm/wasm/v1/contract/${contractAddress.address}/smart/${encoded}`
-  return pipe(
-    Effect.gen(function*() {
-      const request = HttpClientRequest.get(url).pipe(
-        HttpClientRequest.setHeaders({
-          "Content-Type": "application/json",
-          "x-cosmos-block-height": height.toString(),
-        }),
-      )
-
-      const client = yield* HttpClient.HttpClient
-      const response = yield* client.execute(request)
-      const data = yield* response.json
-
-      return data as T
-    }),
-    Effect.timeout("10 seconds"),
-    Effect.retry({ times: 5 }),
-    Effect.catchAll((err) =>
-      err instanceof HttpRequestFailed
-        ? Effect.fail(err)
-        : Effect.fail(
-          new QueryContractError({
-            address: contractAddress.address,
-            cause: err,
+export const queryContractSmartAtHeight = Effect.fn("Cosmos.queryContractSmartAtHeight")(
+  function*<T = unknown>(
+    restEndpoint: string,
+    contractAddress: Ucs05.CosmosDisplay,
+    queryMsg: Record<string, unknown>,
+    height: number,
+  ) {
+    const base = restEndpoint.replace(/\/+$/, "")
+    const encoded = btoa(JSON.stringify(queryMsg))
+    const url = `${base}/cosmwasm/wasm/v1/contract/${contractAddress.address}/smart/${encoded}`
+    return yield* pipe(
+      Effect.gen(function*() {
+        const request = HttpClientRequest.get(url).pipe(
+          HttpClientRequest.setHeaders({
+            "Content-Type": "application/json",
+            "x-cosmos-block-height": height.toString(),
           }),
         )
-    ),
-  )
-}
+
+        const client = yield* HttpClient.HttpClient
+        const response = yield* client.execute(request)
+        const data = yield* response.json
+
+        return data as T
+      }),
+      Effect.timeout("10 seconds"),
+      Effect.retry({ times: 5 }),
+      Effect.catchAll((err) =>
+        err instanceof HttpRequestFailed
+          ? Effect.fail(err)
+          : Effect.fail(
+            new QueryContractError({
+              address: contractAddress.address,
+              cause: err,
+            }),
+          )
+      ),
+    )
+  },
+)
 
 /**
  * Fetch an account's balance for a denom at a specific block height.
@@ -421,48 +418,50 @@ export function queryContractSmartAtHeight<T = unknown>(
  * @category utils
  * @since 2.0.0
  */
-export function getBalanceAtHeight(
-  restEndpoint: string,
-  address: string,
-  denom: string,
-  height: number,
-) {
-  const base = restEndpoint.replace(/\/+$/, "")
-  const url = `${base}/cosmos/bank/v1beta1/balances/${address}`
-  return pipe(
-    Effect.gen(function*() {
-      const request = HttpClientRequest.get(url).pipe(
-        HttpClientRequest.setHeaders({
-          "Content-Type": "application/json",
-          "x-cosmos-block-height": height.toString(),
-        }),
-      )
-
-      const client = yield* HttpClient.HttpClient
-      const response = yield* client.execute(request)
-      const raw = yield* response.json
-
-      const data = raw as {
-        balances: Array<{ denom: string; amount: string }>
-      }
-
-      const entry = data.balances.find((b) => b.denom === denom)
-      return entry ? BigInt(entry.amount) : null
-    }),
-    Effect.timeout("10 seconds"),
-    Effect.retry({ times: 5 }),
-    Effect.catchAll((err) =>
-      err instanceof HttpRequestFailed
-        ? Effect.fail(err)
-        : Effect.fail(
-          new QueryContractError({
-            address,
-            cause: err,
+export const getBalanceAtHeight = Effect.fn("Cosmos.getBalanceAtHeight")(
+  function*(
+    restEndpoint: string,
+    address: string,
+    denom: string,
+    height: number,
+  ) {
+    const base = restEndpoint.replace(/\/+$/, "")
+    const url = `${base}/cosmos/bank/v1beta1/balances/${address}`
+    return yield* pipe(
+      Effect.gen(function*() {
+        const request = HttpClientRequest.get(url).pipe(
+          HttpClientRequest.setHeaders({
+            "Content-Type": "application/json",
+            "x-cosmos-block-height": height.toString(),
           }),
         )
-    ),
-  )
-}
+
+        const client = yield* HttpClient.HttpClient
+        const response = yield* client.execute(request)
+        const raw = yield* response.json
+
+        const data = raw as {
+          balances: Array<{ denom: string; amount: string }>
+        }
+
+        const entry = data.balances.find((b) => b.denom === denom)
+        return entry ? BigInt(entry.amount) : null
+      }),
+      Effect.timeout("10 seconds"),
+      Effect.retry({ times: 5 }),
+      Effect.catchAll((err) =>
+        err instanceof HttpRequestFailed
+          ? Effect.fail(err)
+          : Effect.fail(
+            new QueryContractError({
+              address,
+              cause: err,
+            }),
+          )
+      ),
+    )
+  },
+)
 
 /**
  * Interface for CW20 token metadata
@@ -506,7 +505,7 @@ export interface Cw20AllowanceResponse {
  * @category utils
  * @since 2.0.0
  */
-export const readCw20TokenInfo = Effect.fn("readCw20TokenInfo")((
+export const readCw20TokenInfo = Effect.fn("Cosmos.readCw20TokenInfo")((
   contractAddress: Ucs05.CosmosDisplay,
 ) => queryContract<Cw20TokenInfo>(contractAddress, { token_info: {} }))
 
@@ -518,7 +517,7 @@ export const readCw20TokenInfo = Effect.fn("readCw20TokenInfo")((
  * @category utils
  * @since 2.0.0
  */
-export const readCw20TotalSupply = Effect.fn("readCw20TotalSupply")((
+export const readCw20TotalSupply = Effect.fn("Cosmos.readCw20TotalSupply")((
   contractAddress: Ucs05.CosmosDisplay,
 ) =>
   pipe(
@@ -540,13 +539,13 @@ export const readCw20TotalSupply = Effect.fn("readCw20TotalSupply")((
  * @category utils
  * @since 2.0.0
  */
-export const readCw20BalanceAtHeight = (
-  rest: string,
-  contractAddress: Ucs05.CosmosDisplay,
-  address: string,
-  height: number,
-) =>
-  Effect.gen(function*() {
+export const readCw20BalanceAtHeight = Effect.fn("Cosmos.readCw20BalanceAtHeight")(
+  function*(
+    rest: string,
+    contractAddress: Ucs05.CosmosDisplay,
+    address: string,
+    height: number,
+  ) {
     const resp = yield* queryContractSmartAtHeight<{ data: { balance: string } }>(
       rest,
       contractAddress,
@@ -561,7 +560,8 @@ export const readCw20BalanceAtHeight = (
       Effect.tapErrorCause((cause) => Effect.logError("cosmos.readCw20BalanceAtHeight", cause)),
     )
     return resp.data.balance
-  })
+  },
+)
 
 /**
  * Read CW20 token total_supply
@@ -573,12 +573,12 @@ export const readCw20BalanceAtHeight = (
  * @category utils
  * @since 2.0.0
  */
-export const readCw20TotalSupplyAtHeight = (
-  rest: string,
-  contractAddress: Ucs05.CosmosDisplay,
-  height: number,
-) =>
-  Effect.gen(function*() {
+export const readCw20TotalSupplyAtHeight = Effect.fn("Cosmos.readTotalSupplyAtHeight")(
+  function*(
+    rest: string,
+    contractAddress: Ucs05.CosmosDisplay,
+    height: number,
+  ) {
     const resp = yield* queryContractSmartAtHeight<
       { data: { name: string; symbol: string; decimals: number; total_supply: string } }
     >(rest, contractAddress, {
@@ -588,7 +588,8 @@ export const readCw20TotalSupplyAtHeight = (
       Effect.tapErrorCause((cause) => Effect.logError("cosmos.readCw20TotalSupplyAtHeight", cause)),
     )
     return resp.data.total_supply
-  })
+  },
+)
 
 /**
  * Read the balance of a CW20 token for a specific address
@@ -599,7 +600,7 @@ export const readCw20TotalSupplyAtHeight = (
  * @category utils
  * @since 2.0.0
  */
-export const readCw20Balance = Effect.fn("readCw20Balance")((
+export const readCw20Balance = Effect.fn("Cosmos.readCw20Balance")((
   contractAddress: Ucs05.CosmosDisplay,
   address: string,
 ) =>
@@ -623,7 +624,7 @@ export const readCw20Balance = Effect.fn("readCw20Balance")((
  * @category utils
  * @since 2.0.0
  */
-export const readCw20Allowance = Effect.fn("readCw20Allowance")((
+export const readCw20Allowance = Effect.fn("Cosmos.readCw20Allowance")((
   contract: Ucs05.CosmosDisplay,
   owner: Ucs05.CosmosDisplay,
   spender: Ucs05.CosmosDisplay,
@@ -669,7 +670,7 @@ export const writeCw20IncreaseAllowance = (
  * @category utils
  * @since 2.0.0
  */
-export const channelBalance = Effect.fn("channelBalance")((path: bigint, token: string) =>
+export const channelBalance = Effect.fn("Cosmos.channelBalance")((path: bigint, token: string) =>
   pipe(
     ChannelDestination,
     Effect.andThen((config) =>
@@ -688,7 +689,7 @@ export const channelBalance = Effect.fn("channelBalance")((path: bigint, token: 
  * @category utils
  * @since 2.0.0
  */
-export const channelBalanceAtHeight = Effect.fn("channelBalanceAtHeight")(
+export const channelBalanceAtHeight = Effect.fn("Cosmos.channelBalanceAtHeight")(
   function*(rest: string, path: bigint, token: string, height: number) {
     const config = yield* ChannelDestination
     const resp = yield* queryContractSmartAtHeight<{ data: string | undefined }>(

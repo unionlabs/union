@@ -6,6 +6,7 @@ import { OTLPMetricExporter as HttpOTLPMetricExporter } from "@opentelemetry/exp
 import { OTLPMetricExporter as ProtoOTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-proto"
 import { OTLPTraceExporter as HttpOTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http"
 import { OTLPTraceExporter as ProtoOTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto"
+import { CompressionAlgorithm } from "@opentelemetry/otlp-exporter-base"
 import {
   BatchLogRecordProcessor,
   ConsoleLogRecordExporter,
@@ -14,6 +15,49 @@ import {
 import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics"
 import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base"
 import { Effect, Layer, Match, Option, pipe, String as Str } from "effect"
+
+import type { BufferConfig, ReadableSpan, SpanExporter } from "@opentelemetry/sdk-trace-base"
+
+export interface ByteAwareBufferConfig extends BufferConfig {
+  maxBatchBytes?: number
+}
+
+export class ByteAwareBatchSpanProcessor extends BatchSpanProcessor {
+  private readonly maxBatchBytes: number
+  private currentBytes = 0
+
+  constructor(exporter: SpanExporter, config: ByteAwareBufferConfig = {}) {
+    super(exporter, config)
+    this.maxBatchBytes = config.maxBatchBytes ?? 4 * 1024 * 1024
+  }
+
+  onEnd(span: ReadableSpan): void {
+    const spanBytes = this.estimateBytes(span)
+
+    if (this.currentBytes + spanBytes >= this.maxBatchBytes) {
+      this.forceFlush()
+      this.currentBytes = 0
+    }
+
+    this.currentBytes += spanBytes
+    super.onEnd(span)
+  }
+
+  private estimateBytes(span: ReadableSpan): number {
+    return JSON.stringify({
+      traceId: span.spanContext().traceId,
+      spanId: span.spanContext().spanId,
+      name: span.name,
+      kind: span.kind,
+      startTime: span.startTime,
+      endTime: span.endTime,
+      attributes: span.attributes,
+      status: span.status,
+      events: span.events,
+      links: span.links,
+    }).length
+  }
+}
 
 export const TracingLive = Layer.unwrapEffect(
   Effect.gen(function*() {
@@ -27,7 +71,6 @@ export const TracingLive = Layer.unwrapEffect(
       Match.when("DEVELOPMENT", () => "development" as const),
       Match.exhaustive,
     )
-
     if (env === "development") {
       return WebSdk.layer(() => ({
         resource: {
@@ -61,6 +104,8 @@ export const TracingLive = Layer.unwrapEffect(
       Authorization: `Bearer ${PUBLIC_LOG_TOKEN}`,
     }
 
+    const compression = CompressionAlgorithm.GZIP
+
     return WebSdk.layer(() => ({
       resource: {
         serviceName,
@@ -73,18 +118,28 @@ export const TracingLive = Layer.unwrapEffect(
         new ProtoOTLPLogExporter({
           url: `${endpoint.value}/v1/logs`,
           headers,
+          compression,
         }),
+        {
+          maxExportBatchSize: 128,
+          maxQueueSize: 1024,
+        },
       ),
-      spanProcessor: new BatchSpanProcessor(
+      spanProcessor: new ByteAwareBatchSpanProcessor(
         new ProtoOTLPTraceExporter({
           url: `${endpoint.value}/v1/traces`,
           headers,
+          compression,
         }),
+        {
+          maxBatchBytes: 9_999,
+        },
       ),
       metricReader: new PeriodicExportingMetricReader({
         exporter: new ProtoOTLPMetricExporter({
           url: `${endpoint.value}/v1/metrics`,
           headers,
+          compression,
         }),
       }),
     }))

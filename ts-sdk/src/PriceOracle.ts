@@ -118,7 +118,7 @@ export class PriceOracle extends Context.Tag("@unionlabs/sdk/PriceOracle")<
 export const layerPyth = Layer.effect(
   PriceOracle,
   Effect.gen(function*() {
-    const symbolFromId = Effect.fn("symbolFromId")(
+    const symbolFromId = Effect.fn(
       (id: UniversalChainId) =>
         pipe(
           R.get(GAS_DENOMS, id),
@@ -267,19 +267,18 @@ export const layerPyth = Layer.effect(
               }),
             })
           ),
-          Effect.tapError((cause) => Effect.logError("PriceOracle.of", cause)),
         )
       ),
+      Effect.withSpan("PriceOracle.of", { attributes: { provider: "pyth" } }),
     ))
 
     return PriceOracle.of({
       of,
       stream: () => Stream.fail(new PriceError({ message: "not implemented", source: "Pyth" })),
-      ratio: Effect.fn(function*(a, b) {
+      ratio: Effect.fn("PriceOracle.ratio", { attributes: { provider: "pyth" } })(function*(a, b) {
         const [ofA, ofB] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
         const ratio = yield* BigDecimal.divide(ofA.price, ofB.price).pipe(
           Effect.map(BigDecimal.round({ scale: 4, mode: "from-zero" })),
-          Effect.tap((x) => Effect.logDebug(`Dividing ${ofA.price} by ${ofB.price} to get ${x}`)),
           Effect.mapError((cause) =>
             new PriceError({
               message: `Could not divide ${ofA.price} by ${ofB.price}.`,
@@ -364,7 +363,7 @@ export const layerRedstone = Layer.effect(
       )
     )
 
-    const priceOfSymbol = Effect.fn("getDataPackageByChain")(function*(symbol: string) {
+    const priceOfSymbol = Effect.fnUntraced(function*(symbol: string) {
       const packages = yield* getDataPackagesForSymbol(symbol)
 
       const signedPackages = yield* pipe(
@@ -424,7 +423,11 @@ export const layerRedstone = Layer.effect(
       }) as const
     })
 
-    const of: PriceOracle.Service["of"] = Effect.fn("of")((id) =>
+    const of: PriceOracle.Service["of"] = Effect.fn("PriceOracle.of", {
+      attributes: {
+        provider: "redstone",
+      },
+    })((id) =>
       pipe(
         R.get(GAS_DENOMS, id),
         Effect.mapError(() =>
@@ -446,30 +449,33 @@ export const layerRedstone = Layer.effect(
             })),
           )
         ),
-        Effect.tapError((cause) => Effect.logError("PriceOracle.of", cause)),
       )
     )
 
+    const ratio: PriceOracle.Service["ratio"] = Effect.fn("PriceOracle.ratio", {
+      attributes: { provider: "redstone" },
+    })(function*(a, b) {
+      const [ofA, ofB] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
+      const ratio = yield* BigDecimal.divide(ofA.price, ofB.price).pipe(
+        Effect.mapError((cause) =>
+          new PriceError({
+            message: `Could not divide ${ofA.price} by ${ofB.price}.`,
+            source: "Redstone",
+            cause,
+          })
+        ),
+      )
+
+      return {
+        ratio,
+        source: ofA.source,
+        destination: ofB.source,
+      } as const
+    })
+
     return PriceOracle.of({
       of,
-      ratio: Effect.fn(function*(a, b) {
-        const [ofA, ofB] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
-        const ratio = yield* BigDecimal.divide(ofA.price, ofB.price).pipe(
-          Effect.mapError((cause) =>
-            new PriceError({
-              message: `Could not divide ${ofA.price} by ${ofB.price}.`,
-              source: "Redstone",
-              cause,
-            })
-          ),
-        )
-
-        return {
-          ratio,
-          source: ofA.source,
-          destination: ofB.source,
-        } as const
-      }),
+      ratio,
       stream: () =>
         Stream.fail(
           new PriceError({
@@ -541,7 +547,10 @@ export const layerBand = Layer.effect(
       },
     )
 
-    const of: PriceOracle.Service["of"] = Effect.fn("of")((id) =>
+    const of: PriceOracle.Service["of"] = Effect.fn(
+      "PriceOracle.of",
+      { attributes: { provider: "band" } },
+    )((id) =>
       Effect.gen(function*() {
         const symbol = yield* pipe(
           R.get(GAS_DENOMS, id),
@@ -615,11 +624,11 @@ export const layerBand = Layer.effect(
     )
 
     return PriceOracle.of({
-      ratio: Effect.fn(function*(a, b) {
+      of,
+      ratio: Effect.fn("PriceOracle.ratio", { attributes: { provider: "band" } })(function*(a, b) {
         const [ofA, ofB] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
         const ratio = yield* BigDecimal.divide(ofA.price, ofB.price).pipe(
           Effect.map(BigDecimal.round({ scale: 4, mode: "from-zero" })),
-          Effect.tap((x) => Effect.logDebug(`Dividing ${ofA.price} by ${ofB.price} to get ${x}`)),
           Effect.mapError((cause) =>
             new PriceError({
               message: `Could not divide ${ofA.price} by ${ofB.price}.`,
@@ -636,7 +645,6 @@ export const layerBand = Layer.effect(
         } as const
       }),
       stream: absurd as unknown as any,
-      of,
     })
   }),
 )
@@ -646,7 +654,8 @@ const layerTopSecret = Layer.sync(
   () =>
     PriceOracle.of({
       of: (id) =>
-        Match.value(id).pipe(
+        pipe(
+          Match.value(id),
           Match.whenOr(
             UniversalChainId.make("union.union-testnet-10"),
             UniversalChainId.make("union.union-1"),
@@ -667,6 +676,9 @@ const layerTopSecret = Layer.sync(
               }),
             )
           ),
+          Effect.withSpan("PriceOracle.of", {
+            attributes: { provider: "internal" },
+          }),
         ),
       ratio: (from: UniversalChainId, to: UniversalChainId) =>
         Effect.fail(new PriceError({ message: "not implemented", source: "" })),
