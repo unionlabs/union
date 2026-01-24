@@ -29,7 +29,7 @@ export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
     Effect.annotateLogs({
       url,
     }),
-    Effect.withLogSpan("fetchDecode"),
+    Effect.withSpan("fetchDecode"),
   )
 
 export type FetchDecodeGraphqlError = GraphQLError | ParseError
@@ -48,7 +48,7 @@ export const fetchDecodeGraphql = <S, E, D, V extends Variables = Variables>(
       pipe(
         fetch(new GraphQLRequest({ document, variables })),
         Effect.flatMap((x) => Schema.decodeUnknown(schema)(x)),
-        Effect.withLogSpan("decode"),
+        Effect.withSpan("fetchDecodeGraphql"),
       ),
   )
 

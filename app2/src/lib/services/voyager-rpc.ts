@@ -183,6 +183,6 @@ export const fetchFinalizedHeights = (universalChainIds: string[]) =>
 
     return originalOrderMap
   }).pipe(
-    Effect.withLogSpan("fetchFinalizedHeights"),
+    Effect.withSpan("fetchFinalizedHeights"),
     Effect.provide(FetchHttpClient.layer),
   )

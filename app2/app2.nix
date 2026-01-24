@@ -39,7 +39,7 @@ _: {
             ../ts-sdk-evm
             ../ts-sdk-sui
           ];
-          hash = "sha256-ihwIWIgmF9XrEDf9rINtpR9OWLJmS4HtxYFsShY9e3g=";
+          hash = "sha256-lAmG8o1FH/cBu5Wqqb8Dxm34cRuxKfwk1w3jRP7WGDk=";
           buildInputs = deps;
           nativeBuildInputs = buildInputs;
           pnpmWorkspaces = [
@@ -113,6 +113,22 @@ _: {
               export PUBLIC_SUPABASE_URL="${PUBLIC_SUPABASE_URL}"
               export PUBLIC_SUPABASE_ANON_KEY="${PUBLIC_SUPABASE_ANON_KEY}"
               pnpm run check --watch --threshold error
+            '';
+          };
+        };
+        app2-grafana = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "app-grafana";
+            meta.description = "Spawn Grafana server for local app telemetry debugging";
+            runtimeInputs = with pkgs; [ docker ];
+            text = ''
+              docker run --rm -it \
+                -p 3001:3000 \
+                -p 4317:4317 \
+                -p 4318:4318 \
+                --name grafana-otel-lgtm \
+                grafana/otel-lgtm
             '';
           };
         };

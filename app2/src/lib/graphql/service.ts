@@ -27,7 +27,6 @@ import {
 import type { TadaDocumentNode } from "gql.tada"
 import { type ArgumentNode, type DirectiveNode, Kind, print } from "graphql"
 import { GraphQLClient, type Variables } from "graphql-request"
-import { ClientError } from "graphql-request"
 import { GraphQLError } from "./error"
 
 /**
@@ -159,7 +158,7 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
             }),
           catch: (error) => GraphQLError.fromUnknown(error),
         }).pipe(
-          Effect.withLogSpan("fetch"),
+          Effect.withSpan("fetch"),
         )
 
         const operationName = pipe(
@@ -168,17 +167,15 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
           A.head,
           O.getOrElse(() => "unknown"),
         )
-        const message = `request.gql.${operationName}`
 
         return yield* pipe(
           fetch,
-          Effect.tap(Effect.log(message)),
-          Effect.tapErrorCause((cause) => Effect.logError(message, cause)),
-          Effect.annotateLogs({
-            operationName,
-            variables,
+          Effect.withSpan("GraphQL.fetch", {
+            attributes: {
+              operationName,
+              variables,
+            },
           }),
-          Effect.withLogSpan("GraphQL.fetch"),
         )
       })
 
@@ -242,7 +239,7 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
           client.setEndpoint(url)
         })
       ),
-      Stream.tap((a) => Effect.log("Updated GQL endpoint:", a)),
+      Stream.tap((a) => Effect.logTrace("Updated GQL endpoint:", a)),
       Stream.runDrain,
       Effect.forkDaemon,
     )

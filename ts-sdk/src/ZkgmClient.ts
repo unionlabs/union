@@ -4,9 +4,11 @@
 import type * as Context from "effect/Context"
 import type * as Effect from "effect/Effect"
 import { RuntimeFiber } from "effect/Fiber"
+import type * as FiberRef from "effect/FiberRef"
 import type { Inspectable } from "effect/Inspectable"
 import { Layer } from "effect/Layer"
 import type { Pipeable } from "effect/Pipeable"
+import type * as Predicate from "effect/Predicate"
 import * as internal from "./internal/zkgmClient.js"
 import type * as ClientError from "./ZkgmClientError.js"
 import type * as ClientRequest from "./ZkgmClientRequest.js"
@@ -137,6 +139,63 @@ export const transformResponse: {
     ) => Effect.Effect<ClientResponse.ZkgmClientResponse, E1, R1>,
   ): ZkgmClient.With<E1, R1>
 } = internal.transformResponse
+
+/**
+ * @since 2.0.0-beta.3
+ * @category tracing
+ */
+export interface SpanNameGenerator {
+  readonly _: unique symbol
+}
+
+/**
+ * @since 2.0.0-beta.3
+ * @category tracing
+ */
+export const SpanNameGenerator: Context.Reference<
+  SpanNameGenerator,
+  (request: ClientRequest.ZkgmClientRequest) => string
+> = internal.SpanNameGenerator
+
+/**
+ * Customizes the span names for tracing.
+ *
+ * @since 2.0.0-beta.3
+ * @category tracing
+ */
+export const withSpanNameGenerator: {
+  (
+    f: (request: ClientRequest.ZkgmClientRequest) => string,
+  ): <E, R>(self: ZkgmClient.With<E, R>) => ZkgmClient.With<E, R>
+  <E, R>(
+    self: ZkgmClient.With<E, R>,
+    f: (request: ClientRequest.ZkgmClientRequest) => string,
+  ): ZkgmClient.With<E, R>
+} = internal.withSpanNameGenerator
+
+/**
+ * @since 2.0.0-beta.3
+ * @category tracing
+ */
+export const currentTracerDisabledWhen: FiberRef.FiberRef<
+  Predicate.Predicate<ClientRequest.ZkgmClientRequest>
+> = internal.currentTracerDisabledWhen
+
+/**
+ * Disables tracing for specific requests based on a provided predicate.
+ *
+ * @since 2.0.0-beta.3
+ * @category tracing
+ */
+export const withTracerDisabledWhen: {
+  (
+    predicate: Predicate.Predicate<ClientRequest.ZkgmClientRequest>,
+  ): <E, R>(self: ZkgmClient.With<E, R>) => ZkgmClient.With<E, R>
+  <E, R>(
+    self: ZkgmClient.With<E, R>,
+    predicate: Predicate.Predicate<ClientRequest.ZkgmClientRequest>,
+  ): ZkgmClient.With<E, R>
+} = internal.withTracerDisabledWhen
 
 /**
  * @since 2.0.0

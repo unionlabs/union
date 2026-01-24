@@ -76,7 +76,7 @@ export namespace Evm {
  * @category utils
  * @since 0.0.0
  */
-export const channelBalance = Effect.fn("channelBalance")((path: bigint, token: Hex) =>
+export const channelBalance = Effect.fn("Evm.channelBalance")((path: bigint, token: Hex) =>
   pipe(
     ChannelDestination,
     Effect.andThen((config) =>
@@ -94,7 +94,7 @@ export const channelBalance = Effect.fn("channelBalance")((path: bigint, token: 
  * @category utils
  * @since 0.0.0
  */
-export const channelBalanceAtBlock = Effect.fn("channelBalanceAtBlock")(
+export const channelBalanceAtBlock = Effect.fn("Evm.channelBalanceAtBlock")(
   function*(path: bigint, token: Hex, blockNumber: bigint) {
     const client = (yield* PublicClientDestination).client
     const config = yield* ChannelDestination
@@ -129,7 +129,7 @@ export class WaitForTransactionReceiptError extends Data.TaggedError(
  * @category utils
  * @since 0.0.0
  */
-export const waitForTransactionReceipt = Effect.fn("waitForTransactionReceipt")((hash: Hash) =>
+export const waitForTransactionReceipt = Effect.fn("Evm.waitForTransactionReceipt")((hash: Hash) =>
   pipe(
     PublicClient,
     Effect.andThen(({ client }) =>
@@ -155,7 +155,7 @@ export const waitForTransactionReceipt = Effect.fn("waitForTransactionReceipt")(
  * @category utils
  * @since 0.0.0
  */
-export const readContract = Effect.fn("readContract")(<
+export const readContract = Effect.fn("Evm.readContract")(<
   TAbi extends Abi,
   TFunctionName extends ContractFunctionName<TAbi, "pure" | "view"> = ContractFunctionName<
     TAbi,
@@ -194,7 +194,7 @@ export const readContract = Effect.fn("readContract")(<
  * @category utils
  * @since 0.0.0
  */
-export const writeContract = Effect.fn("writeContract")(<
+export const writeContract = Effect.fn("Evm.writeContract")(<
   const abi extends Abi | readonly unknown[],
   functionName extends ContractFunctionName<abi, "payable" | "nonpayable">,
   args extends ContractFunctionArgs<
@@ -398,7 +398,7 @@ export class CreateWalletClientError
  * @category utils
  * @since 0.0.0
  */
-export const readErc20Meta = Effect.fn("readErc20Meta")(
+export const readErc20Meta = Effect.fn("Evm.readErc20Meta")(
   function*(tokenAddress: Address, chainId: UniversalChainId) {
     // Check if this is a gas denomination token for the specific chain
     const gasTokenMeta = GAS_DENOMS[chainId]
@@ -431,7 +431,7 @@ export const readErc20Meta = Effect.fn("readErc20Meta")(
  * @category utils
  * @since 0.0.0
  */
-export const readErc20Balance = Effect.fn("readErc20Balance")((
+export const readErc20Balance = Effect.fn("Evm.readErc20Balance")((
   tokenAddress: Hex,
   ownerAddress: Ucs05.EvmDisplay,
 ) =>
@@ -453,7 +453,7 @@ export const readErc20Balance = Effect.fn("readErc20Balance")((
  * @category utils
  * @since 0.0.0
  */
-export const readErc20BalanceAtBlock = Effect.fn("readErc20BalanceAtBlock")((
+export const readErc20BalanceAtBlock = Effect.fn("Evm.readErc20BalanceAtBlock")((
   tokenAddress: Address,
   ownerAddress: Address,
   blockNumber: bigint,
@@ -475,7 +475,7 @@ export const readErc20BalanceAtBlock = Effect.fn("readErc20BalanceAtBlock")((
  * @category utils
  * @since 0.0.0
  */
-export const readErc20Name = Effect.fn("readErc20Name")((tokenAddress: Address) =>
+export const readErc20Name = Effect.fn("Evm.readErc20Name")((tokenAddress: Address) =>
   readContract({
     address: tokenAddress,
     abi: erc20Abi,
@@ -491,7 +491,7 @@ export const readErc20Name = Effect.fn("readErc20Name")((tokenAddress: Address) 
  * @category utils
  * @since 0.0.0
  */
-export const readErc20Symbol = Effect.fn("readErc20Symbol")((tokenAddress: Address) =>
+export const readErc20Symbol = Effect.fn("Evm.readErc20Symbol")((tokenAddress: Address) =>
   readContract({
     address: tokenAddress,
     abi: erc20Abi,
@@ -507,7 +507,7 @@ export const readErc20Symbol = Effect.fn("readErc20Symbol")((tokenAddress: Addre
  * @category utils
  * @since 0.0.0
  */
-export const readErc20Decimals = Effect.fn("readErc20Decimals")((tokenAddress: Address) =>
+export const readErc20Decimals = Effect.fn("Evm.readErc20Decimals")((tokenAddress: Address) =>
   readContract({
     address: tokenAddress,
     abi: erc20Abi,
@@ -524,7 +524,7 @@ export const readErc20Decimals = Effect.fn("readErc20Decimals")((tokenAddress: A
  * @category utils
  * @since 0.0.0
  */
-export const readErc20TotalSupplyAtBlock = Effect.fn("readErc20TotalSupplyAtBlock")((
+export const readErc20TotalSupplyAtBlock = Effect.fn("Evm.readErc20TotalSupplyAtBlock")((
   tokenAddress: Address,
   blockNumber: bigint,
 ) =>
@@ -544,7 +544,7 @@ export const readErc20TotalSupplyAtBlock = Effect.fn("readErc20TotalSupplyAtBloc
  * @category utils
  * @since 0.0.0
  */
-export const readErc20TotalSupply = Effect.fn("readErc20TotalSupply")((tokenAddress: Address) =>
+export const readErc20TotalSupply = Effect.fn("Evm.readErc20TotalSupply")((tokenAddress: Address) =>
   readContract({
     address: tokenAddress,
     abi: erc20Abi,
@@ -562,7 +562,7 @@ export const readErc20TotalSupply = Effect.fn("readErc20TotalSupply")((tokenAddr
  * @category utils
  * @since 0.0.0
  */
-export const readErc20Allowance = Effect.fn("readErc20Allowance")((
+export const readErc20Allowance = Effect.fn("Evm.readErc20Allowance")((
   tokenAddress: Address,
   ownerAddress: Address,
   spenderAddress: Address,
@@ -585,7 +585,7 @@ export const readErc20Allowance = Effect.fn("readErc20Allowance")((
  * @category utils
  * @since 0.0.0
  */
-export const increaseErc20Allowance = Effect.fn("increaseErc20Allowance")((
+export const increaseErc20Allowance = Effect.fn("Evm.increaseErc20Allowance")((
   tokenAddress: Hex,
   spenderAddress: Ucs05.EvmDisplay,
   amount: bigint,
@@ -620,7 +620,7 @@ export const increaseErc20Allowance = Effect.fn("increaseErc20Allowance")((
  * @category utils
  * @since 0.0.0
  */
-export const sendInstruction = Effect.fn("sendInstruction")(
+export const sendInstruction = Effect.fn("Evm.sendInstruction")(
   function*(instruction: Ucs03.Instruction) {
     const walletClient = yield* WalletClient
     const sourceConfig = yield* ChannelSource
