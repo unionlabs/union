@@ -12,14 +12,14 @@ members = [
 ]
 
 [workspace.dependencies]
-alexandria_bytes    = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
-alexandria_encoding = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
-alexandria_evm      = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
-alexandria_math     = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
-ibc                 = { path = "cairo/ibc" }
+alexandria_bytes      = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
+alexandria_encoding   = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
+alexandria_evm        = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
+alexandria_math       = { git = "https://github.com/aeryz/alexandria", rev = "3f914820b8bf6cbb3b41397c6f4005a03fb2acbb" }
+ibc                   = { path = "cairo/ibc" }
 loopback_light_client = { path = "cairo/loopback_light_client" }
-openzeppelin        = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v3.0.0-alpha.3" }
-starknet            = "2.13.1"
+openzeppelin          = { git = "https://github.com/OpenZeppelin/cairo-contracts", tag = "v3.0.0-alpha.3" }
+starknet              = "2.13.1"
 
 garaga      = { git = "https://github.com/keep-starknet-strange/garaga.git", tag = "v1.0.1" }
 snforge_std = "0.53.0-rc.0"
