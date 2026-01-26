@@ -248,11 +248,14 @@ export class GetBalanceError extends Data.TaggedError("@unionlabs/sdk/Cosmos/Get
  * @category utils
  * @since 2.0.0
  */
-export const queryContract = <T = unknown>(
+export const queryContract = Effect.fn("Cosmos.queryContract")(function*<T = unknown>(
   contractAddress: Ucs05.CosmosDisplay,
   queryMsg: Record<string, unknown>,
-) =>
-  pipe(
+) {
+  yield* Effect.annotateCurrentSpan("contractAddress", contractAddress)
+  yield* Effect.annotateCurrentSpan("queryMsg", queryMsg)
+
+  return yield* pipe(
     Client,
     Effect.andThen(({ client }) =>
       Effect.tryPromise({
@@ -269,11 +272,8 @@ export const queryContract = <T = unknown>(
     ),
     Effect.timeout("10 seconds"),
     Effect.retry({ times: 5 }),
-    Effect.annotateLogs({
-      contractAddress,
-      queryMsg,
-    }),
   )
+})
 
 /**
  * A type-safe wrapper around CosmWasm's executeContract that handles error cases
@@ -288,7 +288,7 @@ export const queryContract = <T = unknown>(
  * @category utils
  * @since 2.0.0
  */
-export const executeContract = (
+export const executeContract = Effect.fn("Cosmos.executeContract")((
   senderAddress: string,
   contractAddress: string,
   msg: Record<string, unknown>,
@@ -311,6 +311,7 @@ export const executeContract = (
           message: (error as Error).message,
         }),
     }))
+)
 
 /**
  * Wrap CosmWasmClient.getHeight() in an Effect
@@ -331,6 +332,7 @@ export const getChainHeight = pipe(
       Effect.retry({ times: 5 }),
     )
   ),
+  Effect.withSpan("Cosmos.getChainHeight"),
 )
 
 /**
@@ -505,9 +507,12 @@ export interface Cw20AllowanceResponse {
  * @category utils
  * @since 2.0.0
  */
-export const readCw20TokenInfo = Effect.fn("Cosmos.readCw20TokenInfo")((
+export const readCw20TokenInfo = Effect.fn("Cosmos.readCw20TokenInfo")(function*(
   contractAddress: Ucs05.CosmosDisplay,
-) => queryContract<Cw20TokenInfo>(contractAddress, { token_info: {} }))
+) {
+  yield* Effect.annotateCurrentSpan("contractAddress", contractAddress)
+  return yield* queryContract<Cw20TokenInfo>(contractAddress, { token_info: {} })
+})
 
 /**
  * Read CW20 token total_supply
@@ -557,7 +562,6 @@ export const readCw20BalanceAtHeight = Effect.fn("Cosmos.readCw20BalanceAtHeight
       height,
     ).pipe(
       Effect.provide(FetchHttpClient.layer),
-      Effect.tapErrorCause((cause) => Effect.logError("cosmos.readCw20BalanceAtHeight", cause)),
     )
     return resp.data.balance
   },
@@ -585,7 +589,6 @@ export const readCw20TotalSupplyAtHeight = Effect.fn("Cosmos.readTotalSupplyAtHe
       token_info: {},
     }, height).pipe(
       Effect.provide(FetchHttpClient.layer),
-      Effect.tapErrorCause((cause) => Effect.logError("cosmos.readCw20TotalSupplyAtHeight", cause)),
     )
     return resp.data.total_supply
   },
@@ -704,9 +707,7 @@ export const channelBalanceAtHeight = Effect.fn("Cosmos.channelBalanceAtHeight")
       },
       height,
     ).pipe(
-      Effect.tap((resp) => Effect.log({ resp })),
       Effect.provide(FetchHttpClient.layer),
-      Effect.tapErrorCause((cause) => Effect.logError("cosmos.channelBalanceAtHeight", cause)),
     )
     return yield* O.fromNullable(resp.data)
   },

@@ -21,6 +21,16 @@ import type * as ClientResponse from "../ZkgmClientResponse.js"
 import * as IncomingMessage from "../ZkgmIncomingMessage.js"
 import * as internalResponse from "./zkgmClientResponse.js"
 
+const ATTR_REQUEST_CHANNEL_ID = `zkgm.request.channelId`
+const ATTR_REQUEST_UCS03_ADDRESS = `zkgm.request.ucs03Address`
+const ATTR_REQUEST_INSTRUCTION_TAG = `zkgm.request.instruction.tag`
+const ATTR_REQUEST_INSTRUCTION_VERSION = `zkgm.request.instruction.version`
+const ATTR_REQUEST_KIND = "zkgm.request.kind"
+const ATTR_REQUEST_DESTINATION = (key: string): string => `zkgm.request.destination.${key}`
+const ATTR_REQUEST_SOURCE = (key: string): string => `zkgm.request.source.${key}`
+const ATTR_RESPONSE_TX_HASH = `zkgm.response.txHash`
+const ATTR_RESPONSE_SAFE_TX_HASH = `zkgm.response.safeTxHash`
+
 /** @internal */
 export const TypeId: Client.TypeId = Symbol.for(
   "@unionlabs/sdk/ZkgmClient",
@@ -237,16 +247,6 @@ export const make = (
             })
           )
         }
-
-        const ATTR_REQUEST_CHANNEL_ID = `zkgm.request.channelId`
-        const ATTR_REQUEST_UCS03_ADDRESS = `zkgm.request.ucs03Address`
-        const ATTR_REQUEST_INSTRUCTION_TAG = `zkgm.request.instruction.tag`
-        const ATTR_REQUEST_INSTRUCTION_VERSION = `zkgm.request.instruction.version`
-        const ATTR_REQUEST_KIND = "zkgm.request.kind"
-        const ATTR_REQUEST_DESTINATION = (key: string): string => `zkgm.request.destination.${key}`
-        const ATTR_REQUEST_SOURCE = (key: string): string => `zkgm.request.source.${key}`
-        const ATTR_RESPONSE_TX_HASH = `zkgm.response.txHash`
-        const ATTR_RESPONSE_SAFE_TX_HASH = `zkgm.response.safeTxHash`
 
         const nameGenerator = Context.get(fiber.currentContext, SpanNameGenerator)
         return Effect.useSpan(
