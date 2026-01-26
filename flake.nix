@@ -132,7 +132,7 @@
       flake = false;
     };
     v1_2_0 = {
-      url = "github:unionlabs/union/release/uniond/v1.2.2";
+      url = "github:unionlabs/union/release/uniond/v1.2.3";
       flake = false;
     };
   };
