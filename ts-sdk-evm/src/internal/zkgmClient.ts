@@ -18,9 +18,12 @@ import * as Inspectable from "effect/Inspectable"
 import * as O from "effect/Option"
 import * as S from "effect/Schema"
 import * as Stream from "effect/Stream"
+import { encodeFunctionData, formatTransactionRequest } from "viem"
 import * as Evm from "../Evm.js"
+import * as EvmZkgmClient from "../EvmZkgmClient.js"
 import * as Safe from "../Safe.js"
 
+/** @internal */
 export const fromWallet = (
   opts: { client: Evm.Evm.PublicClient; wallet: Evm.Evm.WalletClient },
 ): Client.ZkgmClient =>
@@ -119,7 +122,7 @@ export const fromWallet = (
         account: wallet.account,
         abi: Ucs03.Abi,
         functionName: "send",
-        address: request.ucs03Address as unknown as any,
+        address: request.ucs03Address as `0x${string}`,
         args: [
           request.channelId,
           0n,
@@ -373,3 +376,150 @@ export const make = Effect.map(
 
 /** @internal */
 export const layerWithoutWallet = Client.layerMergedContext(make)
+
+/** @internal */
+export const makeDual: Effect.Effect<
+  EvmZkgmClient.EvmZkgmClient,
+  never,
+  Evm.PublicClient | Evm.WalletClient
+> = pipe(
+  Effect.all({ client: Evm.PublicClient, wallet: Evm.WalletClient }),
+  Effect.andThen((clients) =>
+    pipe(
+      fromWallet(clients),
+      (base) => {
+        const { wallet, client } = clients
+
+        const prepareEip1193 = Effect.fn("EvmZkgmClient.prepareEip1193")(
+          function*(request: ClientRequest.ZkgmClientRequest) {
+            const encodeInstruction: (
+              u: ZkgmInstruction.ZkgmInstruction,
+            ) => Effect.Effect<Ucs03.Ucs03, ParseResult.ParseError | Evm.ReadContractError> = pipe(
+              Match.type<ZkgmInstruction.ZkgmInstruction>(),
+              Match.tagsExhaustive({
+                Batch: (batch) =>
+                  pipe(
+                    batch.instructions,
+                    A.map(encodeInstruction),
+                    Effect.allWith({ concurrency: "unbounded" }),
+                    Effect.map((operand) =>
+                      new Ucs03.Batch({
+                        opcode: batch.opcode,
+                        version: batch.version,
+                        operand,
+                      })
+                    ),
+                  ),
+                TokenOrder: (self) =>
+                  pipe(
+                    Match.value(self),
+                    Match.when(
+                      { version: 1 },
+                      (v1) =>
+                        Effect.gen(function*() {
+                          const meta = yield* pipe(
+                            Evm.readErc20Meta(
+                              v1.baseToken.address as unknown as any,
+                              request.source.universal_chain_id,
+                            ),
+                            Effect.provideService(Evm.PublicClient, client),
+                          )
+
+                          return yield* TokenOrder.encodeV1(v1)({
+                            ...meta,
+                            sourceChannelId: request.channelId,
+                          })
+                        }),
+                    ),
+                    Match.when(
+                      { version: 2 },
+                      (v2) => TokenOrder.encodeV2(v2),
+                    ),
+                    Match.exhaustive,
+                  ),
+                Call: Call.encode,
+              }),
+            )
+
+            const timeoutTimestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
+            const salt = yield* Utils.generateSalt("evm").pipe(
+              Effect.mapError((cause) =>
+                new ClientError.RequestError({
+                  reason: "Transport",
+                  request,
+                  cause,
+                  description: "crypto error",
+                })
+              ),
+            )
+
+            const operand = yield* pipe(
+              encodeInstruction(request.instruction),
+              Effect.flatMap(S.encode(Ucs03.Ucs03FromHex)),
+              Effect.mapError((cause) =>
+                new ClientError.RequestError({
+                  reason: "Transport",
+                  request,
+                  cause,
+                  description: "instruction encode",
+                })
+              ),
+            )
+
+            const funds = ClientRequest.requiredFunds(request).pipe(
+              O.map(A.filter(([x]) => Token.isNative(x))),
+              O.flatMap(O.liftPredicate(A.isNonEmptyReadonlyArray)),
+              O.map(A.map(flow(Tuple.getSecond))),
+              O.map(A.reduce(0n, (acc, n) => acc + n)),
+              O.getOrUndefined,
+            )
+
+            const data = encodeFunctionData({
+              abi: Ucs03.Abi,
+              functionName: "send",
+              args: [
+                request.channelId,
+                0n,
+                timeoutTimestamp,
+                salt,
+                {
+                  opcode: request.instruction.opcode,
+                  version: request.instruction.version,
+                  operand,
+                },
+              ],
+            })
+
+            const preparedRequest = yield* Effect.tryPromise({
+              try: () =>
+                wallet.client.prepareTransactionRequest({
+                  account: wallet.account,
+                  to: request.ucs03Address as `0x${string}`,
+                  value: funds,
+                  data,
+                  chain: wallet.chain,
+                }),
+              catch: (cause) =>
+                new ClientError.RequestError({
+                  reason: "Transport",
+                  request,
+                  cause,
+                  description: "could not prepare tx request",
+                }),
+            })
+
+            return formatTransactionRequest(preparedRequest)
+          },
+        )
+
+        return Object.assign(
+          base,
+          {
+            [EvmZkgmClient.TypeId]: EvmZkgmClient.TypeId as typeof EvmZkgmClient.TypeId,
+            prepareEip1193,
+          },
+        )
+      },
+    )
+  ),
+)
