@@ -11,7 +11,6 @@ library IBCCommitment {
     uint256 public constant NON_MEMBERSHIP_PROOF = 0x07;
     uint256 public constant PACKET_TIMEOUTS = 0x08;
 
-
     bytes32 public constant NON_MEMBERSHIP_COMMITMENT_VALUE =
         0x0000000000000000000000000000000000000000000000000000000000000001;
 
