@@ -12,7 +12,6 @@ import {
   Ucs03,
   Ucs05,
   Utils,
-  ZkgmClient,
   ZkgmClientRequest,
   ZkgmInstruction,
 } from "@unionlabs/sdk"
@@ -26,6 +25,7 @@ import * as A from "effect/Array"
 import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
 import { pipe } from "effect/Function"
+import * as Layer from "effect/Layer"
 import * as Match from "effect/Match"
 import * as ParseResult from "effect/ParseResult"
 import * as Schema from "effect/Schema"
@@ -47,7 +47,7 @@ const RECEIVER_ATOMONE = Ucs05.CosmosDisplay.make({
   address: "atone19lnpcs0pvz9htcvm58jkp6ak55m49x5nr0w9qj",
 })
 const SENDER_ETH = Ucs05.EvmDisplay.make({
-  address: "0x2c96e52fce14baa13868ca8182f8a7903e4e76e0",
+  address: (process.env.SENDER as `0x${string}`) ?? "0x2c96e52fce14baa13868ca8182f8a7903e4e76e0",
 })
 
 const BYTECODE_BASE_CHECKSUM =
@@ -83,6 +83,34 @@ export const PHOTON_IBC_DENOM_ON_OSMOSIS = Token.CosmosIbcClassic.make({
 export const PHOTON_ERC20 = Token.Erc20.make({
   address: "0x222c042e17d94f4c83720583c75a37242921ba1c",
 })
+
+const checkAndSubmitAllowance = pipe(
+  Evm.readErc20Allowance(
+    PHOTON_ERC20.address,
+    SENDER_ETH.address,
+    UCS03_EVM.address,
+  ),
+  Effect.flatMap((amount) =>
+    Effect.if(amount < SEND_AMOUNT, {
+      onTrue: () =>
+        pipe(
+          Effect.log(`Increasing allowance by ${SEND_AMOUNT - amount} for ${PHOTON_ERC20.address}`),
+          Effect.andThen(() =>
+            pipe(
+              Evm.increaseErc20Allowance(
+                PHOTON_ERC20.address,
+                UCS03_EVM,
+                SEND_AMOUNT - amount,
+              ),
+              Effect.andThen((x) => Evm.waitForTransactionReceipt(x as `0x${string}`)),
+            )
+          ),
+        ),
+      onFalse: () =>
+        Effect.log(`Allowance fulfilled by ${SEND_AMOUNT - amount} for ${PHOTON_ERC20.address}`),
+    })
+  ),
+)
 
 /**
  * Generate a deterministic Union cosmos address from an EVM address using instantiate2
@@ -161,12 +189,12 @@ export const predictProxy = Effect.fn("predictProxy")(
   },
 )
 
-Effect.gen(function*() {
+const main = Effect.gen(function*() {
   const encodeInstruction: (
     u: ZkgmInstruction.ZkgmInstruction,
   ) => Effect.Effect<
     Ucs03.Ucs03,
-    ParseResult.ParseError | Cause.TimeoutException | Cosmos.QueryContractError
+    ParseResult.ParseError | Cause.TimeoutException
   > = pipe(
     Match.type<ZkgmInstruction.ZkgmInstruction>(),
     Match.tagsExhaustive({
@@ -252,22 +280,31 @@ Effect.gen(function*() {
     instruction: batch,
   })
 
-  const client = yield* ZkgmClient.ZkgmClient
-  return yield* client.execute(request)
-}).pipe(
-  Effect.provide(ChainRegistry.Default),
-  Effect.provide(EvmZkgmClient.layerWithoutWallet),
-  Effect.provide(Evm.WalletClient.Live({
-    account: privateKeyToAccount(
-      (process.env.KEY as any) ?? "0x...",
+  const client = yield* EvmZkgmClient.EvmZkgmClient
+  return yield* client.prepareEip1193(request)
+})
+
+pipe(
+  checkAndSubmitAllowance,
+  Effect.andThen(() => main),
+  Effect.provide(
+    Layer.mergeAll(
+      ChainRegistry.Default,
+      EvmZkgmClient.layerDual,
+    ).pipe(
+      Layer.provideMerge(Evm.WalletClient.Live({
+        account: privateKeyToAccount(
+          (process.env.KEY as any) ?? "0x...",
+        ),
+        chain: mainnet,
+        transport: http("https://rpc.1.ethereum.chain.kitchen"),
+      })),
+      Layer.provideMerge(Evm.PublicClient.Live({
+        chain: mainnet,
+        transport: http("https://rpc.1.ethereum.chain.kitchen"),
+      })),
     ),
-    chain: mainnet,
-    transport: http("https://rpc.1.ethereum.chain.kitchen"),
-  })),
-  Effect.provide(Evm.PublicClient.Live({
-    chain: mainnet,
-    transport: http("https://rpc.1.ethereum.chain.kitchen"),
-  })),
+  ),
   Effect.runPromise,
 )
   .then(console.log)
