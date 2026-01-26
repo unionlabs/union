@@ -325,7 +325,7 @@ impl Module {
                             self.chain_id.clone(),
                             QueryHeight::Latest,
                             ChannelPath {
-                                channel_id: data.packet.destination_channel_id,
+                                channel_id: data.packet.source_channel_id,
                             },
                         )
                         .await?
@@ -336,7 +336,12 @@ impl Module {
                     {
                         let p = voyager_client
                             .plugin_client(plugin_client)
-                            .on_timeout_packet(pk.copy(), module_info.clone(), data.clone())
+                            .on_timeout_packet(
+                                pk.copy(),
+                                module_info.clone(),
+                                fee_recipient,
+                                data.clone(),
+                            )
                             .await?;
                         merge_ptbs(&mut ptb, p);
                     } else {

@@ -203,6 +203,7 @@ impl TransactionPluginServer for Module {
         &self,
         _: SuiKeyPair,
         module_info: ModuleInfo,
+        relayer: SuiAddress,
         data: MsgPacketTimeout,
     ) -> RpcResult<ProgrammableTransaction> {
         let mut ptb = ProgrammableTransactionBuilder::new();
@@ -227,11 +228,12 @@ impl TransactionPluginServer for Module {
                 self.zkgm_config.owned_vault_object_id,
                 vault_store_initial_seq,
                 coin_t,
+                relayer,
                 session,
             );
         }
 
-        zkgm::end_timeout_call(&mut ptb, self, &module_info, session, data);
+        zkgm::end_timeout_call(&mut ptb, self, &module_info, relayer, session, data);
 
         Ok(ptb.finish())
     }

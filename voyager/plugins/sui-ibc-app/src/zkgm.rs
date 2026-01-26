@@ -331,6 +331,7 @@ pub fn timeout_packet_call(
     vault_object_id: ObjectID,
     vault_store_initial_seq: SequenceNumber,
     coin_t: TypeTag,
+    relayer: SuiAddress,
     session: Argument,
 ) -> Argument {
     let arguments = vec![
@@ -349,6 +350,7 @@ pub fn timeout_packet_call(
             initial_shared_version: vault_store_initial_seq,
             mutability: SharedObjectMutability::Mutable,
         }),
+        CallArg::Pure(bcs::to_bytes(&relayer).unwrap()),
     ]
     .into_iter()
     .map(|a| ptb.input(a).unwrap())
@@ -368,6 +370,7 @@ pub fn end_timeout_call(
     ptb: &mut ProgrammableTransactionBuilder,
     module: &Module,
     module_info: &ModuleInfo,
+    relayer: SuiAddress,
     session: Argument,
     data: MsgPacketTimeout,
 ) {
@@ -384,6 +387,7 @@ pub fn end_timeout_call(
         }),
         (&data.proof.into_vec()).into(),
         data.proof_height.into(),
+        CallArg::Pure(bcs::to_bytes(&relayer).unwrap()),
     ]
     .into_iter()
     .map(|a| ptb.input(a).unwrap())
