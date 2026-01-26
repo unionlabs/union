@@ -325,7 +325,7 @@ impl Module {
                             self.chain_id.clone(),
                             QueryHeight::Latest,
                             ChannelPath {
-                                channel_id: data.packet.destination_channel_id,
+                                channel_id: data.packet.source_channel_id,
                             },
                         )
                         .await?
