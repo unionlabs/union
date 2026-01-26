@@ -189,6 +189,7 @@ _: {
         {
           ucs04-chain-id = "osmosis.osmosis-devnet-1";
           name = "osmosis-devnet";
+          multisig-admin = null;
           rpc-url = "http://localhost:26857";
           deployer-key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
           gas-config = {
@@ -213,6 +214,7 @@ _: {
         {
           ucs04-chain-id = "osmosis.osmo-test-5";
           name = "osmosis-testnet";
+          multisig-admin = null;
           rpc-url = "https://osmosis-testnet-rpc.polkachu.com";
           deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           ops-key = ''"$(op item get operation --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
@@ -262,6 +264,7 @@ _: {
         {
           ucs04-chain-id = "babylon.bbn-test-6";
           name = "babylon-testnet";
+          multisig-admin = null;
           rpc-url = "https://babylon-testnet-rpc.polkachu.com";
           deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           ops-key = ''"$(op item get operation --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
@@ -316,6 +319,7 @@ _: {
         {
           ucs04-chain-id = "xion.xion-testnet-2";
           name = "xion-testnet";
+          multisig-admin = null;
           rpc-url = "https://rpc.xion-testnet-2.burnt.com";
           deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           ops-key = ''"$(op item get operation --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
