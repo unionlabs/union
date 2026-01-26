@@ -15,7 +15,7 @@ workspace = true
 alloy                     = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "reqwest-rustls-tls", "provider-ws"] }
 embed-commit              = { workspace = true }
 enumorph                  = { workspace = true }
-futures.workspace         = true
+futures                   = { workspace = true }
 ibc-union-spec            = { workspace = true }
 jsonrpsee                 = { workspace = true, features = ["macros", "server", "tracing"] }
 parlia-light-client-types = { workspace = true, features = ["serde"] }

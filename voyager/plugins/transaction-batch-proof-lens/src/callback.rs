@@ -1,6 +1,11 @@
 use enumorph::Enumorph;
 use ibc_union_spec::ClientId;
 use macros::model;
+#[cfg(doc)]
+use voyager_sdk::{
+    message::data::{IbcDatagram, OrderedHeaders},
+    vm::Op,
+};
 
 use crate::data::{BatchableEvent, UnsaturatedMsgWithStoreKey};
 
