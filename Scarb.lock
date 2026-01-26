@@ -244,6 +244,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "payments_zkp_verifier"
+version = "0.1.0"
+dependencies = [
+ "garaga",
+ "snforge_std",
+]
+
+[[package]]
 name = "snforge_scarb_plugin"
 version = "0.53.0"
 source = "registry+https://scarbs.xyz/"

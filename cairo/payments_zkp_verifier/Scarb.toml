@@ -5,7 +5,7 @@ version = "0.1.0"
 edition = "2024_07"
 
 [dependencies]
-garaga   = { workspace = true }
+garaga = { git = "https://github.com/keep-starknet-strange/garaga.git", tag = "v1.0.1" }
 starknet = "2.14.0"
 
 [cairo]
@@ -19,6 +19,3 @@ assert_macros = "2.14.0"
 [[target.starknet-contract]]
 casm = true
 casm-add-pythonic-hints = true
-
-[scripts]
-test = "snforge test -p cometbls_verifier --include-ignored"
