@@ -12974,7 +12974,6 @@ dependencies = [
  "bitvec 1.0.1",
  "pathfinder-crypto",
  "serde_json",
- "starknet",
  "starknet-crypto",
  "starknet-types",
  "thiserror 2.0.17",

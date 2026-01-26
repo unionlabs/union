@@ -336,7 +336,12 @@ impl Module {
                     {
                         let p = voyager_client
                             .plugin_client(plugin_client)
-                            .on_timeout_packet(pk.copy(), module_info.clone(), data.clone())
+                            .on_timeout_packet(
+                                pk.copy(),
+                                module_info.clone(),
+                                fee_recipient,
+                                data.clone(),
+                            )
                             .await?;
                         merge_ptbs(&mut ptb, p);
                     } else {
