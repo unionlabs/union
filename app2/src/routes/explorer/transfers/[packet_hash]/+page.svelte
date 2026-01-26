@@ -5,6 +5,7 @@ import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import PacketComponent from "$lib/components/model/PacketComponent.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import Anchor from "$lib/components/ui/A.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import Label from "$lib/components/ui/Label.svelte"
@@ -353,6 +354,18 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
             showAcks={false}
             mode="transfer"
           />
+        </div>
+      {:else}
+        <div class="flex flex-col gap-2 m-4">
+          <div>
+            Transfer not found for <code>{data.packetHash}</code>.
+          </div>
+          <div class="mt-2">
+            <Anchor
+              href={`/explorer/packets/${data.packetHash}`}
+              external={false}
+            >View packet details</Anchor>
+          </div>
         </div>
       {/if}
     </div>
