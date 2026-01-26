@@ -259,8 +259,8 @@ replace (
 )
 
 replace (
-	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20250228223008-5aa5a57b377d
-	github.com/cometbft/cometbft/api => github.com/unionlabs/cometbls/api v0.0.0-20250228223008-5aa5a57b377d
+	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v1.0.1-cometbls.0.20260126165808-f95575bf3764
+	github.com/cometbft/cometbft/api => github.com/unionlabs/cometbls/api v0.0.0-20260126165808-f95575bf3764
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 	github.com/tunabay/go-bitarray => github.com/poisonphang/go-bitarray v0.0.0-20240912214703-d6127bb4d1bd
 )

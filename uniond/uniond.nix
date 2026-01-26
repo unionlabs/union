@@ -50,7 +50,7 @@ _: {
                 (nix-filter.matchExt "md")
               ];
             };
-            vendorHash = "sha256-9XWSuq5xvnTTJaR+eYeJ2Xugw7f4hNa7umtvjurw5VU=";
+            vendorHash = "sha256-Qfs5xpmb1qt5E41vx643I2rAmVs2Ux258K7Gy4dI48o=";
             doCheck = true;
             meta.mainProgram = "uniond";
           }
@@ -100,7 +100,7 @@ _: {
               "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
               "-X github.com/cosmos/cosmos-sdk/version.BuildTags=${system}"
               "-X github.com/cosmos/cosmos-sdk/version.Commit=${gitRev}"
-              "-X github.com/cosmos/cosmos-sdk/version.Version=${uniondBundleVersions.last}"
+              "-X github.com/cosmos/cosmos-sdk/version.Version=v1.2.3"
             ];
           })
         );
