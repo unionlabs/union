@@ -6,6 +6,7 @@ use jaq_core::{
     load::{Arena, File, Loader},
 };
 use jaq_json::Val;
+use opentelemetry::{KeyValue, global, metrics::Histogram};
 use tracing::{error, instrument, trace};
 use voyager_rpc::types::PluginInfo;
 use voyager_vm::{
@@ -17,7 +18,8 @@ use crate::VoyagerMessage;
 
 #[derive(Clone)]
 pub struct InterestFilters {
-    pub filters: Vec<(Filter<Native<Val>>, String)>,
+    pub filters: Vec<(Filter<Native<Val>>, &'static str)>,
+    filter_run_time_histogram: Histogram<f64>,
 }
 
 impl InterestFilters {
@@ -27,6 +29,23 @@ impl InterestFilters {
                 .into_iter()
                 .map(make_filter)
                 .collect::<anyhow::Result<_>>()?,
+            filter_run_time_histogram: global::meter("voyager")
+                .f64_histogram("plugin.filter.run_time")
+                .with_unit("s")
+                .with_boundaries(vec![
+                    0.0,       // 0s
+                    0.000_001, // 1µs
+                    0.000_01,  // 10µs
+                    0.000_1,   // 100μs
+                    0.001,     // 1ms
+                    0.005,     // 5ms
+                    0.01,      // 10ms
+                    0.05,      // 50ms
+                    0.1,       // 100ms
+                    0.5,       // 500ms
+                    1.0,       // 1s+
+                ])
+                .build(),
         })
     }
 }
@@ -36,7 +55,7 @@ pub fn make_filter(
         name,
         interest_filter,
     }: PluginInfo,
-) -> anyhow::Result<(Filter<Native<Val>>, String)> {
+) -> anyhow::Result<(Filter<Native<Val>>, &'static str)> {
     fn map_jq_errs(es: Vec<(File<&str, &str>, impl Debug)>) -> anyhow::Error {
         anyhow!(
             es.iter()
@@ -101,24 +120,47 @@ pub fn make_filter(
     //         .collect::<Vec<_>>()
     // );
 
-    Ok((filter, name))
+    // name lives for the runtime of the program, leak it so we don't need to clone a full string everywhere
+    Ok((filter, String::leak(name)))
 }
 
 impl InterestFilter<VoyagerMessage> for InterestFilters {
+    #[instrument(skip_all)]
     fn check_interest<'a>(&'a self, op: &Op<VoyagerMessage>) -> FilterResult<'a> {
         let msg_json = Val::from(serde_json::to_value(op.clone()).unwrap());
 
         let mut tags = vec![];
+        let mut take = false;
 
         for (filter, plugin_name) in &self.filters {
-            match run_filter(filter, plugin_name, msg_json.clone()) {
-                Ok(JaqFilterResult::Copy(tag)) => tags.push(tag),
+            let now = std::time::SystemTime::now();
+
+            let result = match run_filter(filter, plugin_name, msg_json.clone()) {
+                Ok(JaqFilterResult::Copy(tag)) => {
+                    tags.push(tag);
+                    "copy"
+                }
                 Ok(JaqFilterResult::Take(tag)) => {
                     tags.push(tag);
-                    return FilterResult::Interest(Interest { tags, remove: true });
+                    take = true;
+                    "take"
                 }
-                Ok(JaqFilterResult::NoInterest) => {}
-                Err(_) => {}
+                Ok(JaqFilterResult::NoInterest) => "no_interest",
+                Err(_) => "error",
+            };
+
+            let elapsed = now.elapsed().unwrap_or_default();
+
+            self.filter_run_time_histogram.record(
+                elapsed.as_secs_f64(),
+                &[
+                    KeyValue::new("plugin", *plugin_name),
+                    KeyValue::new("result", result),
+                ],
+            );
+
+            if take {
+                return FilterResult::Interest(Interest { tags, remove: true });
             }
         }
 
@@ -135,7 +177,7 @@ impl InterestFilter<VoyagerMessage> for InterestFilters {
 
 #[instrument(
     name = "checking interest",
-    level = "info",
+    level = "debug",
     skip_all,
     fields(%plugin_name)
 )]

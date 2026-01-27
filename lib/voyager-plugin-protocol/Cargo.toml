@@ -16,6 +16,7 @@ anyhow                         = { workspace = true }
 futures                        = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["server", "client", "async-client", "macros", "tracing"] }
 opentelemetry                  = { workspace = true }
+opentelemetry_sdk              = { workspace = true }
 reconnecting-jsonrpc-ws-client = { workspace = true }
 reth-ipc                       = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
@@ -24,6 +25,7 @@ tokio                          = { workspace = true, features = ["fs", "signal",
 tokio-util                     = { workspace = true }
 tower                          = { workspace = true }
 tracing                        = { workspace = true }
+tracing-opentelemetry          = "0.32.1"
 unionlabs                      = { workspace = true }
 voyager-client                 = { workspace = true }
 voyager-rpc                    = { workspace = true }

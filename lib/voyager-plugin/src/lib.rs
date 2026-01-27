@@ -1,9 +1,16 @@
 use std::{env::VarError, time::Duration};
 
-use opentelemetry::KeyValue;
-use opentelemetry_otlp::WithExportConfig;
+use opentelemetry::{KeyValue, global, trace::TracerProvider};
+use opentelemetry_otlp::{MetricExporter, Protocol, SpanExporter, WithExportConfig};
+use opentelemetry_sdk::{
+    Resource,
+    metrics::{MeterProviderBuilder, PeriodicReader, Temporality},
+    propagation::TraceContextPropagator,
+    trace::{RandomIdGenerator, Sampler, SdkTracerProvider},
+};
 use serde::de::DeserializeOwned;
-use tracing::{Instrument, debug_span, error, instrument};
+use tracing::{Instrument, error, instrument, trace_span};
+use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use unionlabs::ErrorReporter;
 pub use voyager_plugin_protocol as protocol;
@@ -18,7 +25,7 @@ use voyager_rpc::{
     },
 };
 
-#[allow(async_fn_in_trait)]
+#[expect(async_fn_in_trait)]
 pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
     type Call: Member;
     type Callback: Member;
@@ -40,15 +47,15 @@ pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
                 worker_socket,
                 coordinator_socket,
                 config,
-                metrics_endpoint,
+                trace_ratio,
             } => {
-                init(metrics_endpoint);
-
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = Self::info(config.clone());
 
                 let name = info.name;
+
+                init(trace_ratio, &name);
 
                 worker_server(
                     name.clone(),
@@ -57,7 +64,7 @@ pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
                     Self::new(config),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("main", %name))
+                .instrument(trace_span!("main", %name))
                 .await;
             }
             PluginApp::Info { config } => {
@@ -70,7 +77,7 @@ pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
     }
 }
 
-#[allow(async_fn_in_trait)]
+#[expect(async_fn_in_trait)]
 pub trait StateModule<V: IbcSpec>: StateModuleServer<V> + Sized {
     type Config: DeserializeOwned + Clone;
 
@@ -83,15 +90,15 @@ pub trait StateModule<V: IbcSpec>: StateModuleServer<V> + Sized {
                 coordinator_socket,
                 config,
                 info,
-                metrics_endpoint,
+                trace_ratio,
             } => {
-                init(metrics_endpoint);
-
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<StateModuleInfo>(&info);
 
                 let name = info.id();
+
+                init(trace_ratio, &name);
 
                 worker_server(
                     name.clone(),
@@ -100,14 +107,14 @@ pub trait StateModule<V: IbcSpec>: StateModuleServer<V> + Sized {
                     Self::new(config, info),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("run_state_module_server", %name))
+                .instrument(trace_span!("run_state_module_server", %name))
                 .await
             }
         }
     }
 }
 
-#[allow(async_fn_in_trait)]
+#[expect(async_fn_in_trait)]
 pub trait ProofModule<V: IbcSpec>: ProofModuleServer<V> + Sized {
     type Config: DeserializeOwned + Clone;
 
@@ -120,15 +127,15 @@ pub trait ProofModule<V: IbcSpec>: ProofModuleServer<V> + Sized {
                 coordinator_socket,
                 config,
                 info,
-                metrics_endpoint,
+                trace_ratio,
             } => {
-                init(metrics_endpoint);
-
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<ProofModuleInfo>(&info);
 
                 let name = info.id();
+
+                init(trace_ratio, &name);
 
                 worker_server(
                     name.clone(),
@@ -137,14 +144,14 @@ pub trait ProofModule<V: IbcSpec>: ProofModuleServer<V> + Sized {
                     Self::new(config, info),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("run_proof_module_server", %name))
+                .instrument(trace_span!("run_proof_module_server", %name))
                 .await
             }
         }
     }
 }
 
-#[allow(async_fn_in_trait)]
+#[expect(async_fn_in_trait)]
 pub trait FinalityModule: FinalityModuleServer + Sized {
     type Config: DeserializeOwned + Clone;
 
@@ -157,15 +164,15 @@ pub trait FinalityModule: FinalityModuleServer + Sized {
                 coordinator_socket,
                 config,
                 info,
-                metrics_endpoint,
+                trace_ratio,
             } => {
-                init(metrics_endpoint);
-
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<FinalityModuleInfo>(&info);
 
                 let name = info.id();
+
+                init(trace_ratio, &name);
 
                 worker_server(
                     name.clone(),
@@ -174,14 +181,14 @@ pub trait FinalityModule: FinalityModuleServer + Sized {
                     Self::new(config, info),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("run_finality_module_server", %name))
+                .instrument(trace_span!("run_finality_module_server", %name))
                 .await
             }
         }
     }
 }
 
-#[allow(async_fn_in_trait)]
+#[expect(async_fn_in_trait)]
 pub trait ClientModule: ClientModuleServer + Sized {
     type Config: DeserializeOwned + Clone;
 
@@ -194,15 +201,15 @@ pub trait ClientModule: ClientModuleServer + Sized {
                 coordinator_socket,
                 config,
                 info,
-                metrics_endpoint,
+                trace_ratio,
             } => {
-                init(metrics_endpoint);
-
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<ClientModuleInfo>(&info);
 
                 let name = info.id();
+
+                init(trace_ratio, &name);
 
                 worker_server(
                     name.clone(),
@@ -211,14 +218,14 @@ pub trait ClientModule: ClientModuleServer + Sized {
                     Self::new(config, info),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("run_client_module_server", %name))
+                .instrument(trace_span!("run_client_module_server", %name))
                 .await
             }
         }
     }
 }
 
-#[allow(async_fn_in_trait)]
+#[expect(async_fn_in_trait)]
 pub trait ClientBootstrapModule: ClientBootstrapModuleServer + Sized {
     type Config: DeserializeOwned + Clone;
 
@@ -231,15 +238,15 @@ pub trait ClientBootstrapModule: ClientBootstrapModuleServer + Sized {
                 coordinator_socket,
                 config,
                 info,
-                metrics_endpoint,
+                trace_ratio,
             } => {
-                init(metrics_endpoint);
-
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<ClientBootstrapModuleInfo>(&info);
 
                 let name = info.id();
+
+                init(trace_ratio, &name);
 
                 worker_server(
                     name.clone(),
@@ -248,7 +255,7 @@ pub trait ClientBootstrapModule: ClientBootstrapModuleServer + Sized {
                     Self::new(config, info),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("run_client_bootstrap_module_server", %name))
+                .instrument(trace_span!("run_client_bootstrap_module_server", %name))
                 .await
             }
         }
@@ -261,7 +268,7 @@ enum PluginApp<Cmd: clap::Subcommand> {
         worker_socket: String,
         coordinator_socket: String,
         config: String,
-        metrics_endpoint: Option<String>,
+        trace_ratio: Option<f64>,
     },
     Info {
         config: String,
@@ -281,12 +288,12 @@ enum ModuleApp {
         coordinator_socket: String,
         config: String,
         info: String,
-        metrics_endpoint: Option<String>,
+        trace_ratio: Option<f64>,
     },
 }
 
 // set up logging and metrics
-fn init(metrics_endpoint: Option<String>) {
+fn init(trace_ratio: Option<f64>, name: &str) {
     enum LogFormat {
         Text,
         Json,
@@ -305,41 +312,98 @@ fn init(metrics_endpoint: Option<String>) {
         }
     };
 
-    if let Some(metrics_endpoint) = metrics_endpoint {
-        let metric_exporter = opentelemetry_otlp::MetricExporter::builder()
-            .with_http()
-            .with_endpoint(&metrics_endpoint)
-            .with_protocol(opentelemetry_otlp::Protocol::HttpBinary)
-            .with_timeout(Duration::from_secs(3))
-            .build()
-            .expect("unable to build metrics exporter");
+    if let Some(trace_ratio) = trace_ratio {
+        let resource = Resource::builder()
+            .with_attribute(KeyValue::new("service.name", name.to_owned()))
+            .build();
 
-        let provider = opentelemetry_sdk::metrics::SdkMeterProvider::builder()
-            .with_periodic_exporter(metric_exporter)
-            .with_resource(
-                opentelemetry_sdk::Resource::builder_empty()
-                    .with_attributes([KeyValue::new("process.name", "voyager")])
-                    .build(),
+        let meter_provider = MeterProviderBuilder::default()
+            .with_reader(
+                PeriodicReader::builder(
+                    MetricExporter::builder()
+                        .with_http()
+                        .with_protocol(Protocol::HttpBinary)
+                        .with_temporality(Temporality::default())
+                        .build()
+                        .unwrap(),
+                )
+                .with_interval(Duration::from_secs(30))
+                .build(),
+            )
+            .with_resource(resource.clone())
+            .build();
+
+        let tracer_provider = SdkTracerProvider::builder()
+            .with_sampler(Sampler::ParentBased(Box::new(Sampler::TraceIdRatioBased(
+                trace_ratio,
+            ))))
+            .with_id_generator(RandomIdGenerator::default())
+            .with_resource(resource)
+            .with_batch_exporter(
+                SpanExporter::builder()
+                    .with_http()
+                    .with_protocol(Protocol::HttpBinary)
+                    .build()
+                    .unwrap(),
             )
             .build();
 
-        opentelemetry::global::set_meter_provider(provider);
-    };
+        global::set_text_map_propagator(TraceContextPropagator::new());
+        global::set_meter_provider(meter_provider.clone());
+        global::set_tracer_provider(tracer_provider.clone());
 
-    match format {
-        LogFormat::Text => {
-            tracing_subscriber::registry()
-                .with(tracing_subscriber::fmt::layer().with_filter(EnvFilter::from_default_env()))
-                .init();
+        let registry = tracing_subscriber::registry()
+            .with(tracing_opentelemetry::MetricsLayer::new(
+                meter_provider.clone(),
+            ))
+            .with(
+                OpenTelemetryLayer::new(tracer_provider.tracer("voyager")).with_filter(
+                    // prevent reentrant tracing
+                    EnvFilter::from_default_env()
+                        .add_directive("tower=off".parse().expect("valid directive; qed;"))
+                        .add_directive("hyper=off".parse().expect("valid directive; qed;"))
+                        .add_directive("h2=off".parse().expect("valid directive; qed;"))
+                        .add_directive("rustls=off".parse().expect("valid directive; qed;"))
+                        .add_directive("reqwest=off".parse().expect("valid directive; qed;")),
+                ),
+            );
+
+        match format {
+            LogFormat::Text => {
+                registry
+                    .with(
+                        tracing_subscriber::fmt::layer().with_filter(EnvFilter::from_default_env()),
+                    )
+                    .init();
+            }
+            LogFormat::Json => {
+                registry
+                    .with(
+                        tracing_subscriber::fmt::layer()
+                            .json()
+                            .with_filter(EnvFilter::from_default_env()),
+                    )
+                    .init();
+            }
         }
-        LogFormat::Json => {
-            tracing_subscriber::registry()
-                .with(
-                    tracing_subscriber::fmt::layer()
-                        .json()
-                        .with_filter(EnvFilter::from_default_env()),
-                )
-                .init();
+    } else {
+        match format {
+            LogFormat::Text => {
+                tracing_subscriber::registry()
+                    .with(
+                        tracing_subscriber::fmt::layer().with_filter(EnvFilter::from_default_env()),
+                    )
+                    .init();
+            }
+            LogFormat::Json => {
+                tracing_subscriber::registry()
+                    .with(
+                        tracing_subscriber::fmt::layer()
+                            .json()
+                            .with_filter(EnvFilter::from_default_env()),
+                    )
+                    .init();
+            }
         }
     }
 }

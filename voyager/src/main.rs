@@ -11,7 +11,7 @@
     clippy::missing_errors_doc
 )]
 
-use std::{collections::HashMap, fmt::Write, iter, process::ExitCode, time::Duration};
+use std::{collections::HashMap, time::Duration};
 
 use anyhow::{Context as _, anyhow};
 use clap::Parser;
@@ -27,12 +27,11 @@ use serde::Serialize;
 use serde_json::Value;
 use tikv_jemallocator::Jemalloc;
 use tracing::info;
-use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use voyager_client::VoyagerClient;
 use voyager_core::{
     Engine,
     context::ModulesConfig,
-    default_metrics_endpoint, default_rest_laddr, default_rpc_laddr,
+    default_rest_laddr, default_rpc_laddr, default_trace_ratio,
     equivalent_chain_ids::EquivalentChainIds,
     filter::{JaqFilterResult, make_filter, run_filter},
     get_plugin_info,
@@ -51,10 +50,9 @@ use voyager_vm::{Op, Queue, call, promise};
 static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
-    cli::{
-        App, Command, ConfigCmd, LogFormat, MsgCmd, PluginCmd, QueueCmd, RpcCmd, get_voyager_config,
-    },
+    cli::{App, Command, ConfigCmd, MsgCmd, PluginCmd, QueueCmd, RpcCmd, get_voyager_config},
     config::{Config, VoyagerConfig},
+    metrics::init_logging,
     queue::{QueueConfig, QueueImpl},
 };
 
@@ -69,52 +67,20 @@ pub mod config;
 pub mod metrics;
 pub mod queue;
 
-fn main() -> ExitCode {
+fn main() -> anyhow::Result<()> {
     let app = App::parse();
 
-    init_logging(app.log_format);
+    init_logging(
+        app.log_format,
+        get_voyager_config(app.config_file_path.as_deref()).map_or(None, |c| c.voyager.trace_ratio),
+    )?;
 
-    let res = tokio::runtime::Builder::new_multi_thread()
+    tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_stack_size(app.stack_size)
         .build()
         .expect("building the tokio runtime is infallible; qed;")
-        .block_on(do_main(app));
-
-    match res {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(err) => {
-            let errs = iter::successors(err.source(), |e| (*e).source())
-                .enumerate()
-                .fold(format!("0: {err}\n"), |mut acc, (i, e)| {
-                    writeln!(acc, "{}: {e}", i + 1).expect("???");
-                    acc
-                });
-
-            eprintln!("{errs}");
-
-            ExitCode::FAILURE
-        }
-    }
-}
-
-fn init_logging(log_format: LogFormat) {
-    match log_format {
-        LogFormat::Text => {
-            tracing_subscriber::registry()
-                .with(tracing_subscriber::fmt::layer().with_filter(EnvFilter::from_default_env()))
-                .init();
-        }
-        LogFormat::Json => {
-            tracing_subscriber::registry()
-                .with(
-                    tracing_subscriber::fmt::layer()
-                        .json()
-                        .with_filter(EnvFilter::from_default_env()),
-                )
-                .init();
-        }
-    }
+        .block_on(do_main(app))
 }
 
 #[allow(clippy::too_many_lines)]
@@ -156,7 +122,7 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                     num_workers: 1,
                     rest_laddr: default_rest_laddr(),
                     rpc_laddr: default_rpc_laddr(),
-                    metrics_endpoint: default_metrics_endpoint(),
+                    trace_ratio: default_trace_ratio(),
                     queue: QueueConfig::PgQueue(PgQueueConfig {
                         database_url: "postgres://postgres:postgrespassword@127.0.0.1:5432/default"
                             .into(),
@@ -187,7 +153,7 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
         Command::Start => {
             let config = get_voyager_config()?;
 
-            metrics::init(&config.voyager.metrics_endpoint);
+            // metrics::init(&config.voyager.metrics_endpoint);
 
             let voyager = Engine::builder()
                 .with_equivalent_chain_ids(config.equivalent_chain_ids)
@@ -195,7 +161,7 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                 .with_modules(config.modules)
                 .with_ipc_client_request_timeout(config.voyager.ipc_client_request_timeout)
                 .with_cache_config(config.voyager.cache)
-                .with_metrics_endpoint(config.voyager.metrics_endpoint)
+                .with_trace_ratio(config.voyager.trace_ratio)
                 .with_num_workers(config.voyager.num_workers.into())
                 .with_rest_laddr(config.voyager.rest_laddr)
                 .with_rpc_laddr(config.voyager.rpc_laddr)
@@ -227,7 +193,7 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
 
                 let result = run_filter(
                     &filter,
-                    &plugin_name,
+                    plugin_name,
                     serde_json::from_str::<serde_json::Value>(&message)?.into(),
                 );
 
