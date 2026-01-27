@@ -19,3 +19,6 @@ snforge_std   = "0.53.0"
 [[target.starknet-contract]]
 casm                    = true
 casm-add-pythonic-hints = true
+
+[scripts]
+test = "snforge test -p payments_zkp_verifier --include-ignored"

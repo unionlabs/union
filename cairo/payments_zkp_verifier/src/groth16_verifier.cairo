@@ -8,6 +8,13 @@ use super::groth16_verifier_constants::{
     precomputed_lines, vk,
 };
 
+#[starknet::interface]
+pub trait IGroth16VerifierBN254<TContractState> {
+    fn verify_groth16_proof_bn254(
+        self: @TContractState, full_proof_with_hints: Span<felt252>,
+    ) -> Result<Span<u256>, felt252>;
+}
+
 #[derive(Drop)]
 pub struct FullProofWithHints {
     pub groth16_proof: Groth16Proof,
@@ -16,13 +23,6 @@ pub struct FullProofWithHints {
     pub mpcheck_hint: MPCheckHintBN254,
     pub msm_hint: Span<felt252>,
     pub commitment_mpcheck_hint: MPCheckHintBN254,
-}
-
-#[starknet::interface]
-pub trait IGroth16VerifierBN254<TContractState> {
-    fn verify_groth16_proof_bn254(
-        self: @TContractState, full_proof_with_hints: Span<felt252>,
-    ) -> Result<Span<u256>, felt252>;
 }
 
 #[starknet::contract]
@@ -96,7 +96,9 @@ mod Groth16VerifierBN254 {
                         .unwrap_syscall();
 
                     ec_safe_add(
-                        Serde::<G1Point>::deserialize(ref _vx_x_serialized).unwrap(), *ic.at(0), 0,
+                        Serde::<G1Point>::deserialize(ref _vx_x_serialized).unwrap(),
+                        ec_safe_add(*ic.at(0), fph.proof_commitment, 0),
+                        0,
                     )
                 },
             };
@@ -109,16 +111,21 @@ mod Groth16VerifierBN254 {
                 precomputed_lines.span(),
                 mpcheck_hint,
             );
+            println!("naesdnaesndeas bro hererere1");
             let res = multi_pairing_check_bn254_2P_2F(
-                G1G2Pair { p: fph.proof_commitment, q: pedersen_g },
-                G1G2Pair { p: fph.proof_commitment_pok, q: pedersen_g_root_sigma_neg },
+                G1G2Pair { p: fph.proof_commitment, q: pedersen_g_root_sigma_neg },
+                G1G2Pair { p: fph.proof_commitment_pok, q: pedersen_g },
                 commitment_precomputed_lines.span(),
                 commitment_mpcheck_hint,
             )?;
 
+            println!("naesdnaesndeas bro hererere2");
             if !res {
+                println!("naesdnaesndeas bro hererere3");
                 return Result::Err('PAIRING_CHECK_FAILED');
             }
+
+            println!("{check:?}");
 
             match check {
                 Result::Ok(_) => Result::Ok(groth16_proof.public_inputs),

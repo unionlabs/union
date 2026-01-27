@@ -23,3 +23,8 @@ starknet              = "2.13.1"
 
 garaga      = { git = "https://github.com/keep-starknet-strange/garaga.git", tag = "v1.0.1" }
 snforge_std = "0.53.0-rc.0"
+
+# [[tool.snforge.fork]]
+# name = "TESTNET"
+# url = "http://your.rpc.url"
+# block_id.tag = "latest"
