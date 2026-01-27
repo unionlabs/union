@@ -523,3 +523,134 @@ export const makeDual: Effect.Effect<
     )
   ),
 )
+
+/** @internal */
+export const makePure: Effect.Effect<
+  EvmZkgmClient.EvmZkgmClient,
+  never,
+  never
+> = Effect.gen(function*() {
+  const client = Client.make((request) =>
+    Effect.fail(
+      new ClientError.RequestError({
+        reason: "Transport",
+        request,
+        description: "Wallet client has not been provisioned to allow for ZkgmRequest execution.",
+      }),
+    )
+  )
+
+  const prepareEip1193 = Effect.fn("EvmZkgmClient.prepareEip1193")(
+    function*(request: ClientRequest.ZkgmClientRequest) {
+      const encodeInstruction: (
+        u: ZkgmInstruction.ZkgmInstruction,
+      ) => Effect.Effect<
+        Ucs03.Ucs03,
+        ParseResult.ParseError | Evm.ReadContractError | ClientError.RequestError
+      > = pipe(
+        Match.type<ZkgmInstruction.ZkgmInstruction>(),
+        Match.tagsExhaustive({
+          Batch: (batch) =>
+            pipe(
+              batch.instructions,
+              A.map(encodeInstruction),
+              Effect.allWith({ concurrency: "unbounded" }),
+              Effect.map((operand) =>
+                new Ucs03.Batch({
+                  opcode: batch.opcode,
+                  version: batch.version,
+                  operand,
+                })
+              ),
+            ),
+          TokenOrder: (self) =>
+            pipe(
+              Match.value(self),
+              Match.when(
+                { version: 1 },
+                () =>
+                  Effect.fail(
+                    new ClientError.RequestError({
+                      reason: "Encode",
+                      request,
+                      description: "Token Order V1 is not supported without a public client.",
+                    }),
+                  ),
+              ),
+              Match.when(
+                { version: 2 },
+                (v2) => TokenOrder.encodeV2(v2),
+              ),
+              Match.exhaustive,
+            ),
+          Call: Call.encode,
+        }),
+      )
+
+      const timeoutTimestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
+      const salt = yield* Utils.generateSalt("evm").pipe(
+        Effect.mapError((cause) =>
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause,
+            description: "crypto error",
+          })
+        ),
+      )
+
+      const operand = yield* pipe(
+        encodeInstruction(request.instruction),
+        Effect.flatMap(S.encode(Ucs03.Ucs03FromHex)),
+        Effect.mapError((cause) =>
+          new ClientError.RequestError({
+            reason: "Transport",
+            request,
+            cause,
+            description: "instruction encode",
+          })
+        ),
+      )
+
+      const funds = ClientRequest.requiredFunds(request).pipe(
+        O.map(A.filter(([x]) => Token.isNative(x))),
+        O.flatMap(O.liftPredicate(A.isNonEmptyReadonlyArray)),
+        O.map(A.map(flow(Tuple.getSecond))),
+        O.map(A.reduce(0n, (acc, n) => acc + n)),
+        O.getOrUndefined,
+      )
+
+      const data = encodeFunctionData({
+        abi: Ucs03.Abi,
+        functionName: "send",
+        args: [
+          request.channelId,
+          0n,
+          timeoutTimestamp,
+          salt,
+          {
+            opcode: request.instruction.opcode,
+            version: request.instruction.version,
+            operand,
+          },
+        ],
+      })
+
+      const preparedRequest = {
+        to: request.ucs03Address as `0x${string}`,
+        value: funds,
+        data,
+      }
+
+      return formatTransactionRequest(preparedRequest)
+    },
+  )
+
+  return Object.assign(
+    client,
+    {
+      [EvmZkgmClient.TypeId]: EvmZkgmClient.TypeId as typeof EvmZkgmClient.TypeId,
+      prepareEip1193,
+    },
+  )
+})
