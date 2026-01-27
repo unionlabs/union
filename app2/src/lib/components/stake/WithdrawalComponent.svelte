@@ -108,19 +108,35 @@ const withdrawalData = runPromiseExit$(() => {
             Effect.flatMap(Schema.decodeUnknown(BatchResponseSchema)),
           )
 
+          // for each unstake request, calculate how much U the user can withdraw
           const processRequest = (request: UnstakeRequest) => {
             const batch = batchesResponse.batches.find(b => b.batch_id === request.batch_id)
             if (!batch || batch.batch.status !== "received") {
               return O.none<{ batchId: string; withdrawableAmount: BigDecimal.BigDecimal }>()
             }
 
-            return pipe(
-              BigDecimal.fromString(request.amount),
-              O.map(withdrawableAmount => ({
-                batchId: request.batch_id,
-                withdrawableAmount,
-              })),
-            )
+            // request.amount is the user's eU shares (what they unstaked)
+            // total_lst_to_burn is the total eU shares in this batch from all users
+            // received_native_unstaked is the total U tokens the batch received after unbonding
+            const userEuShares = BigInt(request.amount)
+            const batchTotalEuShares = BigInt(batch.batch.total_lst_to_burn)
+            const batchReceivedU = BigInt(batch.batch.received_native_unstaked)
+
+            if (batchTotalEuShares === 0n) {
+              return O.none<{ batchId: string; withdrawableAmount: BigDecimal.BigDecimal }>()
+            }
+
+            // user's U = (batch's total U) * (user's eU shares) / (batch's total eU shares)
+            // we use BigInt division here because it truncates (rounds down) which matches
+            // the contract's rust integer math. using BigDecimal caused 1 wei rounding diffs
+            // that made withdrawals fail with "insufficient funds"
+            const userU = (batchReceivedU * userEuShares) / batchTotalEuShares
+
+            // userU is raw wei (18 decimals), stored as scale 0 because toRawAmount(..., 0) expects that
+            return O.some({
+              batchId: request.batch_id,
+              withdrawableAmount: BigDecimal.fromBigInt(userU),
+            })
           }
 
           const userBatches = pipe(
