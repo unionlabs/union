@@ -84,3 +84,22 @@ export const layerDual: Layer.Layer<
       Context.add(ZkgmClient.ZkgmClient, client),
     )),
 )
+
+/**
+ * Provides both the agnostic `ZkgmClient` and the specialized `EvmZkgmClient` without
+ * implementing any behaviors which otherwise require public or wallet clients, causing
+ * the produced clients to have no side-effects.
+ *
+ * @category layers
+ * @since 0.0.3
+ */
+export const layerPure: Layer.Layer<
+  EvmZkgmClient | ZkgmClient.ZkgmClient,
+  never,
+  never
+> = Layer.scopedContext(
+  Effect.map(internal.makePure, (client) =>
+    Context.make(EvmZkgmClient, client).pipe(
+      Context.add(ZkgmClient.ZkgmClient, client),
+    )),
+)
