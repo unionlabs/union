@@ -39,6 +39,7 @@ thiserror          = { workspace = true }
 tikv-jemallocator  = "0.5"
 tokio              = { workspace = true, features = ["macros"] }
 tracing            = { workspace = true, features = ["max_level_trace"] }
+tracing-opentelemetry = "0.32.1"
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 unionlabs          = { workspace = true, features = ["ethabi"] }
 voyager-client     = { workspace = true }

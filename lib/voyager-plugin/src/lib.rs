@@ -306,40 +306,118 @@ fn init(metrics_endpoint: Option<String>) {
     };
 
     if let Some(metrics_endpoint) = metrics_endpoint {
-        let metric_exporter = opentelemetry_otlp::MetricExporter::builder()
-            .with_http()
-            .with_endpoint(&metrics_endpoint)
-            .with_protocol(opentelemetry_otlp::Protocol::HttpBinary)
-            .with_timeout(Duration::from_secs(3))
-            .build()
-            .expect("unable to build metrics exporter");
+        // Construct MeterProvider for MetricsLayer
+        fn init_meter_provider(
+            metrics_endpoint: &str,
+        ) -> opentelemetry_sdk::metrics::SdkMeterProvider {
+            let exporter = opentelemetry_otlp::MetricExporter::builder()
+                .with_http()
+                .with_endpoint(metrics_endpoint)
+                .with_temporality(opentelemetry_sdk::metrics::Temporality::default())
+                .build()
+                .unwrap();
 
-        let provider = opentelemetry_sdk::metrics::SdkMeterProvider::builder()
-            .with_periodic_exporter(metric_exporter)
-            .with_resource(
-                opentelemetry_sdk::Resource::builder_empty()
-                    .with_attributes([KeyValue::new("process.name", "voyager")])
-                    .build(),
-            )
-            .build();
+            let reader = opentelemetry_sdk::metrics::PeriodicReader::builder(exporter)
+                .with_interval(std::time::Duration::from_secs(30))
+                .build();
 
-        opentelemetry::global::set_meter_provider(provider);
-    };
+            // // For debugging in development
+            // let stdout_reader = opentelemetry_sdk::metrics::PeriodicReader::builder(
+            //     opentelemetry_stdout::MetricExporter::default(),
+            // )
+            // .build();
 
-    match format {
-        LogFormat::Text => {
-            tracing_subscriber::registry()
-                .with(tracing_subscriber::fmt::layer().with_filter(EnvFilter::from_default_env()))
-                .init();
+            let meter_provider = opentelemetry_sdk::metrics::MeterProviderBuilder::default()
+                // .with_resource(resource())
+                .with_reader(reader)
+                // .with_reader(stdout_reader)
+                .build();
+
+            opentelemetry::global::set_meter_provider(meter_provider.clone());
+
+            meter_provider
         }
-        LogFormat::Json => {
-            tracing_subscriber::registry()
-                .with(
-                    tracing_subscriber::fmt::layer()
-                        .json()
-                        .with_filter(EnvFilter::from_default_env()),
-                )
-                .init();
+
+        // Construct TracerProvider for OpenTelemetryLayer
+        fn init_tracer_provider(
+            metrics_endpoint: &str,
+        ) -> opentelemetry_sdk::trace::SdkTracerProvider {
+            let exporter = opentelemetry_otlp::SpanExporter::builder()
+                .with_http()
+                .with_endpoint(metrics_endpoint)
+                .build()
+                .unwrap();
+
+            opentelemetry_sdk::trace::SdkTracerProvider::builder()
+                // Customize sampling strategy
+                .with_sampler(opentelemetry_sdk::trace::Sampler::ParentBased(Box::new(
+                    opentelemetry_sdk::trace::Sampler::TraceIdRatioBased(1.0),
+                )))
+                // If export trace to AWS X-Ray, you can use XrayIdGenerator
+                .with_id_generator(opentelemetry_sdk::trace::RandomIdGenerator::default())
+                // .with_resource(resource())
+                .with_batch_exporter(exporter)
+                .build()
+        }
+
+        let tracer_provider = init_tracer_provider(&metrics_endpoint);
+        let meter_provider = init_meter_provider(&metrics_endpoint);
+
+        use opentelemetry::trace::TracerProvider;
+        let tracer = tracer_provider.tracer("tracing-otel-subscriber");
+
+        let registry = tracing_subscriber::registry()
+            // The global level filter prevents the exporter network stack
+            // from reentering the globally installed OpenTelemetryLayer with
+            // its own spans while exporting, as the libraries should not use
+            // tracing levels below DEBUG. If the OpenTelemetry layer needs to
+            // trace spans and events with higher verbosity levels, consider using
+            // per-layer filtering to target the telemetry layer specifically,
+            // e.g. by target matching.
+            .with(tracing_subscriber::filter::LevelFilter::from_level(
+                tracing::Level::INFO,
+            ))
+            .with(tracing_opentelemetry::MetricsLayer::new(
+                meter_provider.clone(),
+            ))
+            .with(tracing_opentelemetry::OpenTelemetryLayer::new(tracer));
+
+        match format {
+            LogFormat::Text => {
+                registry
+                    .with(
+                        tracing_subscriber::fmt::layer().with_filter(EnvFilter::from_default_env()),
+                    )
+                    .init();
+            }
+            LogFormat::Json => {
+                registry
+                    .with(
+                        tracing_subscriber::fmt::layer()
+                            .json()
+                            .with_filter(EnvFilter::from_default_env()),
+                    )
+                    .init();
+            }
+        }
+    } else {
+        match format {
+            LogFormat::Text => {
+                tracing_subscriber::registry()
+                    .with(
+                        tracing_subscriber::fmt::layer().with_filter(EnvFilter::from_default_env()),
+                    )
+                    .init();
+            }
+            LogFormat::Json => {
+                tracing_subscriber::registry()
+                    .with(
+                        tracing_subscriber::fmt::layer()
+                            .json()
+                            .with_filter(EnvFilter::from_default_env()),
+                    )
+                    .init();
+            }
         }
     }
 }

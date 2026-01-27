@@ -21,6 +21,7 @@
 use std::{
     borrow::Cow,
     cmp,
+    collections::HashMap,
     fmt::Debug,
     future::Future,
     path::{Path, PathBuf},
@@ -40,7 +41,8 @@ use jsonrpsee::{
     server::middleware::rpc::RpcServiceT,
     types::{ErrorObject, Response, ResponsePayload},
 };
-use opentelemetry::{KeyValue, global};
+use opentelemetry::{KeyValue, global, propagation::TextMapPropagator};
+use opentelemetry_sdk::propagation::TraceContextPropagator;
 use reth_ipc::{
     client::IpcClientBuilder,
     server::{RpcService, RpcServiceBuilder},
@@ -51,6 +53,7 @@ use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tower::Layer;
 use tracing::{Instrument, debug, debug_span, error, info, info_span, instrument, trace};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 use unionlabs::{ErrorReporter, ethereum::slot::keccak256, primitives::encoding::HexUnprefixed};
 use voyager_client::VoyagerClient;
 use voyager_rpc::VoyagerRpcServer;
@@ -295,7 +298,11 @@ where
         async move {
             if let Some(params) = request.params.take() {
                 match serde_json::from_str(params.get()) {
-                    Ok(ParamsWithItemId { item_id, params }) => {
+                    Ok(ParamsWithItemId {
+                        item_id,
+                        trace_ctx,
+                        params,
+                    }) => {
                         let mut request = jsonrpsee::types::Request {
                             params: params.map(|rv| Cow::Owned(rv.into_owned())),
                             ..request
@@ -303,10 +310,15 @@ where
 
                         request.extensions.insert(item_id);
 
-                        return service
-                            .call(request)
-                            .instrument(info_span!("item_id", item_id = item_id.raw()))
-                            .await;
+                        let propagator = TraceContextPropagator::new();
+
+                        let parent_context = propagator.extract(&trace_ctx);
+
+                        let span = info_span!("item_id", item_id = item_id.raw());
+
+                        let _ = span.set_parent(parent_context);
+
+                        return service.call(request).instrument(span).await;
                     }
                     Err(_) => {
                         request.params = Some(params);
@@ -356,11 +368,14 @@ where
         mut request: jsonrpsee::types::Request<'a>,
     ) -> impl Future<Output = Self::MethodResponse> + 'a {
         let item_id = request.extensions.get::<ItemId>().cloned();
+        let mut trace_ctx = HashMap::new();
+        TraceContextPropagator::new().inject(&mut trace_ctx);
 
         request
             .extensions
             .insert(VoyagerClient::new(IdThreadClient {
                 client: self.client.clone(),
+                trace_ctx,
                 item_id,
             }));
 
@@ -372,11 +387,14 @@ where
         mut requests: jsonrpsee::core::middleware::Batch<'a>,
     ) -> impl Future<Output = Self::BatchResponse> + Send + 'a {
         let item_id = requests.extensions().get::<ItemId>().cloned();
+        let mut trace_ctx = HashMap::new();
+        TraceContextPropagator::new().inject(&mut trace_ctx);
 
         requests
             .extensions_mut()
             .insert(VoyagerClient::new(IdThreadClient {
                 client: self.client.clone(),
+                trace_ctx,
                 item_id,
             }));
 
@@ -388,10 +406,13 @@ where
         mut n: jsonrpsee::core::middleware::Notification<'a>,
     ) -> impl Future<Output = Self::NotificationResponse> + Send + 'a {
         let item_id = n.extensions().get::<ItemId>().cloned();
+        let mut trace_ctx = HashMap::new();
+        TraceContextPropagator::new().inject(&mut trace_ctx);
 
         n.extensions_mut()
             .insert(VoyagerClient::new(IdThreadClient {
                 client: self.client.clone(),
+                trace_ctx,
                 item_id,
             }));
 
@@ -469,6 +490,8 @@ where
 struct ParamsWithItemId<'a> {
     #[serde(rename = "$$__id__$$")]
     item_id: ItemId,
+    #[serde(rename = "$$__trace_context__$$")]
+    trace_ctx: HashMap<String, String>,
     #[serde(rename = "$$__params__$$", borrow)]
     params: Option<Cow<'a, RawValue>>,
 }
@@ -487,6 +510,7 @@ impl ToRpcParams for ParamsWithItemId<'_> {
 #[derive(Debug, Clone)]
 pub struct IdThreadClient<Inner: ClientT + Send + Sync> {
     pub(crate) client: Inner,
+    trace_ctx: HashMap<String, String>,
     item_id: Option<ItemId>,
 }
 
@@ -500,6 +524,7 @@ where
 
         IdThreadClient {
             client: self,
+            trace_ctx: HashMap::new(),
             item_id,
         }
     }
@@ -541,6 +566,8 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
                         method,
                         ParamsWithItemId {
                             item_id,
+                            // TODO: Don't clone here
+                            trace_ctx: self.trace_ctx.clone(),
                             params: params.to_rpc_params()?.map(Cow::Owned),
                         },
                     )
