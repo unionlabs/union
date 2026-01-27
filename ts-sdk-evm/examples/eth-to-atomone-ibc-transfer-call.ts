@@ -285,27 +285,15 @@ const main = Effect.gen(function*() {
 })
 
 pipe(
-  checkAndSubmitAllowance,
+  Effect.void, // checkAndSubmitAllowance,
   Effect.andThen(() => main),
   Effect.provide(
     Layer.mergeAll(
       ChainRegistry.Default,
-      EvmZkgmClient.layerDual,
-    ).pipe(
-      Layer.provideMerge(Evm.WalletClient.Live({
-        account: privateKeyToAccount(
-          (process.env.KEY as any) ?? "0x...",
-        ),
-        chain: mainnet,
-        transport: http("https://rpc.1.ethereum.chain.kitchen"),
-      })),
-      Layer.provideMerge(Evm.PublicClient.Live({
-        chain: mainnet,
-        transport: http("https://rpc.1.ethereum.chain.kitchen"),
-      })),
+      EvmZkgmClient.layerPure,
     ),
   ),
   Effect.runPromise,
 )
   .then(console.log)
-  .then(console.error)
+  .catch(console.error)
