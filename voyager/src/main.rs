@@ -17,6 +17,8 @@ use anyhow::{Context as _, anyhow};
 use clap::Parser;
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
+use opentelemetry::KeyValue;
+use opentelemetry_sdk::Resource;
 use pg_queue::{
     PgQueueConfig, Tables, default_max_connections, default_min_connections,
     default_retryable_error_expo_backoff_max, default_retryable_error_expo_backoff_multiplier,
@@ -142,7 +144,11 @@ fn init_logging(log_format: LogFormat) {
             )))
             // If export trace to AWS X-Ray, you can use XrayIdGenerator
             .with_id_generator(opentelemetry_sdk::trace::RandomIdGenerator::default())
-            // .with_resource(resource())
+            .with_resource(
+                Resource::builder()
+                    .with_attribute(KeyValue::new("service.name", "voyager"))
+                    .build(),
+            )
             .with_batch_exporter(exporter)
             .build()
     }

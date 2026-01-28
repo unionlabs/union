@@ -2,6 +2,7 @@ use std::{env::VarError, time::Duration};
 
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_sdk::Resource;
 use serde::de::DeserializeOwned;
 use tracing::{Instrument, debug_span, error, instrument};
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
@@ -42,13 +43,13 @@ pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
                 config,
                 metrics_endpoint,
             } => {
-                init(metrics_endpoint);
-
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = Self::info(config.clone());
 
                 let name = info.name;
+
+                init(metrics_endpoint, &name);
 
                 worker_server(
                     name.clone(),
@@ -85,13 +86,13 @@ pub trait StateModule<V: IbcSpec>: StateModuleServer<V> + Sized {
                 info,
                 metrics_endpoint,
             } => {
-                init(metrics_endpoint);
-
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<StateModuleInfo>(&info);
 
                 let name = info.id();
+
+                init(metrics_endpoint, &name);
 
                 worker_server(
                     name.clone(),
@@ -122,13 +123,13 @@ pub trait ProofModule<V: IbcSpec>: ProofModuleServer<V> + Sized {
                 info,
                 metrics_endpoint,
             } => {
-                init(metrics_endpoint);
-
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<ProofModuleInfo>(&info);
 
                 let name = info.id();
+
+                init(metrics_endpoint, &name);
 
                 worker_server(
                     name.clone(),
@@ -159,13 +160,13 @@ pub trait FinalityModule: FinalityModuleServer + Sized {
                 info,
                 metrics_endpoint,
             } => {
-                init(metrics_endpoint);
-
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<FinalityModuleInfo>(&info);
 
                 let name = info.id();
+
+                init(metrics_endpoint, &name);
 
                 worker_server(
                     name.clone(),
@@ -196,13 +197,13 @@ pub trait ClientModule: ClientModuleServer + Sized {
                 info,
                 metrics_endpoint,
             } => {
-                init(metrics_endpoint);
-
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<ClientModuleInfo>(&info);
 
                 let name = info.id();
+
+                init(metrics_endpoint, &name);
 
                 worker_server(
                     name.clone(),
@@ -233,13 +234,13 @@ pub trait ClientBootstrapModule: ClientBootstrapModuleServer + Sized {
                 info,
                 metrics_endpoint,
             } => {
-                init(metrics_endpoint);
-
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<ClientBootstrapModuleInfo>(&info);
 
                 let name = info.id();
+
+                init(metrics_endpoint, &name);
 
                 worker_server(
                     name.clone(),
@@ -286,7 +287,7 @@ enum ModuleApp {
 }
 
 // set up logging and metrics
-fn init(metrics_endpoint: Option<String>) {
+fn init(metrics_endpoint: Option<String>, name: &str) {
     enum LogFormat {
         Text,
         Json,
@@ -306,13 +307,15 @@ fn init(metrics_endpoint: Option<String>) {
     };
 
     if let Some(metrics_endpoint) = metrics_endpoint {
+        dbg!(&metrics_endpoint);
+
         // Construct MeterProvider for MetricsLayer
         fn init_meter_provider(
             metrics_endpoint: &str,
         ) -> opentelemetry_sdk::metrics::SdkMeterProvider {
             let exporter = opentelemetry_otlp::MetricExporter::builder()
                 .with_http()
-                .with_endpoint(metrics_endpoint)
+                // .with_endpoint(metrics_endpoint)
                 .with_temporality(opentelemetry_sdk::metrics::Temporality::default())
                 .build()
                 .unwrap();
@@ -339,48 +342,48 @@ fn init(metrics_endpoint: Option<String>) {
         }
 
         // Construct TracerProvider for OpenTelemetryLayer
-        fn init_tracer_provider(
-            metrics_endpoint: &str,
-        ) -> opentelemetry_sdk::trace::SdkTracerProvider {
-            let exporter = opentelemetry_otlp::SpanExporter::builder()
-                .with_http()
-                .with_endpoint(metrics_endpoint)
-                .build()
-                .unwrap();
+        let exporter = opentelemetry_otlp::SpanExporter::builder()
+            .with_http()
+            // .with_endpoint(&metrics_endpoint)
+            .build()
+            .unwrap();
 
-            opentelemetry_sdk::trace::SdkTracerProvider::builder()
-                // Customize sampling strategy
-                .with_sampler(opentelemetry_sdk::trace::Sampler::ParentBased(Box::new(
-                    opentelemetry_sdk::trace::Sampler::TraceIdRatioBased(1.0),
-                )))
-                // If export trace to AWS X-Ray, you can use XrayIdGenerator
-                .with_id_generator(opentelemetry_sdk::trace::RandomIdGenerator::default())
-                // .with_resource(resource())
-                .with_batch_exporter(exporter)
-                .build()
-        }
+        let tracer_provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
+            // Customize sampling strategy
+            .with_sampler(opentelemetry_sdk::trace::Sampler::ParentBased(Box::new(
+                opentelemetry_sdk::trace::Sampler::AlwaysOn,
+            )))
+            .with_id_generator(opentelemetry_sdk::trace::RandomIdGenerator::default())
+            .with_resource(
+                Resource::builder()
+                    .with_attribute(KeyValue::new("service.name", name.to_owned()))
+                    .build(),
+            )
+            .with_batch_exporter(exporter)
+            .build();
 
-        let tracer_provider = init_tracer_provider(&metrics_endpoint);
         let meter_provider = init_meter_provider(&metrics_endpoint);
 
         use opentelemetry::trace::TracerProvider;
         let tracer = tracer_provider.tracer("tracing-otel-subscriber");
 
         let registry = tracing_subscriber::registry()
-            // The global level filter prevents the exporter network stack
-            // from reentering the globally installed OpenTelemetryLayer with
-            // its own spans while exporting, as the libraries should not use
-            // tracing levels below DEBUG. If the OpenTelemetry layer needs to
-            // trace spans and events with higher verbosity levels, consider using
-            // per-layer filtering to target the telemetry layer specifically,
-            // e.g. by target matching.
-            .with(tracing_subscriber::filter::LevelFilter::from_level(
-                tracing::Level::INFO,
-            ))
             .with(tracing_opentelemetry::MetricsLayer::new(
                 meter_provider.clone(),
             ))
-            .with(tracing_opentelemetry::OpenTelemetryLayer::new(tracer));
+            .with(
+                tracing_opentelemetry::OpenTelemetryLayer::new(tracer)
+                    // The global level filter prevents the exporter network stack
+                    // from reentering the globally installed OpenTelemetryLayer with
+                    // its own spans while exporting, as the libraries should not use
+                    // tracing levels below DEBUG. If the OpenTelemetry layer needs to
+                    // trace spans and events with higher verbosity levels, consider using
+                    // per-layer filtering to target the telemetry layer specifically,
+                    // e.g. by target matching.
+                    .with_filter(tracing_subscriber::filter::LevelFilter::from_level(
+                        tracing::Level::INFO,
+                    )),
+            );
 
         match format {
             LogFormat::Text => {

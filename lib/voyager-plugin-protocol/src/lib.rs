@@ -52,7 +52,7 @@ use serde_json::value::RawValue;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tower::Layer;
-use tracing::{Instrument, debug, debug_span, error, info, info_span, instrument, trace};
+use tracing::{Instrument, debug, debug_span, error, info, info_span, instrument, trace, warn};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use unionlabs::{ErrorReporter, ethereum::slot::keccak256, primitives::encoding::HexUnprefixed};
 use voyager_client::VoyagerClient;
@@ -314,9 +314,16 @@ where
 
                         let parent_context = propagator.extract(&trace_ctx);
 
+                        warn!(?trace_ctx, "EXTRACTING TRACE_CTX FROM PARAMS");
+
                         let span = info_span!("item_id", item_id = item_id.raw());
 
-                        let _ = span.set_parent(parent_context);
+                        match span.set_parent(parent_context) {
+                            Ok(()) => {}
+                            Err(err) => {
+                                error!("could not set span parent: {err}");
+                            }
+                        };
 
                         return service.call(request).instrument(span).await;
                     }
@@ -371,6 +378,8 @@ where
         let mut trace_ctx = HashMap::new();
         TraceContextPropagator::new().inject(&mut trace_ctx);
 
+        warn!(?trace_ctx, "INJECTING CURRENT TRACE_CTX");
+
         request
             .extensions
             .insert(VoyagerClient::new(IdThreadClient {
@@ -390,6 +399,8 @@ where
         let mut trace_ctx = HashMap::new();
         TraceContextPropagator::new().inject(&mut trace_ctx);
 
+        warn!(?trace_ctx, "INJECTING CURRENT TRACE_CTX");
+
         requests
             .extensions_mut()
             .insert(VoyagerClient::new(IdThreadClient {
@@ -408,6 +419,8 @@ where
         let item_id = n.extensions().get::<ItemId>().cloned();
         let mut trace_ctx = HashMap::new();
         TraceContextPropagator::new().inject(&mut trace_ctx);
+
+        warn!(?trace_ctx, "INJECTING CURRENT TRACE_CTX");
 
         n.extensions_mut()
             .insert(VoyagerClient::new(IdThreadClient {
@@ -522,9 +535,14 @@ where
     fn with_id(&self, item_id: Option<ItemId>) -> IdThreadClient<&Self> {
         trace!(?item_id, "threading id");
 
+        let mut trace_ctx = HashMap::new();
+        TraceContextPropagator::new().inject(&mut trace_ctx);
+
+        warn!(?trace_ctx, "INJECTING TRACE_CTX");
+
         IdThreadClient {
             client: self,
-            trace_ctx: HashMap::new(),
+            trace_ctx,
             item_id,
         }
     }
@@ -557,6 +575,8 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
         Params: ToRpcParams + Send,
     {
         trace!(item_id = ?self.item_id);
+
+        warn!(trace_ctx = ?self.trace_ctx, "INJECTING TRACE_CTX");
 
         // thread the item id through the request if it is present
         match self.item_id {

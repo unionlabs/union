@@ -51,6 +51,7 @@ where
     ModuleCall: From<MakeMsg<V>> + From<MakeTransactionBatchesWithUpdate<V>>,
     ModuleCallback: From<MakeBatchTransaction<V>> + From<MakeIbcMessagesFromUpdate<V>>,
 {
+    #[instrument(skip_all, fields(client_id = %self.client_id, batches = self.batches.len()))]
     pub async fn call(
         self,
         module: &Module,
