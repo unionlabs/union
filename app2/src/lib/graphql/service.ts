@@ -1,7 +1,7 @@
 import { ENV } from "$lib/constants"
 import * as SvelteConfigProvider from "$lib/services/SvelteConfigProvider.js"
 import { PersistedCache, Persistence } from "@effect/experimental"
-import { KeyValueStore } from "@effect/platform"
+import { Headers, HttpTraceContext, KeyValueStore } from "@effect/platform"
 import { operationNamesFromDocumentNode } from "@unionlabs/sdk/utils/index"
 import {
   absurd,
@@ -142,24 +142,12 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
 
     const client = new GraphQLClient(defaultEndpoint)
 
-    const fetch = <D, V extends Variables = Variables>(options: {
-      document: TadaDocumentNode<D, V>
-      variables?: V
-    }) =>
-      Effect.gen(function*() {
+    const fetch = Effect.fn("GraphQL.fetch")(
+      function*<D, V extends Variables = Variables>(options: {
+        document: TadaDocumentNode<D, V>
+        variables?: V
+      }) {
         const { document, variables } = options
-
-        const fetch = Effect.tryPromise({
-          try: (signal) =>
-            client.request<D, any>({
-              document,
-              variables,
-              signal,
-            }),
-          catch: (error) => GraphQLError.fromUnknown(error),
-        }).pipe(
-          Effect.withSpan("fetch"),
-        )
 
         const operationName = pipe(
           document,
@@ -168,16 +156,27 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
           O.getOrElse(() => "unknown"),
         )
 
-        return yield* pipe(
-          fetch,
-          Effect.withSpan("GraphQL.fetch", {
-            attributes: {
-              operationName,
-              variables,
-            },
-          }),
+        yield* Effect.annotateCurrentSpan("operationName", operationName)
+        yield* Effect.annotateCurrentSpan("variables", variables)
+
+        const tracingHeaders = yield* pipe(
+          Effect.currentSpan,
+          Effect.map(HttpTraceContext.toHeaders),
+          Effect.orElseSucceed(() => Headers.empty),
         )
-      })
+
+        return yield* Effect.tryPromise({
+          try: (signal) =>
+            client.request<D, any>({
+              document,
+              variables,
+              requestHeaders: tracingHeaders,
+              signal,
+            }),
+          catch: (error) => GraphQLError.fromUnknown(error),
+        })
+      },
+    )
 
     const cache = yield* PersistedCache.make({
       storeId: "graphql:",
