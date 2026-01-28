@@ -11,7 +11,10 @@ use cw_account::ensure_local_admin_or_self;
 use cw_utils::{PaymentError, must_pay};
 use depolama::StorageExt;
 use frissitheto::{InitStateVersionError, UpgradeError, UpgradeMsg};
-use lst::msg::{ConfigResponse, StakerExecuteMsg};
+use lst::{
+    msg::{Batch, ConfigResponse, StakerExecuteMsg},
+    types::BatchId,
+};
 
 use crate::{
     event::{Rebase, SetLstHubAddress, SetValidators, Stake, Unstake, ValidatorConfigured},
@@ -86,6 +89,9 @@ pub fn execute(
             ensure_lst_hub(deps.as_ref(), &info)?;
 
             rebase(deps.as_ref(), &env)
+        }
+        ExecuteMsg::ReceiveUnstakedTokens { batch_id } => {
+            receive_unstaked_tokens(deps.as_ref(), &env, batch_id)
         }
     }
 }
@@ -419,6 +425,53 @@ pub fn migrate(
     )
 }
 
+// Call receive unstaked tokens to LstHub
+//
+// This only works if batch status is submitted and current time is over the receive time to make sure unbonding is complete already
+fn receive_unstaked_tokens(
+    deps: Deps,
+    env: &Env,
+    batch_id: BatchId,
+) -> Result<Response, ContractError> {
+    // query the lst hub to get batch detail
+    let lst_hub = deps.storage.read_item::<LstHub>()?.to_string();
+    let batch = deps
+        .querier
+        .query_wasm_smart::<Batch>(lst_hub.clone(), &lst::msg::QueryMsg::Batch { batch_id })?;
+
+    // get expected_native_unstaked from the submitted batch
+    let unstaked_amount = match batch {
+        Batch::Submitted(b) => {
+            // make sure the current time is over the batch receive time
+            let current_time_in_seconds = env.block.time.seconds();
+            if current_time_in_seconds < b.receive_time {
+                return Err(ContractError::BatchNotReady {
+                    now: current_time_in_seconds,
+                    ready_at: b.receive_time,
+                });
+            }
+            b.expected_native_unstaked
+        }
+        Batch::Pending(_) => {
+            return Err(ContractError::BatchStillPending { batch_id });
+        }
+        Batch::Received(_) => {
+            return Err(ContractError::BatchAlreadyReceived { batch_id });
+        }
+    };
+
+    Ok(Response::new()
+        // call receive unstaked tokens with the unstaked tokens to lst hub
+        .add_message(wasm_execute(
+            lst_hub,
+            &ExecuteMsg::ReceiveUnstakedTokens { batch_id },
+            vec![Coin {
+                denom: query_native_token_denom(deps)?,
+                amount: Uint128::new(unstaked_amount),
+            }],
+        )?))
+}
+
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum ContractError {
     #[error(transparent)]
@@ -447,4 +500,16 @@ pub enum ContractError {
 
     #[error("sender {sender} is not the lst hub")]
     OnlyLstHub { sender: Addr },
+
+    #[error("sender {sender} is not the lst hub")]
+    InvalidBatch { sender: Addr },
+
+    #[error("batch {batch_id} is still pending")]
+    BatchStillPending { batch_id: BatchId },
+
+    #[error("batch {batch_id} has already been received")]
+    BatchAlreadyReceived { batch_id: BatchId },
+
+    #[error("batch is not ready to be submitted/received (now={now}, ready_at={ready_at})")]
+    BatchNotReady { now: u64, ready_at: u64 },
 }

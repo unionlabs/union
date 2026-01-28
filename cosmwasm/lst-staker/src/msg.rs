@@ -17,6 +17,8 @@ pub enum ExecuteMsg {
     ///
     /// [redelegation queue]: https://docs.cosmos.network/main/build/modules/staking#redelegation
     SetValidators(BTreeMap<Addr, Uint128>),
+    /// Call receive unstaked tokens with the received unstaked tokens to LST Hub
+    ReceiveUnstakedTokens { batch_id: lst::types::BatchId },
     #[serde(untagged)]
     CwAccount(cw_account::msg::ExecuteMsg),
     #[serde(untagged)]
