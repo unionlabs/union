@@ -78,8 +78,8 @@ impl VoteData {
 pub struct Valset(Vec<(H160, H384)>);
 
 impl Valset {
-    pub fn new(inner: Vec<(H160, H384)>) -> Self {
-        Self(inner)
+    pub fn new(inner: impl Into<Vec<(H160, H384)>>) -> Self {
+        Self(inner.into())
     }
 
     pub fn len(&self) -> usize {
@@ -159,7 +159,7 @@ impl ParliaHeader {
 #[derive(Debug, Clone, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
-pub struct Nullable<T>(Option<T>);
+pub struct Nullable<T>(pub Option<T>);
 
 impl<T> Nullable<T> {
     pub fn is_none(&self) -> bool {

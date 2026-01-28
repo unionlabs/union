@@ -39,6 +39,19 @@ abstract contract IBCClient is IBCStore, IIBCClient {
             clientType, clientType, address(client)
         );
     }
+    /**
+     * @dev forceRegisterClient forcibly registers a new client type into the client registry, overwriting the previously registered client type if it exists
+     */
+
+    function forceRegisterClient(
+        string calldata clientType,
+        ILightClient client
+    ) external restricted {
+        clientRegistry[clientType] = address(client);
+        emit IBCClientLib.RegisterClient(
+            clientType, clientType, address(client)
+        );
+    }
 
     /**
      * @dev createClient creates a new client state and populates it with a given consensus state

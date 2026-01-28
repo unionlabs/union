@@ -217,7 +217,12 @@
       "tags": ["canonical", "tokenorder-v2"]
     }
   },
-  "bsc.97": {},
+  "bsc.97": {
+    "6": {
+      "comments": "ethereum.11155111 channel 19",
+      "tags": ["canonical", "tokenorder-v2"]
+    }
+  },
   "corn.21000000": {
     "1": {
       "comments": "babylon.bbn-1 channel 2",

@@ -39,6 +39,8 @@ unionlabs-primitives = { workspace = true, features = ["bincode"] }
 [features]
 default = ["serde", "base64"]
 
+std = ["serde?/std"]
+
 base58   = ["dep:bs58"]
 base64   = ["dep:base64"]
 bincode  = ["dep:bincode"]

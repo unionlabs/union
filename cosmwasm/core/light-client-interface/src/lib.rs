@@ -328,23 +328,23 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
         let status = self
             .deps
             .querier
-            .query_wasm_smart::<Status>(&client_impl, &(QueryMsg::GetStatus { client_id }))?;
+            .query_wasm_smart::<Status>(&client_impl, &QueryMsg::GetStatus { client_id })?;
 
         Ok(status)
     }
 }
 
-fn client_impl<T: IbcClient>(
+pub fn client_impl(
     querier: &dyn Querier,
     ibc_host: &Addr,
     client_id: ClientId,
-) -> Result<Addr, IbcClientError<T>> {
+) -> Result<Addr, StdError> {
     let addr = querier
         .read::<ClientImpls>(ibc_host, &client_id)
         .map_err(|err| {
-            IbcClientError::Std(StdError::generic_err(format!(
+            StdError::generic_err(format!(
                 "unable to read client state of client {client_id}: {err}"
-            )))
+            ))
         })?;
 
     Ok(addr)

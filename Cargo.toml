@@ -75,6 +75,7 @@ members = [
   "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-ics23-light-client-types",
   "lib/state-lens-ics23-smt-light-client-types",
+  "lib/proof-lens-light-client-types",
   "lib/sui-light-client-types",
   "lib/sui-utils",
 
@@ -94,6 +95,7 @@ members = [
   "cosmwasm/lightclient/attested",
   "cosmwasm/lightclient/starknet",
   "cosmwasm/lightclient/state-lens-ics23-mpt",
+  "cosmwasm/lightclient/proof-lens",
   # "cosmwasm/lightclient/state-lens-ics23-smt",
   "cosmwasm/lightclient/state-lens-ics23-ics23",
   "cosmwasm/lightclient/sui",
@@ -126,6 +128,7 @@ members = [
   "voyager/modules/proof/cosmwasm",
   "voyager/modules/proof/ethermint",
   "voyager/modules/proof/evm-mpt",
+  "voyager/modules/proof/parlia",
   # "voyager/modules/proof/movement",
   "voyager/modules/proof/sui",
 
@@ -141,6 +144,7 @@ members = [
   "voyager/modules/client/state-lens/ics23-mpt",
   "voyager/modules/client/state-lens/ics23-ics23",
   "voyager/modules/client/state-lens/ics23-smt",
+  "voyager/modules/client/proof-lens",
   "voyager/modules/client/sui",
   "voyager/modules/client/trusted-mpt",
   "voyager/modules/client/attested",
@@ -158,6 +162,7 @@ members = [
   "voyager/modules/client-bootstrap/state-lens/ics23-mpt",
   "voyager/modules/client-bootstrap/state-lens/ics23-smt",
   "voyager/modules/client-bootstrap/state-lens/ics23-ics23",
+  "voyager/modules/client-bootstrap/proof-lens",
   "voyager/modules/client-bootstrap/sui",
   "voyager/modules/client-bootstrap/attested",
 
@@ -185,6 +190,7 @@ members = [
   "voyager/plugins/client-update/tendermint",
   "voyager/plugins/client-update/ethermint",
   "voyager/plugins/client-update/state-lens",
+  "voyager/plugins/client-update/proof-lens",
   "voyager/plugins/client-update/sui",
   "voyager/plugins/client-update/trusted-mpt",
   "voyager/plugins/client-update/attested",
@@ -206,6 +212,7 @@ members = [
   "voyager/plugins/packet-index",
   "voyager/plugins/packet-batch",
   "voyager/plugins/transaction-batch",
+  "voyager/plugins/transaction-batch-proof-lens",
   "voyager/plugins/packet-timeout",
   "voyager/plugins/zkgm-filter",
   "voyager/plugins/sui-ibc-app",
@@ -218,10 +225,7 @@ members = [
   # "lib/aptos-verifier",
 
   "lib/reconnecting-jsonrpc-ws-client",
-  "lib/voyager-primitives",
   "lib/subset-of",
-  "lib/cometbft-types",
-  "lib/galois-rpc",
   "lib/beacon-api-types",
 
   "mpc/shared",
@@ -401,6 +405,8 @@ parlia-types                              = { path = "lib/parlia-types", default
 parlia-verifier                           = { path = "lib/parlia-verifier", default-features = false }
 pausable                                  = { path = "cosmwasm/pausable", default-features = false }
 pg-queue                                  = { path = "lib/pg-queue", default-features = false }
+proof-lens-light-client                   = { path = "cosmwasm/lightclient/proof-lens", default-features = false }
+proof-lens-light-client-types             = { path = "lib/proof-lens-light-client-types", default-features = false }
 protos                                    = { path = "generated/rust/protos", default-features = false }
 reconnecting-jsonrpc-ws-client            = { path = "lib/reconnecting-jsonrpc-ws-client", default-features = false }
 serde-utils                               = { path = "lib/serde-utils", default-features = false }

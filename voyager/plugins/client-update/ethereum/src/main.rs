@@ -399,7 +399,9 @@ impl Module {
 
         let trusted_period = sync_committee_period(update_from_beacon_slot, spec.period());
 
-        info!("target period: {target_period}, trusted period: {trusted_period}");
+        info!(
+            "update_from_beacon_slot: {update_from_beacon_slot}, target period: {target_period}, trusted period: {trusted_period}"
+        );
 
         assert!(
             trusted_period <= target_period,

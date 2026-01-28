@@ -224,6 +224,12 @@ impl BatchReceiptsPath {
         }
     }
 
+    #[cfg(feature = "ethabi")]
+    #[must_use]
+    pub fn from_packet(packet: &Packet) -> Self {
+        Self::from_packets(core::slice::from_ref(packet))
+    }
+
     #[must_use]
     pub fn key(&self) -> H256 {
         Keccak256::new()
@@ -262,6 +268,12 @@ impl BatchPacketsPath {
                 .finalize()
                 .into(),
         }
+    }
+
+    #[cfg(feature = "ethabi")]
+    #[must_use]
+    pub fn from_packet(packet: &Packet) -> Self {
+        Self::from_packets(core::slice::from_ref(packet))
     }
 
     #[must_use]

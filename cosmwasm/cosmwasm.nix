@@ -124,8 +124,8 @@ _: {
           multisig-admin = "union10vj0jkkuxqjpf3qrwt37l8z8hpw3qfytreztaw";
           rpc-url = "https://rpc.rpc-node.union-testnet-10.union.build";
           # rpc-url = "https://union-testnet-rpc.polkachu.com";
-          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
-          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
+          ops-key = ''"$(op item get operation --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas-config = {
             type = "feemarket";
           };
@@ -158,8 +158,8 @@ _: {
           name = "union";
           multisig-admin = "union1n6gfu5nlf0fu0h026p9kwneupj629m9sjf8p6e";
           rpc-url = "https://rpc.rpc-node.union-1.union.build";
-          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
-          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
+          ops-key = ''"$(op item get operation --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas-config = {
             type = "feemarket";
             max_gas = 10000000;
@@ -189,6 +189,7 @@ _: {
         {
           ucs04-chain-id = "osmosis.osmosis-devnet-1";
           name = "osmosis-devnet";
+          multisig-admin = null;
           rpc-url = "http://localhost:26857";
           deployer-key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
           gas-config = {
@@ -213,9 +214,10 @@ _: {
         {
           ucs04-chain-id = "osmosis.osmo-test-5";
           name = "osmosis-testnet";
+          multisig-admin = null;
           rpc-url = "https://osmosis-testnet-rpc.polkachu.com";
-          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
-          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
+          ops-key = ''"$(op item get operation --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas-config = {
             type = "fixed";
             gas_price = "0.1";
@@ -240,8 +242,8 @@ _: {
           name = "osmosis";
           multisig-admin = "osmo1n6gfu5nlf0fu0h026p9kwneupj629m9ss94ez6";
           rpc-url = "https://osmosis-rpc.polkachu.com";
-          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
-          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
+          ops-key = ''"$(op item get operation --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas-config = {
             type = "osmosis-eip1559-feemarket";
             max_gas = 60000000;
@@ -262,9 +264,10 @@ _: {
         {
           ucs04-chain-id = "babylon.bbn-test-6";
           name = "babylon-testnet";
+          multisig-admin = null;
           rpc-url = "https://babylon-testnet-rpc.polkachu.com";
-          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
-          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
+          ops-key = ''"$(op item get operation --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas-config = {
             type = "fixed";
             gas_price = "0.003";
@@ -293,8 +296,8 @@ _: {
           name = "babylon";
           multisig-admin = "bbn1n6gfu5nlf0fu0h026p9kwneupj629m9s0qhct3";
           rpc-url = "https://babylon-rpc.polkachu.com";
-          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
-          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
+          ops-key = ''"$(op item get operation --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas-config = {
             type = "fixed";
             gas_price = "0.003";
@@ -316,9 +319,10 @@ _: {
         {
           ucs04-chain-id = "xion.xion-testnet-2";
           name = "xion-testnet";
+          multisig-admin = null;
           rpc-url = "https://rpc.xion-testnet-2.burnt.com";
-          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-deployer-key --reveal)"'';
-          ops-key = ''"$(op item get ops --vault union-testnet-10 --field cosmos-ops-key --reveal)"'';
+          deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
+          ops-key = ''"$(op item get operation --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas-config = {
             type = "fixed";
             gas_price = "0.002";
@@ -743,10 +747,11 @@ _: {
 
       chain-migration-scripts =
         args@{
+          ucs04-chain-id,
+          multisig-admin,
           lightclients,
           apps,
           ops-key,
-          ucs04-chain-id,
           rpc-url,
           gas-config,
           ...
@@ -765,6 +770,7 @@ _: {
                   cosmwasm-deployer
                 ];
                 text = ''
+                  ${pkgs.lib.optionalString (multisig-admin == null) ''PRIVATE_KEY=${ops-key} \''}
                   PRIVATE_KEY=${ops-key} \
                   RUST_LOG=info \
                     cosmwasm-deployer \
@@ -772,7 +778,11 @@ _: {
                     --rpc-url ${rpc-url} \
                     --address ${(getDeployedContractAddress ucs04-chain-id "lightclients/${all-lightclients.${lc}.client-type}")} \
                     --new-bytecode ${(mk-lightclient lc).release} \
-                      ${mk-gas-args gas-config} "$@"
+                    ${
+                      pkgs.lib.optionalString (
+                        multisig-admin != null
+                      ) ''--sender ${multisig-admin} --dump-to "$(mktemp --suffix .json)"''
+                    } ${mk-gas-args gas-config} "$@"
                 '';
               };
             }
@@ -793,6 +803,7 @@ _: {
                   pkgs.jq
                 ];
                 text = ''
+                  ${pkgs.lib.optionalString (multisig-admin == null) ''PRIVATE_KEY=${ops-key} \''}
                   PRIVATE_KEY=${ops-key} \
                   RUST_LOG=info \
                     cosmwasm-deployer \
@@ -800,7 +811,11 @@ _: {
                     --rpc-url ${rpc-url} \
                     --address ${getDeployedContractAddress ucs04-chain-id} \
                     --new-bytecode ${(mk-app app).release} \
-                    ${mk-gas-args gas-config} "$@"
+                    ${
+                      pkgs.lib.optionalString (
+                        multisig-admin != null
+                      ) ''--sender ${multisig-admin} --dump-to "$(mktemp --suffix .json)"''
+                    } ${mk-gas-args gas-config} "$@"
                 '';
               };
             }
@@ -817,6 +832,7 @@ _: {
                 cosmwasm-deployer
               ];
               text = ''
+                ${pkgs.lib.optionalString (multisig-admin == null) ''PRIVATE_KEY=${ops-key} \''}
                 PRIVATE_KEY=${ops-key} \
                 RUST_LOG=info \
                   cosmwasm-deployer \
@@ -824,7 +840,11 @@ _: {
                   --rpc-url ${rpc-url} \
                   --address ${getDeployedContractAddress ucs04-chain-id "core"} \
                   --new-bytecode ${ibc-union.release} \
-                  ${mk-gas-args gas-config} "$@"
+                  ${
+                    pkgs.lib.optionalString (
+                      multisig-admin != null
+                    ) ''--sender ${multisig-admin} --dump-to "$(mktemp --suffix .json)"''
+                  } ${mk-gas-args gas-config} "$@"
               '';
             };
           }

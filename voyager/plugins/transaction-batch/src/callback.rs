@@ -298,6 +298,11 @@ where
                 )
                 .await?;
 
+            info!(
+                count = events_no_proof_available.len(),
+                "updating client {} to {latest_height}", self.client_id,
+            );
+
             Some(promise(
                 [call(FetchUpdateHeaders {
                     client_type: client_info.client_type.clone(),

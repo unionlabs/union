@@ -79,6 +79,17 @@ impl ChainEvent {
             event: serde_json::to_value(event).expect("event serialization is infallible; qed;"),
         }
     }
+
+    /// Attempt to decode this event as an event for the specified [`IbcSpec`].
+    ///
+    /// If the ibc spec id matches, this will return the result of deserializing the contained event, otherwise this will return `None`.
+    pub fn decode_event<V: IbcSpec>(&self) -> Option<Result<V::Event, serde_json::Error>> {
+        if self.ibc_spec_id == V::ID {
+            Some(serde_json::from_value(self.event.clone()))
+        } else {
+            None
+        }
+    }
 }
 
 #[model]
@@ -101,16 +112,6 @@ impl EventProvableHeight {
     }
 }
 
-impl ChainEvent {
-    pub fn decode_event<V: IbcSpec>(&self) -> Option<Result<V::Event, serde_json::Error>> {
-        if self.ibc_spec_id == V::ID {
-            Some(serde_json::from_value(self.event.clone()))
-        } else {
-            None
-        }
-    }
-}
-
 #[model]
 pub struct IbcDatagram {
     pub ibc_spec_id: IbcSpecId,
@@ -120,6 +121,9 @@ pub struct IbcDatagram {
 }
 
 impl IbcDatagram {
+    /// Attempt to decode this event as a datagram for the specified [`IbcSpec`].
+    ///
+    /// If the ibc spec id matches, this will return the result of deserializing the contained datgram, otherwise this will return `None`.
     pub fn decode_datagram<V: IbcSpec>(&self) -> Option<Result<V::Datagram, serde_json::Error>> {
         if self.ibc_spec_id == V::ID {
             Some(serde_json::from_value(self.datagram.clone()))

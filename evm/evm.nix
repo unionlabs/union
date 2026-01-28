@@ -1447,6 +1447,7 @@ _: {
                     state-lens-ics23-mpt-client = "StateLensIcs23MptClient";
                     state-lens-ics23-ics23-client = "StateLensIcs23Ics23Client";
                     state-lens-ics23-smt-client = "StateLensIcs23SmtClient";
+                    proof-lens-client = "ProofLensClient";
                     multicall = "Multicall";
                     erc20 = "ZkgmERC20";
                     proxy-account = "ProxyAccount";
@@ -1509,6 +1510,7 @@ _: {
                         state-lens-ics23-mpt-client = "StateLensIcs23MptClient";
                         state-lens-ics23-ics23-client = "StateLensIcs23Ics23Client";
                         state-lens-ics23-smt-client = "StateLensIcs23SmtClient";
+                        proof-lens-client = "ProofLensClient";
                         core = "IBCHandler";
                         u = "U";
                         eu = "EU";

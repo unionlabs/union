@@ -18,16 +18,14 @@ test-include = []
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
-depolama                    = { workspace = true }
-embed-commit                = { workspace = true }
-ethereum-light-client       = { workspace = true, features = ["library"] }
-ethereum-light-client-types = { workspace = true, features = ["ethabi"] }
-evm-storage-verifier        = { workspace = true }
-frissitheto                 = { workspace = true }
-ibc-union-light-client      = { workspace = true }
-parlia-light-client-types   = { workspace = true, features = ["ethabi", "bincode"] }
-parlia-types                = { workspace = true, features = ["bincode"] }
-parlia-verifier             = { workspace = true }
-thiserror                   = { workspace = true }
-unionlabs                   = { workspace = true }
+cosmwasm-std              = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
+depolama                  = { workspace = true }
+embed-commit              = { workspace = true }
+evm-storage-verifier      = { workspace = true }
+frissitheto               = { workspace = true }
+ibc-union-light-client    = { workspace = true }
+parlia-light-client-types = { workspace = true, features = ["ethabi", "bincode"] }
+parlia-types              = { workspace = true, features = ["bincode"] }
+parlia-verifier           = { workspace = true }
+thiserror                 = { workspace = true }
+unionlabs                 = { workspace = true }

@@ -2,7 +2,7 @@ use enumorph::Enumorph;
 use macros::model;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use unionlabs::ibc::core::client::height::Height;
-use voyager_primitives::{ChainId, ClientType, IbcSpecId, Timestamp};
+use voyager_primitives::{ChainId, ClientType, IbcSpec, IbcSpecId, Timestamp};
 use voyager_types::RawClientId;
 #[cfg(doc)]
 use {
@@ -227,6 +227,23 @@ pub struct WaitForTrustedHeight {
     pub finalized: bool,
 }
 
+impl WaitForTrustedHeight {
+    pub fn new<V: IbcSpec>(
+        chain_id: &ChainId,
+        client_id: &V::ClientId,
+        height: Height,
+        finalized: bool,
+    ) -> Self {
+        Self {
+            chain_id: chain_id.clone(),
+            client_id: RawClientId::new(client_id),
+            ibc_spec_id: V::ID,
+            height,
+            finalized,
+        }
+    }
+}
+
 /// Wait for the client `.client_id` on `.chain_id` to trust a timestamp >=
 /// `.timestamp`.
 #[model]
@@ -238,8 +255,8 @@ pub struct WaitForTrustedTimestamp {
     pub finalized: bool,
 }
 
-/// Wait for the client `.client_id` on `.chain_id` to trust a height >=
-/// `.height`.
+/// Wait for the client `.client_id` on `.chain_id` to be updated to exactly
+/// `height` (i.e. a consensus state exists at `height`)
 #[model]
 pub struct WaitForClientUpdate {
     pub chain_id: ChainId,
@@ -247,4 +264,15 @@ pub struct WaitForClientUpdate {
     pub client_id: RawClientId,
     pub height: Height,
     // pub finalized: bool,
+}
+
+impl WaitForClientUpdate {
+    pub fn new<V: IbcSpec>(chain_id: &ChainId, client_id: &V::ClientId, height: Height) -> Self {
+        Self {
+            chain_id: chain_id.clone(),
+            client_id: RawClientId::new(client_id),
+            ibc_spec_id: V::ID,
+            height,
+        }
+    }
 }

@@ -141,6 +141,9 @@ impl ClientType {
     /// [Aptos]: https://github.com/aptos-labs/aptos-core
     pub const STATE_LENS_ICS23_SMT: &'static str = "state-lens/ics23/smt";
 
+    /// A client tracking a chain via committed proofs on an intermediary chain.
+    pub const PROOF_LENS: &'static str = "proof-lens";
+
     /// A client tracking an EVM-compatible chain utilizing [MPT] as the storage layer. The consensus
     /// level verification is trusted, hence no beacon chain configuration is needed.
     ///
@@ -254,6 +257,9 @@ impl ConsensusType {
 
     /// An attested client.
     pub const ATTESTED: &'static str = "attested";
+
+    /// A client tracking a chain via committed proofs on an intermediary chain.
+    pub const PROOF_LENS: &'static str = "proof-lens";
 
     // lots more to come - near, linea, polygon - stay tuned
 }

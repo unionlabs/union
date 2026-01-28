@@ -7,6 +7,12 @@ library IBCCommitment {
     uint256 public constant CHANNELS = 0x03;
     uint256 public constant PACKETS = 0x04;
     uint256 public constant PACKET_ACKS = 0x05;
+    uint256 public constant MEMBERSHIP_PROOF = 0x06;
+    uint256 public constant NON_MEMBERSHIP_PROOF = 0x07;
+    uint256 public constant PACKET_TIMEOUTS = 0x08;
+
+    bytes32 public constant NON_MEMBERSHIP_COMMITMENT_VALUE =
+        0x0000000000000000000000000000000000000000000000000000000000000001;
 
     function clientStatePath(
         uint32 clientId
@@ -43,6 +49,26 @@ library IBCCommitment {
         bytes32 batchHash
     ) internal pure returns (bytes memory) {
         return abi.encode(PACKET_ACKS, batchHash);
+    }
+
+    function membershipProofPath(
+        uint32 clientId,
+        uint64 proofHeight,
+        bytes calldata path
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            MEMBERSHIP_PROOF, uint256(clientId), uint256(proofHeight), path
+        );
+    }
+
+    function nonMembershipProofPath(
+        uint32 clientId,
+        uint64 proofHeight,
+        bytes calldata path
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(
+            NON_MEMBERSHIP_PROOF, uint256(clientId), uint256(proofHeight), path
+        );
     }
 
     // Key generators for Commitment mapping
@@ -82,5 +108,21 @@ library IBCCommitment {
         bytes32 batchHash
     ) internal pure returns (bytes32) {
         return keccak256(batchReceiptsCommitmentPath(batchHash));
+    }
+
+    function membershipProofCommitmentKey(
+        uint32 clientId,
+        uint64 proofHeight,
+        bytes calldata path
+    ) internal pure returns (bytes32) {
+        return keccak256(membershipProofPath(clientId, proofHeight, path));
+    }
+
+    function nonMembershipProofCommitmentKey(
+        uint32 clientId,
+        uint64 proofHeight,
+        bytes calldata path
+    ) internal pure returns (bytes32) {
+        return keccak256(nonMembershipProofPath(clientId, proofHeight, path));
     }
 }
