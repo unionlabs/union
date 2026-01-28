@@ -104,7 +104,7 @@ impl Server {
                 finalized,
                 self.context()?
                     .finality_module(chain_id)?
-                    .with_id(self.item_id)
+                    .with_id_and_current_context(self.item_id)
                     .query_latest_height(finalized)
                     .map_err(Into::into),
             )
@@ -138,7 +138,7 @@ impl Server {
                 finalized,
                 self.context()?
                     .finality_module(chain_id)?
-                    .with_id(self.item_id)
+                    .with_id_and_current_context(self.item_id)
                     .query_latest_timestamp(finalized)
                     .map_err(Into::into),
             )
@@ -212,7 +212,7 @@ impl Server {
                         let client_info = self
                             .context()?
                             .state_module(chain_id, ibc_spec_id)?
-                            .with_id(self.item_id)
+                            .with_id_and_current_context(self.item_id)
                             .client_info_raw(client_id.clone())
                             .await?;
 
@@ -311,7 +311,7 @@ impl Server {
                         &client_info.ibc_interface,
                         ibc_spec_id,
                     )?
-                    .with_id(self.item_id)
+                    .with_id_and_current_context(self.item_id)
                     .decode_client_state_meta(client_state)
                     .await?;
 
@@ -413,7 +413,7 @@ impl Server {
                         &client_info.ibc_interface,
                         ibc_spec_id,
                     )?
-                    .with_id(self.item_id)
+                    .with_id_and_current_context(self.item_id)
                     .decode_consensus_state_meta(consensus_state)
                     .await?;
 
@@ -443,7 +443,7 @@ impl Server {
                 let state_module = self
                     .context()?
                     .state_module(&chain_id, &ibc_spec_id)?
-                    .with_id(self.item_id);
+                    .with_id_and_current_context(self.item_id);
 
                 let value = state_module
                     .query_raw(serde_json::to_value(query.clone()).unwrap())
@@ -474,7 +474,7 @@ impl Server {
                 let state_module = self
                     .context()?
                     .state_module(&chain_id, &ibc_spec_id)?
-                    .with_id(self.item_id);
+                    .with_id_and_current_context(self.item_id);
 
                 let state = self
                     .cache
@@ -522,7 +522,7 @@ impl Server {
                 let proof_module = self
                     .context()?
                     .proof_module(&chain_id, &ibc_spec_id)?
-                    .with_id(self.item_id);
+                    .with_id_and_current_context(self.item_id);
 
                 let res = proof_module.query_ibc_proof_raw(height, path).await?;
 
@@ -556,7 +556,7 @@ impl Server {
                 let state_module = self
                     .context()?
                     .state_module(chain_id, &P::Spec::ID)?
-                    .with_id(self.item_id);
+                    .with_id_and_current_context(self.item_id);
 
                 let state = self
                     .cache
@@ -604,7 +604,7 @@ impl Server {
                 let proof_module = self
                     .context()?
                     .proof_module(chain_id, &P::Spec::ID)?
-                    .with_id(self.item_id);
+                    .with_id_and_current_context(self.item_id);
 
                 let res = proof_module
                     .query_ibc_proof_raw(height, serde_json::to_value(path.clone()).unwrap())
@@ -641,7 +641,7 @@ impl Server {
                 let client_bootstrap_module = self
                     .context()?
                     .client_bootstrap_module(&chain_id, &client_type)?
-                    .with_id(self.item_id);
+                    .with_id_and_current_context(self.item_id);
 
                 let state = client_bootstrap_module
                     .self_client_state(height, config)
@@ -670,7 +670,7 @@ impl Server {
                 let client_bootstrap_module = self
                     .context()?
                     .client_bootstrap_module(&chain_id, &client_type)?
-                    .with_id(self.item_id);
+                    .with_id_and_current_context(self.item_id);
 
                 let height = self.query_height(&chain_id, height).await?;
 
@@ -701,7 +701,7 @@ impl Server {
                 let client_module = self
                     .context()?
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
-                    .with_id(self.item_id);
+                    .with_id_and_current_context(self.item_id);
 
                 let proof = client_module.encode_proof(proof).await?;
 
@@ -754,7 +754,7 @@ impl Server {
                 let client_module = self
                     .context()?
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
-                    .with_id(self.item_id);
+                    .with_id_and_current_context(self.item_id);
 
                 let header = client_module.encode_header(header).await?;
 
@@ -808,7 +808,7 @@ impl Server {
                 let client_module = self
                     .context()?
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
-                    .with_id(self.item_id);
+                    .with_id_and_current_context(self.item_id);
 
                 let meta = client_module.decode_client_state_meta(client_state).await?;
 
@@ -835,7 +835,7 @@ impl Server {
             .in_scope(|| async {
                 self.context()?
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
-                    .with_id(self.item_id)
+                    .with_id_and_current_context(self.item_id)
                     .decode_client_state(client_state)
                     .await
                     .map_err(Into::into)
@@ -855,7 +855,7 @@ impl Server {
             .in_scope(|| async {
                 self.context()?
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
-                    .with_id(self.item_id)
+                    .with_id_and_current_context(self.item_id)
                     .decode_consensus_state(consensus_state)
                     .await
                     .map_err(Into::into)
@@ -876,7 +876,7 @@ impl Server {
             .in_scope(|| async {
                 self.context()?
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
-                    .with_id(self.item_id)
+                    .with_id_and_current_context(self.item_id)
                     .encode_client_state(client_state, metadata)
                     .await
                     .map_err(Into::into)
@@ -896,7 +896,7 @@ impl Server {
             .in_scope(|| async {
                 self.context()?
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
-                    .with_id(self.item_id)
+                    .with_id_and_current_context(self.item_id)
                     .encode_consensus_state(consensus_state)
                     .await
                     .map_err(Into::into)

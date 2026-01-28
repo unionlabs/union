@@ -532,13 +532,13 @@ pub trait WithId: Sized + ClientT + Send + Sync
 where
     for<'a> &'a Self: ClientT,
 {
-    fn with_id(&self, item_id: Option<ItemId>) -> IdThreadClient<&Self> {
+    fn with_id_and_current_context(&self, item_id: Option<ItemId>) -> IdThreadClient<&Self> {
         trace!(?item_id, "threading id");
 
         let mut trace_ctx = HashMap::new();
         TraceContextPropagator::new().inject(&mut trace_ctx);
 
-        warn!(?trace_ctx, "INJECTING TRACE_CTX");
+        warn!(?trace_ctx, "WITH_ID: INJECTING TRACE_CTX");
 
         IdThreadClient {
             client: self,

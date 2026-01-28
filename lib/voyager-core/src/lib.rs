@@ -1101,7 +1101,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                         .server
                         .context()?
                         .plugin(&plugin)?
-                        .with_id(self.server.id()),
+                        .with_id_and_current_context(self.server.id()),
                     message,
                 )
                 .await
@@ -1157,7 +1157,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                     .server
                     .context()?
                     .client_module(&client_type, &ibc_interface, &ibc_spec_id)?
-                    .with_id(self.server.id());
+                    .with_id_and_current_context(self.server.id());
 
                 let ibc_spec_handler =
                     self.server.context()?.ibc_spec_handlers.get(&ibc_spec_id)?;
@@ -1200,7 +1200,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                         .server
                         .context()?
                         .plugin(&plugin)?
-                        .with_id(self.server.id()),
+                        .with_id_and_current_context(self.server.id()),
                     message,
                     data,
                 )
