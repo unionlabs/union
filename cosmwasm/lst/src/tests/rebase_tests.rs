@@ -127,7 +127,8 @@ fn rebase_works() {
         [Event::new("rebase").add_attribute("caller", UNION2)],
     );
 
-    // no storage changes after the call to rebase on the lst hub, since all it does is directly delegate to the staker
+    // no storage changes after the call to rebase on the lst hub, since all it does is directly
+    // delegate to the staker
     assert_equal(
         storage_before_rebase,
         deps.storage.range(None, None, Order::Ascending),
