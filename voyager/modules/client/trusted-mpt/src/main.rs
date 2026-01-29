@@ -12,7 +12,7 @@ use unionlabs::{
     primitives::Bytes,
 };
 use voyager_sdk::{
-    anyhow, ensure_null,
+    anyhow, ensure_null, into_value,
     plugin::ClientModule,
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
@@ -91,7 +91,7 @@ impl ClientModuleServer for Module {
 
     #[instrument]
     async fn decode_client_state(&self, _: &Extensions, client_state: Bytes) -> RpcResult<Value> {
-        Ok(serde_json::to_value(Module::decode_client_state(&client_state)?).unwrap())
+        Ok(into_value(Module::decode_client_state(&client_state)?))
     }
 
     #[instrument]
@@ -100,7 +100,9 @@ impl ClientModuleServer for Module {
         _: &Extensions,
         consensus_state: Bytes,
     ) -> RpcResult<Value> {
-        Ok(serde_json::to_value(Module::decode_consensus_state(&consensus_state)?).unwrap())
+        Ok(into_value(Module::decode_consensus_state(
+            &consensus_state,
+        )?))
     }
 
     #[instrument]
@@ -136,9 +138,23 @@ impl ClientModuleServer for Module {
     }
 
     #[instrument]
+    async fn decode_header(&self, _: &Extensions, header: Bytes) -> RpcResult<Value> {
+        <SignedData<Header>>::decode_as::<Bincode>(&header)
+            .map(into_value)
+            .map_err(RpcError::fatal("unable to decode header"))
+    }
+
+    #[instrument]
     async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<StorageProof>(proof)
             .map_err(RpcError::fatal("unable to deserialize proof"))
             .map(|storage_proof| storage_proof.encode_as::<Bincode>().into())
+    }
+
+    #[instrument]
+    async fn decode_proof(&self, _: &Extensions, proof: Bytes) -> RpcResult<Value> {
+        StorageProof::decode_as::<Bincode>(&proof)
+            .map(into_value)
+            .map_err(RpcError::fatal("unable to proof"))
     }
 }

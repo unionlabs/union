@@ -423,6 +423,15 @@ pub trait VoyagerRpc {
         proof: Value,
     ) -> RpcResult<Bytes>;
 
+    #[method(name = "decodeProof", with_extensions)]
+    async fn decode_proof(
+        &self,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        ibc_spec_id: IbcSpecId,
+        proof: Bytes,
+    ) -> RpcResult<Value>;
+
     #[method(name = "encodeHeader", with_extensions)]
     async fn encode_header(
         &self,
@@ -431,6 +440,15 @@ pub trait VoyagerRpc {
         ibc_spec_id: IbcSpecId,
         header: Value,
     ) -> RpcResult<Bytes>;
+
+    #[method(name = "decodeHeader", with_extensions)]
+    async fn decode_header(
+        &self,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        ibc_spec_id: IbcSpecId,
+        header: Bytes,
+    ) -> RpcResult<Value>;
 
     #[method(name = "decodeClientStateMeta", with_extensions)]
     async fn decode_client_state_meta(
@@ -619,9 +637,17 @@ pub trait ClientModule {
     #[method(name = "encodeHeader", with_extensions)]
     async fn encode_header(&self, header: Value) -> RpcResult<Bytes>;
 
+    /// Decode the header, provided as bytes, returning the decoded value as JSON.
+    #[method(name = "decodeHeader", with_extensions)]
+    async fn decode_header(&self, header: Bytes) -> RpcResult<Value>;
+
     /// Encode the proof, provided as JSON.
     #[method(name = "encodeProof", with_extensions)]
     async fn encode_proof(&self, proof: Value) -> RpcResult<Bytes>;
+
+    /// Decode the proof, provided as bytes, returning the decoded value as JSON.
+    #[method(name = "decodeProof", with_extensions)]
+    async fn decode_proof(&self, proof: Bytes) -> RpcResult<Value>;
 }
 
 /// Client modules provide functionality for interacting with a specific chain

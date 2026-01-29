@@ -686,7 +686,6 @@ impl Server {
             .await
     }
 
-    // TODO: Use valuable here
     #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_spec_id, %proof))]
     pub async fn encode_proof(
         &self,
@@ -707,6 +706,32 @@ impl Server {
                 let proof = client_module.encode_proof(proof).await?;
 
                 trace!(%proof, "encoded proof");
+
+                Ok(proof)
+            })
+            .await
+    }
+
+    #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_spec_id, %proof))]
+    pub async fn decode_proof(
+        &self,
+        client_type: &ClientType,
+        ibc_interface: &IbcInterface,
+        ibc_spec_id: &IbcSpecId,
+        proof: Bytes,
+    ) -> RpcResult<Value> {
+        self.span()
+            .in_scope(|| async {
+                trace!("decoding proof");
+
+                let client_module = self
+                    .context()?
+                    .client_module(client_type, ibc_interface, ibc_spec_id)?
+                    .with_id(self.item_id);
+
+                let proof = client_module.decode_proof(proof).await?;
+
+                trace!(%proof, "decoded proof");
 
                 Ok(proof)
             })
@@ -734,6 +759,33 @@ impl Server {
                 let header = client_module.encode_header(header).await?;
 
                 trace!(%header, "encoded header");
+
+                Ok(header)
+            })
+            .await
+    }
+
+    // TODO: Use valuable here
+    #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_spec_id, %header))]
+    pub async fn decode_header(
+        &self,
+        client_type: &ClientType,
+        ibc_interface: &IbcInterface,
+        ibc_spec_id: &IbcSpecId,
+        header: Bytes,
+    ) -> RpcResult<Value> {
+        self.span()
+            .in_scope(|| async {
+                trace!("decoding header");
+
+                let client_module = self
+                    .context()?
+                    .client_module(client_type, ibc_interface, ibc_spec_id)?
+                    .with_id(self.item_id);
+
+                let header = client_module.decode_header(header).await?;
+
+                trace!(%header, "decoded header");
 
                 Ok(header)
             })
@@ -1025,7 +1077,6 @@ impl VoyagerRpcServer for Server {
     // CODEC
     // =====
 
-    // TODO: Use valuable here
     async fn encode_proof(
         &self,
         e: &Extensions,
@@ -1039,6 +1090,19 @@ impl VoyagerRpcServer for Server {
             .await
     }
 
+    async fn decode_proof(
+        &self,
+        e: &Extensions,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        ibc_spec_id: IbcSpecId,
+        proof: Bytes,
+    ) -> RpcResult<Value> {
+        self.with_id(e.try_get().ok().cloned())
+            .decode_proof(&client_type, &ibc_interface, &ibc_spec_id, proof)
+            .await
+    }
+
     async fn encode_header(
         &self,
         e: &Extensions,
@@ -1049,6 +1113,19 @@ impl VoyagerRpcServer for Server {
     ) -> RpcResult<Bytes> {
         self.with_id(e.try_get().ok().cloned())
             .encode_header(&client_type, &ibc_interface, &ibc_spec_id, header)
+            .await
+    }
+
+    async fn decode_header(
+        &self,
+        e: &Extensions,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        ibc_spec_id: IbcSpecId,
+        header: Bytes,
+    ) -> RpcResult<Value> {
+        self.with_id(e.try_get().ok().cloned())
+            .decode_header(&client_type, &ibc_interface, &ibc_spec_id, header)
             .await
     }
 

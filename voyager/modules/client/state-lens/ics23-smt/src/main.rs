@@ -204,4 +204,18 @@ impl ClientModuleServer for Module {
         //     SupportedIbcInterface::IbcCosmwasm => Ok(proof.encode_as::<Bincode>().into()),
         // }
     }
+
+    #[instrument]
+    async fn decode_header(&self, _: &Extensions, header: Bytes) -> RpcResult<Value> {
+        Header::decode_as::<Bincode>(&header)
+            .map(into_value)
+            .map_err(RpcError::fatal("unable to decode header"))
+    }
+
+    #[instrument]
+    async fn decode_proof(&self, _: &Extensions, proof: Bytes) -> RpcResult<Value> {
+        StorageProof::decode_as::<Bincode>(&proof)
+            .map(into_value)
+            .map_err(RpcError::fatal("unable to proof"))
+    }
 }

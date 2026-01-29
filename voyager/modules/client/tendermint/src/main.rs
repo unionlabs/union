@@ -180,6 +180,15 @@ impl ClientModuleServer for Module {
             })
     }
 
+    #[instrument]
+    async fn decode_header(&self, _: &Extensions, header: Bytes) -> RpcResult<Value> {
+        match self.ibc_interface {
+            SupportedIbcInterface::IbcCosmwasm => Header::decode_as::<Bincode>(&header)
+                .map_err(RpcError::fatal("unable to decode header")),
+        }
+        .map(into_value)
+    }
+
     #[instrument(skip_all)]
     async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
         debug!(%proof, "encoding proof");
@@ -189,5 +198,18 @@ impl ClientModuleServer for Module {
             .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>().into(),
             })
+    }
+
+    #[instrument]
+    async fn decode_proof(&self, _: &Extensions, proof: Bytes) -> RpcResult<Value> {
+        match self.ibc_interface {
+            SupportedIbcInterface::IbcCosmwasm => {
+                unionlabs::ibc::core::commitment::merkle_proof::MerkleProof::decode_as::<Bincode>(
+                    &proof,
+                )
+                .map(into_value)
+                .map_err(RpcError::fatal("unable to decode proof"))
+            }
+        }
     }
 }
