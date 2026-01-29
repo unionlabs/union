@@ -653,6 +653,12 @@
         "height": 8088108,
         "commit": "69ee9d58be3c912474adeaf4fe952d3448f80bcf"
       },
+      "0x130d8a9ea697fe1617fbf3c854181e9724e77b77": {
+        "name": "lightclients/proof-lens",
+        "salt": "0x6c69676874636c69656e74732f70726f6f662d6c656e73",
+        "height": 10105369,
+        "commit": "e2484b84e4b66e8b0d2927f80880ddb9f4b7a0bb"
+      },
       "0xba5ed44733953d79717f6269357c77718c8ba5ed": {
         "name": "u",
         "salt": "0x12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047",
