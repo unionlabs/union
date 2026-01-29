@@ -130,7 +130,7 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
         () =>
           pipe(
             Match.value(ENV()),
-            Match.when("DEVELOPMENT", () => "https://development.graphql.union.build/v1/graphql"),
+            Match.when("DEVELOPMENT", () => "https://staging.graphql.union.build/v1/graphql"),
             Match.when("STAGING", () => "https://staging.graphql.union.build/v1/graphql"),
             Match.orElse(() => "https://graphql.union.build/v1/graphql"),
             Effect.succeed,

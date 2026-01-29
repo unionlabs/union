@@ -64,13 +64,15 @@ export const TracingLive = Layer.unwrapEffect(
     const serviceName = "app"
     const serviceVersion = PUBLIC_GIT_REV
 
-    const env = pipe(
+    let env = pipe(
       Match.value(ENV()),
       Match.when("PRODUCTION", () => "production" as const),
       Match.when("STAGING", () => "staging" as const),
       Match.when("DEVELOPMENT", () => "development" as const),
       Match.exhaustive,
     )
+
+    env = "staging" as "staging" | "development"
 
     if (env === "development") {
       return WebSdk.layer(() => ({
