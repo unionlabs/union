@@ -281,6 +281,9 @@ impl<S> Layer<S> for ExtractItemIdServiceLayer {
     }
 }
 
+#[derive(Clone, Default)]
+struct TraceCtx(HashMap<String, String>);
+
 impl<S> RpcServiceT for ExtractItemIdService<S>
 where
     S: RpcServiceT + Send + Sync + Clone + 'static,
@@ -316,7 +319,11 @@ where
 
                         warn!(?trace_ctx, "EXTRACTING TRACE_CTX FROM PARAMS");
 
+                        request.extensions.insert(TraceCtx(trace_ctx));
+
                         let span = info_span!("item_id", item_id = item_id.raw());
+
+                        dbg!(&parent_context);
 
                         match span.set_parent(parent_context) {
                             Ok(()) => {}
@@ -375,6 +382,13 @@ where
         mut request: jsonrpsee::types::Request<'a>,
     ) -> impl Future<Output = Self::MethodResponse> + 'a {
         let item_id = request.extensions.get::<ItemId>().cloned();
+
+        // let TraceCtx(trace_ctx) = request
+        //     .extensions
+        //     .get::<TraceCtx>()
+        //     .cloned()
+        //     .unwrap_or_default();
+
         let mut trace_ctx = HashMap::new();
         TraceContextPropagator::new().inject(&mut trace_ctx);
 
@@ -395,41 +409,45 @@ where
         &self,
         mut requests: jsonrpsee::core::middleware::Batch<'a>,
     ) -> impl Future<Output = Self::BatchResponse> + Send + 'a {
-        let item_id = requests.extensions().get::<ItemId>().cloned();
-        let mut trace_ctx = HashMap::new();
-        TraceContextPropagator::new().inject(&mut trace_ctx);
+        // let item_id = requests.extensions().get::<ItemId>().cloned();
+        // let mut trace_ctx = HashMap::new();
+        // TraceContextPropagator::new().inject(&mut trace_ctx);
 
-        warn!(?trace_ctx, "INJECTING CURRENT TRACE_CTX");
+        // warn!(?trace_ctx, "INJECTING CURRENT TRACE_CTX");
 
-        requests
-            .extensions_mut()
-            .insert(VoyagerClient::new(IdThreadClient {
-                client: self.client.clone(),
-                trace_ctx,
-                item_id,
-            }));
+        // requests
+        //     .extensions_mut()
+        //     .insert(VoyagerClient::new(IdThreadClient {
+        //         client: self.client.clone(),
+        //         trace_ctx,
+        //         item_id,
+        //     }));
 
-        self.service.batch(requests)
+        // self.service.batch(requests)
+
+        async { todo!() }
     }
 
     fn notification<'a>(
         &self,
         mut n: jsonrpsee::core::middleware::Notification<'a>,
     ) -> impl Future<Output = Self::NotificationResponse> + Send + 'a {
-        let item_id = n.extensions().get::<ItemId>().cloned();
-        let mut trace_ctx = HashMap::new();
-        TraceContextPropagator::new().inject(&mut trace_ctx);
+        // let item_id = n.extensions().get::<ItemId>().cloned();
+        // let mut trace_ctx = HashMap::new();
+        // TraceContextPropagator::new().inject(&mut trace_ctx);
 
-        warn!(?trace_ctx, "INJECTING CURRENT TRACE_CTX");
+        // warn!(?trace_ctx, "INJECTING CURRENT TRACE_CTX");
 
-        n.extensions_mut()
-            .insert(VoyagerClient::new(IdThreadClient {
-                client: self.client.clone(),
-                trace_ctx,
-                item_id,
-            }));
+        // n.extensions_mut()
+        //     .insert(VoyagerClient::new(IdThreadClient {
+        //         client: self.client.clone(),
+        //         trace_ctx,
+        //         item_id,
+        //     }));
 
-        self.service.notification(n)
+        // self.service.notification(n)
+
+        async { todo!() }
     }
 }
 

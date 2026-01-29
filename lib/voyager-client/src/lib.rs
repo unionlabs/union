@@ -545,18 +545,18 @@ impl<C: ClientT> ClientT for VoyagerPluginClient<'_, C> {
         let mut p = ArrayParams::new();
 
         p.insert(&self.plugin)
-            .expect("serializaiton is infallible; qed;");
-        p.insert(method).expect("serializaiton is infallible; qed;");
+            .expect("serialization is infallible; qed;");
+        p.insert(method).expect("serialization is infallible; qed;");
 
         if let Some(params) = params
             .to_rpc_params()
             .expect("serialization is infallible; qed;")
         {
-            p.insert(params).expect("serializaiton is infallible; qed;");
+            p.insert(params).expect("serialization is infallible; qed;");
         } else {
             // just need an empty array
             p.insert([0u8; 0])
-                .expect("serializaiton is infallible; qed;");
+                .expect("serialization is infallible; qed;");
         };
 
         self.inner.0.request("voyager_pluginCustom", p)
