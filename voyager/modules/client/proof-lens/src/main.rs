@@ -184,7 +184,25 @@ impl ClientModuleServer for Module {
     }
 
     #[instrument]
+    async fn decode_header(&self, _: &Extensions, header: Bytes) -> RpcResult<Value> {
+        match self.ibc_interface {
+            SupportedIbcInterface::IbcSolidity => Header::decode_as::<EthAbi>(&header)
+                .map_err(RpcError::fatal("unable to decode header")),
+            SupportedIbcInterface::IbcCosmwasm => Header::decode_as::<Bincode>(&header)
+                .map_err(RpcError::fatal("unable to decode header")),
+        }
+        .map(into_value)
+    }
+
+    #[instrument]
     async fn encode_proof(&self, _: &Extensions, _: Value) -> RpcResult<Bytes> {
+        Err(RpcError::fatal_from_message(
+            "proof lens clients do not have a specific proof format, proofs for this client must be encoded for the underlying l1 client",
+        ))
+    }
+
+    #[instrument]
+    async fn decode_proof(&self, _: &Extensions, _: Bytes) -> RpcResult<Value> {
         Err(RpcError::fatal_from_message(
             "proof lens clients do not have a specific proof format, proofs for this client must be encoded for the underlying l1 client",
         ))

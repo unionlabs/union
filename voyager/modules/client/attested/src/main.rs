@@ -114,8 +114,7 @@ impl ClientModuleServer for Module {
 
         serde_json::from_value::<ClientState>(client_state)
             .map_err(RpcError::fatal("unable to client state"))
-            .map(|cs| cs.encode_as::<Bincode>())
-            .map(Into::into)
+            .map(|cs| cs.encode_as::<Bincode>().into())
     }
 
     #[instrument]
@@ -126,23 +125,34 @@ impl ClientModuleServer for Module {
     ) -> RpcResult<Bytes> {
         serde_json::from_value::<ConsensusState>(consensus_state)
             .map_err(RpcError::fatal("unable to consensus state"))
-            .map(|cs| cs.encode_as::<EthAbi>())
-            .map(Into::into)
+            .map(|cs| cs.encode_as::<EthAbi>().into())
     }
 
     #[instrument]
     async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<Header>(header)
             .map_err(RpcError::fatal("unable to deserialize header"))
-            .map(|header| header.encode_as::<Bincode>())
-            .map(Into::into)
+            .map(|header| header.encode_as::<Bincode>().into())
+    }
+
+    #[instrument]
+    async fn decode_header(&self, _: &Extensions, header: Bytes) -> RpcResult<Value> {
+        Header::decode_as::<Bincode>(&header)
+            .map(into_value)
+            .map_err(RpcError::fatal("unable to decode header"))
     }
 
     #[instrument]
     async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
         serde_json::from_value::<StorageProof>(proof)
             .map_err(RpcError::fatal("unable to deserialize proof"))
-            .map(|storage_proof| storage_proof.encode_as::<Bincode>())
-            .map(Into::into)
+            .map(|storage_proof| storage_proof.encode_as::<Bincode>().into())
+    }
+
+    #[instrument]
+    async fn decode_proof(&self, _: &Extensions, proof: Bytes) -> RpcResult<Value> {
+        StorageProof::decode_as::<Bincode>(&proof)
+            .map(into_value)
+            .map_err(RpcError::fatal("unable to proof"))
     }
 }

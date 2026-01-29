@@ -6,10 +6,10 @@ use state_lens_ics23_ics23_light_client_types::{ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
 use tracing::instrument;
 use unionlabs::{
+    ErrorReporter,
     encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     primitives::Bytes,
-    union::ics23,
 };
 use voyager_sdk::{
     anyhow::{self, anyhow},
@@ -187,6 +187,17 @@ impl ClientModuleServer for Module {
     }
 
     #[instrument]
+    async fn decode_header(&self, _: &Extensions, header: Bytes) -> RpcResult<Value> {
+        match self.ibc_interface {
+            SupportedIbcInterface::IbcSolidity => Header::decode_as::<EthAbi>(&header)
+                .map_err(RpcError::fatal("unable to decode header")),
+            SupportedIbcInterface::IbcCosmwasm => Header::decode_as::<Bincode>(&header)
+                .map_err(RpcError::fatal("unable to decode header")),
+        }
+        .map(into_value)
+    }
+
+    #[instrument]
     async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
         // TODO(aeryz): handle this for cosmos
         let proof = serde_json::from_value::<
@@ -199,60 +210,67 @@ impl ClientModuleServer for Module {
             SupportedIbcInterface::IbcCosmwasm => Ok(proof.encode_as::<Bincode>().into()),
         }
     }
+
+    #[instrument]
+    async fn decode_proof(&self, _: &Extensions, proof: Bytes) -> RpcResult<Value> {
+        match self.ibc_interface {
+            SupportedIbcInterface::IbcSolidity => decode_merkle_proof_for_evm(proof),
+            SupportedIbcInterface::IbcCosmwasm => {
+                unionlabs::ibc::core::commitment::merkle_proof::MerkleProof::decode_as::<Bincode>(
+                    &proof,
+                )
+                .map(into_value)
+                .map_err(RpcError::fatal("unable to decode proof"))
+            }
+        }
+    }
 }
 
 alloy_sol_types::sol! {
-    #[derive(Debug)]
-    struct ExistenceProof {
+    #[derive(Default, PartialEq)]
+    struct SolExistenceProof {
         bytes key;
         bytes value;
         bytes leafPrefix;
-        InnerOp[] path;
+        SolInnerOp[] path;
     }
 
-    #[derive(Debug)]
-    struct NonExistenceProof {
+    #[derive(Default, PartialEq)]
+    struct SolNonExistenceProof {
         bytes key;
-        ExistenceProof left;
-        ExistenceProof right;
+        SolExistenceProof left;
+        SolExistenceProof right;
     }
 
-    #[derive(Debug)]
-    struct InnerOp {
+    #[derive(Default, PartialEq)]
+    struct SolInnerOp {
         bytes prefix;
         bytes suffix;
-    }
-
-    #[derive(Debug)]
-    struct ProofSpec {
-        uint256 childSize;
-        uint256 minPrefixLength;
-        uint256 maxPrefixLength;
     }
 }
 
 fn encode_merkle_proof_for_evm(
     proof: unionlabs::ibc::core::commitment::merkle_proof::MerkleProof,
 ) -> Vec<u8> {
-    let merkle_proof = ics23::merkle_proof::MerkleProof::try_from(
+    let merkle_proof = unionlabs::union::ics23::merkle_proof::MerkleProof::try_from(
         protos::ibc::core::commitment::v1::MerkleProof::from(proof),
     )
     .unwrap();
 
-    let convert_inner_op = |i: unionlabs::union::ics23::inner_op::InnerOp| InnerOp {
+    let convert_inner_op = |i: unionlabs::union::ics23::inner_op::InnerOp| SolInnerOp {
         prefix: i.prefix.into(),
         suffix: i.suffix.into(),
     };
 
     let convert_existence_proof =
-        |e: unionlabs::union::ics23::existence_proof::ExistenceProof| ExistenceProof {
+        |e: unionlabs::union::ics23::existence_proof::ExistenceProof| SolExistenceProof {
             key: e.key.into(),
             value: e.value.into(),
             leafPrefix: e.leaf_prefix.into(),
             path: e.path.into_iter().map(convert_inner_op).collect(),
         };
 
-    let exist_default = || ics23::existence_proof::ExistenceProof {
+    let exist_default = || unionlabs::union::ics23::existence_proof::ExistenceProof {
         key: vec![].into(),
         value: vec![].into(),
         leaf_prefix: vec![].into(),
@@ -260,11 +278,11 @@ fn encode_merkle_proof_for_evm(
     };
 
     match merkle_proof {
-        ics23::merkle_proof::MerkleProof::Membership(a, b) => {
+        unionlabs::union::ics23::merkle_proof::MerkleProof::Membership(a, b) => {
             (convert_existence_proof(a), convert_existence_proof(b)).abi_encode_params()
         }
-        ics23::merkle_proof::MerkleProof::NonMembership(a, b) => (
-            NonExistenceProof {
+        unionlabs::union::ics23::merkle_proof::MerkleProof::NonMembership(a, b) => (
+            SolNonExistenceProof {
                 key: a.key.into(),
                 left: convert_existence_proof(a.left.unwrap_or_else(exist_default)),
                 right: convert_existence_proof(a.right.unwrap_or_else(exist_default)),
@@ -272,5 +290,58 @@ fn encode_merkle_proof_for_evm(
             convert_existence_proof(b),
         )
             .abi_encode_params(),
+    }
+}
+
+fn decode_merkle_proof_for_evm(proof: Bytes) -> RpcResult<Value> {
+    let convert_inner_op = |i: SolInnerOp| unionlabs::union::ics23::inner_op::InnerOp {
+        prefix: i.prefix.into(),
+        suffix: i.suffix.into(),
+    };
+
+    let convert_existence_proof =
+        |e: SolExistenceProof| unionlabs::union::ics23::existence_proof::ExistenceProof {
+            key: e.key.into(),
+            value: e.value.into(),
+            leaf_prefix: e.leafPrefix.into(),
+            path: e.path.into_iter().map(convert_inner_op).collect(),
+        };
+
+    match (
+        <(SolExistenceProof, SolExistenceProof)>::abi_decode_params_validate(&proof),
+        <(SolNonExistenceProof, SolExistenceProof)>::abi_decode_params_validate(&proof),
+    ) {
+        (Ok(_), Ok(_)) => Err(RpcError::fatal_from_message(
+            "proof cannot be a both a valid existence and non existence proof",
+        )),
+        (Ok((a, b)), Err(_)) => Ok(into_value(
+            unionlabs::union::ics23::merkle_proof::MerkleProof::Membership(
+                convert_existence_proof(a),
+                convert_existence_proof(b),
+            ),
+        )),
+        (Err(_), Ok((a, b))) => Ok(into_value(
+            unionlabs::union::ics23::merkle_proof::MerkleProof::NonMembership(
+                unionlabs::union::ics23::non_existence_proof::NonExistenceProof {
+                    key: a.key.to_vec(),
+                    left: if a.left == Default::default() {
+                        None
+                    } else {
+                        Some(convert_existence_proof(a.left))
+                    },
+                    right: if a.right == Default::default() {
+                        None
+                    } else {
+                        Some(convert_existence_proof(a.right))
+                    },
+                },
+                convert_existence_proof(b),
+            ),
+        )),
+        (Err(existence_err), Err(non_existence_err)) => Err(RpcError::fatal_from_message(format!(
+            "invalid proof, could not decode as existence ({}) or non existence ({})",
+            ErrorReporter(existence_err),
+            ErrorReporter(non_existence_err),
+        ))),
     }
 }

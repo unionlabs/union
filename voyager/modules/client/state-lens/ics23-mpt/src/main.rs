@@ -190,6 +190,17 @@ impl ClientModuleServer for Module {
     }
 
     #[instrument]
+    async fn decode_header(&self, _: &Extensions, header: Bytes) -> RpcResult<Value> {
+        match self.ibc_interface {
+            SupportedIbcInterface::IbcSolidity => Header::decode_as::<EthAbi>(&header)
+                .map_err(RpcError::fatal("unable to decode header")),
+            SupportedIbcInterface::IbcCosmwasm => Header::decode_as::<Bincode>(&header)
+                .map_err(RpcError::fatal("unable to decode header")),
+        }
+        .map(into_value)
+    }
+
+    #[instrument]
     async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
         let proof = serde_json::from_value::<StorageProof>(proof)
             .map_err(RpcError::fatal("unable to deserialize proof"))?;
@@ -198,6 +209,19 @@ impl ClientModuleServer for Module {
             // the solidity MPT verifier expects the proof RLP nodes to be serialized in sequence
             SupportedIbcInterface::IbcSolidity => Ok(proof.proof.into_iter().flatten().collect()),
             SupportedIbcInterface::IbcCosmwasm => Ok(proof.encode_as::<Bincode>().into()),
+        }
+    }
+
+    #[instrument]
+    async fn decode_proof(&self, _: &Extensions, proof: Bytes) -> RpcResult<Value> {
+        match self.ibc_interface {
+            SupportedIbcInterface::IbcSolidity => {
+                // TODO: Figure this out
+                Err(RpcError::fatal_from_message("currently unsupported"))
+            }
+            SupportedIbcInterface::IbcCosmwasm => StorageProof::decode_as::<Bincode>(&proof)
+                .map(into_value)
+                .map_err(RpcError::fatal("unable to decode proof")),
         }
     }
 }
