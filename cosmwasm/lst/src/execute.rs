@@ -59,19 +59,19 @@
 // TITLE.
 
 use cosmwasm_std::{
-    Addr, BankMsg, Coin, Deps, DepsMut, Env, Event, MessageInfo, Response, Uint128, ensure,
-    wasm_execute,
+    ensure, wasm_execute, Addr, BankMsg, Coin, Deps, DepsMut, Env, Event, MessageInfo, Response,
+    Uint128,
 };
-use cw_utils::{must_pay, nonpayable};
 use cw20::Cw20ExecuteMsg;
+use cw_utils::{must_pay, nonpayable};
 use depolama::StorageExt;
 
 use crate::{
     error::{ContractError, ContractResult},
     event::{
-        AcceptOwnership, Bond, CircuitBreaker, Rebase, ReceiveRewards, ReceiveUnstakedTokens,
-        ResumeContract, RevokeOwnershipTransfer, SlashBatch, SubmitBatch, TransferOwnership,
-        Unbond, Withdraw,
+        AcceptOwnership, Bond, CircuitBreaker, Rebase, ReceiveBatch, ReceiveRewards,
+        ReceiveUnstakedTokens, ResumeContract, RevokeOwnershipTransfer, SlashBatch, SubmitBatch,
+        TransferOwnership, Unbond, Withdraw,
     },
     helpers::{assets_to_shares, shares_to_assets, total_assets},
     msg::StakerExecuteMsg,
@@ -81,9 +81,8 @@ use crate::{
         SubmittedBatches, UnstakeRequests, UnstakeRequestsByStakerHash,
     },
     types::{
-        AccountingState, BatchExpectedAmount, BatchId, PendingBatch, PendingOwner,
+        staker_hash, AccountingState, BatchExpectedAmount, BatchId, PendingBatch, PendingOwner,
         ProtocolFeeConfig, ReceivedBatch, SubmittedBatch, UnstakeRequest, UnstakeRequestKey,
-        staker_hash,
     },
 };
 
@@ -857,4 +856,46 @@ pub fn slash_batches(
              expected_native_amount: amount,
          }| SlashBatch { batch_id, amount },
     )))
+}
+
+/// Receive batch to receive unstaked tokens from Staker
+/// This is permissionless as it only can be used to transfer received unstaked tokens of batch from staker to lst hub
+pub fn receive_batch(
+    deps: DepsMut,
+    env: Env,
+    _info: MessageInfo,
+    batch_id: BatchId,
+) -> ContractResult<Response> {
+    ensure_not_stopped(deps.as_ref())?;
+
+    let SubmittedBatch {
+        total_lst_to_burn: _,
+        unstake_requests_count: _,
+        receive_time,
+        expected_native_unstaked,
+    } = deps
+        .storage
+        .read::<SubmittedBatches>(&batch_id)
+        .map_err(|_| ContractError::BatchNotFound { batch_id })?;
+
+    ensure!(
+        receive_time <= env.block.time.seconds(),
+        ContractError::BatchNotReady {
+            now: env.block.time.seconds(),
+            ready_at: receive_time,
+        }
+    );
+
+    let response = Response::new()
+        .add_message(wasm_execute(
+            deps.storage.read_item::<StakerAddress>()?.to_string(),
+            &StakerExecuteMsg::ReceiveUnstakedTokens { batch_id },
+            vec![],
+        )?)
+        .add_event(ReceiveBatch {
+            batch_id,
+            amount: expected_native_unstaked,
+        });
+
+    Ok(response)
 }

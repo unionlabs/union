@@ -170,3 +170,10 @@ pub struct SlashBatch {
     pub batch_id: BatchId,
     pub amount: u128,
 }
+
+#[derive(Event)]
+#[event("receive_batch")]
+pub struct ReceiveBatch {
+    pub batch_id: BatchId,
+    pub amount: u128,
+}
