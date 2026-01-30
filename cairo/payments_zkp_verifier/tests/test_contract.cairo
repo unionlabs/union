@@ -14,7 +14,7 @@ use payments_zkp_verifier::groth16_verifier::{
 };
 use snforge_std::fs::{FileTrait, read_txt};
 use snforge_std::{DeclareResultTrait, declare};
-use starknet::ClassHash;
+use starknet::{ClassHash, SyscallResultTrait};
 
 /// Declare the Groth16VerifierBN254 contract for testing.
 ///
@@ -32,7 +32,7 @@ use starknet::ClassHash;
 /// let dispatcher = IGroth16VerifierBN254LibraryDispatcher { class_hash };
 /// ```
 fn declare_contract(name: ByteArray) -> ClassHash {
-    let class_hash = *declare(name).unwrap().contract_class().class_hash;
+    let class_hash = *declare(name).unwrap_syscall().contract_class().class_hash;
     class_hash
 }
 
@@ -65,7 +65,7 @@ fn declare_contract(name: ByteArray) -> ClassHash {
 /// - The function should return Ok(public_inputs) containing the expected public inputs
 /// - No panics or assertion failures should occur
 #[test]
-#[fork(url: "REDACTED", block_tag: latest)]
+#[fork(url: "https://api.zan.top/public/starknet-sepolia/rpc/v0_10", block_number: 5931974)]
 fn test_verify_groth16_proof_bn254() {
     // Step 1: Declare the verification contract
     let class_hash = declare_contract("Groth16VerifierBN254");
@@ -78,12 +78,13 @@ fn test_verify_groth16_proof_bn254() {
 
     // Step 3: Verify the proof on-chain
     // This calls the contract's verify_groth16_proof_bn254 function with the loaded proof data
-    let result = dispatcher.verify_groth16_proof_bn254(calldata);
+    let result = dispatcher.verify_groth16_proof_bn254(calldata).unwrap();
 
+    println!("{:?}", result);
     // Step 4: Assert that verification succeeded
-    // A valid proof should return Ok(public_inputs), not Err
-    assert(result.is_ok(), 'Proof verification failed');
-    // Optional: You can also verify the public inputs contain expected values
+// A valid proof should return Ok(public_inputs), not Err
+// assert(result.is_ok(), 'Proof verification failed');
+// Optional: You can also verify the public inputs contain expected values
 // let public_inputs = result.unwrap();
 // assert(public_inputs.len() > 0, 'No public inputs');
 // Additional assertions on the public input values can be added here

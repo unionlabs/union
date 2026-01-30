@@ -270,9 +270,12 @@ dependencies = [
 name = "zasset"
 version = "0.1.0"
 dependencies = [
+ "alexandria_bytes",
+ "alexandria_encoding",
  "ibc",
  "loopback_light_client",
  "openzeppelin",
+ "payments_zkp_verifier",
  "snforge_std",
 ]
 

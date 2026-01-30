@@ -4,6 +4,8 @@ edition = "2024_07"
 name    = "payments_zkp_verifier"
 version = "0.1.0"
 
+[lib]
+
 [dependencies]
 garaga   = { git = "https://github.com/keep-starknet-strange/garaga.git", tag = "v1.0.1" }
 starknet = "2.14.0"
