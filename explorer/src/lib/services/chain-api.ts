@@ -30,7 +30,9 @@ async function fetchWithTimeout<T>(url: string): Promise<T> {
 
     return res.json()
   } catch (e) {
-    if (e instanceof ChainApiError) throw e
+    if (e instanceof ChainApiError) {
+      throw e
+    }
     if (e instanceof Error && e.name === "AbortError") {
       throw new ChainApiError("Request timeout")
     }
@@ -83,7 +85,12 @@ export const rpc = {
         }>
         total_count: string
       }
-    }>(chainId, `tx_search?query="${encodeURIComponent(query)}"&page=${page}&per_page=${perPage}&order_by="desc"`),
+    }>(
+      chainId,
+      `tx_search?query="${
+        encodeURIComponent(query)
+      }"&page=${page}&per_page=${perPage}&order_by="desc"`,
+    ),
 }
 
 // REST endpoints (via REST proxy)
@@ -113,7 +120,7 @@ export const rest = {
     const params = status ? `?status=${status}&pagination.limit=500` : "?pagination.limit=500"
     return fetchRest<{ validators: Validator[]; pagination: unknown }>(
       chainId,
-      `/cosmos/staking/v1beta1/validators${params}`
+      `/cosmos/staking/v1beta1/validators${params}`,
     )
   },
 
@@ -126,13 +133,13 @@ export const rest = {
   delegations: (chainId: string, address: string) =>
     fetchRest<{ delegation_responses: Delegation[] }>(
       chainId,
-      `/cosmos/staking/v1beta1/delegations/${address}`
+      `/cosmos/staking/v1beta1/delegations/${address}`,
     ),
 
   proposals: (chainId: string) =>
     fetchRest<{ proposals: Proposal[] }>(
       chainId,
-      "/cosmos/gov/v1/proposals?pagination.limit=100&pagination.reverse=true"
+      "/cosmos/gov/v1/proposals?pagination.limit=100&pagination.reverse=true",
     ),
 
   proposal: (chainId: string, id: string) =>
@@ -147,7 +154,7 @@ export const rest = {
   nodeInfo: (chainId: string) =>
     fetchRest<{ default_node_info: { network: string } }>(
       chainId,
-      "/cosmos/base/tendermint/v1beta1/node_info"
+      "/cosmos/base/tendermint/v1beta1/node_info",
     ),
 }
 

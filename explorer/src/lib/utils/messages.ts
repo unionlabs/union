@@ -21,13 +21,26 @@ export function getMsgType(msg: { "@type": string }): string {
  */
 export function getMsgTypeVariant(type: string): BadgeVariant {
   const t = type.toLowerCase()
-  if (t.includes("send") || t.includes("transfer")) return "info"
-  if (t.includes("delegate") || t.includes("stake")) return "purple"
-  if (t.includes("vote")) return "warning"
-  if (t.includes("submit") || t.includes("proposal")) return "cyan"
-  if (t.includes("withdraw")) return "emerald"
-  if (t.includes("ibc") || t.includes("channel") || t.includes("client")) return "orange"
-  if (t.includes("exec") || t.includes("contract")) return "pink"
+  if (t.includes("send") || t.includes("transfer")) {
+    return "info"
+  }
+  if (t.includes("delegate") || t.includes("stake")) {
+    return "purple"
+  }
+  if (t.includes("vote")) {
+    return "warning"
+  }
+  if (t.includes("submit") || t.includes("proposal")) {
+    return "cyan"
+  }
+  if (t.includes("withdraw")) {
+    return "emerald"
+  }
+  if (t.includes("ibc") || t.includes("channel") || t.includes("client")) {
+    return "orange"
+  }
+  if (t.includes("exec") || t.includes("contract")) {
+    return "pink"
+  }
   return "secondary"
 }
-

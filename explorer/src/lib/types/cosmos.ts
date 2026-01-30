@@ -76,16 +76,16 @@ export interface TxResponse {
   gas_used: string
   tx: {
     "@type": string
-    body: {
+    "body": {
       messages: Array<{ "@type": string; [key: string]: unknown }>
       memo: string
       timeout_height: string
       extension_options: unknown[]
       non_critical_extension_options: unknown[]
     }
-    auth_info: {
+    "auth_info": {
       signer_infos: Array<{
-        public_key: { "@type": string; key: string }
+        public_key: { "@type": string; "key": string }
         mode_info: unknown
         sequence: string
       }>
@@ -96,7 +96,7 @@ export interface TxResponse {
         granter: string
       }
     }
-    signatures: string[]
+    "signatures": string[]
   }
   timestamp: string
   events: Array<{
@@ -109,7 +109,7 @@ export interface Validator {
   operator_address: string
   consensus_pubkey: {
     "@type": string
-    key: string
+    "key": string
   }
   jailed: boolean
   status: string
@@ -178,10 +178,10 @@ export interface Proposal {
 
 export interface Account {
   "@type": string
-  address: string
-  pub_key: { "@type": string; key: string } | null
-  account_number: string
-  sequence: string
+  "address": string
+  "pub_key": { "@type": string; "key": string } | null
+  "account_number": string
+  "sequence": string
 }
 
 export interface NodeInfo {

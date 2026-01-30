@@ -6,7 +6,9 @@ import { browser } from "$app/environment"
  * @param onSuccess - Optional callback when copy succeeds
  */
 export async function copyToClipboard(text: string, onSuccess?: () => void): Promise<boolean> {
-  if (!browser) return false
+  if (!browser) {
+    return false
+  }
 
   try {
     await navigator.clipboard.writeText(text)

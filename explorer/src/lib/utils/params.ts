@@ -17,16 +17,24 @@ export function formatDuration(duration: string): string {
     seconds = parseInt(duration)
   }
 
-  if (isNaN(seconds)) return duration
+  if (isNaN(seconds)) {
+    return duration
+  }
 
   const days = Math.floor(seconds / 86400)
   const hours = Math.floor((seconds % 86400) / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
 
   const parts: string[] = []
-  if (days > 0) parts.push(`${days}d`)
-  if (hours > 0) parts.push(`${hours}h`)
-  if (minutes > 0 && days === 0) parts.push(`${minutes}m`)
+  if (days > 0) {
+    parts.push(`${days}d`)
+  }
+  if (hours > 0) {
+    parts.push(`${hours}h`)
+  }
+  if (minutes > 0 && days === 0) {
+    parts.push(`${minutes}m`)
+  }
 
   return parts.length > 0 ? parts.join(" ") : `${seconds}s`
 }
@@ -36,7 +44,9 @@ export function formatDuration(duration: string): string {
  */
 export function formatParamPercent(decimal: string): string {
   const num = parseFloat(decimal)
-  if (isNaN(num)) return decimal
+  if (isNaN(num)) {
+    return decimal
+  }
 
   // Handle very small numbers
   if (num < 0.0001 && num > 0) {
@@ -51,7 +61,9 @@ export function formatParamPercent(decimal: string): string {
  */
 export function formatParamNumber(num: string | number): string {
   const n = typeof num === "string" ? parseInt(num) : num
-  if (isNaN(n)) return String(num)
+  if (isNaN(n)) {
+    return String(num)
+  }
   return n.toLocaleString()
 }
 

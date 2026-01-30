@@ -1,25 +1,25 @@
-import { Effect, Context, Layer } from "effect"
 import type {
-  Block,
-  TxResponse,
-  Validator,
-  Delegation,
-  UnbondingDelegation,
-  Proposal,
   Account,
+  Block,
+  Coin,
+  Delegation,
+  DistributionParams,
+  GovParams,
+  IBCChannel,
+  IBCConnection,
+  MintParams,
   NodeInfo,
   PaginationResponse,
+  Proposal,
+  SlashingParams,
   StakingParams,
   StakingPool,
   Supply,
-  IBCChannel,
-  IBCConnection,
-  Coin,
-  SlashingParams,
-  DistributionParams,
-  GovParams,
-  MintParams,
+  TxResponse,
+  UnbondingDelegation,
+  Validator,
 } from "$lib/types/cosmos"
+import { Context, Effect, Layer } from "effect"
 
 export class CosmosClientError extends Error {
   readonly _tag = "CosmosClientError"
@@ -33,10 +33,10 @@ export class CosmosClientError extends Error {
 
 export interface CosmosClientConfig {
   restEndpoint: string
-  restEndpoints?: string[]  // Multiple REST endpoints for racing
+  restEndpoints?: string[] // Multiple REST endpoints for racing
   rpcEndpoint?: string
-  rpcEndpoints?: string[]   // Multiple RPC endpoints for racing
-  chainName?: string        // Chain name for proxy header
+  rpcEndpoints?: string[] // Multiple RPC endpoints for racing
+  chainName?: string // Chain name for proxy header
 }
 
 export class CosmosClient extends Context.Tag("CosmosClient")<
@@ -53,56 +53,155 @@ export class CosmosClient extends Context.Tag("CosmosClient")<
     >
     readonly getNodeInfo: () => Effect.Effect<NodeInfo, CosmosClientError>
     readonly getValidatorSet: (height?: string) => Effect.Effect<
-      { block_height: string; validators: Array<{ address: string; pub_key: { "@type": string; key: string }; voting_power: string; proposer_priority: string }> },
+      {
+        block_height: string
+        validators: Array<
+          {
+            address: string
+            pub_key: { "@type": string; "key": string }
+            voting_power: string
+            proposer_priority: string
+          }
+        >
+      },
       CosmosClientError
     >
 
     // Transactions
     readonly getTx: (hash: string) => Effect.Effect<{ tx_response: TxResponse }, CosmosClientError>
-    readonly getTxsByHeight: (height: string) => Effect.Effect<{ txs: unknown[]; tx_responses: TxResponse[]; pagination: PaginationResponse }, CosmosClientError>
-    readonly searchTxs: (query: string, page?: number, limit?: number) => Effect.Effect<{ txs: unknown[]; tx_responses: TxResponse[]; pagination: PaginationResponse }, CosmosClientError>
+    readonly getTxsByHeight: (
+      height: string,
+    ) => Effect.Effect<
+      { txs: unknown[]; tx_responses: TxResponse[]; pagination: PaginationResponse },
+      CosmosClientError
+    >
+    readonly searchTxs: (
+      query: string,
+      page?: number,
+      limit?: number,
+    ) => Effect.Effect<
+      { txs: unknown[]; tx_responses: TxResponse[]; pagination: PaginationResponse },
+      CosmosClientError
+    >
 
     // Bank
-    readonly getBalances: (address: string) => Effect.Effect<{ balances: Coin[]; pagination: PaginationResponse }, CosmosClientError>
-    readonly getTotalSupply: () => Effect.Effect<{ supply: Coin[]; pagination: PaginationResponse }, CosmosClientError>
+    readonly getBalances: (
+      address: string,
+    ) => Effect.Effect<{ balances: Coin[]; pagination: PaginationResponse }, CosmosClientError>
+    readonly getTotalSupply: () => Effect.Effect<
+      { supply: Coin[]; pagination: PaginationResponse },
+      CosmosClientError
+    >
     readonly getSupplyByDenom: (denom: string) => Effect.Effect<Supply, CosmosClientError>
 
     // Staking
-    readonly getValidators: (status?: string) => Effect.Effect<{ validators: Validator[]; pagination: PaginationResponse }, CosmosClientError>
-    readonly getValidator: (address: string) => Effect.Effect<{ validator: Validator }, CosmosClientError>
-    readonly getDelegations: (delegatorAddress: string) => Effect.Effect<{ delegation_responses: Delegation[]; pagination: PaginationResponse }, CosmosClientError>
-    readonly getValidatorDelegations: (validatorAddress: string) => Effect.Effect<{ delegation_responses: Delegation[]; pagination: PaginationResponse }, CosmosClientError>
-    readonly getUnbondingDelegations: (delegatorAddress: string) => Effect.Effect<{ unbonding_responses: UnbondingDelegation[]; pagination: PaginationResponse }, CosmosClientError>
+    readonly getValidators: (
+      status?: string,
+    ) => Effect.Effect<
+      { validators: Validator[]; pagination: PaginationResponse },
+      CosmosClientError
+    >
+    readonly getValidator: (
+      address: string,
+    ) => Effect.Effect<{ validator: Validator }, CosmosClientError>
+    readonly getDelegations: (
+      delegatorAddress: string,
+    ) => Effect.Effect<
+      { delegation_responses: Delegation[]; pagination: PaginationResponse },
+      CosmosClientError
+    >
+    readonly getValidatorDelegations: (
+      validatorAddress: string,
+    ) => Effect.Effect<
+      { delegation_responses: Delegation[]; pagination: PaginationResponse },
+      CosmosClientError
+    >
+    readonly getUnbondingDelegations: (
+      delegatorAddress: string,
+    ) => Effect.Effect<
+      { unbonding_responses: UnbondingDelegation[]; pagination: PaginationResponse },
+      CosmosClientError
+    >
     readonly getStakingParams: () => Effect.Effect<{ params: StakingParams }, CosmosClientError>
     readonly getStakingPool: () => Effect.Effect<{ pool: StakingPool }, CosmosClientError>
     readonly getSlashingParams: () => Effect.Effect<{ params: SlashingParams }, CosmosClientError>
-    readonly getDistributionParams: () => Effect.Effect<{ params: DistributionParams }, CosmosClientError>
+    readonly getDistributionParams: () => Effect.Effect<
+      { params: DistributionParams },
+      CosmosClientError
+    >
     readonly getGovParams: () => Effect.Effect<{ params: GovParams }, CosmosClientError>
     readonly getMintParams: () => Effect.Effect<{ params: MintParams }, CosmosClientError>
 
     // Governance
-    readonly getProposals: (status?: string) => Effect.Effect<{ proposals: Proposal[]; pagination: PaginationResponse }, CosmosClientError>
+    readonly getProposals: (
+      status?: string,
+    ) => Effect.Effect<{ proposals: Proposal[]; pagination: PaginationResponse }, CosmosClientError>
     readonly getProposal: (id: string) => Effect.Effect<{ proposal: Proposal }, CosmosClientError>
-    readonly getProposalVotes: (id: string) => Effect.Effect<{ votes: Array<{ proposal_id: string; voter: string; options: Array<{ option: string; weight: string }> }>; pagination: PaginationResponse }, CosmosClientError>
-    readonly getProposalTally: (id: string) => Effect.Effect<{ tally: { yes_count: string; abstain_count: string; no_count: string; no_with_veto_count: string } }, CosmosClientError>
+    readonly getProposalVotes: (
+      id: string,
+    ) => Effect.Effect<
+      {
+        votes: Array<
+          { proposal_id: string; voter: string; options: Array<{ option: string; weight: string }> }
+        >
+        pagination: PaginationResponse
+      },
+      CosmosClientError
+    >
+    readonly getProposalTally: (
+      id: string,
+    ) => Effect.Effect<
+      {
+        tally: {
+          yes_count: string
+          abstain_count: string
+          no_count: string
+          no_with_veto_count: string
+        }
+      },
+      CosmosClientError
+    >
 
     // Auth
     readonly getAccount: (address: string) => Effect.Effect<{ account: Account }, CosmosClientError>
 
     // Distribution
-    readonly getDelegationRewards: (delegatorAddress: string, validatorAddress: string) => Effect.Effect<{ rewards: Coin[] }, CosmosClientError>
-    readonly getDelegatorTotalRewards: (delegatorAddress: string) => Effect.Effect<{ rewards: Array<{ validator_address: string; reward: Coin[] }>; total: Coin[] }, CosmosClientError>
+    readonly getDelegationRewards: (
+      delegatorAddress: string,
+      validatorAddress: string,
+    ) => Effect.Effect<{ rewards: Coin[] }, CosmosClientError>
+    readonly getDelegatorTotalRewards: (
+      delegatorAddress: string,
+    ) => Effect.Effect<
+      { rewards: Array<{ validator_address: string; reward: Coin[] }>; total: Coin[] },
+      CosmosClientError
+    >
 
     // IBC
-    readonly getIBCChannels: () => Effect.Effect<{ channels: IBCChannel[]; pagination: PaginationResponse }, CosmosClientError>
-    readonly getIBCConnections: () => Effect.Effect<{ connections: IBCConnection[]; pagination: PaginationResponse }, CosmosClientError>
-    readonly getIBCClientStates: () => Effect.Effect<{ client_states: Array<{ client_id: string; client_state: unknown }>; pagination: PaginationResponse }, CosmosClientError>
+    readonly getIBCChannels: () => Effect.Effect<
+      { channels: IBCChannel[]; pagination: PaginationResponse },
+      CosmosClientError
+    >
+    readonly getIBCConnections: () => Effect.Effect<
+      { connections: IBCConnection[]; pagination: PaginationResponse },
+      CosmosClientError
+    >
+    readonly getIBCClientStates: () => Effect.Effect<
+      {
+        client_states: Array<{ client_id: string; client_state: unknown }>
+        pagination: PaginationResponse
+      },
+      CosmosClientError
+    >
   }
 >() {}
 
 const FETCH_TIMEOUT = 15_000 // 15 second timeout per request
 
-const fetchJson = <T>(url: string, headers?: Record<string, string>): Effect.Effect<T, CosmosClientError> =>
+const fetchJson = <T>(
+  url: string,
+  headers?: Record<string, string>,
+): Effect.Effect<T, CosmosClientError> =>
   Effect.tryPromise({
     try: async () => {
       const controller = new AbortController()
@@ -114,7 +213,10 @@ const fetchJson = <T>(url: string, headers?: Record<string, string>): Effect.Eff
           signal: controller.signal,
         })
         if (!response.ok) {
-          throw new CosmosClientError(`HTTP ${response.status}: ${response.statusText}`, response.status)
+          throw new CosmosClientError(
+            `HTTP ${response.status}: ${response.statusText}`,
+            response.status,
+          )
         }
         return response.json() as Promise<T>
       } finally {
@@ -122,7 +224,9 @@ const fetchJson = <T>(url: string, headers?: Record<string, string>): Effect.Eff
       }
     },
     catch: (error) => {
-      if (error instanceof CosmosClientError) return error
+      if (error instanceof CosmosClientError) {
+        return error
+      }
       if (error instanceof Error && error.name === "AbortError") {
         return new CosmosClientError(`Request timeout after ${FETCH_TIMEOUT}ms`)
       }
@@ -131,7 +235,10 @@ const fetchJson = <T>(url: string, headers?: Record<string, string>): Effect.Eff
   })
 
 // Race all endpoints - first successful response wins
-const raceEndpoints = <T>(urls: string[], headers?: Record<string, string>): Effect.Effect<T, CosmosClientError> => {
+const raceEndpoints = <T>(
+  urls: string[],
+  headers?: Record<string, string>,
+): Effect.Effect<T, CosmosClientError> => {
   if (urls.length === 0) {
     return Effect.fail(new CosmosClientError("No endpoints configured"))
   }
@@ -157,7 +264,10 @@ const raceEndpoints = <T>(urls: string[], headers?: Record<string, string>): Eff
           clearTimeout(timeoutId)
 
           if (!response.ok) {
-            throw new CosmosClientError(`HTTP ${response.status}: ${response.statusText}`, response.status)
+            throw new CosmosClientError(
+              `HTTP ${response.status}: ${response.statusText}`,
+              response.status,
+            )
           }
 
           const data = await response.json() as T
@@ -178,7 +288,9 @@ const raceEndpoints = <T>(urls: string[], headers?: Record<string, string>): Eff
         const lastError = error.errors[error.errors.length - 1]
         return lastError instanceof CosmosClientError
           ? lastError
-          : new CosmosClientError(lastError instanceof Error ? lastError.message : String(lastError))
+          : new CosmosClientError(
+            lastError instanceof Error ? lastError.message : String(lastError),
+          )
       }
       return error instanceof CosmosClientError
         ? error
@@ -216,7 +328,9 @@ interface RpcTxResult {
     log: string
     gas_wanted: string
     gas_used: string
-    events: Array<{ type: string; attributes: Array<{ key: string; value: string; index?: boolean }> }>
+    events: Array<
+      { type: string; attributes: Array<{ key: string; value: string; index?: boolean }> }
+    >
   }
   tx: string // base64 encoded
 }
@@ -252,13 +366,19 @@ function parseRpcTxEvents(events: RpcTxResult["tx_result"]["events"]): {
     }
     if (event.type === "transfer") {
       for (const attr of event.attributes) {
-        if (attr.key === "sender" && !sender) sender = attr.value
-        if (attr.key === "recipient" && !receiver) receiver = attr.value
+        if (attr.key === "sender" && !sender) {
+          sender = attr.value
+        }
+        if (attr.key === "recipient" && !receiver) {
+          receiver = attr.value
+        }
       }
     }
     if (event.type === "delegate" || event.type === "unbond" || event.type === "redelegate") {
       for (const attr of event.attributes) {
-        if (attr.key === "validator" && !receiver) receiver = attr.value
+        if (attr.key === "validator" && !receiver) {
+          receiver = attr.value
+        }
       }
     }
   }
@@ -279,7 +399,9 @@ export const makeCosmosClient = (config: CosmosClientConfig) => {
 
   // Build list of RPC bases for racing
   const rpcBases: string[] = []
-  if (rpc) rpcBases.push(rpc)
+  if (rpc) {
+    rpcBases.push(rpc)
+  }
   if (rpcEndpoints) {
     rpcBases.push(...rpcEndpoints.map((e) => e.replace(/\/$/, "")))
   }
@@ -302,15 +424,18 @@ export const makeCosmosClient = (config: CosmosClientConfig) => {
 
     // Base / Tendermint - race all REST endpoints
     getLatestBlock: () => restRace<Block>("/cosmos/base/tendermint/v1beta1/blocks/latest"),
-    getBlockByHeight: (height: string) => restRace<Block>(`/cosmos/base/tendermint/v1beta1/blocks/${height}`),
+    getBlockByHeight: (height: string) =>
+      restRace<Block>(`/cosmos/base/tendermint/v1beta1/blocks/${height}`),
 
     // Bulk fetch blocks via RPC (races RPC endpoints) with REST fallback
     getBlockRange: (minHeight: number, maxHeight: number) =>
-      Effect.gen(function* () {
+      Effect.gen(function*() {
         // Try RPC first (faster for bulk) - race all RPC endpoints
         if (rpcBases.length > 0) {
           const rpcResult = yield* Effect.either(
-            rpcRace<RpcBlockchainResponse>(`/blockchain?minHeight=${minHeight}&maxHeight=${maxHeight}`)
+            rpcRace<RpcBlockchainResponse>(
+              `/blockchain?minHeight=${minHeight}&maxHeight=${maxHeight}`,
+            ),
           )
           if (rpcResult._tag === "Right") {
             return rpcResult.right.result.block_metas.map((meta) => ({
@@ -327,11 +452,11 @@ export const makeCosmosClient = (config: CosmosClientConfig) => {
         // Fallback: fetch via REST (slower but reliable) - race endpoints per block
         const heights = Array.from(
           { length: maxHeight - minHeight + 1 },
-          (_, i) => maxHeight - i
+          (_, i) => maxHeight - i,
         )
         const blocks = yield* Effect.all(
           heights.map((h) => restRace<Block>(`/cosmos/base/tendermint/v1beta1/blocks/${h}`)),
-          { concurrency: 5 }
+          { concurrency: 5 },
         )
         return blocks.map((b) => ({
           height: b.block.header.height,
@@ -344,25 +469,44 @@ export const makeCosmosClient = (config: CosmosClientConfig) => {
 
     getNodeInfo: () => restRace<NodeInfo>("/cosmos/base/tendermint/v1beta1/node_info"),
     getValidatorSet: (height?: string) =>
-      restRace<{ block_height: string; validators: Array<{ address: string; pub_key: { "@type": string; key: string }; voting_power: string; proposer_priority: string }> }>(`/cosmos/base/tendermint/v1beta1/validatorsets/${height ?? "latest"}`),
+      restRace<
+        {
+          block_height: string
+          validators: Array<
+            {
+              address: string
+              pub_key: { "@type": string; "key": string }
+              voting_power: string
+              proposer_priority: string
+            }
+          >
+        }
+      >(`/cosmos/base/tendermint/v1beta1/validatorsets/${height ?? "latest"}`),
 
     // Transactions - race all REST endpoints
-    getTx: (hash: string) => restRace<{ tx_response: TxResponse }>(`/cosmos/tx/v1beta1/txs/${hash}`),
+    getTx: (hash: string) =>
+      restRace<{ tx_response: TxResponse }>(`/cosmos/tx/v1beta1/txs/${hash}`),
 
     // Get txs by height - try RPC first
     getTxsByHeight: (height: string) =>
-      Effect.gen(function* () {
+      Effect.gen(function*() {
         if (rpcBases.length > 0) {
           const rpcResult = yield* Effect.either(
-            rpcRace<RpcTxSearchResponse>(`/tx_search?query="tx.height=${height}"&per_page=100&page=1`)
+            rpcRace<RpcTxSearchResponse>(
+              `/tx_search?query="tx.height=${height}"&per_page=100&page=1`,
+            ),
           )
           if (rpcResult._tag === "Right") {
             const { txs, total_count } = rpcResult.right.result
             const tx_responses: TxResponse[] = txs.map((tx) => {
               const parsed = parseRpcTxEvents(tx.tx_result.events)
               const message: Record<string, unknown> = { "@type": parsed.msgType }
-              if (parsed.sender) message.sender = parsed.sender
-              if (parsed.receiver) message.receiver = parsed.receiver
+              if (parsed.sender) {
+                message.sender = parsed.sender
+              }
+              if (parsed.receiver) {
+                message.receiver = parsed.receiver
+              }
 
               return {
                 height: tx.height,
@@ -377,9 +521,9 @@ export const makeCosmosClient = (config: CosmosClientConfig) => {
                 gas_used: tx.tx_result.gas_used,
                 tx: {
                   "@type": "/cosmos.tx.v1beta1.Tx",
-                  body: { messages: [message] },
-                  auth_info: { fee: {} },
-                  signatures: [],
+                  "body": { messages: [message] },
+                  "auth_info": { fee: {} },
+                  "signatures": [],
                 },
                 timestamp: "",
                 events: tx.tx_result.events,
@@ -388,18 +532,24 @@ export const makeCosmosClient = (config: CosmosClientConfig) => {
             return { txs: [], tx_responses, pagination: { total: total_count, next_key: null } }
           }
         }
-        return yield* restRace<{ txs: unknown[]; tx_responses: TxResponse[]; pagination: PaginationResponse }>(
-          `/cosmos/tx/v1beta1/txs?query=tx.height=${height}&pagination.limit=100`
+        return yield* restRace<
+          { txs: unknown[]; tx_responses: TxResponse[]; pagination: PaginationResponse }
+        >(
+          `/cosmos/tx/v1beta1/txs?query=tx.height=${height}&pagination.limit=100`,
         )
       }),
 
     // Search txs - try RPC first (works on most nodes), fall back to REST
     searchTxs: (query: string, page = 1, limit = 20) =>
-      Effect.gen(function* () {
+      Effect.gen(function*() {
         // Try RPC first - usually works even when REST is rate-limited
         if (rpcBases.length > 0) {
           const rpcResult = yield* Effect.either(
-            rpcRace<RpcTxSearchResponse>(`/tx_search?query="${encodeURIComponent(query)}"&per_page=${limit}&page=${page}&order_by="desc"`)
+            rpcRace<RpcTxSearchResponse>(
+              `/tx_search?query="${
+                encodeURIComponent(query)
+              }"&per_page=${limit}&page=${page}&order_by="desc"`,
+            ),
           )
           if (rpcResult._tag === "Right") {
             const { txs, total_count } = rpcResult.right.result
@@ -408,8 +558,12 @@ export const makeCosmosClient = (config: CosmosClientConfig) => {
               const parsed = parseRpcTxEvents(tx.tx_result.events)
               // Build a minimal message from events
               const message: Record<string, unknown> = { "@type": parsed.msgType }
-              if (parsed.sender) message.sender = parsed.sender
-              if (parsed.receiver) message.receiver = parsed.receiver
+              if (parsed.sender) {
+                message.sender = parsed.sender
+              }
+              if (parsed.receiver) {
+                message.receiver = parsed.receiver
+              }
 
               return {
                 height: tx.height,
@@ -424,9 +578,9 @@ export const makeCosmosClient = (config: CosmosClientConfig) => {
                 gas_used: tx.tx_result.gas_used,
                 tx: {
                   "@type": "/cosmos.tx.v1beta1.Tx",
-                  body: { messages: [message] },
-                  auth_info: { fee: {} },
-                  signatures: [],
+                  "body": { messages: [message] },
+                  "auth_info": { fee: {} },
+                  "signatures": [],
                 },
                 timestamp: "",
                 events: tx.tx_result.events,
@@ -442,19 +596,30 @@ export const makeCosmosClient = (config: CosmosClientConfig) => {
         }
 
         // Fallback to REST
-        return yield* restRace<{ txs: unknown[]; tx_responses: TxResponse[]; pagination: PaginationResponse }>(
-          `/cosmos/tx/v1beta1/txs?order_by=2&query=${encodeURIComponent(query)}&pagination.limit=${limit}&pagination.offset=${(page - 1) * limit}`
+        return yield* restRace<
+          { txs: unknown[]; tx_responses: TxResponse[]; pagination: PaginationResponse }
+        >(
+          `/cosmos/tx/v1beta1/txs?order_by=2&query=${
+            encodeURIComponent(query)
+          }&pagination.limit=${limit}&pagination.offset=${(page - 1) * limit}`,
         )
       }),
 
     // Legacy txs endpoint for address-based queries (may work better on some chains)
     searchTxsLegacy: (sender: string, page = 1, limit = 20) =>
-      restRace<{ txs: unknown[]; tx_responses: TxResponse[]; pagination: PaginationResponse }>(`/txs?message.sender=${sender}&page=${page}&limit=${limit}`),
+      restRace<{ txs: unknown[]; tx_responses: TxResponse[]; pagination: PaginationResponse }>(
+        `/txs?message.sender=${sender}&page=${page}&limit=${limit}`,
+      ),
 
     // Bank - race all REST endpoints
-    getBalances: (address: string) => restRace<{ balances: Coin[]; pagination: PaginationResponse }>(`/cosmos/bank/v1beta1/balances/${address}`),
-    getTotalSupply: () => restRace<{ supply: Coin[]; pagination: PaginationResponse }>("/cosmos/bank/v1beta1/supply"),
-    getSupplyByDenom: (denom: string) => restRace<Supply>(`/cosmos/bank/v1beta1/supply/by_denom?denom=${encodeURIComponent(denom)}`),
+    getBalances: (address: string) =>
+      restRace<{ balances: Coin[]; pagination: PaginationResponse }>(
+        `/cosmos/bank/v1beta1/balances/${address}`,
+      ),
+    getTotalSupply: () =>
+      restRace<{ supply: Coin[]; pagination: PaginationResponse }>("/cosmos/bank/v1beta1/supply"),
+    getSupplyByDenom: (denom: string) =>
+      restRace<Supply>(`/cosmos/bank/v1beta1/supply/by_denom?denom=${encodeURIComponent(denom)}`),
 
     // Staking - race all REST endpoints
     getValidators: (status?: string) => {
@@ -463,17 +628,26 @@ export const makeCosmosClient = (config: CosmosClientConfig) => {
         : `/cosmos/staking/v1beta1/validators?pagination.limit=500`
       return restRace<{ validators: Validator[]; pagination: PaginationResponse }>(path)
     },
-    getValidator: (address: string) => restRace<{ validator: Validator }>(`/cosmos/staking/v1beta1/validators/${address}`),
+    getValidator: (address: string) =>
+      restRace<{ validator: Validator }>(`/cosmos/staking/v1beta1/validators/${address}`),
     getDelegations: (delegatorAddress: string) =>
-      restRace<{ delegation_responses: Delegation[]; pagination: PaginationResponse }>(`/cosmos/staking/v1beta1/delegations/${delegatorAddress}`),
+      restRace<{ delegation_responses: Delegation[]; pagination: PaginationResponse }>(
+        `/cosmos/staking/v1beta1/delegations/${delegatorAddress}`,
+      ),
     getValidatorDelegations: (validatorAddress: string) =>
-      restRace<{ delegation_responses: Delegation[]; pagination: PaginationResponse }>(`/cosmos/staking/v1beta1/validators/${validatorAddress}/delegations?pagination.limit=100`),
+      restRace<{ delegation_responses: Delegation[]; pagination: PaginationResponse }>(
+        `/cosmos/staking/v1beta1/validators/${validatorAddress}/delegations?pagination.limit=100`,
+      ),
     getUnbondingDelegations: (delegatorAddress: string) =>
-      restRace<{ unbonding_responses: UnbondingDelegation[]; pagination: PaginationResponse }>(`/cosmos/staking/v1beta1/delegators/${delegatorAddress}/unbonding_delegations`),
+      restRace<{ unbonding_responses: UnbondingDelegation[]; pagination: PaginationResponse }>(
+        `/cosmos/staking/v1beta1/delegators/${delegatorAddress}/unbonding_delegations`,
+      ),
     getStakingParams: () => restRace<{ params: StakingParams }>("/cosmos/staking/v1beta1/params"),
     getStakingPool: () => restRace<{ pool: StakingPool }>("/cosmos/staking/v1beta1/pool"),
-    getSlashingParams: () => restRace<{ params: SlashingParams }>("/cosmos/slashing/v1beta1/params"),
-    getDistributionParams: () => restRace<{ params: DistributionParams }>("/cosmos/distribution/v1beta1/params"),
+    getSlashingParams: () =>
+      restRace<{ params: SlashingParams }>("/cosmos/slashing/v1beta1/params"),
+    getDistributionParams: () =>
+      restRace<{ params: DistributionParams }>("/cosmos/distribution/v1beta1/params"),
     getGovParams: () => restRace<{ params: GovParams }>("/cosmos/gov/v1/params"),
     getMintParams: () => restRace<{ params: MintParams }>("/cosmos/mint/v1beta1/params"),
 
@@ -485,22 +659,61 @@ export const makeCosmosClient = (config: CosmosClientConfig) => {
       return restRace<{ proposals: Proposal[]; pagination: PaginationResponse }>(path)
     },
     getProposal: (id: string) => restRace<{ proposal: Proposal }>(`/cosmos/gov/v1/proposals/${id}`),
-    getProposalVotes: (id: string) => restRace<{ votes: Array<{ proposal_id: string; voter: string; options: Array<{ option: string; weight: string }> }>; pagination: PaginationResponse }>(`/cosmos/gov/v1/proposals/${id}/votes?pagination.limit=100`),
-    getProposalTally: (id: string) => restRace<{ tally: { yes_count: string; abstain_count: string; no_count: string; no_with_veto_count: string } }>(`/cosmos/gov/v1/proposals/${id}/tally`),
+    getProposalVotes: (id: string) =>
+      restRace<
+        {
+          votes: Array<
+            {
+              proposal_id: string
+              voter: string
+              options: Array<{ option: string; weight: string }>
+            }
+          >
+          pagination: PaginationResponse
+        }
+      >(`/cosmos/gov/v1/proposals/${id}/votes?pagination.limit=100`),
+    getProposalTally: (id: string) =>
+      restRace<
+        {
+          tally: {
+            yes_count: string
+            abstain_count: string
+            no_count: string
+            no_with_veto_count: string
+          }
+        }
+      >(`/cosmos/gov/v1/proposals/${id}/tally`),
 
     // Auth - race all REST endpoints
-    getAccount: (address: string) => restRace<{ account: Account }>(`/cosmos/auth/v1beta1/accounts/${address}`),
+    getAccount: (address: string) =>
+      restRace<{ account: Account }>(`/cosmos/auth/v1beta1/accounts/${address}`),
 
     // Distribution - race all REST endpoints
     getDelegationRewards: (delegatorAddress: string, validatorAddress: string) =>
-      restRace<{ rewards: Coin[] }>(`/cosmos/distribution/v1beta1/delegators/${delegatorAddress}/rewards/${validatorAddress}`),
+      restRace<{ rewards: Coin[] }>(
+        `/cosmos/distribution/v1beta1/delegators/${delegatorAddress}/rewards/${validatorAddress}`,
+      ),
     getDelegatorTotalRewards: (delegatorAddress: string) =>
-      restRace<{ rewards: Array<{ validator_address: string; reward: Coin[] }>; total: Coin[] }>(`/cosmos/distribution/v1beta1/delegators/${delegatorAddress}/rewards`),
+      restRace<{ rewards: Array<{ validator_address: string; reward: Coin[] }>; total: Coin[] }>(
+        `/cosmos/distribution/v1beta1/delegators/${delegatorAddress}/rewards`,
+      ),
 
     // IBC - race all REST endpoints
-    getIBCChannels: () => restRace<{ channels: IBCChannel[]; pagination: PaginationResponse }>("/ibc/core/channel/v1/channels?pagination.limit=100"),
-    getIBCConnections: () => restRace<{ connections: IBCConnection[]; pagination: PaginationResponse }>("/ibc/core/connection/v1/connections?pagination.limit=100"),
-    getIBCClientStates: () => restRace<{ client_states: Array<{ client_id: string; client_state: unknown }>; pagination: PaginationResponse }>("/ibc/core/client/v1/client_states?pagination.limit=100"),
+    getIBCChannels: () =>
+      restRace<{ channels: IBCChannel[]; pagination: PaginationResponse }>(
+        "/ibc/core/channel/v1/channels?pagination.limit=100",
+      ),
+    getIBCConnections: () =>
+      restRace<{ connections: IBCConnection[]; pagination: PaginationResponse }>(
+        "/ibc/core/connection/v1/connections?pagination.limit=100",
+      ),
+    getIBCClientStates: () =>
+      restRace<
+        {
+          client_states: Array<{ client_id: string; client_state: unknown }>
+          pagination: PaginationResponse
+        }
+      >("/ibc/core/client/v1/client_states?pagination.limit=100"),
   }
 }
 

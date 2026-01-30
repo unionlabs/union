@@ -1,4 +1,4 @@
-import { Effect, Schedule, Duration } from "effect"
+import { Duration, Effect, Schedule } from "effect"
 import type { ChainConfig } from "./config.js"
 
 // ============ RPC Response Types ============
@@ -78,14 +78,14 @@ export interface RestTxResponse {
   gas_used: string
   tx: {
     "@type": string
-    body: {
+    "body": {
       messages: unknown[]
       memo: string
       timeout_height: string
       extension_options: unknown[]
       non_critical_extension_options: unknown[]
     }
-    auth_info: {
+    "auth_info": {
       signer_infos: unknown[]
       fee: {
         amount: Array<{ denom: string; amount: string }>
@@ -94,10 +94,12 @@ export interface RestTxResponse {
         granter: string
       }
     }
-    signatures: string[]
+    "signatures": string[]
   }
   timestamp: string
-  events: Array<{ type: string; attributes: Array<{ key: string; value: string; index?: boolean }> }>
+  events: Array<
+    { type: string; attributes: Array<{ key: string; value: string; index?: boolean }> }
+  >
 }
 
 export interface RestTxsResponse {
@@ -132,8 +134,12 @@ export interface CommunityPoolResponse {
 
 // ============ Fetch helpers ============
 
-const fetchRace = <T>(endpoints: string[], path: string, timeout = 15000): Effect.Effect<T, Error> =>
-  Effect.gen(function* () {
+const fetchRace = <T>(
+  endpoints: string[],
+  path: string,
+  timeout = 15000,
+): Effect.Effect<T, Error> =>
+  Effect.gen(function*() {
     if (endpoints.length === 0) {
       return yield* Effect.fail(new Error("No endpoints"))
     }
@@ -148,9 +154,11 @@ const fetchRace = <T>(endpoints: string[], path: string, timeout = 15000): Effec
             endpoints.map(async (base) => {
               const url = `${base.replace(/\/$/, "")}${path}`
               const res = await fetch(url, { signal: controller.signal })
-              if (!res.ok) throw new Error(`HTTP ${res.status}`)
+              if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`)
+              }
               return res.json()
-            })
+            }),
           ),
         catch: (e) => new Error(String(e)),
       })
@@ -165,52 +173,55 @@ const fetchRace = <T>(endpoints: string[], path: string, timeout = 15000): Effec
 // Exponential backoff: 100ms, 200ms, 400ms with jitter, max 3 retries
 const retryPolicy = Schedule.intersect(
   Schedule.exponential(Duration.millis(100)),
-  Schedule.recurs(3)
+  Schedule.recurs(3),
 ).pipe(Schedule.jittered)
 
 // ============ RPC Client ============
 
 export const createRpcClient = (chain: ChainConfig) => ({
   // RPC endpoints
-  getStatus: () =>
-    fetchRace<StatusResponse>(chain.rpc, "/status").pipe(Effect.retry(retryPolicy)),
+  getStatus: () => fetchRace<StatusResponse>(chain.rpc, "/status").pipe(Effect.retry(retryPolicy)),
 
   getBlockchain: (min: number, max: number) =>
     fetchRace<BlockchainResponse>(chain.rpc, `/blockchain?minHeight=${min}&maxHeight=${max}`).pipe(
-      Effect.retry(retryPolicy)
+      Effect.retry(retryPolicy),
     ),
 
   // REST endpoints for full data
   getFullBlock: (height: number) =>
     fetchRace<RestBlock>(chain.rest, `/cosmos/base/tendermint/v1beta1/blocks/${height}`).pipe(
-      Effect.retry(retryPolicy)
+      Effect.retry(retryPolicy),
     ),
 
   getTxsByHeight: (height: number) =>
-    fetchRace<RestTxsResponse>(chain.rest, `/cosmos/tx/v1beta1/txs?query=tx.height=${height}&pagination.limit=100`).pipe(
-      Effect.retry(retryPolicy)
+    fetchRace<RestTxsResponse>(
+      chain.rest,
+      `/cosmos/tx/v1beta1/txs?query=tx.height=${height}&pagination.limit=100`,
+    ).pipe(
+      Effect.retry(retryPolicy),
     ),
 
   // Chain stats endpoints
   getStakingPool: () =>
     fetchRace<StakingPoolResponse>(chain.rest, `/cosmos/staking/v1beta1/pool`).pipe(
-      Effect.retry(retryPolicy)
+      Effect.retry(retryPolicy),
     ),
 
   getSupply: () =>
     fetchRace<SupplyResponse>(chain.rest, `/cosmos/bank/v1beta1/supply?pagination.limit=1`).pipe(
-      Effect.retry(retryPolicy)
+      Effect.retry(retryPolicy),
     ),
 
   getInflation: () =>
     fetchRace<InflationResponse>(chain.rest, `/cosmos/mint/v1beta1/inflation`).pipe(
-      Effect.retry(retryPolicy)
+      Effect.retry(retryPolicy),
     ),
 
   getCommunityPool: () =>
-    fetchRace<CommunityPoolResponse>(chain.rest, `/cosmos/distribution/v1beta1/community_pool`).pipe(
-      Effect.retry(retryPolicy)
-    ),
+    fetchRace<CommunityPoolResponse>(chain.rest, `/cosmos/distribution/v1beta1/community_pool`)
+      .pipe(
+        Effect.retry(retryPolicy),
+      ),
 })
 
 // ============ Type exports for Sync ============

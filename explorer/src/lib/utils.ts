@@ -1,8 +1,8 @@
 import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
-import type { TransitionConfig } from "svelte/transition"
-import type { HTMLAttributes } from "svelte/elements"
 import type { Snippet } from "svelte"
+import type { HTMLAttributes } from "svelte/elements"
+import type { TransitionConfig } from "svelte/transition"
+import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -12,21 +12,17 @@ export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & {
   ref?: U | null
 }
 
-export type WithoutChildren<T> = T extends { children?: unknown }
-  ? Omit<T, "children">
+export type WithoutChildren<T> = T extends { children?: unknown } ? Omit<T, "children">
   : T
 
 export type WithoutChildrenOrChild<T> = T extends { children?: unknown; child?: unknown }
   ? Omit<T, "children" | "child">
-  : T extends { children?: unknown }
-    ? Omit<T, "children">
-    : T extends { child?: unknown }
-      ? Omit<T, "child">
-      : T
+  : T extends { children?: unknown } ? Omit<T, "children">
+  : T extends { child?: unknown } ? Omit<T, "child">
+  : T
 
 // Alias for WithoutChildren (used by some components)
-export type WithoutChild<T> = T extends { child?: unknown }
-  ? Omit<T, "child">
+export type WithoutChild<T> = T extends { child?: unknown } ? Omit<T, "child">
   : T
 
 type FlyAndScaleParams = {
@@ -38,7 +34,7 @@ type FlyAndScaleParams = {
 
 export const flyAndScale = (
   node: Element,
-  params: FlyAndScaleParams = { y: -8, x: 0, start: 0.95, duration: 150 }
+  params: FlyAndScaleParams = { y: -8, x: 0, start: 0.95, duration: 150 },
 ): TransitionConfig => {
   const style = getComputedStyle(node)
   const transform = style.transform === "none" ? "" : style.transform
@@ -46,7 +42,7 @@ export const flyAndScale = (
   const scaleConversion = (
     valueA: number,
     scaleA: [number, number],
-    scaleB: [number, number]
+    scaleB: [number, number],
   ) => {
     const [minA, maxA] = scaleA
     const [minB, maxB] = scaleB
@@ -58,10 +54,12 @@ export const flyAndScale = (
   }
 
   const styleToString = (
-    style: Record<string, number | string | undefined>
+    style: Record<string, number | string | undefined>,
   ): string => {
     return Object.keys(style).reduce((str, key) => {
-      if (style[key] === undefined) return str
+      if (style[key] === undefined) {
+        return str
+      }
       return str + `${key}:${style[key]};`
     }, "")
   }

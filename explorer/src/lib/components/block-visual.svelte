@@ -71,7 +71,7 @@ function getCellColor(value: number): string {
 </svg>
 
 <style>
-  .block-visual {
-    border-radius: 2px;
-  }
+.block-visual {
+  border-radius: 2px;
+}
 </style>

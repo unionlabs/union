@@ -141,7 +141,9 @@ export interface ChainStats {
 
 async function fetchJson<T>(path: string): Promise<T> {
   const res = await fetch(`${INDEXER_URL}${path}`)
-  if (!res.ok) throw new Error(`Indexer error: ${res.status}`)
+  if (!res.ok) {
+    throw new Error(`Indexer error: ${res.status}`)
+  }
   return res.json()
 }
 
@@ -160,7 +162,9 @@ export const indexer = {
   // Blocks
   async blocks(chainId: string, limit = 50, before?: number): Promise<IndexedBlock[]> {
     const params = new URLSearchParams({ limit: String(limit) })
-    if (before !== undefined) params.set("before", String(before))
+    if (before !== undefined) {
+      params.set("before", String(before))
+    }
     const data = await fetchJson<{ blocks: IndexedBlock[] }>(`/${chainId}/blocks?${params}`)
     return data.blocks
   },
@@ -173,7 +177,9 @@ export const indexer = {
   // Transactions
   async txs(chainId: string, limit = 50, before?: number): Promise<IndexedTx[]> {
     const params = new URLSearchParams({ limit: String(limit) })
-    if (before !== undefined) params.set("before", String(before))
+    if (before !== undefined) {
+      params.set("before", String(before))
+    }
     const data = await fetchJson<{ txs: IndexedTx[] }>(`/${chainId}/txs?${params}`)
     return data.txs
   },
@@ -189,7 +195,9 @@ export const indexer = {
   },
 
   async txsByAddress(chainId: string, address: string, limit = 50): Promise<IndexedTx[]> {
-    const data = await fetchJson<{ txs: IndexedTx[] }>(`/${chainId}/address/${address}/txs?limit=${limit}`)
+    const data = await fetchJson<{ txs: IndexedTx[] }>(
+      `/${chainId}/address/${address}/txs?limit=${limit}`,
+    )
     return data.txs
   },
 
@@ -205,12 +213,16 @@ export const indexer = {
   },
 
   async dailyStats(chainId: string, days = 7): Promise<DailyStats[]> {
-    const data = await fetchJson<{ stats: DailyStats[] }>(`/${chainId}/analytics/daily?days=${days}`)
+    const data = await fetchJson<{ stats: DailyStats[] }>(
+      `/${chainId}/analytics/daily?days=${days}`,
+    )
     return data.stats
   },
 
   async hourlyStats(chainId: string, hours = 24): Promise<HourlyStats[]> {
-    const data = await fetchJson<{ stats: HourlyStats[] }>(`/${chainId}/analytics/hourly?hours=${hours}`)
+    const data = await fetchJson<{ stats: HourlyStats[] }>(
+      `/${chainId}/analytics/hourly?hours=${hours}`,
+    )
     return data.stats
   },
 
@@ -221,7 +233,9 @@ export const indexer = {
   },
 
   async chainStatsHistory(chainId: string, limit = 100): Promise<ChainStats[]> {
-    const data = await fetchJson<{ stats: ChainStats[] }>(`/${chainId}/analytics/stats/history?limit=${limit}`)
+    const data = await fetchJson<{ stats: ChainStats[] }>(
+      `/${chainId}/analytics/stats/history?limit=${limit}`,
+    )
     return data.stats
   },
 }

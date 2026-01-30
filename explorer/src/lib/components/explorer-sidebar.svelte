@@ -1,31 +1,31 @@
 <script lang="ts">
 import { dev } from "$app/environment"
-import LayoutDashboardIcon from "@lucide/svelte/icons/layout-dashboard"
-import BoxIcon from "@lucide/svelte/icons/box"
-import ArrowLeftRightIcon from "@lucide/svelte/icons/arrow-left-right"
-import ShieldIcon from "@lucide/svelte/icons/shield"
-import VoteIcon from "@lucide/svelte/icons/vote"
-import LinkIcon from "@lucide/svelte/icons/link"
-import WalletIcon from "@lucide/svelte/icons/wallet"
-import SettingsIcon from "@lucide/svelte/icons/settings"
-import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down"
-import CheckIcon from "@lucide/svelte/icons/check"
-import TwitterIcon from "@lucide/svelte/icons/twitter"
-import GithubIcon from "@lucide/svelte/icons/github"
-import GlobeIcon from "@lucide/svelte/icons/globe"
-import MessageCircleIcon from "@lucide/svelte/icons/message-circle"
-import SendIcon from "@lucide/svelte/icons/send"
-import ActivityIcon from "@lucide/svelte/icons/activity"
-import * as Sidebar from "$lib/components/ui/sidebar/index.js"
-import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js"
-import SearchCommand from "$lib/components/search-command.svelte"
-import type { ComponentProps, Component } from "svelte"
-import { page } from "$app/stores"
 import { goto } from "$app/navigation"
-import { CHAINS, type ChainConfig, type SocialLink } from "$lib/chains/config"
+import { page } from "$app/stores"
+import { cache } from "$lib/cache/promise.svelte"
+import { type ChainConfig, CHAINS, type SocialLink } from "$lib/chains/config"
+import SearchCommand from "$lib/components/search-command.svelte"
+import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js"
+import * as Sidebar from "$lib/components/ui/sidebar/index.js"
 import { addressFormat } from "$lib/stores/address-format.svelte"
 import { chainStore } from "$lib/stores/chain.svelte"
-import { cache } from "$lib/cache/promise.svelte"
+import ActivityIcon from "@lucide/svelte/icons/activity"
+import ArrowLeftRightIcon from "@lucide/svelte/icons/arrow-left-right"
+import BoxIcon from "@lucide/svelte/icons/box"
+import CheckIcon from "@lucide/svelte/icons/check"
+import ChevronsUpDownIcon from "@lucide/svelte/icons/chevrons-up-down"
+import GithubIcon from "@lucide/svelte/icons/github"
+import GlobeIcon from "@lucide/svelte/icons/globe"
+import LayoutDashboardIcon from "@lucide/svelte/icons/layout-dashboard"
+import LinkIcon from "@lucide/svelte/icons/link"
+import MessageCircleIcon from "@lucide/svelte/icons/message-circle"
+import SendIcon from "@lucide/svelte/icons/send"
+import SettingsIcon from "@lucide/svelte/icons/settings"
+import ShieldIcon from "@lucide/svelte/icons/shield"
+import TwitterIcon from "@lucide/svelte/icons/twitter"
+import VoteIcon from "@lucide/svelte/icons/vote"
+import WalletIcon from "@lucide/svelte/icons/wallet"
+import type { Component, ComponentProps } from "svelte"
 
 const socialIcons: Record<SocialLink["type"], Component> = {
   twitter: TwitterIcon,
@@ -58,7 +58,9 @@ function getUrl(path: string): string {
 // Check if nav item is active
 function isActive(path: string, pathname: string): boolean {
   const fullPath = getUrl(path)
-  if (path === "") return pathname === fullPath
+  if (path === "") {
+    return pathname === fullPath
+  }
   return pathname.startsWith(fullPath)
 }
 
@@ -67,7 +69,9 @@ const chains = Object.values(CHAINS)
 
 // Navigate to a different chain, preserving the current page path
 function selectChain(chain: ChainConfig) {
-  if (chain.universal_chain_id === chainStore.id) return
+  if (chain.universal_chain_id === chainStore.id) {
+    return
+  }
 
   // Get current path segment (e.g., /blocks, /transactions/xyz)
   const currentPath = $page.url.pathname
@@ -85,7 +89,11 @@ function selectChain(chain: ChainConfig) {
 let { ...restProps }: ComponentProps<typeof Sidebar.Root> = $props()
 </script>
 
-<Sidebar.Root collapsible="icon" {...restProps} class="border-r border-border bg-background">
+<Sidebar.Root
+  collapsible="icon"
+  {...restProps}
+  class="border-r border-border bg-background"
+>
   <Sidebar.Header class="p-2">
     <DropdownMenu.Root>
       <DropdownMenu.Trigger class="w-full">
@@ -95,13 +103,22 @@ let { ...restProps }: ComponentProps<typeof Sidebar.Root> = $props()
           </div>
           <div class="flex-1 text-left group-data-[collapsible=icon]:hidden">
             <div class="text-sm font-medium truncate">{currentChain.pretty_name}</div>
-            <div class="text-[10px] font-mono text-muted-foreground truncate">{currentChain.chain_id}</div>
+            <div class="text-[10px] font-mono text-muted-foreground truncate">
+              {currentChain.chain_id}
+            </div>
           </div>
-          <ChevronsUpDownIcon class="h-4 w-4 text-muted-foreground shrink-0 group-data-[collapsible=icon]:hidden" />
+          <ChevronsUpDownIcon
+            class="h-4 w-4 text-muted-foreground shrink-0 group-data-[collapsible=icon]:hidden"
+          />
         </div>
       </DropdownMenu.Trigger>
-      <DropdownMenu.Content class="w-[--radix-dropdown-menu-trigger-width] min-w-56" align="start">
-        <DropdownMenu.Label class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+      <DropdownMenu.Content
+        class="w-[--radix-dropdown-menu-trigger-width] min-w-56"
+        align="start"
+      >
+        <DropdownMenu.Label
+          class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground"
+        >
           Switch Chain
         </DropdownMenu.Label>
         <DropdownMenu.Separator />
@@ -123,7 +140,10 @@ let { ...restProps }: ComponentProps<typeof Sidebar.Root> = $props()
           </DropdownMenu.Item>
         {/each}
         <DropdownMenu.Separator />
-        <DropdownMenu.Item class="text-xs text-muted-foreground cursor-default" disabled>
+        <DropdownMenu.Item
+          class="text-xs text-muted-foreground cursor-default"
+          disabled
+        >
           More chains coming soon
         </DropdownMenu.Item>
       </DropdownMenu.Content>
@@ -137,7 +157,9 @@ let { ...restProps }: ComponentProps<typeof Sidebar.Root> = $props()
     </div>
 
     <Sidebar.Group>
-      <Sidebar.GroupLabel class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-3 py-2">
+      <Sidebar.GroupLabel
+        class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-3 py-2"
+      >
         Explorer
       </Sidebar.GroupLabel>
       <Sidebar.GroupContent>
@@ -146,7 +168,11 @@ let { ...restProps }: ComponentProps<typeof Sidebar.Root> = $props()
             {@const active = isActive(item.path, $page.url.pathname)}
             {@const url = getUrl(item.path)}
             <Sidebar.MenuItem>
-              <Sidebar.MenuButton tooltipContent={item.title} isActive={active} class="mx-1">
+              <Sidebar.MenuButton
+                tooltipContent={item.title}
+                isActive={active}
+                class="mx-1"
+              >
                 {#snippet child({ props })}
                   <a
                     href={url}
@@ -167,13 +193,19 @@ let { ...restProps }: ComponentProps<typeof Sidebar.Root> = $props()
     <!-- Dev Tools (only in dev mode) -->
     {#if dev}
       <Sidebar.Group>
-        <Sidebar.GroupLabel class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-3 py-2">
+        <Sidebar.GroupLabel
+          class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-3 py-2"
+        >
           Dev Tools
         </Sidebar.GroupLabel>
         <Sidebar.GroupContent>
           <Sidebar.Menu>
             <Sidebar.MenuItem>
-              <Sidebar.MenuButton tooltipContent="Indexer Health" isActive={$page.url.pathname === "/health"} class="mx-1">
+              <Sidebar.MenuButton
+                tooltipContent="Indexer Health"
+                isActive={$page.url.pathname === "/health"}
+                class="mx-1"
+              >
                 {#snippet child({ props })}
                   <a
                     href="/health"

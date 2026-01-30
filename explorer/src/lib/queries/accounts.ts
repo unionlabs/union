@@ -1,44 +1,44 @@
-import { Effect } from "effect"
 import { CosmosClient } from "$lib/services/cosmos-client"
+import { Effect } from "effect"
 
 export const fetchAccount = (address: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getAccount(address)
   })
 
 export const fetchBalances = (address: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getBalances(address)
   })
 
 export const fetchDelegations = (address: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getDelegations(address)
   })
 
 export const fetchUnbondingDelegations = (address: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getUnbondingDelegations(address)
   })
 
 export const fetchDelegatorRewards = (address: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getDelegatorTotalRewards(address)
   })
 
 export const fetchAccountTxs = (address: string, page = 1, limit = 20) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.searchTxs(`message.sender='${address}'`, page, limit)
   })
 
 export const fetchReceivedTxs = (address: string, page = 1, limit = 20) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     // Use transfer.recipient for incoming transfers
     return yield* client.searchTxs(`transfer.recipient='${address}'`, page, limit)
@@ -46,7 +46,7 @@ export const fetchReceivedTxs = (address: string, page = 1, limit = 20) =>
 
 // Fetch all transactions related to an address from multiple event types
 export const fetchAllAccountTxs = (address: string, page = 1, limit = 25) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
 
     // Query multiple event types in parallel
@@ -63,10 +63,14 @@ export const fetchAllAccountTxs = (address: string, page = 1, limit = 25) =>
       txMap.set(tx.txhash, tx)
     }
     for (const tx of coinReceivedTxs.tx_responses) {
-      if (!txMap.has(tx.txhash)) txMap.set(tx.txhash, tx)
+      if (!txMap.has(tx.txhash)) {
+        txMap.set(tx.txhash, tx)
+      }
     }
     for (const tx of coinSpentTxs.tx_responses) {
-      if (!txMap.has(tx.txhash)) txMap.set(tx.txhash, tx)
+      if (!txMap.has(tx.txhash)) {
+        txMap.set(tx.txhash, tx)
+      }
     }
 
     // Sort by height descending (most recent first)
@@ -81,8 +85,8 @@ export const fetchAllAccountTxs = (address: string, page = 1, limit = 25) =>
         total: String(allTxs.length),
       },
       // Track if any source might have more
-      hasMore: senderTxs.tx_responses.length >= limit ||
-               coinReceivedTxs.tx_responses.length >= limit ||
-               coinSpentTxs.tx_responses.length >= limit,
+      hasMore: senderTxs.tx_responses.length >= limit
+        || coinReceivedTxs.tx_responses.length >= limit
+        || coinSpentTxs.tx_responses.length >= limit,
     }
   })

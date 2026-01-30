@@ -39,13 +39,17 @@ function getMsgIndex(attrs: Array<{ key: string; value: string }>): number {
 function parseAmountDenom(amountStr: string): { amount: string; denom: string } | null {
   // Match number followed by denom (which can include /, -, letters, numbers)
   const match = amountStr.match(/^(\d+)(.+)$/)
-  if (!match) return null
+  if (!match) {
+    return null
+  }
   return { amount: match[1], denom: match[2] }
 }
 
 // Parse comma-separated amounts like "1000uatom,500uosmo"
 function parseAmounts(amountStr: string): Array<{ amount: string; denom: string }> {
-  if (!amountStr) return []
+  if (!amountStr) {
+    return []
+  }
   return amountStr
     .split(",")
     .map((s) => parseAmountDenom(s.trim()))
@@ -142,9 +146,12 @@ export function extractTokenMovements(events: TxEvent[]): TokenMovementSummary {
     // CW20 token transfers via wasm events
     if (event.type === "wasm" || event.type.startsWith("wasm-")) {
       const action = getAttr(event.attributes, "action")
-      const contractAddr = getAttr(event.attributes, "_contract_address") || getAttr(event.attributes, "contract_address")
+      const contractAddr = getAttr(event.attributes, "_contract_address")
+        || getAttr(event.attributes, "contract_address")
 
-      if (!contractAddr) continue
+      if (!contractAddr) {
+        continue
+      }
 
       // CW20 transfer
       if (action === "transfer" || action === "transfer_from") {
@@ -241,7 +248,9 @@ export function extractTokenMovements(events: TxEvent[]): TokenMovementSummary {
   // Group by message
   const perMessage = new Map<number, TokenMovement[]>()
   for (const m of movements) {
-    if (!perMessage.has(m.msgIndex)) perMessage.set(m.msgIndex, [])
+    if (!perMessage.has(m.msgIndex)) {
+      perMessage.set(m.msgIndex, [])
+    }
     perMessage.get(m.msgIndex)!.push(m)
   }
 

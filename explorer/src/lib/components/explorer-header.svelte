@@ -1,9 +1,9 @@
 <script lang="ts">
-import * as Sidebar from "$lib/components/ui/sidebar/index.js"
-import { setMode } from "mode-watcher"
-import Sun from "@lucide/svelte/icons/sun"
-import Moon from "@lucide/svelte/icons/moon"
 import { browser } from "$app/environment"
+import * as Sidebar from "$lib/components/ui/sidebar/index.js"
+import Moon from "@lucide/svelte/icons/moon"
+import Sun from "@lucide/svelte/icons/sun"
+import { setMode } from "mode-watcher"
 
 let { title = "Explorer" }: { title?: string } = $props()
 
@@ -43,7 +43,9 @@ function toggleMode() {
       <!-- Status -->
       <div class="flex items-center gap-2">
         <div class="size-1.5 bg-green-500"></div>
-        <span class="text-[10px] font-mono text-muted-foreground uppercase tracking-wider hidden sm:inline">Live</span>
+        <span
+          class="text-[10px] font-mono text-muted-foreground uppercase tracking-wider hidden sm:inline"
+        >Live</span>
       </div>
 
       <div class="w-px h-4 bg-border"></div>

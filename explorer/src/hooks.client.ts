@@ -1,6 +1,6 @@
 // Initialize runtime on client startup
 // This ensures the Effect runtime is ready before any pages load
-import { getCurrentRuntime, getCurrentChain } from "$lib/runtime"
+import { getCurrentChain, getCurrentRuntime } from "$lib/runtime"
 
 // Log runtime initialization
 const chain = getCurrentChain()

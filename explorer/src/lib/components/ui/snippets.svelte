@@ -1,25 +1,37 @@
-<script lang="ts" module>
-import type { Component } from "svelte"
-import { copyToClipboard } from "$lib/utils/clipboard"
-import Copy from "@lucide/svelte/icons/copy"
-import Check from "@lucide/svelte/icons/check"
-import { Skeleton } from "$lib/components/ui/skeleton/index.js"
+<script
+  lang="ts"
+  module
+>
 import CornerMarks from "$lib/components/corner-marks.svelte"
+import { Skeleton } from "$lib/components/ui/skeleton/index.js"
+import { copyToClipboard } from "$lib/utils/clipboard"
+import Check from "@lucide/svelte/icons/check"
+import Copy from "@lucide/svelte/icons/copy"
+import type { Component } from "svelte"
 
 export { dataRow, sectionHeader, statCard, statCardLoading }
 </script>
 
-{#snippet dataRow(label: string, value: string | number | undefined | null, options?: { mono?: boolean, link?: string, copy?: boolean })}
+{#snippet dataRow(
+  label: string,
+  value: string | number | undefined | null,
+  options?: { mono?: boolean; link?: string; copy?: boolean },
+)}
   <div class="flex items-center justify-between py-2.5 px-4 hover:bg-muted/30 group border-b border-border last:border-b-0">
     <span class="text-xs font-mono uppercase tracking-wider text-muted-foreground">{label}</span>
     <div class="flex items-center gap-2 min-w-0 flex-1 justify-end">
       {#if value !== undefined && value !== null && value !== ""}
         {#if options?.link}
-          <a href={options.link} class="font-mono text-sm truncate hover:underline max-w-[400px]">{value}</a>
+          <a
+            href={options.link}
+            class="font-mono text-sm truncate hover:underline max-w-[400px]"
+          >{value}</a>
         {:else}
-          <span class="text-sm truncate max-w-[400px] {options?.mono ? 'font-mono' : ''}">{value}</span>
+          <span class="text-sm truncate max-w-[400px] {options?.mono ? 'font-mono' : ''}">{
+            value
+          }</span>
         {/if}
-        {#if options?.copy && typeof value === 'string'}
+        {#if options?.copy && typeof value === "string"}
           {@const copyValue = value}
           <button
             onclick={(e) => {
@@ -48,7 +60,10 @@ export { dataRow, sectionHeader, statCard, statCardLoading }
       <span class="text-[10px] font-mono text-muted-foreground">{num}</span>
     {/if}
     {#if icon}
-      <svelte:component this={icon} class="h-4 w-4 text-muted-foreground" />
+      <svelte:component
+        this={icon}
+        class="h-4 w-4 text-muted-foreground"
+      />
     {/if}
     <span class="text-xs font-medium uppercase tracking-wider">{title}</span>
     {#if count !== undefined}
@@ -61,8 +76,13 @@ export { dataRow, sectionHeader, statCard, statCardLoading }
   <div class="relative border border-border p-4 hover:bg-muted/30 transition-colors">
     <CornerMarks />
     <div class="flex items-start justify-between mb-3">
-      <svelte:component this={icon} class="h-4 w-4 text-muted-foreground" />
-      <span class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">{label}</span>
+      <svelte:component
+        this={icon}
+        class="h-4 w-4 text-muted-foreground"
+      />
+      <span class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">{
+        label
+      }</span>
     </div>
     <div class="text-2xl font-mono font-bold">{value}</div>
     {#if sub}

@@ -57,14 +57,22 @@ export function extractIBCTrace(events: Event[]): IBCTrace | null {
     if (type === "send_packet" || type === "wasm-packet_send") {
       packets.push({
         type: "send",
-        sequence: getAttr(event.attributes, "packet_sequence") ?? getAttr(event.attributes, "sequence") ?? "",
-        sourcePort: getAttr(event.attributes, "packet_src_port") ?? getAttr(event.attributes, "source_port") ?? "",
-        sourceChannel: getAttr(event.attributes, "packet_src_channel") ?? getAttr(event.attributes, "source_channel") ?? getAttr(event.attributes, "channel_id") ?? "",
-        destPort: getAttr(event.attributes, "packet_dst_port") ?? getAttr(event.attributes, "dest_port") ?? "",
-        destChannel: getAttr(event.attributes, "packet_dst_channel") ?? getAttr(event.attributes, "dest_channel") ?? "",
+        sequence: getAttr(event.attributes, "packet_sequence")
+          ?? getAttr(event.attributes, "sequence") ?? "",
+        sourcePort: getAttr(event.attributes, "packet_src_port")
+          ?? getAttr(event.attributes, "source_port") ?? "",
+        sourceChannel: getAttr(event.attributes, "packet_src_channel")
+          ?? getAttr(event.attributes, "source_channel") ?? getAttr(event.attributes, "channel_id")
+          ?? "",
+        destPort: getAttr(event.attributes, "packet_dst_port")
+          ?? getAttr(event.attributes, "dest_port") ?? "",
+        destChannel: getAttr(event.attributes, "packet_dst_channel")
+          ?? getAttr(event.attributes, "dest_channel") ?? "",
         data: getAttr(event.attributes, "packet_data") ?? getAttr(event.attributes, "data"),
-        timeoutHeight: getAttr(event.attributes, "packet_timeout_height") ?? getAttr(event.attributes, "timeout_height"),
-        timeoutTimestamp: getAttr(event.attributes, "packet_timeout_timestamp") ?? getAttr(event.attributes, "timeout_timestamp"),
+        timeoutHeight: getAttr(event.attributes, "packet_timeout_height")
+          ?? getAttr(event.attributes, "timeout_height"),
+        timeoutTimestamp: getAttr(event.attributes, "packet_timeout_timestamp")
+          ?? getAttr(event.attributes, "timeout_timestamp"),
       })
     }
 
@@ -72,11 +80,17 @@ export function extractIBCTrace(events: Event[]): IBCTrace | null {
     if (type === "recv_packet" || type === "wasm-packet_recv") {
       packets.push({
         type: "recv",
-        sequence: getAttr(event.attributes, "packet_sequence") ?? getAttr(event.attributes, "sequence") ?? "",
-        sourcePort: getAttr(event.attributes, "packet_src_port") ?? getAttr(event.attributes, "source_port") ?? "",
-        sourceChannel: getAttr(event.attributes, "packet_src_channel") ?? getAttr(event.attributes, "source_channel") ?? getAttr(event.attributes, "channel_id") ?? "",
-        destPort: getAttr(event.attributes, "packet_dst_port") ?? getAttr(event.attributes, "dest_port") ?? "",
-        destChannel: getAttr(event.attributes, "packet_dst_channel") ?? getAttr(event.attributes, "dest_channel") ?? "",
+        sequence: getAttr(event.attributes, "packet_sequence")
+          ?? getAttr(event.attributes, "sequence") ?? "",
+        sourcePort: getAttr(event.attributes, "packet_src_port")
+          ?? getAttr(event.attributes, "source_port") ?? "",
+        sourceChannel: getAttr(event.attributes, "packet_src_channel")
+          ?? getAttr(event.attributes, "source_channel") ?? getAttr(event.attributes, "channel_id")
+          ?? "",
+        destPort: getAttr(event.attributes, "packet_dst_port")
+          ?? getAttr(event.attributes, "dest_port") ?? "",
+        destChannel: getAttr(event.attributes, "packet_dst_channel")
+          ?? getAttr(event.attributes, "dest_channel") ?? "",
         data: getAttr(event.attributes, "packet_data") ?? getAttr(event.attributes, "data"),
       })
     }
@@ -85,11 +99,17 @@ export function extractIBCTrace(events: Event[]): IBCTrace | null {
     if (type === "acknowledge_packet" || type === "wasm-packet_ack") {
       packets.push({
         type: "ack",
-        sequence: getAttr(event.attributes, "packet_sequence") ?? getAttr(event.attributes, "sequence") ?? "",
-        sourcePort: getAttr(event.attributes, "packet_src_port") ?? getAttr(event.attributes, "source_port") ?? "",
-        sourceChannel: getAttr(event.attributes, "packet_src_channel") ?? getAttr(event.attributes, "source_channel") ?? getAttr(event.attributes, "channel_id") ?? "",
-        destPort: getAttr(event.attributes, "packet_dst_port") ?? getAttr(event.attributes, "dest_port") ?? "",
-        destChannel: getAttr(event.attributes, "packet_dst_channel") ?? getAttr(event.attributes, "dest_channel") ?? "",
+        sequence: getAttr(event.attributes, "packet_sequence")
+          ?? getAttr(event.attributes, "sequence") ?? "",
+        sourcePort: getAttr(event.attributes, "packet_src_port")
+          ?? getAttr(event.attributes, "source_port") ?? "",
+        sourceChannel: getAttr(event.attributes, "packet_src_channel")
+          ?? getAttr(event.attributes, "source_channel") ?? getAttr(event.attributes, "channel_id")
+          ?? "",
+        destPort: getAttr(event.attributes, "packet_dst_port")
+          ?? getAttr(event.attributes, "dest_port") ?? "",
+        destChannel: getAttr(event.attributes, "packet_dst_channel")
+          ?? getAttr(event.attributes, "dest_channel") ?? "",
       })
     }
 
@@ -97,11 +117,17 @@ export function extractIBCTrace(events: Event[]): IBCTrace | null {
     if (type === "timeout_packet" || type === "wasm-packet_timeout") {
       packets.push({
         type: "timeout",
-        sequence: getAttr(event.attributes, "packet_sequence") ?? getAttr(event.attributes, "sequence") ?? "",
-        sourcePort: getAttr(event.attributes, "packet_src_port") ?? getAttr(event.attributes, "source_port") ?? "",
-        sourceChannel: getAttr(event.attributes, "packet_src_channel") ?? getAttr(event.attributes, "source_channel") ?? getAttr(event.attributes, "channel_id") ?? "",
-        destPort: getAttr(event.attributes, "packet_dst_port") ?? getAttr(event.attributes, "dest_port") ?? "",
-        destChannel: getAttr(event.attributes, "packet_dst_channel") ?? getAttr(event.attributes, "dest_channel") ?? "",
+        sequence: getAttr(event.attributes, "packet_sequence")
+          ?? getAttr(event.attributes, "sequence") ?? "",
+        sourcePort: getAttr(event.attributes, "packet_src_port")
+          ?? getAttr(event.attributes, "source_port") ?? "",
+        sourceChannel: getAttr(event.attributes, "packet_src_channel")
+          ?? getAttr(event.attributes, "source_channel") ?? getAttr(event.attributes, "channel_id")
+          ?? "",
+        destPort: getAttr(event.attributes, "packet_dst_port")
+          ?? getAttr(event.attributes, "dest_port") ?? "",
+        destChannel: getAttr(event.attributes, "packet_dst_channel")
+          ?? getAttr(event.attributes, "dest_channel") ?? "",
       })
     }
 
@@ -119,14 +145,16 @@ export function extractIBCTrace(events: Event[]): IBCTrace | null {
     if (type === "denomination_trace") {
       denomTrace = {
         path: getAttr(event.attributes, "trace_hash") ?? getAttr(event.attributes, "path") ?? "",
-        baseDenom: getAttr(event.attributes, "denom") ?? getAttr(event.attributes, "base_denom") ?? "",
+        baseDenom: getAttr(event.attributes, "denom") ?? getAttr(event.attributes, "base_denom")
+          ?? "",
       }
     }
 
     // Write acknowledgement (standard or wasm)
     if (type === "write_acknowledgement" || type === "wasm-write_ack") {
       writeAck = {
-        packetAck: getAttr(event.attributes, "packet_ack") ?? getAttr(event.attributes, "acknowledgement") ?? "",
+        packetAck: getAttr(event.attributes, "packet_ack")
+          ?? getAttr(event.attributes, "acknowledgement") ?? "",
       }
     }
   }
@@ -149,10 +177,14 @@ export function extractIBCTrace(events: Event[]): IBCTrace | null {
  */
 export function getPacketTypeName(type: IBCPacketEvent["type"]): string {
   switch (type) {
-    case "send": return "Packet Sent"
-    case "recv": return "Packet Received"
-    case "ack": return "Packet Acknowledged"
-    case "timeout": return "Packet Timeout"
+    case "send":
+      return "Packet Sent"
+    case "recv":
+      return "Packet Received"
+    case "ack":
+      return "Packet Acknowledged"
+    case "timeout":
+      return "Packet Timeout"
   }
 }
 
@@ -161,22 +193,32 @@ export function getPacketTypeName(type: IBCPacketEvent["type"]): string {
  */
 export function getPacketTypeLabel(type: IBCPacketEvent["type"]): string {
   switch (type) {
-    case "send": return "SEND"
-    case "recv": return "RECV"
-    case "ack": return "ACK"
-    case "timeout": return "TIMEOUT"
+    case "send":
+      return "SEND"
+    case "recv":
+      return "RECV"
+    case "ack":
+      return "ACK"
+    case "timeout":
+      return "TIMEOUT"
   }
 }
 
 /**
  * Get status color for packet type
  */
-export function getPacketTypeColor(type: IBCPacketEvent["type"]): "success" | "default" | "destructive" {
+export function getPacketTypeColor(
+  type: IBCPacketEvent["type"],
+): "success" | "default" | "destructive" {
   switch (type) {
-    case "send": return "default"
-    case "recv": return "success"
-    case "ack": return "success"
-    case "timeout": return "destructive"
+    case "send":
+      return "default"
+    case "recv":
+      return "success"
+    case "ack":
+      return "success"
+    case "timeout":
+      return "destructive"
   }
 }
 
@@ -184,7 +226,9 @@ export function getPacketTypeColor(type: IBCPacketEvent["type"]): "success" | "d
  * Parse packet data JSON if possible
  */
 export function parsePacketData(data: string | undefined): Record<string, unknown> | null {
-  if (!data) return null
+  if (!data) {
+    return null
+  }
   try {
     return JSON.parse(data)
   } catch {

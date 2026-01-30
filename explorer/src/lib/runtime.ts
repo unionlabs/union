@@ -1,8 +1,12 @@
 import { browser } from "$app/environment"
-import { Effect, Layer, Logger, LogLevel } from "effect"
-import { CosmosClient, CosmosClientLive, type CosmosClientConfig } from "$lib/services/cosmos-client"
-import { getChain, DEFAULT_CHAIN, type ChainConfig } from "$lib/chains/config"
+import { type ChainConfig, DEFAULT_CHAIN, getChain } from "$lib/chains/config"
+import {
+  CosmosClient,
+  type CosmosClientConfig,
+  CosmosClientLive,
+} from "$lib/services/cosmos-client"
 import { chainStore } from "$lib/stores/chain.svelte"
+import { Effect, Layer, Logger, LogLevel } from "effect"
 
 // Proxy endpoints for browser requests to avoid CORS
 const REST_PROXY = "/api/cosmos"
@@ -28,7 +32,7 @@ export const createChainRuntime = (universalChainId: string) => {
     rpcEndpoint,
     // Additional RPC endpoints for racing (server-side only)
     ...(browser ? {} : { rpcEndpoints: chain.rpc.slice(1) }),
-    chainName: universalChainId,  // Pass universal chain ID for proxy header
+    chainName: universalChainId, // Pass universal chain ID for proxy header
   }
 
   const MainLayer = CosmosClientLive(config).pipe(

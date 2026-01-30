@@ -1,5 +1,5 @@
-import { redirect } from "@sveltejs/kit"
 import { CHAINS, DEFAULT_CHAIN } from "$lib/chains/config"
+import { redirect } from "@sveltejs/kit"
 import type { PageLoad } from "./$types"
 
 export const load: PageLoad = async () => {

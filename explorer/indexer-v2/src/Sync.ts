@@ -1,6 +1,6 @@
-import { Effect, Context, Layer, Ref, Duration } from "effect"
-import { Database, type Block, type Transaction } from "./Db.js"
-import { IndexerConfigService, CHAINS, type ChainConfig } from "./config.js"
+import { Context, Duration, Effect, Layer, Ref } from "effect"
+import { type ChainConfig, CHAINS, IndexerConfigService } from "./config.js"
+import { type Block, Database, type Transaction } from "./Db.js"
 import { createRpcClient, type RestBlock, type RestTxResponse } from "./Rpc.js"
 
 // ============ Sync State ============
@@ -72,7 +72,7 @@ function restTxToTransaction(chainId: string, tx: RestTxResponse, index: number)
 
 export const SyncLive = Layer.effect(
   Sync,
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const db = yield* Database
     const config = yield* IndexerConfigService
 
@@ -98,17 +98,23 @@ export const SyncLive = Layer.effect(
       Ref.update(stateRef, (s) => ({ ...s, [chainId]: { ...s[chainId], ...update } }))
 
     // Fetch full block with all txs - logs errors but continues (resilient)
-    const fetchFullBlockWithTxs = (rpc: ReturnType<typeof createRpcClient>, chainId: string, height: number) =>
-      Effect.gen(function* () {
+    const fetchFullBlockWithTxs = (
+      rpc: ReturnType<typeof createRpcClient>,
+      chainId: string,
+      height: number,
+    ) =>
+      Effect.gen(function*() {
         const restBlock = yield* rpc.getFullBlock(height).pipe(
           Effect.catchAll((e) =>
             Effect.log(`[${chainId}] Block ${height} fetch failed: ${e}`).pipe(
-              Effect.as(null)
+              Effect.as(null),
             )
-          )
+          ),
         )
 
-        if (!restBlock) return { block: null, txs: [] }
+        if (!restBlock) {
+          return { block: null, txs: [] }
+        }
 
         const block = restBlockToBlock(chainId, restBlock)
         const txs: Transaction[] = []
@@ -117,9 +123,9 @@ export const SyncLive = Layer.effect(
           const txResponse = yield* rpc.getTxsByHeight(height).pipe(
             Effect.catchAll((e) =>
               Effect.log(`[${chainId}] Txs for block ${height} fetch failed: ${e}`).pipe(
-                Effect.as({ tx_responses: [] })
+                Effect.as({ tx_responses: [] }),
               )
-            )
+            ),
           )
 
           for (let i = 0; i < (txResponse.tx_responses?.length ?? 0); i++) {
@@ -132,10 +138,14 @@ export const SyncLive = Layer.effect(
       })
 
     // Shared batch fetch logic
-    const fetchBlockBatch = (rpc: ReturnType<typeof createRpcClient>, chainId: string, heights: number[]) =>
+    const fetchBlockBatch = (
+      rpc: ReturnType<typeof createRpcClient>,
+      chainId: string,
+      heights: number[],
+    ) =>
       Effect.all(
         heights.map((h) => fetchFullBlockWithTxs(rpc, chainId, h)),
-        { concurrency: 5 }
+        { concurrency: 5 },
       ).pipe(
         Effect.map((results) => {
           const blocks: Block[] = []
@@ -147,12 +157,12 @@ export const SyncLive = Layer.effect(
             }
           }
           return { blocks, txs }
-        })
+        }),
       )
 
     // Backfill chain
     const backfillChain = (chain: ChainConfig) =>
-      Effect.gen(function* () {
+      Effect.gen(function*() {
         yield* updateState(chain.id, { status: "backfilling" })
         const rpc = createRpcClient(chain)
 
@@ -164,7 +174,11 @@ export const SyncLive = Layer.effect(
         yield* updateState(chain.id, { latestHeight })
 
         if (currentMax >= latestHeight - 10) {
-          yield* updateState(chain.id, { status: "synced", backfillProgress: 100, indexedHeight: currentMax })
+          yield* updateState(chain.id, {
+            status: "synced",
+            backfillProgress: 100,
+            indexedHeight: currentMax,
+          })
           yield* Effect.log(`[${chain.id}] Already synced`)
           return
         }
@@ -213,16 +227,18 @@ export const SyncLive = Layer.effect(
       }).pipe(
         Effect.catchAll((e) =>
           updateState(chain.id, { status: "error", lastError: String(e) }).pipe(
-            Effect.tap(() => Effect.log(`[${chain.id}] Error: ${e}`))
+            Effect.tap(() => Effect.log(`[${chain.id}] Error: ${e}`)),
           )
-        )
+        ),
       )
 
     // Sync chain (incremental)
     const syncChain = (chain: ChainConfig) =>
-      Effect.gen(function* () {
+      Effect.gen(function*() {
         const state = (yield* Ref.get(stateRef))[chain.id]
-        if (state.status === "backfilling") return
+        if (state.status === "backfilling") {
+          return
+        }
 
         yield* updateState(chain.id, { status: "syncing" })
         const rpc = createRpcClient(chain)
@@ -234,7 +250,11 @@ export const SyncLive = Layer.effect(
         yield* updateState(chain.id, { latestHeight })
 
         if (currentMax >= latestHeight) {
-          yield* updateState(chain.id, { status: "synced", indexedHeight: currentMax, lastSync: new Date().toISOString() })
+          yield* updateState(chain.id, {
+            status: "synced",
+            indexedHeight: currentMax,
+            lastSync: new Date().toISOString(),
+          })
           return
         }
 
@@ -265,26 +285,27 @@ export const SyncLive = Layer.effect(
           lastSync: new Date().toISOString(),
         })
       }).pipe(
-        Effect.catchAll((e) =>
-          updateState(chain.id, { status: "error", lastError: String(e) })
-        )
+        Effect.catchAll((e) => updateState(chain.id, { status: "error", lastError: String(e) })),
       )
 
     // Fetch and store chain stats (supply, staking)
     const fetchChainStats = (chain: ChainConfig) =>
-      Effect.gen(function* () {
+      Effect.gen(function*() {
         const rpc = createRpcClient(chain)
 
         // Fetch all stats in parallel
-        const [poolResult, supplyResult, inflationResult, communityPoolResult, statusResult] = yield* Effect.all([
-          rpc.getStakingPool().pipe(Effect.catchAll(() => Effect.succeed(null))),
-          rpc.getSupply().pipe(Effect.catchAll(() => Effect.succeed(null))),
-          rpc.getInflation().pipe(Effect.catchAll(() => Effect.succeed(null))),
-          rpc.getCommunityPool().pipe(Effect.catchAll(() => Effect.succeed(null))),
-          rpc.getStatus().pipe(Effect.catchAll(() => Effect.succeed(null))),
-        ])
+        const [poolResult, supplyResult, inflationResult, communityPoolResult, statusResult] =
+          yield* Effect.all([
+            rpc.getStakingPool().pipe(Effect.catchAll(() => Effect.succeed(null))),
+            rpc.getSupply().pipe(Effect.catchAll(() => Effect.succeed(null))),
+            rpc.getInflation().pipe(Effect.catchAll(() => Effect.succeed(null))),
+            rpc.getCommunityPool().pipe(Effect.catchAll(() => Effect.succeed(null))),
+            rpc.getStatus().pipe(Effect.catchAll(() => Effect.succeed(null))),
+          ])
 
-        if (!statusResult || !poolResult) return
+        if (!statusResult || !poolResult) {
+          return
+        }
 
         const height = parseInt(statusResult.result.sync_info.latest_block_height)
         const totalSupply = supplyResult?.supply[0]?.amount ?? "0"
@@ -301,7 +322,7 @@ export const SyncLive = Layer.effect(
           community_pool: communityPool,
         })
       }).pipe(
-        Effect.catchAll((e) => Effect.log(`[${chain.id}] Stats error: ${e}`))
+        Effect.catchAll((e) => Effect.log(`[${chain.id}] Stats error: ${e}`)),
       )
 
     return {
@@ -310,14 +331,15 @@ export const SyncLive = Layer.effect(
       getChainState: (chainId) => Ref.get(stateRef).pipe(Effect.map((s) => s[chainId] || null)),
 
       start: () =>
-        Effect.gen(function* () {
+        Effect.gen(function*() {
           // Start chain stats polling immediately (runs every 30 seconds)
           yield* Effect.log("Starting chain stats polling...")
-          const statsPoll = Effect.all(CHAINS.map(fetchChainStats), { concurrency: "unbounded" }).pipe(
-            Effect.catchAll((e) => Effect.log(`Stats poll error: ${e}`))
-          )
+          const statsPoll = Effect.all(CHAINS.map(fetchChainStats), { concurrency: "unbounded" })
+            .pipe(
+              Effect.catchAll((e) => Effect.log(`Stats poll error: ${e}`)),
+            )
           yield* Effect.forever(statsPoll.pipe(Effect.delay(Duration.millis(30_000)))).pipe(
-            Effect.forkDaemon
+            Effect.forkDaemon,
           )
 
           // Run initial stats fetch immediately
@@ -325,15 +347,15 @@ export const SyncLive = Layer.effect(
 
           // For each chain: backfill then start its own sync loop
           const runChain = (chain: ChainConfig) =>
-            Effect.gen(function* () {
+            Effect.gen(function*() {
               yield* backfillChain(chain)
               yield* Effect.log(`[${chain.id}] Starting sync loop...`)
               // Start sync loop for this chain
               yield* Effect.forever(
                 syncChain(chain).pipe(
                   Effect.catchAll((e) => Effect.log(`[${chain.id}] Sync error: ${e}`)),
-                  Effect.delay(Duration.millis(config.pollInterval))
-                )
+                  Effect.delay(Duration.millis(config.pollInterval)),
+                ),
               )
             }).pipe(Effect.forkDaemon)
 
@@ -341,5 +363,5 @@ export const SyncLive = Layer.effect(
           yield* Effect.all(CHAINS.map(runChain), { concurrency: "unbounded" })
         }),
     }
-  })
+  }),
 )

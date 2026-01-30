@@ -13,8 +13,8 @@ export interface SocialLink {
 
 export interface ChainConfig {
   chain_name: string
-  chain_id: string              // Native chain ID (e.g., "union-1")
-  universal_chain_id: string    // UCS04 universal chain ID (e.g., "union.union-1")
+  chain_id: string // Native chain ID (e.g., "union-1")
+  universal_chain_id: string // UCS04 universal chain ID (e.g., "union.union-1")
   pretty_name: string
   api: string[]
   rpc: string[]

@@ -1,38 +1,56 @@
-import type { Coin } from "$lib/types/cosmos"
 import type { ChainAsset } from "$lib/chains/config"
+import type { Coin } from "$lib/types/cosmos"
 
 export const truncateHash = (hash: string | null | undefined, len = 8): string => {
-  if (!hash) return "-"
-  if (hash.length <= len * 2 + 3) return hash
+  if (!hash) {
+    return "-"
+  }
+  if (hash.length <= len * 2 + 3) {
+    return hash
+  }
   return `${hash.slice(0, len)}...${hash.slice(-len)}`
 }
 
 export const truncateAddress = (address: string | null | undefined, len = 8): string => {
-  if (!address) return "-"
-  if (address.length <= len * 2 + 3) return address
+  if (!address) {
+    return "-"
+  }
+  if (address.length <= len * 2 + 3) {
+    return address
+  }
   return `${address.slice(0, len)}...${address.slice(-len)}`
 }
 
 export const formatTime = (timestamp: string | null | undefined): string => {
-  if (!timestamp) return "-"
+  if (!timestamp) {
+    return "-"
+  }
   const d = new Date(timestamp)
   return d.toLocaleString()
 }
 
 export const formatTimeAgo = (timestamp: string | null | undefined): string => {
-  if (!timestamp) return "-"
+  if (!timestamp) {
+    return "-"
+  }
   const d = new Date(timestamp)
   const now = new Date()
   const diff = now.getTime() - d.getTime()
 
   const seconds = Math.floor(diff / 1000)
-  if (seconds < 60) return `${seconds}s ago`
+  if (seconds < 60) {
+    return `${seconds}s ago`
+  }
 
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
+  if (minutes < 60) {
+    return `${minutes}m ago`
+  }
 
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
+  if (hours < 24) {
+    return `${hours}h ago`
+  }
 
   const days = Math.floor(hours / 24)
   return `${days}d ago`
@@ -40,7 +58,9 @@ export const formatTimeAgo = (timestamp: string | null | undefined): string => {
 
 export const formatNumber = (num: string | number | bigint, decimals = 2): string => {
   const n = typeof num === "bigint" ? Number(num) : Number(num)
-  if (isNaN(n)) return "-"
+  if (isNaN(n)) {
+    return "-"
+  }
 
   if (n >= 1_000_000_000_000) {
     return `${(n / 1_000_000_000_000).toFixed(decimals)}T`
@@ -146,14 +166,18 @@ export const formatCoin = (coin: Coin, assets: ChainAsset[]): string => {
 
 export const formatPercent = (value: string | number): string => {
   const num = Number(value)
-  if (isNaN(num)) return "-"
+  if (isNaN(num)) {
+    return "-"
+  }
   return `${(num * 100).toFixed(2)}%`
 }
 
 export const formatVotingPower = (tokens: string, totalBonded: string): string => {
   const power = BigInt(tokens)
   const total = BigInt(totalBonded)
-  if (total === 0n) return "0%"
+  if (total === 0n) {
+    return "0%"
+  }
   const percent = (power * 10000n) / total
   return `${(Number(percent) / 100).toFixed(2)}%`
 }

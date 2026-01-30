@@ -1,39 +1,39 @@
-import { Effect } from "effect"
 import { CosmosClient } from "$lib/services/cosmos-client"
+import { Effect } from "effect"
 
 export const fetchStakingParams = () =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getStakingParams()
   })
 
 export const fetchSlashingParams = () =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getSlashingParams()
   })
 
 export const fetchDistributionParams = () =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getDistributionParams()
   })
 
 export const fetchGovParams = () =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getGovParams()
   })
 
 export const fetchMintParams = () =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getMintParams()
   })
 
 // Fetch all params at once
 export const fetchAllParams = () =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
 
     // Fetch all in parallel

@@ -143,7 +143,7 @@ export async function fetchPacketHashByTxHash(txHash: string): Promise<string | 
   try {
     const data = await graphqlFetch<{ v2_packets: { packet_hash: string }[] }>(
       PACKET_HASH_BY_TX_QUERY,
-      { tx_hash: txHash }
+      { tx_hash: txHash },
     )
     return data.v2_packets[0]?.packet_hash ?? null
   } catch {
@@ -158,7 +158,7 @@ export async function fetchPacketDetails(packetHash: string): Promise<PacketDeta
   try {
     const data = await graphqlFetch<{ v2_packets: PacketDetails[] }>(
       PACKET_DETAILS_QUERY,
-      { packet_hash: packetHash }
+      { packet_hash: packetHash },
     )
     return data.v2_packets[0] ?? null
   } catch {
@@ -171,6 +171,8 @@ export async function fetchPacketDetails(packetHash: string): Promise<PacketDeta
  */
 export async function fetchPacketDetailsByTxHash(txHash: string): Promise<PacketDetails | null> {
   const packetHash = await fetchPacketHashByTxHash(txHash)
-  if (!packetHash) return null
+  if (!packetHash) {
+    return null
+  }
   return fetchPacketDetails(packetHash)
 }

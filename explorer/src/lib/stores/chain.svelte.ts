@@ -1,13 +1,17 @@
 import { browser } from "$app/environment"
-import { CHAINS, DEFAULT_CHAIN, type ChainConfig } from "$lib/chains/config"
+import { type ChainConfig, CHAINS, DEFAULT_CHAIN } from "$lib/chains/config"
 
 const STORAGE_KEY = "selected-chain"
 
 // Get initial value from localStorage or default
 function getInitialChain(): string {
-  if (!browser) return DEFAULT_CHAIN
+  if (!browser) {
+    return DEFAULT_CHAIN
+  }
   const stored = localStorage.getItem(STORAGE_KEY)
-  if (stored && CHAINS[stored]) return stored
+  if (stored && CHAINS[stored]) {
+    return stored
+  }
   return DEFAULT_CHAIN
 }
 
@@ -26,7 +30,9 @@ export const chainStore = {
     return CHAINS[universalChainId] ?? CHAINS[DEFAULT_CHAIN]
   },
   set(id: string) {
-    if (!CHAINS[id]) return
+    if (!CHAINS[id]) {
+      return
+    }
     universalChainId = id
     if (browser) {
       localStorage.setItem(STORAGE_KEY, id)

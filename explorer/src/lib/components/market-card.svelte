@@ -1,10 +1,10 @@
 <script lang="ts">
-import { onMount } from "svelte"
-import { Skeleton } from "$lib/components/ui/skeleton/index.js"
-import TrendingUpIcon from "@lucide/svelte/icons/trending-up"
-import TrendingDownIcon from "@lucide/svelte/icons/trending-down"
 import CornerMarks from "$lib/components/corner-marks.svelte"
+import { Skeleton } from "$lib/components/ui/skeleton/index.js"
 import { chainStore } from "$lib/stores/chain.svelte"
+import TrendingDownIcon from "@lucide/svelte/icons/trending-down"
+import TrendingUpIcon from "@lucide/svelte/icons/trending-up"
+import { onMount } from "svelte"
 
 interface PriceData {
   current_price: number
@@ -52,10 +52,16 @@ const RANGES = [
 function getCachedData(id: string, range: string, ignoreExpiry = false): PriceData | null {
   try {
     const cached = localStorage.getItem(`${CACHE_KEY}-${id}-${range}`)
-    if (!cached) return null
+    if (!cached) {
+      return null
+    }
     const parsed: CachedData = JSON.parse(cached)
-    if (!ignoreExpiry && Date.now() - parsed.timestamp > CACHE_TTL) return null
-    if (parsed.coinId !== id) return null
+    if (!ignoreExpiry && Date.now() - parsed.timestamp > CACHE_TTL) {
+      return null
+    }
+    if (parsed.coinId !== id) {
+      return null
+    }
     return parsed.data
   } catch {
     return null
@@ -64,7 +70,9 @@ function getCachedData(id: string, range: string, ignoreExpiry = false): PriceDa
 
 function canFetch(id: string): boolean {
   const lastFetch = lastFetchTimes.get(id)
-  if (!lastFetch) return true
+  if (!lastFetch) {
+    return true
+  }
   return Date.now() - lastFetch >= MIN_FETCH_INTERVAL
 }
 
@@ -92,7 +100,9 @@ async function fetchPriceData(id: string | undefined, days = selectedRange, forc
     priceData = cached
     loading = false
     // If not forcing refresh, we're done
-    if (!forceRefresh) return
+    if (!forceRefresh) {
+      return
+    }
   }
 
   // Check rate limiting - don't fetch too frequently
@@ -117,8 +127,12 @@ async function fetchPriceData(id: string | undefined, days = selectedRange, forc
     lastFetchTimes.set(id, Date.now())
 
     const [priceRes, chartRes] = await Promise.all([
-      fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`),
-      fetch(`https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${days}`)
+      fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`,
+      ),
+      fetch(
+        `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${days}`,
+      ),
     ])
 
     // Handle rate limiting
@@ -147,7 +161,7 @@ async function fetchPriceData(id: string | undefined, days = selectedRange, forc
       market_cap: coinData.usd_market_cap,
       total_volume: coinData.usd_24h_vol,
       prices: chartJson.prices,
-      volumes: chartJson.total_volumes
+      volumes: chartJson.total_volumes,
     }
 
     priceData = newData
@@ -200,24 +214,38 @@ onMount(() => {
   fetchPriceData(coinId, selectedRange)
 
   refreshInterval = setInterval(() => {
-    if (coinId) fetchPriceData(coinId, selectedRange, true)
+    if (coinId) {
+      fetchPriceData(coinId, selectedRange, true)
+    }
   }, REFRESH_INTERVAL)
 
   return () => {
-    if (refreshInterval) clearInterval(refreshInterval)
+    if (refreshInterval) {
+      clearInterval(refreshInterval)
+    }
   }
 })
 
 function formatPrice(price: number): string {
-  if (price >= 1) return `$${price.toFixed(2)}`
-  if (price >= 0.01) return `$${price.toFixed(4)}`
+  if (price >= 1) {
+    return `$${price.toFixed(2)}`
+  }
+  if (price >= 0.01) {
+    return `$${price.toFixed(4)}`
+  }
   return `$${price.toFixed(6)}`
 }
 
 function formatLargeNumber(num: number): string {
-  if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`
-  if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`
-  if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`
+  if (num >= 1e9) {
+    return `$${(num / 1e9).toFixed(2)}B`
+  }
+  if (num >= 1e6) {
+    return `$${(num / 1e6).toFixed(2)}M`
+  }
+  if (num >= 1e3) {
+    return `$${(num / 1e3).toFixed(2)}K`
+  }
   return `$${num.toFixed(2)}`
 }
 
@@ -229,8 +257,15 @@ interface ChartData {
 }
 
 // Generate angular SVG path with straight lines
-function generatePath(prices: [number, number][], volumes: [number, number][] | undefined, width: number, height: number): ChartData {
-  if (!prices || prices.length === 0) return { line: "", area: "", volumeBars: [], points: [] }
+function generatePath(
+  prices: [number, number][],
+  volumes: [number, number][] | undefined,
+  width: number,
+  height: number,
+): ChartData {
+  if (!prices || prices.length === 0) {
+    return { line: "", area: "", volumeBars: [], points: [] }
+  }
 
   // Downsample for performance
   const maxPoints = 100
@@ -251,7 +286,7 @@ function generatePath(prices: [number, number][], volumes: [number, number][] | 
       y: pad + (height - 2 * pad) * (1 - (price - min) / range),
       price,
       volume,
-      timestamp
+      timestamp,
     }
   })
 
@@ -276,7 +311,7 @@ function generatePath(prices: [number, number][], volumes: [number, number][] | 
         x: pt.x - w / 2,
         y: height - h,
         w,
-        h
+        h,
       }
     })
   }
@@ -285,7 +320,9 @@ function generatePath(prices: [number, number][], volumes: [number, number][] | 
 }
 
 function handleMouseMove(e: MouseEvent, pointsCount: number) {
-  if (!chartEl) return
+  if (!chartEl) {
+    return
+  }
   const rect = chartEl.getBoundingClientRect()
   const x = e.clientX - rect.left
   const pct = x / rect.width
@@ -299,7 +336,12 @@ function handleMouseLeave() {
 
 function formatTimestamp(ts: number): string {
   const date = new Date(ts)
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
 }
 </script>
 
@@ -370,11 +412,30 @@ function formatTimestamp(ts: number): string {
         onmouseleave={handleMouseLeave}
         role="img"
       >
-        <svg width="100%" height="100%" viewBox="0 0 400 120" preserveAspectRatio="none">
+        <svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 400 120"
+          preserveAspectRatio="none"
+        >
           <defs>
-            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color={strokeColor} stop-opacity="0.2" />
-              <stop offset="100%" stop-color={strokeColor} stop-opacity="0" />
+            <linearGradient
+              id="chartGradient"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
+              <stop
+                offset="0%"
+                stop-color={strokeColor}
+                stop-opacity="0.2"
+              />
+              <stop
+                offset="100%"
+                stop-color={strokeColor}
+                stop-opacity="0"
+              />
             </linearGradient>
           </defs>
           <!-- Volume bars -->
@@ -388,7 +449,10 @@ function formatTimestamp(ts: number): string {
               class="text-muted-foreground/15"
             />
           {/each}
-          <path d={paths.area} fill="url(#chartGradient)" />
+          <path
+            d={paths.area}
+            fill="url(#chartGradient)"
+          />
           <path
             d={paths.line}
             fill="none"
@@ -434,7 +498,8 @@ function formatTimestamp(ts: number): string {
           <div
             class="absolute w-2 h-2 rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2"
             style="left: {xPct}%; top: {yPct}%; background-color: {strokeColor};"
-          ></div>
+          >
+          </div>
         {/if}
         <!-- Tooltip -->
         {#if hoverIndex !== null && paths.points[hoverIndex]}
@@ -455,7 +520,10 @@ function formatTimestamp(ts: number): string {
       <div class="flex items-center justify-center gap-1">
         {#each RANGES as range}
           <button
-            onclick={() => { selectedRange = range.value; fetchPriceData(coinId, range.value) }}
+            onclick={() => {
+              selectedRange = range.value
+              fetchPriceData(coinId, range.value)
+            }}
             class="px-2 py-1 text-[10px] font-mono transition-colors {selectedRange === range.value ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}"
           >
             {range.label}

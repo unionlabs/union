@@ -15,7 +15,9 @@ export function chainUrl(path: string): string {
   // Ensure path starts with /
   const normalizedPath = path.startsWith("/") ? path : `/${path}`
   // Don't double up the prefix
-  if (normalizedPath.startsWith(`/${chainId}`)) return normalizedPath
+  if (normalizedPath.startsWith(`/${chainId}`)) {
+    return normalizedPath
+  }
   return `/${chainId}${normalizedPath}`
 }
 

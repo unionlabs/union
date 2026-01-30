@@ -1,6 +1,12 @@
-import type { Validator } from "$lib/types/cosmos"
-import { consensusPubkeyToHexAddress, toHex, fromHex, fromBase64, toBase64 } from "$lib/utils/crypto"
 import { addressFormat } from "$lib/stores/address-format.svelte"
+import type { Validator } from "$lib/types/cosmos"
+import {
+  consensusPubkeyToHexAddress,
+  fromBase64,
+  fromHex,
+  toBase64,
+  toHex,
+} from "$lib/utils/crypto"
 
 // Avatar cache - reactive for Svelte 5
 let avatarCacheVersion = $state(0)
@@ -23,10 +29,14 @@ if (typeof window !== "undefined") {
 }
 
 function saveAvatarsToStorage() {
-  if (typeof window === "undefined") return
+  if (typeof window === "undefined") {
+    return
+  }
   try {
     const obj: Record<string, string> = {}
-    avatarCache.forEach((v, k) => { obj[k] = v })
+    avatarCache.forEach((v, k) => {
+      obj[k] = v
+    })
     localStorage.setItem("validator-avatars", JSON.stringify(obj))
   } catch {
     // Ignore localStorage errors
@@ -45,7 +55,9 @@ export function getAvatarCacheVersion(): number {
  * Results are cached to avoid duplicate requests
  */
 export async function fetchKeybaseAvatar(identity: string): Promise<string | null> {
-  if (!identity) return null
+  if (!identity) {
+    return null
+  }
 
   // Return cached result
   if (avatarCache.has(identity)) {
@@ -60,7 +72,9 @@ export async function fetchKeybaseAvatar(identity: string): Promise<string | nul
   // Create new request
   const request = (async () => {
     try {
-      const res = await fetch(`https://keybase.io/_/api/1.0/user/lookup.json?key_suffix=${identity}&fields=pictures`)
+      const res = await fetch(
+        `https://keybase.io/_/api/1.0/user/lookup.json?key_suffix=${identity}&fields=pictures`,
+      )
       const data = await res.json()
       const url = data.them?.[0]?.pictures?.primary?.url ?? null
       if (url) {
@@ -86,7 +100,9 @@ export async function fetchKeybaseAvatar(identity: string): Promise<string | nul
 export function getCachedAvatar(identity?: string): string | null {
   // Reading avatarCacheVersion makes this reactive
   const _ = avatarCacheVersion
-  if (!identity) return null
+  if (!identity) {
+    return null
+  }
   return avatarCache.get(identity) || null
 }
 
@@ -135,7 +151,7 @@ export function base64ToHex(base64Address: string): string {
  */
 export function getValidatorFromBase64Address(
   base64Address: string,
-  validatorMap: Map<string, Validator>
+  validatorMap: Map<string, Validator>,
 ): { hex: string; validator: Validator | undefined; avatar: string | null } {
   const hex = base64ToHex(base64Address)
   const validator = validatorMap.get(hex)
@@ -148,7 +164,9 @@ export function getValidatorFromBase64Address(
  * Input can be either hex or base64 - will detect and convert as needed
  */
 export function formatAddress(address: string): string {
-  if (!address) return address
+  if (!address) {
+    return address
+  }
 
   const format = addressFormat.value
   const isHexInput = /^[0-9a-fA-F]+$/.test(address)

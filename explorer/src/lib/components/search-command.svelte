@@ -2,25 +2,25 @@
 import { goto } from "$app/navigation"
 import * as Command from "$lib/components/ui/command/index.js"
 import * as Dialog from "$lib/components/ui/dialog/index.js"
-import { onMount } from "svelte"
-import { runPromise } from "$lib/runtime"
-import { chainStore } from "$lib/stores/chain.svelte"
+import { fetchAccount, fetchBalances } from "$lib/queries/accounts"
 import { fetchBlockByHeight } from "$lib/queries/blocks"
 import { fetchTransaction } from "$lib/queries/transactions"
-import { fetchValidators, fetchValidator } from "$lib/queries/validators"
-import { fetchAccount, fetchBalances } from "$lib/queries/accounts"
-import { formatTimeAgo, truncateHash, truncateAddress, formatAmount } from "$lib/utils/format"
-import { prefetchValidatorAvatars, getCachedAvatar } from "$lib/utils/validators.svelte"
-import type { Block, TxResponse, Validator, Account } from "$lib/types/cosmos"
-import SearchIcon from "@lucide/svelte/icons/search"
-import BoxIcon from "@lucide/svelte/icons/box"
+import { fetchValidator, fetchValidators } from "$lib/queries/validators"
+import { runPromise } from "$lib/runtime"
+import { chainStore } from "$lib/stores/chain.svelte"
+import type { Account, Block, TxResponse, Validator } from "$lib/types/cosmos"
+import { formatAmount, formatTimeAgo, truncateAddress, truncateHash } from "$lib/utils/format"
+import { getCachedAvatar, prefetchValidatorAvatars } from "$lib/utils/validators.svelte"
 import ArrowLeftRightIcon from "@lucide/svelte/icons/arrow-left-right"
-import ShieldIcon from "@lucide/svelte/icons/shield"
-import WalletIcon from "@lucide/svelte/icons/wallet"
-import VoteIcon from "@lucide/svelte/icons/vote"
+import BoxIcon from "@lucide/svelte/icons/box"
 import CheckIcon from "@lucide/svelte/icons/check"
-import XIcon from "@lucide/svelte/icons/x"
 import LoaderIcon from "@lucide/svelte/icons/loader"
+import SearchIcon from "@lucide/svelte/icons/search"
+import ShieldIcon from "@lucide/svelte/icons/shield"
+import VoteIcon from "@lucide/svelte/icons/vote"
+import WalletIcon from "@lucide/svelte/icons/wallet"
+import XIcon from "@lucide/svelte/icons/x"
+import { onMount } from "svelte"
 
 let open = $state(false)
 let searchValue = $state("")
@@ -70,7 +70,9 @@ function clearResults() {
 
 // Debounced search
 function handleInput() {
-  if (searchTimer) clearTimeout(searchTimer)
+  if (searchTimer) {
+    clearTimeout(searchTimer)
+  }
   clearResults()
 
   const value = searchValue.trim()
@@ -114,12 +116,12 @@ async function doSearch(value: string) {
     try {
       const [accResult, balResult] = await Promise.all([
         runPromise(fetchAccount(value)),
-        runPromise(fetchBalances(value)).catch(() => null)
+        runPromise(fetchBalances(value)).catch(() => null),
       ])
       const mainBalance = balResult?.balances?.find(b => b.denom === "au")
       accountResult = {
         account: accResult.account,
-        balance: mainBalance?.amount
+        balance: mainBalance?.amount,
       }
     } catch { /* not found */ }
   }
@@ -150,10 +152,10 @@ const quickNav = $derived([
 
 // Check if we have any results
 let hasResults = $derived(
-  blockResult !== null ||
-  txResult !== null ||
-  validatorResults.length > 0 ||
-  accountResult !== null
+  blockResult !== null
+    || txResult !== null
+    || validatorResults.length > 0
+    || accountResult !== null,
 )
 </script>
 
@@ -164,15 +166,28 @@ let hasResults = $derived(
 >
   <SearchIcon class="h-4 w-4" />
   <span class="flex-1 text-left group-data-[collapsible=icon]:hidden">Search...</span>
-  <kbd class="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">
+  <kbd
+    class="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground group-data-[collapsible=icon]:hidden"
+  >
     <span class="text-xs">⌘</span>K
   </kbd>
 </button>
 
 <!-- Command Dialog -->
-<Dialog.Root bind:open onOpenChange={(isOpen) => { if (!isOpen) { searchValue = ""; clearResults() } }}>
+<Dialog.Root
+  bind:open
+  onOpenChange={(isOpen) => {
+    if (!isOpen) {
+      searchValue = ""
+      clearResults()
+    }
+  }}
+>
   <Dialog.Content class="overflow-hidden p-0 sm:max-w-[550px] min-h-[300px]">
-    <Command.Root class="[&_[data-slot=command-input-wrapper]]:border-b" shouldFilter={false}>
+    <Command.Root
+      class="[&_[data-slot=command-input-wrapper]]:border-b"
+      shouldFilter={false}
+    >
       <Command.Input
         placeholder="Search block, tx, validator, address..."
         bind:value={searchValue}
@@ -194,7 +209,13 @@ let hasResults = $derived(
           <!-- Quick Navigation when empty -->
           <Command.Group heading="Quick Navigation">
             {#each quickNav as item}
-              <Command.Item onSelect={() => { goto(item.href); open = false }} class="cursor-pointer">
+              <Command.Item
+                onSelect={() => {
+                  goto(item.href)
+                  open = false
+                }}
+                class="cursor-pointer"
+              >
                 <item.icon class="mr-2 h-4 w-4" />
                 <span>{item.title}</span>
               </Command.Item>
@@ -206,7 +227,10 @@ let hasResults = $derived(
         {#if blockResult}
           <Command.Group heading="Block">
             <Command.Item
-              onSelect={() => { goto(`/${chainStore.id}/blocks/${blockResult.block.header.height}`); open = false }}
+              onSelect={() => {
+                goto(`/${chainStore.id}/blocks/${blockResult.block.header.height}`)
+                open = false
+              }}
               class="cursor-pointer"
             >
               <div class="flex items-center gap-3 w-full">
@@ -214,7 +238,9 @@ let hasResults = $derived(
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2">
                     <span class="font-mono font-medium">#{blockResult.block.header.height}</span>
-                    <span class="text-xs text-muted-foreground">{formatTimeAgo(blockResult.block.header.time)}</span>
+                    <span class="text-xs text-muted-foreground">{
+                      formatTimeAgo(blockResult.block.header.time)
+                    }</span>
                   </div>
                   <div class="text-xs text-muted-foreground font-mono truncate">
                     {truncateHash(blockResult.block_id.hash, 16)}
@@ -232,7 +258,10 @@ let hasResults = $derived(
         {#if txResult}
           <Command.Group heading="Transaction">
             <Command.Item
-              onSelect={() => { goto(`/${chainStore.id}/transactions/${txResult.txhash}`); open = false }}
+              onSelect={() => {
+                goto(`/${chainStore.id}/transactions/${txResult.txhash}`)
+                open = false
+              }}
               class="cursor-pointer"
             >
               <div class="flex items-center gap-3 w-full">
@@ -246,7 +275,9 @@ let hasResults = $derived(
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2">
                     <span class="font-mono text-sm">{truncateHash(txResult.txhash, 12)}</span>
-                    <span class="text-xs text-muted-foreground">{formatTimeAgo(txResult.timestamp)}</span>
+                    <span class="text-xs text-muted-foreground">{
+                      formatTimeAgo(txResult.timestamp)
+                    }</span>
                   </div>
                   <div class="text-xs text-muted-foreground">
                     Block #{txResult.height} · {txResult.tx.body.messages.length} message(s)
@@ -263,12 +294,19 @@ let hasResults = $derived(
             {#each validatorResults as validator}
               {@const avatarUrl = getAvatarUrl(validator.description.identity)}
               <Command.Item
-                onSelect={() => { goto(`/${chainStore.id}/validators/${validator.operator_address}`); open = false }}
+                onSelect={() => {
+                  goto(`/${chainStore.id}/validators/${validator.operator_address}`)
+                  open = false
+                }}
                 class="cursor-pointer"
               >
                 <div class="flex items-center gap-3 w-full">
                   {#if avatarUrl}
-                    <img src={avatarUrl} alt="" class="w-6 h-6 rounded-full shrink-0 object-cover" />
+                    <img
+                      src={avatarUrl}
+                      alt=""
+                      class="w-6 h-6 rounded-full shrink-0 object-cover"
+                    />
                   {:else}
                     <div class="w-6 h-6 rounded-full shrink-0 bg-muted flex items-center justify-center text-xs font-medium">
                       {validator.description.moniker.charAt(0).toUpperCase()}
@@ -278,7 +316,8 @@ let hasResults = $derived(
                     <div class="flex items-center gap-2">
                       <span class="font-medium truncate">{validator.description.moniker}</span>
                       {#if validator.jailed}
-                        <span class="text-[10px] font-mono px-1 py-0.5 bg-red-500/10 text-red-500">Jailed</span>
+                        <span class="text-[10px] font-mono px-1 py-0.5 bg-red-500/10 text-red-500"
+                        >Jailed</span>
                       {/if}
                     </div>
                     <div class="text-xs text-muted-foreground font-mono truncate">
@@ -286,7 +325,10 @@ let hasResults = $derived(
                     </div>
                   </div>
                   <span class="text-xs text-muted-foreground shrink-0">
-                    {(Number(validator.commission.commission_rates.rate) * 100).toFixed(0)}% commission
+                    {
+                      (Number(validator.commission.commission_rates.rate) * 100)
+                      .toFixed(0)
+                    }% commission
                   </span>
                 </div>
               </Command.Item>
@@ -298,15 +340,23 @@ let hasResults = $derived(
         {#if accountResult}
           <Command.Group heading="Account">
             <Command.Item
-              onSelect={() => { goto(`/${chainStore.id}/account/${accountResult.account.address}`); open = false }}
+              onSelect={() => {
+                goto(`/${chainStore.id}/account/${accountResult.account.address}`)
+                open = false
+              }}
               class="cursor-pointer"
             >
               <div class="flex items-center gap-3 w-full">
                 <WalletIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div class="flex-1 min-w-0">
-                  <div class="font-mono text-sm truncate">{truncateAddress(accountResult.account.address, 16)}</div>
+                  <div class="font-mono text-sm truncate">
+                    {truncateAddress(accountResult.account.address, 16)}
+                  </div>
                   <div class="text-xs text-muted-foreground">
-                    {accountResult.account["@type"]?.split(".").pop() ?? "Account"}
+                    {
+                      accountResult.account["@type"]?.split(".").pop()
+                      ?? "Account"
+                    }
                   </div>
                 </div>
                 {#if accountResult.balance}

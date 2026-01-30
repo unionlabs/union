@@ -1,28 +1,28 @@
-import { Effect } from "effect"
 import { CosmosClient } from "$lib/services/cosmos-client"
-import type { TxResponse, PaginationResponse } from "$lib/types/cosmos"
+import type { PaginationResponse, TxResponse } from "$lib/types/cosmos"
+import { Effect } from "effect"
 
 export const fetchTransaction = (hash: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getTx(hash)
   })
 
 export const fetchTransactionsByHeight = (height: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getTxsByHeight(height)
   })
 
 export const searchTransactions = (query: string, page = 1, limit = 20) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.searchTxs(query, page, limit)
   })
 
 // Fetch recent transactions via RPC
 export const fetchRecentTransactionsGlobal = (limit = 50) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
 
     // Get recent blocks (scan more to find enough with txs)
@@ -43,7 +43,7 @@ export const fetchRecentTransactionsGlobal = (limit = 50) =>
     // Fetch transactions from each block (using exact height = fast query)
     const txResults = yield* Effect.all(
       blocksWithTxs.map((block) => client.getTxsByHeight(block.height)),
-      { concurrency: 5 }
+      { concurrency: 5 },
     )
 
     // Flatten and limit
@@ -58,7 +58,7 @@ export const fetchRecentTransactionsGlobal = (limit = 50) =>
 
 // Fetch more transactions starting from a specific height
 export const fetchTransactionsPage = (page: number, limit = 50) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
 
     // For pagination, we scan older blocks
@@ -83,7 +83,7 @@ export const fetchTransactionsPage = (page: number, limit = 50) =>
 
     const txResults = yield* Effect.all(
       blocksWithTxs.map((block) => client.getTxsByHeight(block.height)),
-      { concurrency: 5 }
+      { concurrency: 5 },
     )
 
     const allTxs: TxResponse[] = txResults.flatMap((r) => r.tx_responses).slice(0, limit)

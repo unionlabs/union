@@ -1,15 +1,15 @@
 <script lang="ts">
-import { onMount } from "svelte"
-import { indexer, type HealthResponse, type ChainStatus } from "$lib/services/indexer-client"
+import CornerMarks from "$lib/components/corner-marks.svelte"
 import { Badge } from "$lib/components/ui/badge/index.js"
 import { Skeleton } from "$lib/components/ui/skeleton/index.js"
-import CornerMarks from "$lib/components/corner-marks.svelte"
+import { type ChainStatus, type HealthResponse, indexer } from "$lib/services/indexer-client"
 import ActivityIcon from "@lucide/svelte/icons/activity"
-import DatabaseIcon from "@lucide/svelte/icons/database"
-import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw"
-import CheckCircleIcon from "@lucide/svelte/icons/check-circle"
 import AlertCircleIcon from "@lucide/svelte/icons/alert-circle"
+import CheckCircleIcon from "@lucide/svelte/icons/check-circle"
+import DatabaseIcon from "@lucide/svelte/icons/database"
 import LoaderIcon from "@lucide/svelte/icons/loader"
+import RefreshCwIcon from "@lucide/svelte/icons/refresh-cw"
+import { onMount } from "svelte"
 
 let health = $state<HealthResponse | null>(null)
 let error = $state<string | null>(null)
@@ -37,21 +37,32 @@ onMount(() => {
 
 function getStatusColor(status: ChainStatus["status"]): string {
   switch (status) {
-    case "synced": return "bg-green-500"
-    case "syncing": return "bg-blue-500"
-    case "backfilling": return "bg-yellow-500"
-    case "error": return "bg-red-500"
-    default: return "bg-gray-500"
+    case "synced":
+      return "bg-green-500"
+    case "syncing":
+      return "bg-blue-500"
+    case "backfilling":
+      return "bg-yellow-500"
+    case "error":
+      return "bg-red-500"
+    default:
+      return "bg-gray-500"
   }
 }
 
-function getStatusVariant(status: ChainStatus["status"]): "success" | "secondary" | "destructive" | "default" {
+function getStatusVariant(
+  status: ChainStatus["status"],
+): "success" | "secondary" | "destructive" | "default" {
   switch (status) {
-    case "synced": return "success"
+    case "synced":
+      return "success"
     case "syncing":
-    case "backfilling": return "default"
-    case "error": return "destructive"
-    default: return "secondary"
+    case "backfilling":
+      return "default"
+    case "error":
+      return "destructive"
+    default:
+      return "secondary"
   }
 }
 
@@ -63,13 +74,19 @@ function formatUptime(seconds: number): string {
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
   const secs = seconds % 60
-  if (hours > 0) return `${hours}h ${minutes}m ${secs}s`
-  if (minutes > 0) return `${minutes}m ${secs}s`
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${secs}s`
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${secs}s`
+  }
   return `${secs}s`
 }
 
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B"
+  if (bytes === 0) {
+    return "0 B"
+  }
   const units = ["B", "KB", "MB", "GB", "TB"]
   const i = Math.floor(Math.log(bytes) / Math.log(1024))
   const value = bytes / Math.pow(1024, i)
@@ -86,7 +103,9 @@ function formatBytes(bytes: number): string {
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-2xl font-bold">Indexer Health</h1>
-      <p class="text-sm text-muted-foreground mt-1">Monitor indexer sync status across all chains</p>
+      <p class="text-sm text-muted-foreground mt-1">
+        Monitor indexer sync status across all chains
+      </p>
     </div>
     <button
       onclick={fetchHealth}
@@ -133,7 +152,13 @@ function formatBytes(bytes: number): string {
             <div>
               <div class="flex items-center gap-2">
                 <h2 class="text-lg font-semibold capitalize">{health.status}</h2>
-                <Badge variant={health.status === "healthy" ? "success" : health.status === "degraded" ? "destructive" : "default"}>
+                <Badge
+                  variant={health.status === "healthy"
+                  ? "success"
+                  : health.status === "degraded"
+                  ? "destructive"
+                  : "default"}
+                >
                   {health.chains.length} chains
                 </Badge>
               </div>
@@ -186,18 +211,23 @@ function formatBytes(bytes: number): string {
                   <div
                     class="h-full bg-yellow-500 transition-all duration-500"
                     style="width: {chain.backfillProgress}%"
-                  ></div>
+                  >
+                  </div>
                 </div>
               </div>
             {/if}
 
             <div class="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <div class="text-[10px] font-mono uppercase text-muted-foreground">Latest Height</div>
+                <div class="text-[10px] font-mono uppercase text-muted-foreground">
+                  Latest Height
+                </div>
                 <div class="font-mono">{formatNumber(chain.latestHeight)}</div>
               </div>
               <div>
-                <div class="text-[10px] font-mono uppercase text-muted-foreground">Indexed Height</div>
+                <div class="text-[10px] font-mono uppercase text-muted-foreground">
+                  Indexed Height
+                </div>
                 <div class="font-mono">{formatNumber(chain.indexedHeight)}</div>
               </div>
               <div>
@@ -205,7 +235,9 @@ function formatBytes(bytes: number): string {
                 <div class="font-mono">{formatNumber(chain.blocksIndexed)}</div>
               </div>
               <div>
-                <div class="text-[10px] font-mono uppercase text-muted-foreground">Transactions</div>
+                <div class="text-[10px] font-mono uppercase text-muted-foreground">
+                  Transactions
+                </div>
                 <div class="font-mono">{formatNumber(chain.txsIndexed)}</div>
               </div>
             </div>
@@ -217,7 +249,10 @@ function formatBytes(bytes: number): string {
             {/if}
 
             {#if chain.lastError}
-              <div class="text-xs text-destructive pt-2 border-t border-border font-mono truncate" title={chain.lastError}>
+              <div
+                class="text-xs text-destructive pt-2 border-t border-border font-mono truncate"
+                title={chain.lastError}
+              >
                 {chain.lastError}
               </div>
             {/if}

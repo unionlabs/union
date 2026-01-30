@@ -1,15 +1,15 @@
-import { Effect } from "effect"
 import { CosmosClient } from "$lib/services/cosmos-client"
 import type { Block } from "$lib/types/cosmos"
+import { Effect } from "effect"
 
 export const fetchLatestBlock = () =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getLatestBlock()
   })
 
 export const fetchBlockByHeight = (height: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getBlockByHeight(height)
   })
@@ -25,7 +25,7 @@ export interface BlockSummary {
 
 // Fetch recent blocks using bulk RPC endpoint (much faster, fewer requests)
 export const fetchRecentBlocksBulk = (count = 50) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     const latest = yield* client.getLatestBlock()
     const latestHeight = parseInt(latest.block.header.height)
@@ -43,7 +43,7 @@ export const fetchRecentBlocksBulk = (count = 50) =>
     // Fetch all chunks in parallel
     const chunkResults = yield* Effect.all(
       chunks.map(({ min, max }) => client.getBlockRange(min, max)),
-      { concurrency: 3 }
+      { concurrency: 3 },
     )
 
     // Flatten and take only what we need
@@ -53,7 +53,7 @@ export const fetchRecentBlocksBulk = (count = 50) =>
 
 // Fetch blocks starting from a specific height going backwards
 export const fetchBlockRangeFromHeight = (startHeight: number, count = 50) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
 
     // RPC returns max 20 blocks per request, so chunk the requests
@@ -63,16 +63,20 @@ export const fetchBlockRangeFromHeight = (startHeight: number, count = 50) =>
     for (let i = 0; i < count; i += chunkSize) {
       const max = startHeight - i
       const min = Math.max(startHeight - i - chunkSize + 1, 1)
-      if (max < 1) break
+      if (max < 1) {
+        break
+      }
       chunks.push({ min, max })
     }
 
-    if (chunks.length === 0) return []
+    if (chunks.length === 0) {
+      return []
+    }
 
     // Fetch all chunks in parallel
     const chunkResults = yield* Effect.all(
       chunks.map(({ min, max }) => client.getBlockRange(min, max)),
-      { concurrency: 3 }
+      { concurrency: 3 },
     )
 
     // Flatten and take only what we need
@@ -83,7 +87,7 @@ export const fetchBlockRangeFromHeight = (startHeight: number, count = 50) =>
 // Fetch full blocks with commits/signatures (for validator uptime)
 // Fetches in batches to avoid rate limits
 export const fetchRecentBlocksFull = (count = 100) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     const latest = yield* client.getLatestBlock()
     const latestHeight = parseInt(latest.block.header.height)
@@ -95,7 +99,7 @@ export const fetchRecentBlocksFull = (count = 100) =>
     for (let i = 1; i < count; i += batchSize) {
       const heights = Array.from(
         { length: Math.min(batchSize, count - i) },
-        (_, j) => latestHeight - i - j
+        (_, j) => latestHeight - i - j,
       )
       const blockEffects = heights.map((h) => client.getBlockByHeight(String(h)))
       const results = yield* Effect.all(blockEffects, { concurrency: 5 })
@@ -107,7 +111,7 @@ export const fetchRecentBlocksFull = (count = 100) =>
 
 // Legacy: Fetch recent blocks one by one (slower, for fallback)
 export const fetchRecentBlocks = (count = 20) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     const latest = yield* client.getLatestBlock()
     const latestHeight = parseInt(latest.block.header.height)
@@ -125,7 +129,7 @@ export const fetchRecentBlocks = (count = 20) =>
   })
 
 export const fetchValidatorSet = (height?: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = yield* CosmosClient
     return yield* client.getValidatorSet(height)
   })

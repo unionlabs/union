@@ -57,9 +57,11 @@ export async function sha256(data: Uint8Array): Promise<Uint8Array> {
  * Supports ed25519 and bn254 pubkeys
  */
 export async function consensusPubkeyToHexAddress(
-  consensusPubkey?: { "@type": string; key: string }
+  consensusPubkey?: { "@type": string; "key": string },
 ): Promise<string> {
-  if (!consensusPubkey?.key) return ""
+  if (!consensusPubkey?.key) {
+    return ""
+  }
 
   const pubkeyBytes = fromBase64(consensusPubkey.key)
   const hash = await sha256(pubkeyBytes)
@@ -74,12 +76,16 @@ export async function consensusPubkeyToHexAddress(
  */
 export function didValidatorSign(
   validatorHexAddress: string,
-  signatures: Array<{ validator_address: string; signature: string | null }>
+  signatures: Array<{ validator_address: string; signature: string | null }>,
 ): boolean {
-  if (!validatorHexAddress || !signatures) return false
+  if (!validatorHexAddress || !signatures) {
+    return false
+  }
 
   return signatures.some((sig) => {
-    if (!sig.validator_address || !sig.signature) return false
+    if (!sig.validator_address || !sig.signature) {
+      return false
+    }
     // Convert base64 validator_address to hex and compare
     try {
       const sigHex = toHex(fromBase64(sig.validator_address)).toUpperCase()

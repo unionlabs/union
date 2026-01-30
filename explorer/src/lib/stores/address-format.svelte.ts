@@ -6,9 +6,13 @@ const STORAGE_KEY = "address-format"
 
 // Get initial value from localStorage or default to hex
 function getInitialFormat(): AddressFormat {
-  if (!browser) return "hex"
+  if (!browser) {
+    return "hex"
+  }
   const stored = localStorage.getItem(STORAGE_KEY)
-  if (stored === "base64" || stored === "hex") return stored
+  if (stored === "base64" || stored === "hex") {
+    return stored
+  }
   return "hex"
 }
 
@@ -32,5 +36,5 @@ export const addressFormat = {
   },
   isBase64() {
     return format === "base64"
-  }
+  },
 }

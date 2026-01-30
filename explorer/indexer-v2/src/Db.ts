@@ -1,5 +1,5 @@
-import { Effect, Context, Layer } from "effect"
 import { Database as BunDB } from "bun:sqlite"
+import { Context, Effect, Layer } from "effect"
 import { statSync } from "node:fs"
 import { IndexerConfigService } from "./config.js"
 
@@ -90,7 +90,11 @@ export interface Db {
   getTransactions(chainId: string, limit: number, before?: number): Effect.Effect<Transaction[]>
   getTransactionByHash(chainId: string, hash: string): Effect.Effect<Transaction | null>
   getTransactionsByHeight(chainId: string, height: number): Effect.Effect<Transaction[]>
-  getTransactionsByAddress(chainId: string, address: string, limit: number): Effect.Effect<Transaction[]>
+  getTransactionsByAddress(
+    chainId: string,
+    address: string,
+    limit: number,
+  ): Effect.Effect<Transaction[]>
   getTxCount(chainId: string): Effect.Effect<number>
 
   // Analytics
@@ -199,20 +203,22 @@ function createDb(db: BunDB, dbPath: string): Db {
 
   return {
     // Inserts
-    insertBlock: (block) =>
-      Effect.sync(() => insertBlocksBatch([block])),
+    insertBlock: (block) => Effect.sync(() => insertBlocksBatch([block])),
 
     insertBlocks: (blocks) =>
       Effect.sync(() => {
-        if (blocks.length > 0) insertBlocksBatch(blocks)
+        if (blocks.length > 0) {
+          insertBlocksBatch(blocks)
+        }
       }),
 
-    insertTransaction: (tx) =>
-      Effect.sync(() => insertTxsBatch([tx])),
+    insertTransaction: (tx) => Effect.sync(() => insertTxsBatch([tx])),
 
     insertTransactions: (txs) =>
       Effect.sync(() => {
-        if (txs.length > 0) insertTxsBatch(txs)
+        if (txs.length > 0) {
+          insertTxsBatch(txs)
+        }
       }),
 
     // Block queries
@@ -220,12 +226,12 @@ function createDb(db: BunDB, dbPath: string): Db {
       Effect.sync(() => {
         if (before !== undefined) {
           const rows = db.query<Record<string, unknown>, [string, number, number]>(
-            `SELECT * FROM blocks WHERE chain_id = ? AND height < ? ORDER BY height DESC LIMIT ?`
+            `SELECT * FROM blocks WHERE chain_id = ? AND height < ? ORDER BY height DESC LIMIT ?`,
           ).all(chainId, before, limit)
           return rows.map(parseBlock)
         }
         const rows = db.query<Record<string, unknown>, [string, number]>(
-          `SELECT * FROM blocks WHERE chain_id = ? ORDER BY height DESC LIMIT ?`
+          `SELECT * FROM blocks WHERE chain_id = ? ORDER BY height DESC LIMIT ?`,
         ).all(chainId, limit)
         return rows.map(parseBlock)
       }),
@@ -233,7 +239,7 @@ function createDb(db: BunDB, dbPath: string): Db {
     getBlockByHeight: (chainId, height) =>
       Effect.sync(() => {
         const row = db.query<Record<string, unknown>, [string, number]>(
-          `SELECT * FROM blocks WHERE chain_id = ? AND height = ?`
+          `SELECT * FROM blocks WHERE chain_id = ? AND height = ?`,
         ).get(chainId, height)
         return row ? parseBlock(row) : null
       }),
@@ -241,7 +247,7 @@ function createDb(db: BunDB, dbPath: string): Db {
     getBlockByHash: (chainId, hash) =>
       Effect.sync(() => {
         const row = db.query<Record<string, unknown>, [string, string]>(
-          `SELECT * FROM blocks WHERE chain_id = ? AND hash = ?`
+          `SELECT * FROM blocks WHERE chain_id = ? AND hash = ?`,
         ).get(chainId, hash)
         return row ? parseBlock(row) : null
       }),
@@ -249,7 +255,7 @@ function createDb(db: BunDB, dbPath: string): Db {
     getLatestBlock: (chainId) =>
       Effect.sync(() => {
         const row = db.query<Record<string, unknown>, [string]>(
-          `SELECT * FROM blocks WHERE chain_id = ? ORDER BY height DESC LIMIT 1`
+          `SELECT * FROM blocks WHERE chain_id = ? ORDER BY height DESC LIMIT 1`,
         ).get(chainId)
         return row ? parseBlock(row) : null
       }),
@@ -257,7 +263,7 @@ function createDb(db: BunDB, dbPath: string): Db {
     getLatestHeight: (chainId) =>
       Effect.sync(() => {
         const row = db.query<{ height: number | null }, [string]>(
-          `SELECT MAX(height) as height FROM blocks WHERE chain_id = ?`
+          `SELECT MAX(height) as height FROM blocks WHERE chain_id = ?`,
         ).get(chainId)
         return row?.height || 0
       }),
@@ -265,7 +271,7 @@ function createDb(db: BunDB, dbPath: string): Db {
     getMinHeight: (chainId) =>
       Effect.sync(() => {
         const row = db.query<{ height: number | null }, [string]>(
-          `SELECT MIN(height) as height FROM blocks WHERE chain_id = ?`
+          `SELECT MIN(height) as height FROM blocks WHERE chain_id = ?`,
         ).get(chainId)
         return row?.height || 0
       }),
@@ -273,7 +279,7 @@ function createDb(db: BunDB, dbPath: string): Db {
     getBlockCount: (chainId) =>
       Effect.sync(() => {
         const row = db.query<{ count: number }, [string]>(
-          `SELECT COUNT(*) as count FROM blocks WHERE chain_id = ?`
+          `SELECT COUNT(*) as count FROM blocks WHERE chain_id = ?`,
         ).get(chainId)
         return row?.count || 0
       }),
@@ -283,12 +289,12 @@ function createDb(db: BunDB, dbPath: string): Db {
       Effect.sync(() => {
         if (before !== undefined) {
           const rows = db.query<Record<string, unknown>, [string, number, number]>(
-            `SELECT * FROM transactions WHERE chain_id = ? AND height < ? ORDER BY height DESC, tx_index ASC LIMIT ?`
+            `SELECT * FROM transactions WHERE chain_id = ? AND height < ? ORDER BY height DESC, tx_index ASC LIMIT ?`,
           ).all(chainId, before, limit)
           return rows.map(parseTx)
         }
         const rows = db.query<Record<string, unknown>, [string, number]>(
-          `SELECT * FROM transactions WHERE chain_id = ? ORDER BY height DESC, tx_index ASC LIMIT ?`
+          `SELECT * FROM transactions WHERE chain_id = ? ORDER BY height DESC, tx_index ASC LIMIT ?`,
         ).all(chainId, limit)
         return rows.map(parseTx)
       }),
@@ -296,7 +302,7 @@ function createDb(db: BunDB, dbPath: string): Db {
     getTransactionByHash: (chainId, hash) =>
       Effect.sync(() => {
         const row = db.query<Record<string, unknown>, [string, string]>(
-          `SELECT * FROM transactions WHERE chain_id = ? AND hash = ?`
+          `SELECT * FROM transactions WHERE chain_id = ? AND hash = ?`,
         ).get(chainId, hash)
         return row ? parseTx(row) : null
       }),
@@ -304,7 +310,7 @@ function createDb(db: BunDB, dbPath: string): Db {
     getTransactionsByHeight: (chainId, height) =>
       Effect.sync(() => {
         const rows = db.query<Record<string, unknown>, [string, number]>(
-          `SELECT * FROM transactions WHERE chain_id = ? AND height = ? ORDER BY tx_index ASC`
+          `SELECT * FROM transactions WHERE chain_id = ? AND height = ? ORDER BY tx_index ASC`,
         ).all(chainId, height)
         return rows.map(parseTx)
       }),
@@ -316,7 +322,7 @@ function createDb(db: BunDB, dbPath: string): Db {
         const rows = db.query<Record<string, unknown>, [string, string, string, number]>(
           `SELECT * FROM transactions
            WHERE chain_id = ? AND (messages LIKE ? ESCAPE '\\' OR messages LIKE ? ESCAPE '\\')
-           ORDER BY height DESC LIMIT ?`
+           ORDER BY height DESC LIMIT ?`,
         ).all(chainId, `%"sender":"${escaped}"%`, `%"receiver":"${escaped}"%`, limit)
         return rows.map(parseTx)
       }),
@@ -324,7 +330,7 @@ function createDb(db: BunDB, dbPath: string): Db {
     getTxCount: (chainId) =>
       Effect.sync(() => {
         const row = db.query<{ count: number }, [string]>(
-          `SELECT COUNT(*) as count FROM transactions WHERE chain_id = ?`
+          `SELECT COUNT(*) as count FROM transactions WHERE chain_id = ?`,
         ).get(chainId)
         return row?.count || 0
       }),
@@ -375,26 +381,29 @@ function createDb(db: BunDB, dbPath: string): Db {
     // Chain stats
     insertChainStats: (stats) =>
       Effect.sync(() => {
-        db.run(`
+        db.run(
+          `
           INSERT OR REPLACE INTO chain_stats
           (chain_id, height, timestamp, total_supply, bonded_tokens, not_bonded_tokens, inflation, community_pool)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-          stats.chain_id,
-          stats.height,
-          stats.timestamp,
-          stats.total_supply,
-          stats.bonded_tokens,
-          stats.not_bonded_tokens,
-          stats.inflation,
-          stats.community_pool,
-        ])
+        `,
+          [
+            stats.chain_id,
+            stats.height,
+            stats.timestamp,
+            stats.total_supply,
+            stats.bonded_tokens,
+            stats.not_bonded_tokens,
+            stats.inflation,
+            stats.community_pool,
+          ],
+        )
       }),
 
     getLatestChainStats: (chainId) =>
       Effect.sync(() => {
         const row = db.query<ChainStats, [string]>(
-          `SELECT * FROM chain_stats WHERE chain_id = ? ORDER BY height DESC LIMIT 1`
+          `SELECT * FROM chain_stats WHERE chain_id = ? ORDER BY height DESC LIMIT 1`,
         ).get(chainId)
         return row || null
       }),
@@ -402,7 +411,7 @@ function createDb(db: BunDB, dbPath: string): Db {
     getChainStatsHistory: (chainId, limit) =>
       Effect.sync(() => {
         return db.query<ChainStats, [string, number]>(
-          `SELECT * FROM chain_stats WHERE chain_id = ? ORDER BY height DESC LIMIT ?`
+          `SELECT * FROM chain_stats WHERE chain_id = ? ORDER BY height DESC LIMIT ?`,
         ).all(chainId, limit)
       }),
 
@@ -500,7 +509,7 @@ function initSchema(db: BunDB): void {
 
 export const DatabaseLive = Layer.effect(
   Database,
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const config = yield* IndexerConfigService
 
     const dbPath = config.dbPath.replace(".duckdb", ".sqlite")
@@ -517,5 +526,5 @@ export const DatabaseLive = Layer.effect(
     yield* Effect.log(`Database initialized: ${dbPath}`)
 
     return createDb(db, dbPath)
-  })
+  }),
 )

@@ -2,7 +2,10 @@
 
 const GRAPHQL_ENDPOINT = "https://graphql.union.build/v1/graphql"
 
-export async function graphqlFetch<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
+export async function graphqlFetch<T>(
+  query: string,
+  variables?: Record<string, unknown>,
+): Promise<T> {
   const response = await fetch(GRAPHQL_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
