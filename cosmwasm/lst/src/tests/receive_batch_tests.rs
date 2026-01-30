@@ -59,8 +59,9 @@
 // TITLE.
 
 use cosmwasm_std::{
+    Addr, Coin, CosmosMsg, Timestamp, WasmMsg,
     testing::{message_info, mock_env},
-    to_json_binary, Addr, Coin, CosmosMsg, Timestamp, WasmMsg,
+    to_json_binary,
 };
 use depolama::StorageExt;
 
@@ -69,7 +70,7 @@ use crate::{
     error::ContractError,
     msg::{ExecuteMsg, StakerExecuteMsg},
     state::{ConfigStore, SubmittedBatches},
-    tests::test_helper::{set_rewards, setup, ADMIN, NATIVE_TOKEN, STAKER_ADDRESS, UNION1},
+    tests::test_helper::{ADMIN, NATIVE_TOKEN, STAKER_ADDRESS, UNION1, set_rewards, setup},
     types::BatchId,
 };
 

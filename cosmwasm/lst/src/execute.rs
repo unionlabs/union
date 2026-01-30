@@ -59,11 +59,11 @@
 // TITLE.
 
 use cosmwasm_std::{
-    ensure, wasm_execute, Addr, BankMsg, Coin, Deps, DepsMut, Env, Event, MessageInfo, Response,
-    Uint128,
+    Addr, BankMsg, Coin, Deps, DepsMut, Env, Event, MessageInfo, Response, Uint128, ensure,
+    wasm_execute,
 };
-use cw20::Cw20ExecuteMsg;
 use cw_utils::{must_pay, nonpayable};
+use cw20::Cw20ExecuteMsg;
 use depolama::StorageExt;
 
 use crate::{
@@ -81,8 +81,9 @@ use crate::{
         SubmittedBatches, UnstakeRequests, UnstakeRequestsByStakerHash,
     },
     types::{
-        staker_hash, AccountingState, BatchExpectedAmount, BatchId, PendingBatch, PendingOwner,
+        AccountingState, BatchExpectedAmount, BatchId, PendingBatch, PendingOwner,
         ProtocolFeeConfig, ReceivedBatch, SubmittedBatch, UnstakeRequest, UnstakeRequestKey,
+        staker_hash,
     },
 };
 
