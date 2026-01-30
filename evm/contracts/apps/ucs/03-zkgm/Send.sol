@@ -311,7 +311,7 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         uint256 path,
         uint32 channelId,
         bytes calldata sender
-    ) external returns (bytes32, address) {
+    ) external returns (address, bytes32) {
         return _predictProxyAccount(path, channelId, sender);
     }
 }

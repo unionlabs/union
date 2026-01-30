@@ -149,9 +149,9 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
         uint256 path,
         uint32 channelId,
         bytes calldata sender
-    ) internal returns (bytes32, address) {
+    ) internal returns (address, bytes32) {
         bytes32 proxySalt =
             EfficientHashLib.hash(abi.encode(path, channelId, sender));
-        return (proxySalt, CREATE3.predictDeterministicAddress(proxySalt));
+        return (CREATE3.predictDeterministicAddress(proxySalt), proxySalt);
     }
 }
