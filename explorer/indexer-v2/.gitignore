@@ -1,0 +1,5 @@
+*.sqlite
+*.sqlite-journal
+*.duckdb
+*.duckdb.wal
+node_modules/
