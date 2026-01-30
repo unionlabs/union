@@ -41,7 +41,11 @@ use jsonrpsee::{
     server::middleware::rpc::RpcServiceT,
     types::{ErrorObject, Response, ResponsePayload},
 };
-use opentelemetry::{KeyValue, global, propagation::TextMapPropagator};
+use opentelemetry::{
+    Context, KeyValue, global,
+    propagation::TextMapPropagator,
+    trace::{FutureExt as _, Tracer},
+};
 use opentelemetry_sdk::propagation::TraceContextPropagator;
 use reth_ipc::{
     client::IpcClientBuilder,
@@ -317,9 +321,15 @@ where
 
                         let parent_context = propagator.extract(&trace_ctx);
 
-                        warn!(?trace_ctx, "EXTRACTING TRACE_CTX FROM PARAMS");
+                        warn!(
+                            ?trace_ctx,
+                            "ExtractItemIdService::call: EXTRACTING TRACE_CTX FROM PARAMS"
+                        );
 
                         request.extensions.insert(TraceCtx(trace_ctx));
+
+                        let tracer = global::tracer("item_id");
+                        tracer.start_with_context(, &parent_context);
 
                         let span = info_span!("item_id", item_id = item_id.raw());
 
@@ -332,7 +342,11 @@ where
                             }
                         };
 
-                        return service.call(request).instrument(span).await;
+                        return service
+                            .call(request)
+                            .with_context(parent_context)
+                            .instrument(span)
+                            .await;
                     }
                     Err(_) => {
                         request.params = Some(params);
@@ -390,9 +404,16 @@ where
         //     .unwrap_or_default();
 
         let mut trace_ctx = HashMap::new();
-        TraceContextPropagator::new().inject(&mut trace_ctx);
+        global::get_text_map_propagator(|propagator| {
+            propagator.inject_context(&Context::current(), &mut trace_ctx)
+        });
 
-        warn!(?trace_ctx, "INJECTING CURRENT TRACE_CTX");
+        // TraceContextPropagator::new().inject(&mut trace_ctx);
+
+        warn!(
+            ?trace_ctx,
+            "InjectVoyagerClientService: INJECTING CURRENT TRACE_CTX"
+        );
 
         request
             .extensions
@@ -554,9 +575,14 @@ where
         trace!(?item_id, "threading id");
 
         let mut trace_ctx = HashMap::new();
-        TraceContextPropagator::new().inject(&mut trace_ctx);
+        global::get_text_map_propagator(|propagator| {
+            propagator.inject_context(&Context::current(), &mut trace_ctx)
+        });
 
-        warn!(?trace_ctx, "WITH_ID: INJECTING TRACE_CTX");
+        warn!(
+            ?trace_ctx,
+            "WithId::with_id_and_current_context: INJECTING CURRENT TRACE_CTX"
+        );
 
         IdThreadClient {
             client: self,
@@ -582,7 +608,7 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
         ))
     }
 
-    #[instrument(skip_all)]
+    #[instrument(skip_all, fields(method))]
     async fn request<R, Params>(
         &self,
         method: &str,
@@ -594,7 +620,7 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
     {
         trace!(item_id = ?self.item_id);
 
-        warn!(trace_ctx = ?self.trace_ctx, "INJECTING TRACE_CTX");
+        warn!(trace_ctx = ?self.trace_ctx, "IdThreadClient::request: INJECTING TRACE_CTX");
 
         // thread the item id through the request if it is present
         match self.item_id {

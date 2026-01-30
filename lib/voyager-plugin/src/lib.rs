@@ -2,7 +2,7 @@ use std::{env::VarError, time::Duration};
 
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::Resource;
+use opentelemetry_sdk::{Resource, propagation::TraceContextPropagator};
 use serde::de::DeserializeOwned;
 use tracing::{Instrument, debug_span, error, instrument};
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
@@ -306,6 +306,8 @@ fn init(metrics_endpoint: Option<String>, name: &str) {
         }
     };
 
+    opentelemetry::global::set_text_map_propagator(TraceContextPropagator::new());
+
     if let Some(metrics_endpoint) = metrics_endpoint {
         dbg!(&metrics_endpoint);
 
@@ -380,9 +382,11 @@ fn init(metrics_endpoint: Option<String>, name: &str) {
                     // trace spans and events with higher verbosity levels, consider using
                     // per-layer filtering to target the telemetry layer specifically,
                     // e.g. by target matching.
-                    .with_filter(tracing_subscriber::filter::LevelFilter::from_level(
-                        tracing::Level::INFO,
-                    )),
+                    .with_filter(
+                        tracing_subscriber::filter::Builder::default()
+                            .parse("debug,tower=off,hyper=off,h2=off,rustls=off,reqwest=off")
+                            .unwrap(),
+                    ),
             );
 
         match format {

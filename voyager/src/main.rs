@@ -101,6 +101,10 @@ fn main() -> ExitCode {
 }
 
 fn init_logging(log_format: LogFormat) {
+    opentelemetry::global::set_text_map_propagator(
+        opentelemetry_sdk::propagation::TraceContextPropagator::new(),
+    );
+
     // Construct MeterProvider for MetricsLayer
     fn init_meter_provider() -> opentelemetry_sdk::metrics::SdkMeterProvider {
         let exporter = opentelemetry_otlp::MetricExporter::builder()
