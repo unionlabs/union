@@ -1,6 +1,6 @@
 <script lang="ts">
 import { chainStore } from "$lib/stores/chain.svelte"
-import { cache } from "$lib/cache/promise.svelte"
+import { cache } from "$lib/snippet-cache/promise.svelte"
 import { browser } from "$app/environment"
 
 const { data, children } = $props()

@@ -1,13 +1,7 @@
 /**
  * Client for the indexer-v2 service (Effect + SQLite)
  */
-
-import { browser } from "$app/environment"
-
-// Indexer-v2 runs on port 3002
-const INDEXER_URL = browser
-  ? (import.meta.env.VITE_INDEXER_URL || "http://localhost:3002")
-  : (process.env.INDEXER_URL || "http://localhost:3002")
+import { INDEXER_URL } from "$lib/config"
 
 // ============ Types matching indexer-v2 API ============
 

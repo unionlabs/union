@@ -2,8 +2,6 @@
 // This ensures the Effect runtime is ready before any pages load
 import { getCurrentChain, getCurrentRuntime } from "$lib/runtime"
 
-// Log runtime initialization
-const chain = getCurrentChain()
-const runtime = getCurrentRuntime()
-console.log(`[Union Explorer] Runtime initialized for ${chain.pretty_name}`)
-console.log(`[Union Explorer] REST endpoint: ${runtime.config.restEndpoint}`)
+// Initialize runtime (side effect ensures it's ready)
+getCurrentChain()
+getCurrentRuntime()

@@ -1,4 +1,4 @@
-import { Config, Context, Layer } from "effect"
+import { Context, Layer } from "effect"
 
 // Chain configuration
 export interface ChainConfig {
@@ -72,5 +72,5 @@ export const IndexerConfigLive = Layer.succeed(IndexerConfigService, {
   pollInterval: 5000,
   blocksToKeep: 100_000, // 100k blocks per chain
   backfillBatchSize: 20,
-  dbPath: "indexer.duckdb",
+  dbPath: "indexer.sqlite",
 })

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { matchPromiseWithCache } from "$lib/cache/promise.svelte"
+import { matchPromiseWithCache } from "$lib/snippet-cache/promise.svelte"
 import { Skeleton } from "$lib/components/ui/skeleton/index.js"
 import { Badge } from "$lib/components/ui/badge/index.js"
 import * as Collapsible from "$lib/components/ui/collapsible/index.js"
@@ -1172,6 +1172,8 @@ function formatEventAttrValue(key: string, value: string): { type: "address" | "
 {/snippet}
 
 {#snippet error(err: unknown)}
+  {@const errStr = String(err)}
+  {@const isNotFound = errStr.includes("500") || errStr.includes("404") || errStr.includes("not found")}
   <div class="relative border border-destructive/50">
     <CornerMarks />
     <div class="p-6">
@@ -1180,13 +1182,23 @@ function formatEventAttrValue(key: string, value: string): { type: "address" | "
           <XIcon class="h-5 w-5 text-destructive" />
         </div>
         <div>
-          <p class="text-lg font-medium text-destructive">Failed to load transaction</p>
-          <p class="text-xs text-muted-foreground">The transaction could not be found or an error occurred</p>
+          <p class="text-lg font-medium text-destructive">
+            {isNotFound ? "Transaction Not Found" : "Failed to load transaction"}
+          </p>
+          <p class="text-xs text-muted-foreground">
+            {#if isNotFound}
+              This transaction may not exist or the block containing it has been pruned from the node.
+            {:else}
+              An error occurred while loading the transaction.
+            {/if}
+          </p>
         </div>
       </div>
-      <div class="p-3 bg-muted/30 mb-4">
-        <p class="text-xs text-muted-foreground font-mono break-all">{String(err)}</p>
-      </div>
+      {#if !isNotFound}
+        <div class="p-3 bg-muted/30 mb-4">
+          <p class="text-xs text-muted-foreground font-mono break-all">{errStr}</p>
+        </div>
+      {/if}
       <a href={urls.transactions()} class="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider hover:underline">
         <ArrowRightIcon class="h-3 w-3 rotate-180" />
         Back to transactions

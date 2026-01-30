@@ -2,6 +2,7 @@ import { Database as BunDB } from "bun:sqlite"
 import { Context, Effect, Layer } from "effect"
 import { statSync } from "node:fs"
 import { IndexerConfigService } from "./config.js"
+import { DatabaseError } from "./errors.js"
 
 // ============ Types ============
 
@@ -12,32 +13,29 @@ export interface Block {
   time: string
   proposer: string
   tx_count: number
-  // Full data
-  header: unknown // Full block header JSON
-  signatures: unknown // Commit signatures JSON
-  tx_hashes: string[] // List of tx hashes in this block
+  header: unknown
+  signatures: unknown
+  tx_hashes: string[]
 }
 
 export interface Transaction {
   chain_id: string
   hash: string
   height: number
-  index: number // Position in block
+  index: number
   code: number
   codespace: string
   gas_used: string
   gas_wanted: string
-  // Full data
-  messages: unknown // Full messages array JSON
+  messages: unknown
   memo: string
-  fee: unknown // Fee JSON {amount, gas_limit, payer, granter}
-  events: unknown // Full events array JSON
+  fee: unknown
+  events: unknown
   raw_log: string
-  tx_bytes: string // Base64 encoded raw tx
+  tx_bytes: string
   timestamp: string
 }
 
-// Chain stats (supply, staking)
 export interface ChainStats {
   chain_id: string
   height: number
@@ -49,7 +47,6 @@ export interface ChainStats {
   community_pool: string
 }
 
-// Analytics types
 export interface MsgTypeStats {
   msg_type: string
   count: number
@@ -72,46 +69,61 @@ export interface HourlyStats {
 
 export interface Db {
   // Inserts
-  insertBlock(block: Block): Effect.Effect<void>
-  insertBlocks(blocks: Block[]): Effect.Effect<void>
-  insertTransaction(tx: Transaction): Effect.Effect<void>
-  insertTransactions(txs: Transaction[]): Effect.Effect<void>
+  insertBlock(block: Block): Effect.Effect<void, DatabaseError>
+  insertBlocks(blocks: Block[]): Effect.Effect<void, DatabaseError>
+  insertTransaction(tx: Transaction): Effect.Effect<void, DatabaseError>
+  insertTransactions(txs: Transaction[]): Effect.Effect<void, DatabaseError>
 
   // Block queries
-  getBlocks(chainId: string, limit: number, before?: number): Effect.Effect<Block[]>
-  getBlockByHeight(chainId: string, height: number): Effect.Effect<Block | null>
-  getBlockByHash(chainId: string, hash: string): Effect.Effect<Block | null>
-  getLatestBlock(chainId: string): Effect.Effect<Block | null>
-  getLatestHeight(chainId: string): Effect.Effect<number>
-  getMinHeight(chainId: string): Effect.Effect<number>
-  getBlockCount(chainId: string): Effect.Effect<number>
+  getBlocks(chainId: string, limit: number, before?: number): Effect.Effect<Block[], DatabaseError>
+  getBlockByHeight(chainId: string, height: number): Effect.Effect<Block | null, DatabaseError>
+  getBlockByHash(chainId: string, hash: string): Effect.Effect<Block | null, DatabaseError>
+  getLatestBlock(chainId: string): Effect.Effect<Block | null, DatabaseError>
+  getLatestHeight(chainId: string): Effect.Effect<number, DatabaseError>
+  getMinHeight(chainId: string): Effect.Effect<number, DatabaseError>
+  getBlockCount(chainId: string): Effect.Effect<number, DatabaseError>
 
   // Transaction queries
-  getTransactions(chainId: string, limit: number, before?: number): Effect.Effect<Transaction[]>
-  getTransactionByHash(chainId: string, hash: string): Effect.Effect<Transaction | null>
-  getTransactionsByHeight(chainId: string, height: number): Effect.Effect<Transaction[]>
+  getTransactions(
+    chainId: string,
+    limit: number,
+    before?: number,
+  ): Effect.Effect<Transaction[], DatabaseError>
+  getTransactionByHash(
+    chainId: string,
+    hash: string,
+  ): Effect.Effect<Transaction | null, DatabaseError>
+  getTransactionsByHeight(
+    chainId: string,
+    height: number,
+  ): Effect.Effect<Transaction[], DatabaseError>
   getTransactionsByAddress(
     chainId: string,
     address: string,
     limit: number,
-  ): Effect.Effect<Transaction[]>
-  getTxCount(chainId: string): Effect.Effect<number>
+  ): Effect.Effect<Transaction[], DatabaseError>
+  getTxCount(chainId: string): Effect.Effect<number, DatabaseError>
 
   // Analytics
-  getMsgTypeStats(chainId: string): Effect.Effect<MsgTypeStats[]>
-  getDailyStats(chainId: string, days: number): Effect.Effect<DailyStats[]>
-  getHourlyStats(chainId: string, hours: number): Effect.Effect<HourlyStats[]>
+  getMsgTypeStats(chainId: string): Effect.Effect<MsgTypeStats[], DatabaseError>
+  getDailyStats(chainId: string, days: number): Effect.Effect<DailyStats[], DatabaseError>
+  getHourlyStats(chainId: string, hours: number): Effect.Effect<HourlyStats[], DatabaseError>
 
   // Chain stats
-  insertChainStats(stats: ChainStats): Effect.Effect<void>
-  getLatestChainStats(chainId: string): Effect.Effect<ChainStats | null>
-  getChainStatsHistory(chainId: string, limit: number): Effect.Effect<ChainStats[]>
+  insertChainStats(stats: ChainStats): Effect.Effect<void, DatabaseError>
+  getLatestChainStats(chainId: string): Effect.Effect<ChainStats | null, DatabaseError>
+  getChainStatsHistory(chainId: string, limit: number): Effect.Effect<ChainStats[], DatabaseError>
 
   // Maintenance
-  pruneOldData(chainId: string, keepHeight: number): Effect.Effect<void>
+  pruneOldData(chainId: string, keepHeight: number): Effect.Effect<void, DatabaseError>
 
   // Stats
-  getDbSizeBytes(): Effect.Effect<number>
+  getDbSizeBytes(): Effect.Effect<number, DatabaseError>
+
+  // Proxy cache
+  getCached(key: string): Effect.Effect<string | null, DatabaseError>
+  setCache(key: string, value: string, ttlSeconds: number): Effect.Effect<void, DatabaseError>
+  pruneExpiredCache(): Effect.Effect<number, DatabaseError>
 }
 
 export class Database extends Context.Tag("Database")<Database, Db>() {}
@@ -170,52 +182,89 @@ function createDb(db: BunDB, dbPath: string): Db {
     }
   })
 
-  // Helper to parse JSON fields from DB
-  const parseBlock = (row: Record<string, unknown>): Block => ({
-    chain_id: row.chain_id as string,
-    height: row.height as number,
-    hash: row.hash as string,
-    time: row.time as string,
-    proposer: row.proposer as string,
-    tx_count: row.tx_count as number,
-    header: JSON.parse(row.header as string || "null"),
-    signatures: JSON.parse(row.signatures as string || "[]"),
-    tx_hashes: JSON.parse(row.tx_hashes as string || "[]"),
+  // Prune in a transaction for atomicity
+  const pruneTransaction = db.transaction((chainId: string, keepHeight: number) => {
+    db.run(`DELETE FROM blocks WHERE chain_id = ? AND height < ?`, [chainId, keepHeight])
+    db.run(`DELETE FROM transactions WHERE chain_id = ? AND height < ?`, [chainId, keepHeight])
+    db.run(`DELETE FROM chain_stats WHERE chain_id = ? AND height < ?`, [chainId, keepHeight])
   })
 
-  const parseTx = (row: Record<string, unknown>): Transaction => ({
-    chain_id: row.chain_id as string,
-    hash: row.hash as string,
-    height: row.height as number,
-    index: row.tx_index as number,
-    code: row.code as number,
-    codespace: row.codespace as string,
-    gas_used: row.gas_used as string,
-    gas_wanted: row.gas_wanted as string,
-    messages: JSON.parse(row.messages as string || "[]"),
-    memo: row.memo as string,
-    fee: JSON.parse(row.fee as string || "{}"),
-    events: JSON.parse(row.events as string || "[]"),
-    raw_log: row.raw_log as string,
-    tx_bytes: row.tx_bytes as string,
-    timestamp: row.timestamp as string,
+  // Safe JSON parse with fallback
+  const safeJsonParse = <T>(value: unknown, fallback: T): T => {
+    if (typeof value !== "string" || !value) {
+      return fallback
+    }
+    try {
+      return JSON.parse(value) as T
+    } catch {
+      return fallback
+    }
+  }
+
+  // Parse block row with validation
+  const parseBlock = (row: Record<string, unknown>): Block => ({
+    chain_id: String(row.chain_id ?? ""),
+    height: Number(row.height ?? 0),
+    hash: String(row.hash ?? ""),
+    time: String(row.time ?? ""),
+    proposer: String(row.proposer ?? ""),
+    tx_count: Number(row.tx_count ?? 0),
+    header: safeJsonParse(row.header, null),
+    signatures: safeJsonParse(row.signatures, []),
+    tx_hashes: safeJsonParse(row.tx_hashes, []),
   })
+
+  // Parse transaction row with validation
+  const parseTx = (row: Record<string, unknown>): Transaction => ({
+    chain_id: String(row.chain_id ?? ""),
+    hash: String(row.hash ?? ""),
+    height: Number(row.height ?? 0),
+    index: Number(row.tx_index ?? 0),
+    code: Number(row.code ?? 0),
+    codespace: String(row.codespace ?? ""),
+    gas_used: String(row.gas_used ?? "0"),
+    gas_wanted: String(row.gas_wanted ?? "0"),
+    messages: safeJsonParse(row.messages, []),
+    memo: String(row.memo ?? ""),
+    fee: safeJsonParse(row.fee, {}),
+    events: safeJsonParse(row.events, []),
+    raw_log: String(row.raw_log ?? ""),
+    tx_bytes: String(row.tx_bytes ?? ""),
+    timestamp: String(row.timestamp ?? ""),
+  })
+
+  // Wrap database operations with proper error handling
+  const dbEffect = <T>(operation: string, fn: () => T): Effect.Effect<T, DatabaseError> =>
+    Effect.try({
+      try: fn,
+      catch: (error) =>
+        new DatabaseError({
+          operation,
+          message: error instanceof Error ? error.message : String(error),
+        }),
+    })
 
   return {
     // Inserts
-    insertBlock: (block) => Effect.sync(() => insertBlocksBatch([block])),
+    insertBlock: (block) =>
+      dbEffect("insertBlock", () => {
+        insertBlocksBatch([block])
+      }),
 
     insertBlocks: (blocks) =>
-      Effect.sync(() => {
+      dbEffect("insertBlocks", () => {
         if (blocks.length > 0) {
           insertBlocksBatch(blocks)
         }
       }),
 
-    insertTransaction: (tx) => Effect.sync(() => insertTxsBatch([tx])),
+    insertTransaction: (tx) =>
+      dbEffect("insertTransaction", () => {
+        insertTxsBatch([tx])
+      }),
 
     insertTransactions: (txs) =>
-      Effect.sync(() => {
+      dbEffect("insertTransactions", () => {
         if (txs.length > 0) {
           insertTxsBatch(txs)
         }
@@ -223,123 +272,153 @@ function createDb(db: BunDB, dbPath: string): Db {
 
     // Block queries
     getBlocks: (chainId, limit, before) =>
-      Effect.sync(() => {
+      dbEffect("getBlocks", () => {
         if (before !== undefined) {
-          const rows = db.query<Record<string, unknown>, [string, number, number]>(
-            `SELECT * FROM blocks WHERE chain_id = ? AND height < ? ORDER BY height DESC LIMIT ?`,
-          ).all(chainId, before, limit)
+          const rows = db
+            .query<Record<string, unknown>, [string, number, number]>(
+              `SELECT * FROM blocks WHERE chain_id = ? AND height < ? ORDER BY height DESC LIMIT ?`,
+            )
+            .all(chainId, before, limit)
           return rows.map(parseBlock)
         }
-        const rows = db.query<Record<string, unknown>, [string, number]>(
-          `SELECT * FROM blocks WHERE chain_id = ? ORDER BY height DESC LIMIT ?`,
-        ).all(chainId, limit)
+        const rows = db
+          .query<Record<string, unknown>, [string, number]>(
+            `SELECT * FROM blocks WHERE chain_id = ? ORDER BY height DESC LIMIT ?`,
+          )
+          .all(chainId, limit)
         return rows.map(parseBlock)
       }),
 
     getBlockByHeight: (chainId, height) =>
-      Effect.sync(() => {
-        const row = db.query<Record<string, unknown>, [string, number]>(
-          `SELECT * FROM blocks WHERE chain_id = ? AND height = ?`,
-        ).get(chainId, height)
+      dbEffect("getBlockByHeight", () => {
+        const row = db
+          .query<Record<string, unknown>, [string, number]>(
+            `SELECT * FROM blocks WHERE chain_id = ? AND height = ?`,
+          )
+          .get(chainId, height)
         return row ? parseBlock(row) : null
       }),
 
     getBlockByHash: (chainId, hash) =>
-      Effect.sync(() => {
-        const row = db.query<Record<string, unknown>, [string, string]>(
-          `SELECT * FROM blocks WHERE chain_id = ? AND hash = ?`,
-        ).get(chainId, hash)
+      dbEffect("getBlockByHash", () => {
+        const row = db
+          .query<Record<string, unknown>, [string, string]>(
+            `SELECT * FROM blocks WHERE chain_id = ? AND hash = ?`,
+          )
+          .get(chainId, hash)
         return row ? parseBlock(row) : null
       }),
 
     getLatestBlock: (chainId) =>
-      Effect.sync(() => {
-        const row = db.query<Record<string, unknown>, [string]>(
-          `SELECT * FROM blocks WHERE chain_id = ? ORDER BY height DESC LIMIT 1`,
-        ).get(chainId)
+      dbEffect("getLatestBlock", () => {
+        const row = db
+          .query<Record<string, unknown>, [string]>(
+            `SELECT * FROM blocks WHERE chain_id = ? ORDER BY height DESC LIMIT 1`,
+          )
+          .get(chainId)
         return row ? parseBlock(row) : null
       }),
 
     getLatestHeight: (chainId) =>
-      Effect.sync(() => {
-        const row = db.query<{ height: number | null }, [string]>(
-          `SELECT MAX(height) as height FROM blocks WHERE chain_id = ?`,
-        ).get(chainId)
-        return row?.height || 0
+      dbEffect("getLatestHeight", () => {
+        const row = db
+          .query<{ height: number | null }, [string]>(
+            `SELECT MAX(height) as height FROM blocks WHERE chain_id = ?`,
+          )
+          .get(chainId)
+        return row?.height ?? 0
       }),
 
     getMinHeight: (chainId) =>
-      Effect.sync(() => {
-        const row = db.query<{ height: number | null }, [string]>(
-          `SELECT MIN(height) as height FROM blocks WHERE chain_id = ?`,
-        ).get(chainId)
-        return row?.height || 0
+      dbEffect("getMinHeight", () => {
+        const row = db
+          .query<{ height: number | null }, [string]>(
+            `SELECT MIN(height) as height FROM blocks WHERE chain_id = ?`,
+          )
+          .get(chainId)
+        return row?.height ?? 0
       }),
 
     getBlockCount: (chainId) =>
-      Effect.sync(() => {
-        const row = db.query<{ count: number }, [string]>(
-          `SELECT COUNT(*) as count FROM blocks WHERE chain_id = ?`,
-        ).get(chainId)
-        return row?.count || 0
+      dbEffect("getBlockCount", () => {
+        const row = db
+          .query<{ count: number }, [string]>(
+            `SELECT COUNT(*) as count FROM blocks WHERE chain_id = ?`,
+          )
+          .get(chainId)
+        return row?.count ?? 0
       }),
 
     // Transaction queries
     getTransactions: (chainId, limit, before) =>
-      Effect.sync(() => {
+      dbEffect("getTransactions", () => {
         if (before !== undefined) {
-          const rows = db.query<Record<string, unknown>, [string, number, number]>(
-            `SELECT * FROM transactions WHERE chain_id = ? AND height < ? ORDER BY height DESC, tx_index ASC LIMIT ?`,
-          ).all(chainId, before, limit)
+          const rows = db
+            .query<Record<string, unknown>, [string, number, number]>(
+              `SELECT * FROM transactions WHERE chain_id = ? AND height < ? ORDER BY height DESC, tx_index ASC LIMIT ?`,
+            )
+            .all(chainId, before, limit)
           return rows.map(parseTx)
         }
-        const rows = db.query<Record<string, unknown>, [string, number]>(
-          `SELECT * FROM transactions WHERE chain_id = ? ORDER BY height DESC, tx_index ASC LIMIT ?`,
-        ).all(chainId, limit)
+        const rows = db
+          .query<Record<string, unknown>, [string, number]>(
+            `SELECT * FROM transactions WHERE chain_id = ? ORDER BY height DESC, tx_index ASC LIMIT ?`,
+          )
+          .all(chainId, limit)
         return rows.map(parseTx)
       }),
 
     getTransactionByHash: (chainId, hash) =>
-      Effect.sync(() => {
-        const row = db.query<Record<string, unknown>, [string, string]>(
-          `SELECT * FROM transactions WHERE chain_id = ? AND hash = ?`,
-        ).get(chainId, hash)
+      dbEffect("getTransactionByHash", () => {
+        const row = db
+          .query<Record<string, unknown>, [string, string]>(
+            `SELECT * FROM transactions WHERE chain_id = ? AND hash = ?`,
+          )
+          .get(chainId, hash)
         return row ? parseTx(row) : null
       }),
 
     getTransactionsByHeight: (chainId, height) =>
-      Effect.sync(() => {
-        const rows = db.query<Record<string, unknown>, [string, number]>(
-          `SELECT * FROM transactions WHERE chain_id = ? AND height = ? ORDER BY tx_index ASC`,
-        ).all(chainId, height)
+      dbEffect("getTransactionsByHeight", () => {
+        const rows = db
+          .query<Record<string, unknown>, [string, number]>(
+            `SELECT * FROM transactions WHERE chain_id = ? AND height = ? ORDER BY tx_index ASC`,
+          )
+          .all(chainId, height)
         return rows.map(parseTx)
       }),
 
     getTransactionsByAddress: (chainId, address, limit) =>
-      Effect.sync(() => {
-        // Escape LIKE wildcards in address to prevent injection
-        const escaped = address.replace(/[%_]/g, "\\$&")
-        const rows = db.query<Record<string, unknown>, [string, string, string, number]>(
-          `SELECT * FROM transactions
-           WHERE chain_id = ? AND (messages LIKE ? ESCAPE '\\' OR messages LIKE ? ESCAPE '\\')
-           ORDER BY height DESC LIMIT ?`,
-        ).all(chainId, `%"sender":"${escaped}"%`, `%"receiver":"${escaped}"%`, limit)
+      dbEffect("getTransactionsByAddress", () => {
+        // Use parameterized LIKE patterns for safety
+        const senderPattern = `%"sender":"${address.replace(/[%_\\]/g, "\\$&")}"%`
+        const receiverPattern = `%"receiver":"${address.replace(/[%_\\]/g, "\\$&")}"%`
+        const rows = db
+          .query<Record<string, unknown>, [string, string, string, number]>(
+            `SELECT * FROM transactions
+             WHERE chain_id = ? AND (messages LIKE ? ESCAPE '\\' OR messages LIKE ? ESCAPE '\\')
+             ORDER BY height DESC LIMIT ?`,
+          )
+          .all(chainId, senderPattern, receiverPattern, limit)
         return rows.map(parseTx)
       }),
 
     getTxCount: (chainId) =>
-      Effect.sync(() => {
-        const row = db.query<{ count: number }, [string]>(
-          `SELECT COUNT(*) as count FROM transactions WHERE chain_id = ?`,
-        ).get(chainId)
-        return row?.count || 0
+      dbEffect("getTxCount", () => {
+        const row = db
+          .query<{ count: number }, [string]>(
+            `SELECT COUNT(*) as count FROM transactions WHERE chain_id = ?`,
+          )
+          .get(chainId)
+        return row?.count ?? 0
       }),
 
     // Analytics
     getMsgTypeStats: (chainId) =>
-      Effect.sync(() => {
-        // Extract first message type from messages JSON array
-        return db.query<MsgTypeStats, [string]>(`
+      dbEffect("getMsgTypeStats", () =>
+        db
+          .query<MsgTypeStats, [string]>(
+            `
           SELECT
             json_extract(messages, '$[0]."@type"') as msg_type,
             COUNT(*) as count,
@@ -348,12 +427,15 @@ function createDb(db: BunDB, dbPath: string): Db {
           FROM transactions WHERE chain_id = ?
           GROUP BY json_extract(messages, '$[0]."@type"')
           ORDER BY count DESC
-        `).all(chainId)
-      }),
+        `,
+          )
+          .all(chainId)),
 
     getDailyStats: (chainId, days) =>
-      Effect.sync(() =>
-        db.query<DailyStats, [string, string]>(`
+      dbEffect("getDailyStats", () =>
+        db
+          .query<DailyStats, [string, string]>(
+            `
           SELECT
             date(time) as date,
             COUNT(*) as block_count,
@@ -362,12 +444,15 @@ function createDb(db: BunDB, dbPath: string): Db {
           WHERE chain_id = ? AND time >= datetime('now', ?)
           GROUP BY date(time)
           ORDER BY date DESC
-        `).all(chainId, `-${days} days`)
-      ),
+        `,
+          )
+          .all(chainId, `-${days} days`)),
 
     getHourlyStats: (chainId, hours) =>
-      Effect.sync(() =>
-        db.query<HourlyStats, [string, string]>(`
+      dbEffect("getHourlyStats", () =>
+        db
+          .query<HourlyStats, [string, string]>(
+            `
           SELECT
             strftime('%Y-%m-%d %H:00', timestamp) as hour,
             COUNT(*) as count
@@ -375,12 +460,13 @@ function createDb(db: BunDB, dbPath: string): Db {
           WHERE chain_id = ? AND timestamp >= datetime('now', ?)
           GROUP BY strftime('%Y-%m-%d %H:00', timestamp)
           ORDER BY hour DESC
-        `).all(chainId, `-${hours} hours`)
-      ),
+        `,
+          )
+          .all(chainId, `-${hours} hours`)),
 
     // Chain stats
     insertChainStats: (stats) =>
-      Effect.sync(() => {
+      dbEffect("insertChainStats", () => {
         db.run(
           `
           INSERT OR REPLACE INTO chain_stats
@@ -401,45 +487,87 @@ function createDb(db: BunDB, dbPath: string): Db {
       }),
 
     getLatestChainStats: (chainId) =>
-      Effect.sync(() => {
-        const row = db.query<ChainStats, [string]>(
-          `SELECT * FROM chain_stats WHERE chain_id = ? ORDER BY height DESC LIMIT 1`,
-        ).get(chainId)
-        return row || null
+      dbEffect("getLatestChainStats", () => {
+        const row = db
+          .query<ChainStats, [string]>(
+            `SELECT * FROM chain_stats WHERE chain_id = ? ORDER BY height DESC LIMIT 1`,
+          )
+          .get(chainId)
+        return row ?? null
       }),
 
     getChainStatsHistory: (chainId, limit) =>
-      Effect.sync(() => {
-        return db.query<ChainStats, [string, number]>(
-          `SELECT * FROM chain_stats WHERE chain_id = ? ORDER BY height DESC LIMIT ?`,
-        ).all(chainId, limit)
-      }),
+      dbEffect("getChainStatsHistory", () =>
+        db
+          .query<ChainStats, [string, number]>(
+            `SELECT * FROM chain_stats WHERE chain_id = ? ORDER BY height DESC LIMIT ?`,
+          )
+          .all(chainId, limit)),
 
-    // Maintenance
+    // Maintenance - atomic transaction for all deletions
     pruneOldData: (chainId, keepHeight) =>
-      Effect.sync(() => {
-        db.run(`DELETE FROM blocks WHERE chain_id = ? AND height < ?`, [chainId, keepHeight])
-        db.run(`DELETE FROM transactions WHERE chain_id = ? AND height < ?`, [chainId, keepHeight])
-        db.run(`DELETE FROM chain_stats WHERE chain_id = ? AND height < ?`, [chainId, keepHeight])
+      dbEffect("pruneOldData", () => {
+        pruneTransaction(chainId, keepHeight)
       }),
 
     // Stats
     getDbSizeBytes: () =>
-      Effect.sync(() => {
+      dbEffect("getDbSizeBytes", () => {
         let totalSize = 0
-        // Main database file
         try {
           totalSize += statSync(dbPath).size
-        } catch { /* file may not exist */ }
-        // WAL file
+        } catch {
+          /* file may not exist */
+        }
         try {
           totalSize += statSync(`${dbPath}-wal`).size
-        } catch { /* WAL may not exist */ }
-        // SHM file
+        } catch {
+          /* WAL may not exist */
+        }
         try {
           totalSize += statSync(`${dbPath}-shm`).size
-        } catch { /* SHM may not exist */ }
+        } catch {
+          /* SHM may not exist */
+        }
         return totalSize
+      }),
+
+    // Proxy cache - get with lazy expiry check
+    getCached: (key) =>
+      dbEffect("getCached", () => {
+        const now = Math.floor(Date.now() / 1000)
+        const row = db
+          .query<{ value: string; expires_at: number }, [string]>(
+            `SELECT value, expires_at FROM proxy_cache WHERE key = ?`,
+          )
+          .get(key)
+        if (!row) {
+          return null
+        }
+        if (row.expires_at < now) {
+          // Expired - delete and return null
+          db.run(`DELETE FROM proxy_cache WHERE key = ?`, [key])
+          return null
+        }
+        return row.value
+      }),
+
+    // Proxy cache - set with TTL
+    setCache: (key, value, ttlSeconds) =>
+      dbEffect("setCache", () => {
+        const now = Math.floor(Date.now() / 1000)
+        db.run(
+          `INSERT OR REPLACE INTO proxy_cache (key, value, cached_at, expires_at) VALUES (?, ?, ?, ?)`,
+          [key, value, now, now + ttlSeconds],
+        )
+      }),
+
+    // Prune expired cache entries - returns count deleted
+    pruneExpiredCache: () =>
+      dbEffect("pruneExpiredCache", () => {
+        const now = Math.floor(Date.now() / 1000)
+        const result = db.run(`DELETE FROM proxy_cache WHERE expires_at < ?`, [now])
+        return result.changes
       }),
   }
 }
@@ -456,9 +584,9 @@ function initSchema(db: BunDB): void {
       time TEXT NOT NULL,
       proposer TEXT NOT NULL,
       tx_count INTEGER NOT NULL,
-      header TEXT,          -- Full block header JSON
-      signatures TEXT,      -- Commit signatures JSON array
-      tx_hashes TEXT,       -- Array of tx hashes in this block
+      header TEXT,
+      signatures TEXT,
+      tx_hashes TEXT,
       PRIMARY KEY (chain_id, height)
     );
 
@@ -472,12 +600,12 @@ function initSchema(db: BunDB): void {
       codespace TEXT,
       gas_used TEXT NOT NULL,
       gas_wanted TEXT NOT NULL,
-      messages TEXT,        -- Full messages array JSON
+      messages TEXT,
       memo TEXT,
-      fee TEXT,             -- Fee JSON object
-      events TEXT,          -- Full events array JSON
+      fee TEXT,
+      events TEXT,
       raw_log TEXT,
-      tx_bytes TEXT,        -- Base64 encoded raw tx
+      tx_bytes TEXT,
       timestamp TEXT NOT NULL,
       PRIMARY KEY (chain_id, hash)
     );
@@ -502,18 +630,34 @@ function initSchema(db: BunDB): void {
     CREATE INDEX IF NOT EXISTS idx_txs_hash ON transactions(hash);
     CREATE INDEX IF NOT EXISTS idx_txs_timestamp ON transactions(timestamp);
     CREATE INDEX IF NOT EXISTS idx_chain_stats_chain_height ON chain_stats(chain_id, height DESC);
+
+    -- Proxy response cache (for upstream requests)
+    CREATE TABLE IF NOT EXISTS proxy_cache (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      cached_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_cache_expires ON proxy_cache(expires_at);
   `)
 }
 
 // ============ Layer ============
 
-export const DatabaseLive = Layer.effect(
+export const DatabaseLive = Layer.scoped(
   Database,
   Effect.gen(function*() {
     const config = yield* IndexerConfigService
 
-    const dbPath = config.dbPath.replace(".duckdb", ".sqlite")
+    const dbPath = config.dbPath
     const db = new BunDB(dbPath, { create: true })
+
+    // Proper cleanup on shutdown
+    yield* Effect.addFinalizer(() =>
+      Effect.sync(() => {
+        db.close()
+      }).pipe(Effect.tap(() => Effect.log("Database closed")))
+    )
 
     // Optimize for write-heavy workload
     db.exec("PRAGMA journal_mode = WAL")

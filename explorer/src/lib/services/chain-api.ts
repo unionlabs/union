@@ -1,14 +1,9 @@
 // Simple chain API client - all requests go through indexer proxy
 // Indexer handles: serving indexed data or proxying to chain REST
 
-import { browser } from "$app/environment"
+import { INDEXER_URL } from "$lib/config"
 
 const TIMEOUT = 15_000
-
-// Indexer URL - in browser use env var, on server use localhost
-const INDEXER_URL = browser
-  ? (import.meta.env.VITE_INDEXER_URL || "http://localhost:3002")
-  : (process.env.INDEXER_URL || "http://localhost:3002")
 
 export class ChainApiError extends Error {
   constructor(message: string, public status?: number) {

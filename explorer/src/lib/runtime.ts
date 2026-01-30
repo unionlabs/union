@@ -1,5 +1,6 @@
 import { browser } from "$app/environment"
 import { type ChainConfig, DEFAULT_CHAIN, getChain } from "$lib/chains/config"
+import { INDEXER_URL } from "$lib/config"
 import {
   CosmosClient,
   type CosmosClientConfig,
@@ -8,10 +9,6 @@ import {
 import { chainStore } from "$lib/stores/chain.svelte"
 import { Effect, Layer, Logger, LogLevel } from "effect"
 
-// Proxy endpoints for browser requests to avoid CORS
-const REST_PROXY = "/api/cosmos"
-const RPC_PROXY = "/api/rpc"
-
 // Cache of runtimes by universal chain ID
 const runtimeCache = new Map<string, ReturnType<typeof createChainRuntime>>()
 
@@ -19,11 +16,14 @@ const runtimeCache = new Map<string, ReturnType<typeof createChainRuntime>>()
 export const createChainRuntime = (universalChainId: string) => {
   const chain = getChain(universalChainId) ?? getChain(DEFAULT_CHAIN)!
 
-  // Use proxy for browser, direct API for server
-  // Browser: single proxy endpoint (proxy handles racing internally)
-  // Server: race all endpoints directly
-  const restEndpoint = browser ? REST_PROXY : chain.api[0]
-  const rpcEndpoint = browser ? RPC_PROXY : chain.rpc[0]
+  // Browser: use indexer's proxy endpoints (has CORS enabled)
+  // Server: race chain endpoints directly for better performance
+  const restEndpoint = browser
+    ? `${INDEXER_URL}/${universalChainId}/rest`
+    : chain.api[0]
+  const rpcEndpoint = browser
+    ? `${INDEXER_URL}/${universalChainId}/rpc`
+    : chain.rpc[0]
 
   const config: CosmosClientConfig = {
     restEndpoint,
@@ -32,7 +32,7 @@ export const createChainRuntime = (universalChainId: string) => {
     rpcEndpoint,
     // Additional RPC endpoints for racing (server-side only)
     ...(browser ? {} : { rpcEndpoints: chain.rpc.slice(1) }),
-    chainName: universalChainId, // Pass universal chain ID for proxy header
+    chainName: universalChainId,
   }
 
   const MainLayer = CosmosClientLive(config).pipe(
@@ -73,3 +73,9 @@ export function getCurrentChain(): ChainConfig {
 // Run an effect with the current chain's runtime
 export const runPromise = <A, E>(effect: Effect.Effect<A, E, CosmosClient>) =>
   getCurrentRuntime().runPromise(effect)
+
+// Run an effect with a specific chain's runtime
+export const runPromiseWithChain = <A, E>(
+  effect: Effect.Effect<A, E, CosmosClient>,
+  chainId: string,
+) => getRuntime(chainId).runPromise(effect)

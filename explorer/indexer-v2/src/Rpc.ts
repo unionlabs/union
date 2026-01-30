@@ -1,5 +1,6 @@
 import { Duration, Effect, Schedule } from "effect"
 import type { ChainConfig } from "./config.js"
+import { UpstreamError } from "./errors.js"
 
 // ============ RPC Response Types ============
 
@@ -23,7 +24,6 @@ export interface BlockchainResponse {
 
 // ============ REST Response Types ============
 
-// Full block from REST API
 export interface RestBlock {
   block_id: {
     hash: string
@@ -47,7 +47,7 @@ export interface RestBlock {
       proposer_address: string
     }
     data: {
-      txs: string[] | null // Base64 encoded txs
+      txs: string[] | null
     }
     evidence: { evidence: unknown[] }
     last_commit: {
@@ -64,7 +64,6 @@ export interface RestBlock {
   }
 }
 
-// Full transaction from REST API
 export interface RestTxResponse {
   height: string
   txhash: string
@@ -108,7 +107,6 @@ export interface RestTxsResponse {
   pagination: { total: string; next_key: string | null }
 }
 
-// Staking pool response
 export interface StakingPoolResponse {
   pool: {
     not_bonded_tokens: string
@@ -116,18 +114,15 @@ export interface StakingPoolResponse {
   }
 }
 
-// Supply response
 export interface SupplyResponse {
   supply: Array<{ denom: string; amount: string }>
   pagination: { next_key: string | null; total: string }
 }
 
-// Inflation response
 export interface InflationResponse {
   inflation: string
 }
 
-// Community pool response
 export interface CommunityPoolResponse {
   pool: Array<{ denom: string; amount: string }>
 }
@@ -138,10 +133,12 @@ const fetchRace = <T>(
   endpoints: string[],
   path: string,
   timeout = 15000,
-): Effect.Effect<T, Error> =>
+): Effect.Effect<T, UpstreamError> =>
   Effect.gen(function*() {
     if (endpoints.length === 0) {
-      return yield* Effect.fail(new Error("No endpoints"))
+      return yield* Effect.fail(
+        new UpstreamError({ endpoint: "none", message: "No endpoints configured" }),
+      )
     }
 
     const controller = new AbortController()
@@ -160,7 +157,11 @@ const fetchRace = <T>(
               return res.json()
             }),
           ),
-        catch: (e) => new Error(String(e)),
+        catch: (e) =>
+          new UpstreamError({
+            endpoint: endpoints[0] ?? "unknown",
+            message: e instanceof Error ? e.message : String(e),
+          }),
       })
       return result as T
     } finally {
@@ -197,9 +198,7 @@ export const createRpcClient = (chain: ChainConfig) => ({
     fetchRace<RestTxsResponse>(
       chain.rest,
       `/cosmos/tx/v1beta1/txs?query=tx.height=${height}&pagination.limit=100`,
-    ).pipe(
-      Effect.retry(retryPolicy),
-    ),
+    ).pipe(Effect.retry(retryPolicy)),
 
   // Chain stats endpoints
   getStakingPool: () =>

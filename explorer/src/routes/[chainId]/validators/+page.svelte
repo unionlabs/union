@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte"
 import { invalidate } from "$app/navigation"
-import { matchPromiseWithCache, cache } from "$lib/cache/promise.svelte"
+import { matchPromiseWithCache, cache } from "$lib/snippet-cache/promise.svelte"
 import { Skeleton } from "$lib/components/ui/skeleton/index.js"
 import { Badge } from "$lib/components/ui/badge/index.js"
 import { formatAmount, formatPercent } from "$lib/utils/format"

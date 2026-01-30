@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from "svelte"
 import { invalidate } from "$app/navigation"
-import { matchPromiseWithCache } from "$lib/cache/promise.svelte"
+import { matchPromiseWithCache } from "$lib/snippet-cache/promise.svelte"
 import { Skeleton } from "$lib/components/ui/skeleton/index.js"
 import { Badge } from "$lib/components/ui/badge/index.js"
 import { formatTimeAgo, truncateHash, truncateAddress } from "$lib/utils/format"

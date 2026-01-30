@@ -1,6 +1,27 @@
 import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
 import { Schema } from "effect"
 
+// ============ Error Schemas ============
+
+export class NotFoundError extends Schema.TaggedError<NotFoundError>()("NotFoundError", {
+  message: Schema.String,
+}) {}
+
+export class UpstreamError extends Schema.TaggedError<UpstreamError>()("UpstreamError", {
+  message: Schema.String,
+}) {}
+
+export class DatabaseError extends Schema.TaggedError<DatabaseError>()("DatabaseError", {
+  message: Schema.String,
+}) {}
+
+export class ChainNotFoundError extends Schema.TaggedError<ChainNotFoundError>()(
+  "ChainNotFoundError",
+  {
+    message: Schema.String,
+  },
+) {}
+
 // ============ Schemas ============
 
 export const BlockSchema = Schema.Struct({
@@ -119,6 +140,7 @@ export class HealthApi extends HttpApiGroup.make("health", { topLevel: true })
   .add(
     HttpApiEndpoint.get("health", "/health")
       .addSuccess(HealthResponse)
+      .addError(DatabaseError, { status: 500 })
       .annotate(OpenApi.Summary, "Get indexer health and sync status"),
   )
   .add(
@@ -135,39 +157,53 @@ export class ChainApi extends HttpApiGroup.make("chain")
   .add(
     HttpApiEndpoint.get("blocks", "/:chainId/blocks")
       .setPath(Schema.Struct({ chainId: Schema.String }))
-      .setUrlParams(Schema.Struct({
-        limit: Schema.optionalWith(Schema.NumberFromString, { default: () => 50 }),
-        before: Schema.optional(Schema.NumberFromString), // cursor: get blocks before this height
-      }))
+      .setUrlParams(
+        Schema.Struct({
+          limit: Schema.optionalWith(Schema.NumberFromString, { default: () => 50 }),
+          before: Schema.optional(Schema.NumberFromString),
+        }),
+      )
       .addSuccess(BlocksResponse)
+      .addError(ChainNotFoundError, { status: 404 })
+      .addError(DatabaseError, { status: 500 })
       .annotate(OpenApi.Summary, "Get recent blocks for a chain"),
   )
   .add(
     HttpApiEndpoint.get("blockByHeight", "/:chainId/block/:height")
       .setPath(Schema.Struct({ chainId: Schema.String, height: Schema.NumberFromString }))
       .addSuccess(BlockResponse)
+      .addError(ChainNotFoundError, { status: 404 })
+      .addError(DatabaseError, { status: 500 })
       .annotate(OpenApi.Summary, "Get full block by height"),
   )
   .add(
     HttpApiEndpoint.get("transactions", "/:chainId/txs")
       .setPath(Schema.Struct({ chainId: Schema.String }))
-      .setUrlParams(Schema.Struct({
-        limit: Schema.optionalWith(Schema.NumberFromString, { default: () => 50 }),
-        before: Schema.optional(Schema.NumberFromString), // cursor: get txs before this height
-      }))
+      .setUrlParams(
+        Schema.Struct({
+          limit: Schema.optionalWith(Schema.NumberFromString, { default: () => 50 }),
+          before: Schema.optional(Schema.NumberFromString),
+        }),
+      )
       .addSuccess(TransactionsResponse)
+      .addError(ChainNotFoundError, { status: 404 })
+      .addError(DatabaseError, { status: 500 })
       .annotate(OpenApi.Summary, "Get recent transactions for a chain"),
   )
   .add(
     HttpApiEndpoint.get("transactionByHash", "/:chainId/tx/:hash")
       .setPath(Schema.Struct({ chainId: Schema.String, hash: Schema.String }))
       .addSuccess(TransactionResponse)
+      .addError(ChainNotFoundError, { status: 404 })
+      .addError(DatabaseError, { status: 500 })
       .annotate(OpenApi.Summary, "Get full transaction by hash"),
   )
   .add(
     HttpApiEndpoint.get("transactionsByHeight", "/:chainId/block/:height/txs")
       .setPath(Schema.Struct({ chainId: Schema.String, height: Schema.NumberFromString }))
       .addSuccess(TransactionsResponse)
+      .addError(ChainNotFoundError, { status: 404 })
+      .addError(DatabaseError, { status: 500 })
       .annotate(OpenApi.Summary, "Get all transactions in a block"),
   )
   .add(
@@ -179,12 +215,15 @@ export class ChainApi extends HttpApiGroup.make("chain")
         }),
       )
       .addSuccess(TransactionsResponse)
+      .addError(ChainNotFoundError, { status: 404 })
+      .addError(DatabaseError, { status: 500 })
       .annotate(OpenApi.Summary, "Get transactions for an address"),
   )
   .add(
     HttpApiEndpoint.get("status", "/:chainId/status")
       .setPath(Schema.Struct({ chainId: Schema.String }))
       .addSuccess(ChainStatusResponse)
+      .addError(ChainNotFoundError, { status: 404 })
       .annotate(OpenApi.Summary, "Get sync status for a chain"),
   )
   .annotateContext(
@@ -219,6 +258,8 @@ export class AnalyticsApi extends HttpApiGroup.make("analytics")
     HttpApiEndpoint.get("chainStats", "/:chainId/analytics/stats")
       .setPath(Schema.Struct({ chainId: Schema.String }))
       .addSuccess(ChainStatsResponse)
+      .addError(ChainNotFoundError, { status: 404 })
+      .addError(DatabaseError, { status: 500 })
       .annotate(OpenApi.Summary, "Get latest chain stats (supply, staking)"),
   )
   .add(
@@ -230,12 +271,16 @@ export class AnalyticsApi extends HttpApiGroup.make("analytics")
         }),
       )
       .addSuccess(ChainStatsHistoryResponse)
+      .addError(ChainNotFoundError, { status: 404 })
+      .addError(DatabaseError, { status: 500 })
       .annotate(OpenApi.Summary, "Get chain stats history"),
   )
   .add(
     HttpApiEndpoint.get("msgTypes", "/:chainId/analytics/msg-types")
       .setPath(Schema.Struct({ chainId: Schema.String }))
       .addSuccess(MsgTypeStatsResponse)
+      .addError(ChainNotFoundError, { status: 404 })
+      .addError(DatabaseError, { status: 500 })
       .annotate(OpenApi.Summary, "Get message type statistics"),
   )
   .add(
@@ -245,6 +290,8 @@ export class AnalyticsApi extends HttpApiGroup.make("analytics")
         Schema.Struct({ days: Schema.optionalWith(Schema.NumberFromString, { default: () => 7 }) }),
       )
       .addSuccess(DailyStatsResponse)
+      .addError(ChainNotFoundError, { status: 404 })
+      .addError(DatabaseError, { status: 500 })
       .annotate(OpenApi.Summary, "Get daily block/tx statistics"),
   )
   .add(
@@ -256,6 +303,8 @@ export class AnalyticsApi extends HttpApiGroup.make("analytics")
         }),
       )
       .addSuccess(HourlyStatsResponse)
+      .addError(ChainNotFoundError, { status: 404 })
+      .addError(DatabaseError, { status: 500 })
       .annotate(OpenApi.Summary, "Get hourly transaction statistics"),
   )
   .annotateContext(
@@ -269,12 +318,18 @@ export class ProxyApi extends HttpApiGroup.make("proxy")
     HttpApiEndpoint.get("proxyRest", "/:chainId/rest/*")
       .setPath(Schema.Struct({ "chainId": Schema.String, "*": Schema.String }))
       .addSuccess(Schema.Unknown)
+      .addError(NotFoundError, { status: 404 })
+      .addError(UpstreamError, { status: 502 })
+      .addError(ChainNotFoundError, { status: 404 })
       .annotate(OpenApi.Summary, "Proxy request to chain REST API"),
   )
   .add(
     HttpApiEndpoint.get("proxyRpc", "/:chainId/rpc/*")
       .setPath(Schema.Struct({ "chainId": Schema.String, "*": Schema.String }))
       .addSuccess(Schema.Unknown)
+      .addError(NotFoundError, { status: 404 })
+      .addError(UpstreamError, { status: 502 })
+      .addError(ChainNotFoundError, { status: 404 })
       .annotate(OpenApi.Summary, "Proxy request to chain RPC API"),
   )
   .annotateContext(

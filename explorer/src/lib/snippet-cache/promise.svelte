@@ -1,7 +1,10 @@
-<script lang="ts" module>
+<script
+  lang="ts"
+  module
+>
+import type { CacheKey, CacheValue } from "$lib/snippet-cache/schema"
 import { untrack } from "svelte"
 import type { Snippet } from "svelte"
-import type { CacheKey, CacheValue } from "$lib/cache/schema"
 
 type CacheEntry<T> = {
   value: T
@@ -20,11 +23,15 @@ function getStorageKey(cacheKey: string): string {
 }
 
 function loadFromStorage<T>(cacheKey: string): CacheEntry<T> | null {
-  if (typeof localStorage === "undefined") return null
+  if (typeof localStorage === "undefined") {
+    return null
+  }
 
   try {
     const stored = localStorage.getItem(getStorageKey(cacheKey))
-    if (!stored) return null
+    if (!stored) {
+      return null
+    }
     return JSON.parse(stored)
   } catch {
     return null
@@ -32,7 +39,9 @@ function loadFromStorage<T>(cacheKey: string): CacheEntry<T> | null {
 }
 
 function saveToStorage<T>(cacheKey: string, entry: CacheEntry<T>) {
-  if (typeof localStorage === "undefined") return
+  if (typeof localStorage === "undefined") {
+    return
+  }
 
   try {
     localStorage.setItem(getStorageKey(cacheKey), JSON.stringify(entry))
@@ -42,7 +51,9 @@ function saveToStorage<T>(cacheKey: string, entry: CacheEntry<T>) {
 }
 
 function removeFromStorage(cacheKey: string) {
-  if (typeof localStorage === "undefined") return
+  if (typeof localStorage === "undefined") {
+    return
+  }
   localStorage.removeItem(getStorageKey(cacheKey))
 }
 
@@ -62,7 +73,9 @@ function getCachedValue<K extends CacheKey>(cacheKey: K, ttl?: number): CacheVal
     }
   }
 
-  if (!entry) return null
+  if (!entry) {
+    return null
+  }
 
   // Check if TTL expired (still return stale data - stale-while-revalidate)
   return entry.value
@@ -100,7 +113,9 @@ function invalidateCache(cacheKey: CacheKey) {
 
 function clearAllCache() {
   Object.keys(caches).forEach((key) => delete (caches as any)[key])
-  if (typeof localStorage === "undefined") return
+  if (typeof localStorage === "undefined") {
+    return
+  }
 
   const keysToRemove: string[] = []
   for (let i = 0; i < localStorage.length; i++) {
@@ -131,7 +146,7 @@ export const cache: {
   data: caches,
 }
 
-export { matchPromiseWithCache, matchPromise }
+export { matchPromise, matchPromiseWithCache }
 </script>
 
 {#snippet matchPromiseWithCache<T, E, K extends CacheKey = CacheKey>(
@@ -142,7 +157,7 @@ export { matchPromiseWithCache, matchPromise }
     onLoading: Snippet<[]>
     onSuccess: Snippet<[T]>
     onError: Snippet<[E]>
-  }
+  },
 )}
   {@const cached = getCachedValue(options.cacheKey, options.ttl) as T | null}
   {#await promise}
@@ -169,7 +184,7 @@ export { matchPromiseWithCache, matchPromise }
     onLoading: Snippet<[]>
     onSuccess: Snippet<[T]>
     onError: Snippet<[E]>
-  }
+  },
 )}
   {#await promise}
     {@render options.onLoading()}

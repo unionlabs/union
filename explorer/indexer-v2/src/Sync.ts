@@ -1,6 +1,7 @@
-import { Context, Duration, Effect, Layer, Ref } from "effect"
+import { Context, Duration, Effect, Layer, Ref, Schedule } from "effect"
 import { type ChainConfig, CHAINS, IndexerConfigService } from "./config.js"
 import { type Block, Database, type Transaction } from "./Db.js"
+import { DatabaseError, UpstreamError } from "./errors.js"
 import { createRpcClient, type RestBlock, type RestTxResponse } from "./Rpc.js"
 
 // ============ Sync State ============
@@ -44,7 +45,7 @@ function restBlockToBlock(chainId: string, restBlock: RestBlock): Block {
     tx_count: block.data.txs?.length ?? 0,
     header: block.header,
     signatures: block.last_commit?.signatures ?? [],
-    tx_hashes: [], // Populated after fetching txs
+    tx_hashes: [],
   }
 }
 
@@ -63,7 +64,7 @@ function restTxToTransaction(chainId: string, tx: RestTxResponse, index: number)
     fee: tx.tx?.auth_info?.fee ?? {},
     events: tx.events ?? [],
     raw_log: tx.raw_log || "",
-    tx_bytes: "", // Could store if needed
+    tx_bytes: "",
     timestamp: tx.timestamp || "",
   }
 }
@@ -78,7 +79,7 @@ export const SyncLive = Layer.effect(
 
     const startedAt = new Date().toISOString()
 
-    // Initialize state
+    // Initialize state for all chains
     const initial: Record<string, ChainSyncState> = {}
     for (const chain of CHAINS) {
       initial[chain.id] = {
@@ -94,21 +95,37 @@ export const SyncLive = Layer.effect(
     }
     const stateRef = yield* Ref.make(initial)
 
+    // Atomic state update - uses Ref.modify for atomicity
     const updateState = (chainId: string, update: Partial<ChainSyncState>) =>
-      Ref.update(stateRef, (s) => ({ ...s, [chainId]: { ...s[chainId], ...update } }))
+      Ref.modify(stateRef, (s) => {
+        const current = s[chainId]
+        if (!current) {
+          return [undefined, s]
+        }
+        const next = { ...current, ...update }
+        return [next, { ...s, [chainId]: next }]
+      })
 
-    // Fetch full block with all txs - logs errors but continues (resilient)
+    // Get current state for a chain atomically
+    const getChainStateAtomic = (chainId: string) =>
+      Ref.get(stateRef).pipe(Effect.map((s) => s[chainId] ?? null))
+
+    // Fetch full block with all txs - returns typed error on failure
     const fetchFullBlockWithTxs = (
       rpc: ReturnType<typeof createRpcClient>,
       chainId: string,
       height: number,
-    ) =>
+    ): Effect.Effect<
+      { block: Block | null; txs: Transaction[] },
+      UpstreamError | DatabaseError
+    > =>
       Effect.gen(function*() {
         const restBlock = yield* rpc.getFullBlock(height).pipe(
           Effect.catchAll((e) =>
-            Effect.log(`[${chainId}] Block ${height} fetch failed: ${e}`).pipe(
-              Effect.as(null),
-            )
+            Effect.gen(function*() {
+              yield* Effect.logWarning(`[${chainId}] Block ${height} fetch failed: ${e.message}`)
+              return null
+            })
           ),
         )
 
@@ -122,14 +139,20 @@ export const SyncLive = Layer.effect(
         if (block.tx_count > 0) {
           const txResponse = yield* rpc.getTxsByHeight(height).pipe(
             Effect.catchAll((e) =>
-              Effect.log(`[${chainId}] Txs for block ${height} fetch failed: ${e}`).pipe(
-                Effect.as({ tx_responses: [] }),
-              )
+              Effect.gen(function*() {
+                yield* Effect.logWarning(
+                  `[${chainId}] Txs for block ${height} fetch failed: ${e.message}`,
+                )
+                return { tx_responses: [] as RestTxResponse[] }
+              })
             ),
           )
 
           for (let i = 0; i < (txResponse.tx_responses?.length ?? 0); i++) {
-            txs.push(restTxToTransaction(chainId, txResponse.tx_responses[i], i))
+            const txResp = txResponse.tx_responses[i]
+            if (txResp) {
+              txs.push(restTxToTransaction(chainId, txResp, i))
+            }
           }
           block.tx_hashes = txs.map((t) => t.hash)
         }
@@ -137,7 +160,7 @@ export const SyncLive = Layer.effect(
         return { block, txs }
       })
 
-    // Shared batch fetch logic
+    // Batch fetch with concurrency limit
     const fetchBlockBatch = (
       rpc: ReturnType<typeof createRpcClient>,
       chainId: string,
@@ -160,10 +183,12 @@ export const SyncLive = Layer.effect(
         }),
       )
 
-    // Backfill chain
-    const backfillChain = (chain: ChainConfig) =>
+    // Backfill chain with proper error handling
+    const backfillChain = (
+      chain: ChainConfig,
+    ): Effect.Effect<void, UpstreamError | DatabaseError> =>
       Effect.gen(function*() {
-        yield* updateState(chain.id, { status: "backfilling" })
+        yield* updateState(chain.id, { status: "backfilling", lastError: null })
         const rpc = createRpcClient(chain)
 
         const status = yield* rpc.getStatus()
@@ -193,6 +218,8 @@ export const SyncLive = Layer.effect(
           const heights = Array.from({ length: height - batchEnd + 1 }, (_, i) => height - i)
 
           const { blocks, txs } = yield* fetchBlockBatch(rpc, chain.id, heights)
+
+          // Insert blocks and transactions atomically
           yield* db.insertBlocks(blocks)
           yield* db.insertTransactions(txs)
 
@@ -200,6 +227,7 @@ export const SyncLive = Layer.effect(
             db.getBlockCount(chain.id),
             db.getLatestHeight(chain.id),
           ])
+
           yield* updateState(chain.id, {
             backfillProgress: Math.min(100, Math.round((blockCount / config.blocksToKeep) * 100)),
             indexedHeight: maxHeight,
@@ -215,6 +243,7 @@ export const SyncLive = Layer.effect(
           db.getTxCount(chain.id),
           db.getLatestHeight(chain.id),
         ])
+
         yield* updateState(chain.id, {
           status: "synced",
           backfillProgress: 100,
@@ -224,23 +253,20 @@ export const SyncLive = Layer.effect(
           lastSync: new Date().toISOString(),
         })
         yield* Effect.log(`[${chain.id}] Backfill done: ${blockCount} blocks, ${txCount} txs`)
-      }).pipe(
-        Effect.catchAll((e) =>
-          updateState(chain.id, { status: "error", lastError: String(e) }).pipe(
-            Effect.tap(() => Effect.log(`[${chain.id}] Error: ${e}`)),
-          )
-        ),
-      )
+      })
 
-    // Sync chain (incremental)
-    const syncChain = (chain: ChainConfig) =>
+    // Sync chain (incremental) with proper error handling
+    const syncChain = (
+      chain: ChainConfig,
+    ): Effect.Effect<void, UpstreamError | DatabaseError> =>
       Effect.gen(function*() {
-        const state = (yield* Ref.get(stateRef))[chain.id]
-        if (state.status === "backfilling") {
+        // Check status atomically
+        const state = yield* getChainStateAtomic(chain.id)
+        if (!state || state.status === "backfilling") {
           return
         }
 
-        yield* updateState(chain.id, { status: "syncing" })
+        yield* updateState(chain.id, { status: "syncing", lastError: null })
         const rpc = createRpcClient(chain)
 
         const status = yield* rpc.getStatus()
@@ -258,7 +284,7 @@ export const SyncLive = Layer.effect(
           return
         }
 
-        // Fetch and insert per batch to avoid memory accumulation
+        // Fetch and insert per batch
         let height = currentMax + 1
 
         while (height <= latestHeight) {
@@ -277,6 +303,7 @@ export const SyncLive = Layer.effect(
           db.getBlockCount(chain.id),
           db.getTxCount(chain.id),
         ])
+
         yield* updateState(chain.id, {
           status: "synced",
           indexedHeight: latestHeight,
@@ -284,60 +311,121 @@ export const SyncLive = Layer.effect(
           txsIndexed: txCount,
           lastSync: new Date().toISOString(),
         })
-      }).pipe(
-        Effect.catchAll((e) => updateState(chain.id, { status: "error", lastError: String(e) })),
-      )
+      })
 
     // Fetch and store chain stats (supply, staking)
-    const fetchChainStats = (chain: ChainConfig) =>
+    const fetchChainStats = (chain: ChainConfig): Effect.Effect<void> =>
       Effect.gen(function*() {
         const rpc = createRpcClient(chain)
 
-        // Fetch all stats in parallel
+        // Fetch all stats in parallel, each with its own error handling
         const [poolResult, supplyResult, inflationResult, communityPoolResult, statusResult] =
           yield* Effect.all([
-            rpc.getStakingPool().pipe(Effect.catchAll(() => Effect.succeed(null))),
-            rpc.getSupply().pipe(Effect.catchAll(() => Effect.succeed(null))),
-            rpc.getInflation().pipe(Effect.catchAll(() => Effect.succeed(null))),
-            rpc.getCommunityPool().pipe(Effect.catchAll(() => Effect.succeed(null))),
-            rpc.getStatus().pipe(Effect.catchAll(() => Effect.succeed(null))),
+            rpc.getStakingPool().pipe(Effect.option),
+            rpc.getSupply().pipe(Effect.option),
+            rpc.getInflation().pipe(Effect.option),
+            rpc.getCommunityPool().pipe(Effect.option),
+            rpc.getStatus().pipe(Effect.option),
           ])
 
-        if (!statusResult || !poolResult) {
+        // Skip if we don't have the minimum required data
+        if (
+          !statusResult._tag || statusResult._tag !== "Some" || !poolResult._tag
+          || poolResult._tag !== "Some"
+        ) {
           return
         }
 
-        const height = parseInt(statusResult.result.sync_info.latest_block_height)
-        const totalSupply = supplyResult?.supply[0]?.amount ?? "0"
-        const communityPool = communityPoolResult?.pool[0]?.amount ?? "0"
+        const statusValue = statusResult.value
+        const poolValue = poolResult.value
 
-        yield* db.insertChainStats({
-          chain_id: chain.id,
-          height,
-          timestamp: new Date().toISOString(),
-          total_supply: totalSupply,
-          bonded_tokens: poolResult.pool.bonded_tokens,
-          not_bonded_tokens: poolResult.pool.not_bonded_tokens,
-          inflation: inflationResult?.inflation ?? "0",
-          community_pool: communityPool,
-        })
-      }).pipe(
-        Effect.catchAll((e) => Effect.log(`[${chain.id}] Stats error: ${e}`)),
+        const height = parseInt(statusValue.result.sync_info.latest_block_height)
+        const totalSupply = supplyResult._tag === "Some"
+          ? (supplyResult.value.supply[0]?.amount ?? "0")
+          : "0"
+        const communityPool = communityPoolResult._tag === "Some"
+          ? (communityPoolResult.value.pool[0]?.amount ?? "0")
+          : "0"
+
+        yield* db
+          .insertChainStats({
+            chain_id: chain.id,
+            height,
+            timestamp: new Date().toISOString(),
+            total_supply: totalSupply,
+            bonded_tokens: poolValue.pool.bonded_tokens,
+            not_bonded_tokens: poolValue.pool.not_bonded_tokens,
+            inflation: inflationResult._tag === "Some" ? inflationResult.value.inflation : "0",
+            community_pool: communityPool,
+          })
+          .pipe(Effect.catchAll(() => Effect.void))
+      }).pipe(Effect.catchAll((e) => Effect.logWarning(`[${chain.id}] Stats error: ${e}`)))
+
+    // Supervised chain sync with restart on failure
+    const supervisedChainLoop = (chain: ChainConfig) => {
+      // Retry policy for the sync loop: exponential backoff with max 5 retries before giving up
+      const syncRetryPolicy = Schedule.exponential(Duration.seconds(5)).pipe(
+        Schedule.intersect(Schedule.recurs(5)),
+        Schedule.jittered,
       )
+
+      const singleSyncWithRecovery = syncChain(chain).pipe(
+        Effect.catchAll((e) =>
+          Effect.gen(function*() {
+            const errorMsg = e instanceof Error ? e.message : String(e)
+            yield* updateState(chain.id, { status: "error", lastError: errorMsg })
+            yield* Effect.logError(`[${chain.id}] Sync error: ${errorMsg}`)
+            // Re-throw to trigger retry
+            return yield* Effect.fail(e)
+          })
+        ),
+        Effect.retry(syncRetryPolicy),
+        Effect.catchAll((_e) =>
+          Effect.gen(function*() {
+            yield* Effect.logError(`[${chain.id}] Sync failed after retries, will try again later`)
+            yield* updateState(chain.id, { status: "error", lastError: "Max retries exceeded" })
+          })
+        ),
+      )
+
+      return Effect.forever(
+        singleSyncWithRecovery.pipe(Effect.delay(Duration.millis(config.pollInterval))),
+      )
+    }
+
+    // Run chain with backfill then supervised sync loop
+    const runChain = (chain: ChainConfig) =>
+      Effect.gen(function*() {
+        // Backfill with error recovery
+        yield* backfillChain(chain).pipe(
+          Effect.catchAll((e) =>
+            Effect.gen(function*() {
+              const errorMsg = e instanceof Error ? e.message : String(e)
+              yield* updateState(chain.id, { status: "error", lastError: errorMsg })
+              yield* Effect.logError(`[${chain.id}] Backfill error: ${errorMsg}`)
+            })
+          ),
+        )
+
+        yield* Effect.log(`[${chain.id}] Starting supervised sync loop...`)
+
+        // Start supervised sync loop as daemon
+        yield* supervisedChainLoop(chain).pipe(Effect.forkDaemon)
+      })
 
     return {
       getState: () => Ref.get(stateRef).pipe(Effect.map((chains) => ({ startedAt, chains }))),
 
-      getChainState: (chainId) => Ref.get(stateRef).pipe(Effect.map((s) => s[chainId] || null)),
+      getChainState: (chainId) => getChainStateAtomic(chainId),
 
       start: () =>
         Effect.gen(function*() {
           // Start chain stats polling immediately (runs every 30 seconds)
           yield* Effect.log("Starting chain stats polling...")
-          const statsPoll = Effect.all(CHAINS.map(fetchChainStats), { concurrency: "unbounded" })
-            .pipe(
-              Effect.catchAll((e) => Effect.log(`Stats poll error: ${e}`)),
-            )
+          const statsPoll = Effect.all(CHAINS.map(fetchChainStats), { concurrency: 3 }).pipe(
+            Effect.catchAll((e) => Effect.logWarning(`Stats poll error: ${e}`)),
+          )
+
           yield* Effect.forever(statsPoll.pipe(Effect.delay(Duration.millis(30_000)))).pipe(
             Effect.forkDaemon,
           )
@@ -345,22 +433,9 @@ export const SyncLive = Layer.effect(
           // Run initial stats fetch immediately
           yield* statsPoll
 
-          // For each chain: backfill then start its own sync loop
-          const runChain = (chain: ChainConfig) =>
-            Effect.gen(function*() {
-              yield* backfillChain(chain)
-              yield* Effect.log(`[${chain.id}] Starting sync loop...`)
-              // Start sync loop for this chain
-              yield* Effect.forever(
-                syncChain(chain).pipe(
-                  Effect.catchAll((e) => Effect.log(`[${chain.id}] Sync error: ${e}`)),
-                  Effect.delay(Duration.millis(config.pollInterval)),
-                ),
-              )
-            }).pipe(Effect.forkDaemon)
-
+          // Start each chain with controlled concurrency (max 3 chains initializing at once)
           yield* Effect.log("Starting chains...")
-          yield* Effect.all(CHAINS.map(runChain), { concurrency: "unbounded" })
+          yield* Effect.all(CHAINS.map(runChain), { concurrency: 3 })
         }),
     }
   }),

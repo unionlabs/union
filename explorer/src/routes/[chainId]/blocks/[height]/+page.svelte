@@ -1,5 +1,5 @@
 <script lang="ts">
-import { matchPromiseWithCache, cache } from "$lib/cache/promise.svelte"
+import { matchPromiseWithCache, cache } from "$lib/snippet-cache/promise.svelte"
 import { Skeleton } from "$lib/components/ui/skeleton/index.js"
 import { Badge } from "$lib/components/ui/badge/index.js"
 import * as Collapsible from "$lib/components/ui/collapsible/index.js"
@@ -94,7 +94,7 @@ function copyToClipboard(text: string) {
   {@const header = block.block.header}
   {@const signatures = block.block.last_commit?.signatures ?? []}
   {@const signedCount = signatures.filter(s => s.signature !== null).length}
-  {@const txCount = block.block.data.txs.length}
+  {@const txCount = block.block.data?.txs?.length ?? 0}
 
   <div class="space-y-6">
     <!-- Hero Header -->
@@ -229,8 +229,10 @@ function copyToClipboard(text: string) {
 
       {@render sectionHeader("Block ID", "02")}
       {@render dataRow("Hash", block.block_id.hash, { mono: true, copy: true })}
-      {@render dataRow("Part Set Hash", block.block_id.part_set_header.hash, { mono: true, copy: true })}
-      {@render dataRow("Part Set Total", block.block_id.part_set_header.total)}
+      {#if block.block_id.part_set_header}
+        {@render dataRow("Part Set Hash", block.block_id.part_set_header.hash, { mono: true, copy: true })}
+        {@render dataRow("Part Set Total", block.block_id.part_set_header.total)}
+      {/if}
     </div>
 
     <!-- Header Hashes -->
@@ -278,9 +280,13 @@ function copyToClipboard(text: string) {
         </Collapsible.Trigger>
         <Collapsible.Content>
           <div class="border-t border-border">
-            {@render dataRow("Hash", header.last_block_id.hash, { mono: true, copy: true, link: urls.block(Number(header.height) - 1) })}
-            {@render dataRow("Part Set Hash", header.last_block_id.part_set_header.hash, { mono: true, copy: true })}
-            {@render dataRow("Part Set Total", header.last_block_id.part_set_header.total)}
+            {#if header.last_block_id?.hash}
+              {@render dataRow("Hash", header.last_block_id.hash, { mono: true, copy: true, link: urls.block(Number(header.height) - 1) })}
+            {/if}
+            {#if header.last_block_id?.part_set_header?.hash}
+              {@render dataRow("Part Set Hash", header.last_block_id.part_set_header.hash, { mono: true, copy: true })}
+              {@render dataRow("Part Set Total", header.last_block_id.part_set_header.total)}
+            {/if}
           </div>
         </Collapsible.Content>
       </div>
@@ -327,9 +333,15 @@ function copyToClipboard(text: string) {
           </Collapsible.Trigger>
           <Collapsible.Content>
             <div class="border-t border-border">
-              {@render dataRow("Height", block.block.last_commit.height)}
-              {@render dataRow("Round", block.block.last_commit.round)}
-              {@render dataRow("Block ID", block.block.last_commit.block_id.hash, { mono: true, copy: true })}
+              {#if block.block.last_commit?.height}
+                {@render dataRow("Height", block.block.last_commit.height)}
+              {/if}
+              {#if block.block.last_commit?.round !== undefined}
+                {@render dataRow("Round", block.block.last_commit.round)}
+              {/if}
+              {#if block.block.last_commit?.block_id?.hash}
+                {@render dataRow("Block ID", block.block.last_commit.block_id.hash, { mono: true, copy: true })}
+              {/if}
 
               {#if signatures.length > 0}
                 <div class="border-t border-border">
@@ -449,11 +461,21 @@ function copyToClipboard(text: string) {
 {/snippet}
 
 {#snippet error(err: unknown)}
+  {@const errStr = String(err)}
+  {@const isPruned = errStr.includes("500") || errStr.includes("404") || errStr.includes("not found")}
   <div class="relative border border-destructive/50">
     <CornerMarks />
     <div class="p-6">
-      <p class="text-sm font-medium text-destructive mb-2">Failed to load block</p>
-      <p class="text-xs text-muted-foreground font-mono">{String(err)}</p>
+      <p class="text-sm font-medium text-destructive mb-2">
+        {isPruned ? "Block Not Available" : "Failed to load block"}
+      </p>
+      <p class="text-xs text-muted-foreground mb-2">
+        {#if isPruned}
+          Block #{data.height} may have been pruned from the node. Most public nodes only keep recent block history.
+        {:else}
+          {errStr}
+        {/if}
+      </p>
       <a href={urls.blocks()} class="inline-block mt-4 text-xs font-mono uppercase tracking-wider hover:underline">
         Back to blocks
       </a>
