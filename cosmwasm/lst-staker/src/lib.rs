@@ -4,7 +4,7 @@ use std::{collections::BTreeMap, num::NonZeroU32};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     Addr, Binary, Coin, DecCoin, Decimal256, DelegatorReward, Deps, DepsMut, DistributionMsg, Env,
-    Int256, MessageInfo, Response, StakingMsg, StdError, Uint128, Uint256, to_json_binary,
+    Int256, MessageInfo, Response, StakingMsg, StdError, Uint128, Uint256, ensure, to_json_binary,
     wasm_execute,
 };
 use cw_account::ensure_local_admin_or_self;
@@ -90,7 +90,9 @@ pub fn execute(
 
             rebase(deps.as_ref(), &env)
         }
-        ExecuteMsg::ReceiveUnstakedTokens { batch_id } => {
+        ExecuteMsg::Staker(StakerExecuteMsg::ReceiveUnstakedTokens { batch_id }) => {
+            ensure_lst_hub(deps.as_ref(), &info)?;
+
             receive_unstaked_tokens(deps.as_ref(), &env, batch_id)
         }
     }
@@ -441,16 +443,16 @@ fn receive_unstaked_tokens(
 
     // get expected_native_unstaked from the submitted batch
     let unstaked_amount = match batch {
-        Batch::Submitted(b) => {
+        Batch::Submitted(submitted_batch) => {
             // make sure the current time is over the batch receive time
-            let current_time_in_seconds = env.block.time.seconds();
-            if current_time_in_seconds < b.receive_time {
-                return Err(ContractError::BatchNotReady {
-                    now: current_time_in_seconds,
-                    ready_at: b.receive_time,
-                });
-            }
-            b.expected_native_unstaked
+            ensure!(
+                submitted_batch.receive_time <= env.block.time.seconds(),
+                ContractError::BatchNotReady {
+                    now: env.block.time.seconds(),
+                    ready_at: submitted_batch.receive_time,
+                }
+            );
+            submitted_batch.expected_native_unstaked
         }
         Batch::Pending(_) => {
             return Err(ContractError::BatchStillPending { batch_id });
@@ -464,7 +466,7 @@ fn receive_unstaked_tokens(
         // call receive unstaked tokens with the unstaked tokens to lst hub
         .add_message(wasm_execute(
             lst_hub,
-            &ExecuteMsg::ReceiveUnstakedTokens { batch_id },
+            &lst::msg::ExecuteMsg::ReceiveUnstakedTokens { batch_id },
             vec![Coin {
                 denom: query_native_token_denom(deps)?,
                 amount: Uint128::new(unstaked_amount),
