@@ -26,6 +26,7 @@ import TwitterIcon from "@lucide/svelte/icons/twitter"
 import VoteIcon from "@lucide/svelte/icons/vote"
 import WalletIcon from "@lucide/svelte/icons/wallet"
 import type { Component, ComponentProps } from "svelte"
+import { cn } from "$lib/utils"
 
 const socialIcons: Record<SocialLink["type"], Component> = {
   twitter: TwitterIcon,
@@ -97,7 +98,7 @@ let { ...restProps }: ComponentProps<typeof Sidebar.Root> = $props()
   <Sidebar.Header class="p-2">
     <DropdownMenu.Root>
       <DropdownMenu.Trigger class="w-full">
-        <div class="flex items-center gap-2 px-2 py-1.5 hover:bg-muted transition-colors group">
+        <div class="flex items-center gap-2 px-2 py-1.5 hover:bg-muted transition-colors">
           <div class="flex size-6 items-center justify-center bg-foreground text-background text-xs font-bold font-mono shrink-0">
             {currentChain.pretty_name.charAt(0)}
           </div>
@@ -151,14 +152,14 @@ let { ...restProps }: ComponentProps<typeof Sidebar.Root> = $props()
   </Sidebar.Header>
 
   <Sidebar.Content class="py-2">
-    <!-- Search -->
-    <div class="px-2 pb-2">
+    <!-- Search (hidden when collapsed) -->
+    <div class="px-2 pb-2 group-data-[collapsible=icon]:hidden">
       <SearchCommand />
     </div>
 
     <Sidebar.Group>
       <Sidebar.GroupLabel
-        class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-3 py-2"
+        class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-3 py-2 group-data-[collapsible=icon]:hidden"
       >
         Explorer
       </Sidebar.GroupLabel>
@@ -177,10 +178,14 @@ let { ...restProps }: ComponentProps<typeof Sidebar.Root> = $props()
                   <a
                     href={url}
                     {...props}
-                    class="flex items-center gap-3 px-2 py-1.5 text-sm transition-colors {active ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
+                    class={cn(
+                      props.class,
+                      "flex items-center gap-2 px-2 py-1.5 text-sm transition-colors",
+                      active ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
                   >
-                    <item.icon class="h-4 w-4" />
-                    <span class="font-medium">{item.title}</span>
+                    <item.icon class="h-4 w-4 shrink-0" />
+                    <span class="font-medium truncate group-data-[collapsible=icon]:hidden">{item.title}</span>
                   </a>
                 {/snippet}
               </Sidebar.MenuButton>
@@ -194,7 +199,7 @@ let { ...restProps }: ComponentProps<typeof Sidebar.Root> = $props()
     {#if dev}
       <Sidebar.Group>
         <Sidebar.GroupLabel
-          class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-3 py-2"
+          class="text-[10px] font-mono uppercase tracking-wider text-muted-foreground px-3 py-2 group-data-[collapsible=icon]:hidden"
         >
           Dev Tools
         </Sidebar.GroupLabel>
@@ -210,10 +215,14 @@ let { ...restProps }: ComponentProps<typeof Sidebar.Root> = $props()
                   <a
                     href="/health"
                     {...props}
-                    class="flex items-center gap-3 px-2 py-1.5 text-sm transition-colors {$page.url.pathname === '/health' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}"
+                    class={cn(
+                      props.class,
+                      "flex items-center gap-2 px-2 py-1.5 text-sm transition-colors",
+                      $page.url.pathname === '/health' ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
                   >
-                    <ActivityIcon class="h-4 w-4" />
-                    <span class="font-medium">Indexer Health</span>
+                    <ActivityIcon class="h-4 w-4 shrink-0" />
+                    <span class="font-medium truncate group-data-[collapsible=icon]:hidden">Indexer Health</span>
                   </a>
                 {/snippet}
               </Sidebar.MenuButton>
