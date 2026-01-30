@@ -151,7 +151,7 @@ impl IbcClient for SuiLightClient {
             );
         }
 
-        if client_state.latest_checkpoint > header.checkpoint_summary.sequence_number {
+        if client_state.latest_checkpoint < header.checkpoint_summary.sequence_number {
             client_state.latest_checkpoint = header.checkpoint_summary.sequence_number;
             state_update = state_update.overwrite_client_state(ClientState::V1(client_state));
         }
