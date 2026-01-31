@@ -92,7 +92,7 @@ impl Engine<InMemoryQueue<VoyagerMessage>> {
             equivalent_chain_ids: Default::default(),
             ipc_client_request_timeout: Default::default(),
             cache_config: Default::default(),
-            metrics_endpoint: Default::default(),
+            trace_ratio: default_trace_ratio(),
             num_workers: 1,
             rest_laddr: default_rest_laddr(),
             rpc_laddr: default_rpc_laddr(),
@@ -180,7 +180,7 @@ impl<Q: Queue<VoyagerMessage>> Engine<Q> {
             info!("spawning {} workers", self.num_workers);
 
             for id in 0..self.num_workers {
-                debug!("spawning worker {id}");
+                trace!("spawning worker {id}");
 
                 tasks.push(Box::pin(
                     AssertUnwindSafe(
@@ -256,7 +256,7 @@ impl<Q: Queue<VoyagerMessage>> Engine<Q> {
                                 .await;
                             }
                         }
-                        .instrument(info_span!("optimize", %plugin_name)), // .instrument(trace_span!("optimize_verbose", filter = %filter.to_string())),
+                        .instrument(trace_span!("optimize", %plugin_name)), // .instrument(trace_span!("optimize_verbose", filter = %filter.to_string())),
                     )
                     .catch_unwind(),
                 ));
@@ -296,7 +296,7 @@ pub struct EngineBuilder<Q: Queue<VoyagerMessage> = InMemoryQueue<VoyagerMessage
     equivalent_chain_ids: EquivalentChainIds,
     ipc_client_request_timeout: Duration,
     cache_config: cache::Config,
-    metrics_endpoint: Option<String>,
+    trace_ratio: Option<f64>,
     ibc_spec_handlers: IbcSpecHandlers,
     num_workers: usize,
     rest_laddr: SocketAddr,
@@ -340,9 +340,9 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
         }
     }
 
-    pub fn with_metrics_endpoint(self, metrics_endpoint: String) -> Self {
+    pub fn with_trace_ratio(self, trace_ratio: Option<f64>) -> Self {
         Self {
-            metrics_endpoint: Some(metrics_endpoint),
+            trace_ratio,
             ..self
         }
     }
@@ -385,7 +385,7 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
             equivalent_chain_ids: self.equivalent_chain_ids,
             ipc_client_request_timeout: self.ipc_client_request_timeout,
             cache_config: self.cache_config,
-            metrics_endpoint: self.metrics_endpoint,
+            trace_ratio: self.trace_ratio,
             ibc_spec_handlers: self.ibc_spec_handlers,
             num_workers: self.num_workers,
             rest_laddr: self.rest_laddr,
@@ -470,7 +470,7 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
                         cancellation_token.clone(),
                         [plugin_config.config.to_string()]
                             .into_iter()
-                            .chain(self.metrics_endpoint.clone()),
+                            .chain(self.trace_ratio.map(|r| r.to_string())),
                     ));
 
                     let rpc_client = WorkerClient::new(&name, self.ipc_client_request_timeout);
@@ -526,7 +526,7 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
 
                 Ok(())
             },
-            self.metrics_endpoint.clone(),
+            self.trace_ratio,
         )
         .await?;
 
@@ -562,7 +562,7 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
 
                 Ok(())
             },
-            self.metrics_endpoint.clone(),
+            self.trace_ratio,
         )
         .await?;
 
@@ -604,7 +604,7 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
 
                 Ok(())
             },
-            self.metrics_endpoint.clone(),
+            self.trace_ratio,
         )
         .await?;
 
@@ -664,7 +664,7 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
 
                 Ok(())
             },
-            self.metrics_endpoint.clone(),
+            self.trace_ratio,
         )
         .await?;
 
@@ -716,7 +716,7 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
 
                 Ok(())
             },
-            self.metrics_endpoint.clone(),
+            self.trace_ratio,
         )
         .await?;
 
@@ -1101,7 +1101,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                         .server
                         .context()?
                         .plugin(&plugin)?
-                        .with_id_and_current_context(self.server.id()),
+                        .with_id(self.server.id()),
                     message,
                 )
                 .await
@@ -1157,7 +1157,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                     .server
                     .context()?
                     .client_module(&client_type, &ibc_interface, &ibc_spec_id)?
-                    .with_id_and_current_context(self.server.id());
+                    .with_id(self.server.id());
 
                 let ibc_spec_handler =
                     self.server.context()?.ibc_spec_handlers.get(&ibc_spec_id)?;
@@ -1200,7 +1200,7 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
                         .server
                         .context()?
                         .plugin(&plugin)?
-                        .with_id_and_current_context(self.server.id()),
+                        .with_id(self.server.id()),
                     message,
                     data,
                 )
@@ -1260,7 +1260,7 @@ async fn modules_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
     ipc_client_request_timeout: Duration,
     id_f: fn(&Info) -> String,
     mut push_f: impl FnMut(&Info, WorkerClient) -> anyhow::Result<()>,
-    metrics_endpoint: Option<String>,
+    trace_ratio: Option<f64>,
 ) -> anyhow::Result<()> {
     stream::iter(configs)
         .filter(|module_config| {
@@ -1322,7 +1322,7 @@ async fn modules_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
                     serde_json::to_string(&module_config.info).unwrap(),
                 ]
                 .into_iter()
-                .chain(metrics_endpoint.clone()),
+                .chain(trace_ratio.map(|r| r.to_string())),
             ));
 
             let rpc_client = WorkerClient::new(&id, ipc_client_request_timeout);
@@ -1402,6 +1402,12 @@ impl<T: PluginClient<Value, Value> + Send + Sync> Pass<VoyagerMessage> for Plugi
 
 #[must_use]
 #[inline]
+pub const fn default_trace_ratio() -> Option<f64> {
+    Some(1.0)
+}
+
+#[must_use]
+#[inline]
 pub const fn default_rest_laddr() -> SocketAddr {
     SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 7177)
 }
@@ -1410,11 +1416,6 @@ pub const fn default_rest_laddr() -> SocketAddr {
 #[inline]
 pub const fn default_rpc_laddr() -> SocketAddr {
     SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 7178)
-}
-
-#[must_use]
-pub fn default_metrics_endpoint() -> String {
-    "http://localhost:4318".to_owned()
 }
 
 #[must_use]

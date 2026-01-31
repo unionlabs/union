@@ -19,7 +19,7 @@ use sqlx::{
     Either, Executor, PgPool, Postgres, Transaction, postgres::PgPoolOptions, prelude::FromRow,
     types::Json,
 };
-use tracing::{Instrument, debug, debug_span, error, info, info_span, instrument, trace, warn};
+use tracing::{Instrument, debug, error, info, info_span, instrument, trace, trace_span, warn};
 use voyager_vm::{
     BoxDynError, Captures, EnqueueResult, ItemId, Op, QueueError, QueueMessage,
     filter::{FilterResult, Interest, InterestFilter},
@@ -497,7 +497,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         })
     }
 
-    #[instrument(skip_all)]
+    #[instrument(level = "trace", skip_all)]
     async fn process<'a, F, Fut, R, Filter>(
         &'a self,
         filter: &'a Filter,
@@ -563,7 +563,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         Ok(res)
     }
 
-    #[instrument(skip_all, fields(%tag))]
+    #[instrument(level = "trace", skip_all, fields(%tag))]
     async fn optimize<'a, O, Filter>(
         &'a self,
         tag: &'a str,
@@ -638,7 +638,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             ready,
         } = optimizer
             .run_pass(msgs.clone())
-            .instrument(debug_span!(
+            .instrument(trace_span!(
                 "optimizing items",
                 ids = ids
                     .iter()

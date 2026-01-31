@@ -1,10 +1,16 @@
 use std::{env::VarError, time::Duration};
 
-use opentelemetry::KeyValue;
-use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::{Resource, propagation::TraceContextPropagator};
+use opentelemetry::{KeyValue, global, trace::TracerProvider};
+use opentelemetry_otlp::{MetricExporter, SpanExporter};
+use opentelemetry_sdk::{
+    Resource,
+    metrics::{MeterProviderBuilder, PeriodicReader, Temporality},
+    propagation::TraceContextPropagator,
+    trace::{RandomIdGenerator, Sampler, SdkTracerProvider},
+};
 use serde::de::DeserializeOwned;
-use tracing::{Instrument, debug_span, error, instrument};
+use tracing::{Instrument, error, instrument, trace_span};
+use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use unionlabs::ErrorReporter;
 pub use voyager_plugin_protocol as protocol;
@@ -19,7 +25,7 @@ use voyager_rpc::{
     },
 };
 
-#[allow(async_fn_in_trait)]
+#[expect(async_fn_in_trait)]
 pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
     type Call: Member;
     type Callback: Member;
@@ -41,7 +47,7 @@ pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
                 worker_socket,
                 coordinator_socket,
                 config,
-                metrics_endpoint,
+                trace_ratio,
             } => {
                 let config = must_parse::<Self::Config>(&config);
 
@@ -49,7 +55,7 @@ pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
 
                 let name = info.name;
 
-                init(metrics_endpoint, &name);
+                init(trace_ratio, &name);
 
                 worker_server(
                     name.clone(),
@@ -58,7 +64,7 @@ pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
                     Self::new(config),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("main", %name))
+                .instrument(trace_span!("main", %name))
                 .await;
             }
             PluginApp::Info { config } => {
@@ -71,7 +77,7 @@ pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
     }
 }
 
-#[allow(async_fn_in_trait)]
+#[expect(async_fn_in_trait)]
 pub trait StateModule<V: IbcSpec>: StateModuleServer<V> + Sized {
     type Config: DeserializeOwned + Clone;
 
@@ -84,7 +90,7 @@ pub trait StateModule<V: IbcSpec>: StateModuleServer<V> + Sized {
                 coordinator_socket,
                 config,
                 info,
-                metrics_endpoint,
+                trace_ratio,
             } => {
                 let config = must_parse::<Self::Config>(&config);
 
@@ -92,7 +98,7 @@ pub trait StateModule<V: IbcSpec>: StateModuleServer<V> + Sized {
 
                 let name = info.id();
 
-                init(metrics_endpoint, &name);
+                init(trace_ratio, &name);
 
                 worker_server(
                     name.clone(),
@@ -101,14 +107,14 @@ pub trait StateModule<V: IbcSpec>: StateModuleServer<V> + Sized {
                     Self::new(config, info),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("run_state_module_server", %name))
+                .instrument(trace_span!("run_state_module_server", %name))
                 .await
             }
         }
     }
 }
 
-#[allow(async_fn_in_trait)]
+#[expect(async_fn_in_trait)]
 pub trait ProofModule<V: IbcSpec>: ProofModuleServer<V> + Sized {
     type Config: DeserializeOwned + Clone;
 
@@ -121,7 +127,7 @@ pub trait ProofModule<V: IbcSpec>: ProofModuleServer<V> + Sized {
                 coordinator_socket,
                 config,
                 info,
-                metrics_endpoint,
+                trace_ratio,
             } => {
                 let config = must_parse::<Self::Config>(&config);
 
@@ -129,7 +135,7 @@ pub trait ProofModule<V: IbcSpec>: ProofModuleServer<V> + Sized {
 
                 let name = info.id();
 
-                init(metrics_endpoint, &name);
+                init(trace_ratio, &name);
 
                 worker_server(
                     name.clone(),
@@ -138,14 +144,14 @@ pub trait ProofModule<V: IbcSpec>: ProofModuleServer<V> + Sized {
                     Self::new(config, info),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("run_proof_module_server", %name))
+                .instrument(trace_span!("run_proof_module_server", %name))
                 .await
             }
         }
     }
 }
 
-#[allow(async_fn_in_trait)]
+#[expect(async_fn_in_trait)]
 pub trait FinalityModule: FinalityModuleServer + Sized {
     type Config: DeserializeOwned + Clone;
 
@@ -158,7 +164,7 @@ pub trait FinalityModule: FinalityModuleServer + Sized {
                 coordinator_socket,
                 config,
                 info,
-                metrics_endpoint,
+                trace_ratio,
             } => {
                 let config = must_parse::<Self::Config>(&config);
 
@@ -166,7 +172,7 @@ pub trait FinalityModule: FinalityModuleServer + Sized {
 
                 let name = info.id();
 
-                init(metrics_endpoint, &name);
+                init(trace_ratio, &name);
 
                 worker_server(
                     name.clone(),
@@ -175,14 +181,14 @@ pub trait FinalityModule: FinalityModuleServer + Sized {
                     Self::new(config, info),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("run_finality_module_server", %name))
+                .instrument(trace_span!("run_finality_module_server", %name))
                 .await
             }
         }
     }
 }
 
-#[allow(async_fn_in_trait)]
+#[expect(async_fn_in_trait)]
 pub trait ClientModule: ClientModuleServer + Sized {
     type Config: DeserializeOwned + Clone;
 
@@ -195,7 +201,7 @@ pub trait ClientModule: ClientModuleServer + Sized {
                 coordinator_socket,
                 config,
                 info,
-                metrics_endpoint,
+                trace_ratio,
             } => {
                 let config = must_parse::<Self::Config>(&config);
 
@@ -203,7 +209,7 @@ pub trait ClientModule: ClientModuleServer + Sized {
 
                 let name = info.id();
 
-                init(metrics_endpoint, &name);
+                init(trace_ratio, &name);
 
                 worker_server(
                     name.clone(),
@@ -212,14 +218,14 @@ pub trait ClientModule: ClientModuleServer + Sized {
                     Self::new(config, info),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("run_client_module_server", %name))
+                .instrument(trace_span!("run_client_module_server", %name))
                 .await
             }
         }
     }
 }
 
-#[allow(async_fn_in_trait)]
+#[expect(async_fn_in_trait)]
 pub trait ClientBootstrapModule: ClientBootstrapModuleServer + Sized {
     type Config: DeserializeOwned + Clone;
 
@@ -232,7 +238,7 @@ pub trait ClientBootstrapModule: ClientBootstrapModuleServer + Sized {
                 coordinator_socket,
                 config,
                 info,
-                metrics_endpoint,
+                trace_ratio,
             } => {
                 let config = must_parse::<Self::Config>(&config);
 
@@ -240,7 +246,7 @@ pub trait ClientBootstrapModule: ClientBootstrapModuleServer + Sized {
 
                 let name = info.id();
 
-                init(metrics_endpoint, &name);
+                init(trace_ratio, &name);
 
                 worker_server(
                     name.clone(),
@@ -249,7 +255,7 @@ pub trait ClientBootstrapModule: ClientBootstrapModuleServer + Sized {
                     Self::new(config, info),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("run_client_bootstrap_module_server", %name))
+                .instrument(trace_span!("run_client_bootstrap_module_server", %name))
                 .await
             }
         }
@@ -262,7 +268,7 @@ enum PluginApp<Cmd: clap::Subcommand> {
         worker_socket: String,
         coordinator_socket: String,
         config: String,
-        metrics_endpoint: Option<String>,
+        trace_ratio: Option<f64>,
     },
     Info {
         config: String,
@@ -282,12 +288,12 @@ enum ModuleApp {
         coordinator_socket: String,
         config: String,
         info: String,
-        metrics_endpoint: Option<String>,
+        trace_ratio: Option<f64>,
     },
 }
 
 // set up logging and metrics
-fn init(metrics_endpoint: Option<String>, name: &str) {
+fn init(trace_ratio: Option<f64>, name: &str) {
     enum LogFormat {
         Text,
         Json,
@@ -306,87 +312,55 @@ fn init(metrics_endpoint: Option<String>, name: &str) {
         }
     };
 
-    opentelemetry::global::set_text_map_propagator(TraceContextPropagator::new());
-
-    if let Some(metrics_endpoint) = metrics_endpoint {
-        dbg!(&metrics_endpoint);
-
-        // Construct MeterProvider for MetricsLayer
-        fn init_meter_provider(
-            metrics_endpoint: &str,
-        ) -> opentelemetry_sdk::metrics::SdkMeterProvider {
-            let exporter = opentelemetry_otlp::MetricExporter::builder()
-                .with_http()
-                // .with_endpoint(metrics_endpoint)
-                .with_temporality(opentelemetry_sdk::metrics::Temporality::default())
-                .build()
-                .unwrap();
-
-            let reader = opentelemetry_sdk::metrics::PeriodicReader::builder(exporter)
-                .with_interval(std::time::Duration::from_secs(30))
-                .build();
-
-            // // For debugging in development
-            // let stdout_reader = opentelemetry_sdk::metrics::PeriodicReader::builder(
-            //     opentelemetry_stdout::MetricExporter::default(),
-            // )
-            // .build();
-
-            let meter_provider = opentelemetry_sdk::metrics::MeterProviderBuilder::default()
-                // .with_resource(resource())
-                .with_reader(reader)
-                // .with_reader(stdout_reader)
-                .build();
-
-            opentelemetry::global::set_meter_provider(meter_provider.clone());
-
-            meter_provider
-        }
-
-        // Construct TracerProvider for OpenTelemetryLayer
-        let exporter = opentelemetry_otlp::SpanExporter::builder()
-            .with_http()
-            // .with_endpoint(&metrics_endpoint)
-            .build()
-            .unwrap();
-
-        let tracer_provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
-            // Customize sampling strategy
-            .with_sampler(opentelemetry_sdk::trace::Sampler::ParentBased(Box::new(
-                opentelemetry_sdk::trace::Sampler::AlwaysOn,
-            )))
-            .with_id_generator(opentelemetry_sdk::trace::RandomIdGenerator::default())
-            .with_resource(
-                Resource::builder()
-                    .with_attribute(KeyValue::new("service.name", name.to_owned()))
-                    .build(),
-            )
-            .with_batch_exporter(exporter)
+    if let Some(trace_ratio) = trace_ratio {
+        let resource = Resource::builder()
+            .with_attribute(KeyValue::new("service.name", name.to_owned()))
             .build();
 
-        let meter_provider = init_meter_provider(&metrics_endpoint);
+        let reader = PeriodicReader::builder(
+            MetricExporter::builder()
+                .with_http()
+                .with_temporality(Temporality::default())
+                .build()
+                .unwrap(),
+        )
+        .with_interval(Duration::from_secs(30))
+        .build();
 
-        use opentelemetry::trace::TracerProvider;
-        let tracer = tracer_provider.tracer("tracing-otel-subscriber");
+        let meter_provider = MeterProviderBuilder::default()
+            .with_reader(reader)
+            .with_resource(resource.clone())
+            .build();
+
+        let tracer_provider = SdkTracerProvider::builder()
+            .with_sampler(Sampler::ParentBased(Box::new(Sampler::TraceIdRatioBased(
+                trace_ratio,
+            ))))
+            .with_id_generator(RandomIdGenerator::default())
+            .with_resource(resource)
+            .with_batch_exporter(SpanExporter::builder().with_http().build().unwrap())
+            .build();
+
+        let tracer = tracer_provider.tracer("voyager");
+
+        global::set_text_map_propagator(TraceContextPropagator::new());
+        global::set_meter_provider(meter_provider.clone());
+        global::set_tracer_provider(tracer_provider);
 
         let registry = tracing_subscriber::registry()
             .with(tracing_opentelemetry::MetricsLayer::new(
                 meter_provider.clone(),
             ))
             .with(
-                tracing_opentelemetry::OpenTelemetryLayer::new(tracer)
-                    // The global level filter prevents the exporter network stack
-                    // from reentering the globally installed OpenTelemetryLayer with
-                    // its own spans while exporting, as the libraries should not use
-                    // tracing levels below DEBUG. If the OpenTelemetry layer needs to
-                    // trace spans and events with higher verbosity levels, consider using
-                    // per-layer filtering to target the telemetry layer specifically,
-                    // e.g. by target matching.
-                    .with_filter(
-                        tracing_subscriber::filter::Builder::default()
-                            .parse("debug,tower=off,hyper=off,h2=off,rustls=off,reqwest=off")
-                            .unwrap(),
-                    ),
+                OpenTelemetryLayer::new(tracer).with_filter(
+                    // prevent reentrant tracing
+                    EnvFilter::from_default_env()
+                        .add_directive("tower=off".parse().expect("valid directive; qed;"))
+                        .add_directive("hyper=off".parse().expect("valid directive; qed;"))
+                        .add_directive("h2=off".parse().expect("valid directive; qed;"))
+                        .add_directive("rustls=off".parse().expect("valid directive; qed;"))
+                        .add_directive("reqwest=off".parse().expect("valid directive; qed;")),
+                ),
             );
 
         match format {

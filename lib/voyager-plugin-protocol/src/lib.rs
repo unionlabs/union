@@ -42,11 +42,9 @@ use jsonrpsee::{
     types::{ErrorObject, Response, ResponsePayload},
 };
 use opentelemetry::{
-    Context, KeyValue, global,
-    propagation::TextMapPropagator,
+    KeyValue, global,
     trace::{FutureExt as _, TraceContextExt, Tracer},
 };
-use opentelemetry_sdk::propagation::TraceContextPropagator;
 use reth_ipc::{
     client::IpcClientBuilder,
     server::{RpcService, RpcServiceBuilder},
@@ -56,9 +54,7 @@ use serde_json::value::RawValue;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tower::Layer;
-use tracing::{
-    Instrument, Span, debug, debug_span, error, info, info_span, instrument, trace, warn,
-};
+use tracing::{Instrument, Span, debug, debug_span, error, info, info_span, instrument, trace};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use unionlabs::{ErrorReporter, ethereum::slot::keccak256, primitives::encoding::HexUnprefixed};
 use voyager_client::VoyagerClient;
@@ -287,9 +283,6 @@ impl<S> Layer<S> for ExtractItemIdServiceLayer {
     }
 }
 
-#[derive(Clone, Default)]
-struct TraceCtx(HashMap<String, String>);
-
 impl<S> RpcServiceT for ExtractItemIdService<S>
 where
     S: RpcServiceT + Send + Sync + Clone + 'static,
@@ -323,17 +316,6 @@ where
                             propagator.extract(&trace_ctx)
                         });
 
-                        // let propagator = TraceContextPropagator::new();
-
-                        // let parent_context = propagator.extract(&trace_ctx);
-
-                        warn!(
-                            ?trace_ctx,
-                            "ExtractItemIdService::call: EXTRACTING INCOMING TRACE_CTX FROM PARAMS"
-                        );
-
-                        // request.extensions.insert(TraceCtx(trace_ctx));
-
                         let tracer = global::tracer("voyager");
                         let span = tracer
                             .span_builder("ExtractItemIdService::call")
@@ -342,17 +324,18 @@ where
 
                         let cx = parent_context.with_span(span);
 
-                        // dbg!(&parent_context);
-
-                        let sc = parent_context.span().span_context().clone();
-                        warn!(
-                            trace_id = %sc.trace_id(),
-                            span_id  = %sc.span_id(),
-                            valid    = sc.is_valid(),
-                            remote   = sc.is_remote(),
-                            sampled  = sc.trace_flags().is_sampled(),
-                            "extracted trace context"
-                        );
+                        {
+                            // just for logging
+                            let sc = parent_context.span().span_context().clone();
+                            trace!(
+                                trace_id = %sc.trace_id(),
+                                span_id  = %sc.span_id(),
+                                valid    = sc.is_valid(),
+                                remote   = sc.is_remote(),
+                                sampled  = sc.trace_flags().is_sampled(),
+                                "extracted trace context"
+                            );
+                        }
 
                         let span = info_span!("item_id", item_id = item_id.raw());
 
@@ -418,29 +401,15 @@ where
     ) -> impl Future<Output = Self::MethodResponse> + 'a {
         let item_id = request.extensions.get::<ItemId>().cloned();
 
-        // let TraceCtx(trace_ctx) = request
-        //     .extensions
-        //     .get::<TraceCtx>()
-        //     .cloned()
-        //     .unwrap_or_default();
-
         let mut trace_ctx = HashMap::new();
         global::get_text_map_propagator(|propagator| {
             propagator.inject_context(&Span::current().context(), &mut trace_ctx)
         });
 
-        // TraceContextPropagator::new().inject(&mut trace_ctx);
-
-        warn!(
-            ?trace_ctx,
-            "InjectVoyagerClientService: INJECTING CURRENT TRACE_CTX"
-        );
-
         request
             .extensions
             .insert(VoyagerClient::new(IdThreadClient {
                 client: self.client.clone(),
-                // trace_ctx,
                 item_id,
             }));
 
@@ -451,45 +420,41 @@ where
         &self,
         mut requests: jsonrpsee::core::middleware::Batch<'a>,
     ) -> impl Future<Output = Self::BatchResponse> + Send + 'a {
-        // let item_id = requests.extensions().get::<ItemId>().cloned();
-        // let mut trace_ctx = HashMap::new();
-        // TraceContextPropagator::new().inject(&mut trace_ctx);
+        let item_id = requests.extensions().get::<ItemId>().cloned();
 
-        // warn!(?trace_ctx, "INJECTING CURRENT TRACE_CTX");
+        let mut trace_ctx = HashMap::new();
+        global::get_text_map_propagator(|propagator| {
+            propagator.inject_context(&Span::current().context(), &mut trace_ctx)
+        });
 
-        // requests
-        //     .extensions_mut()
-        //     .insert(VoyagerClient::new(IdThreadClient {
-        //         client: self.client.clone(),
-        //         trace_ctx,
-        //         item_id,
-        //     }));
+        requests
+            .extensions_mut()
+            .insert(VoyagerClient::new(IdThreadClient {
+                client: self.client.clone(),
+                // trace_ctx,
+                item_id,
+            }));
 
-        // self.service.batch(requests)
-
-        async { todo!() }
+        self.service.batch(requests)
     }
 
     fn notification<'a>(
         &self,
         mut n: jsonrpsee::core::middleware::Notification<'a>,
     ) -> impl Future<Output = Self::NotificationResponse> + Send + 'a {
-        // let item_id = n.extensions().get::<ItemId>().cloned();
-        // let mut trace_ctx = HashMap::new();
-        // TraceContextPropagator::new().inject(&mut trace_ctx);
+        let item_id = n.extensions.get::<ItemId>().cloned();
 
-        // warn!(?trace_ctx, "INJECTING CURRENT TRACE_CTX");
+        let mut trace_ctx = HashMap::new();
+        global::get_text_map_propagator(|propagator| {
+            propagator.inject_context(&Span::current().context(), &mut trace_ctx)
+        });
 
-        // n.extensions_mut()
-        //     .insert(VoyagerClient::new(IdThreadClient {
-        //         client: self.client.clone(),
-        //         trace_ctx,
-        //         item_id,
-        //     }));
+        n.extensions.insert(VoyagerClient::new(IdThreadClient {
+            client: self.client.clone(),
+            item_id,
+        }));
 
-        // self.service.notification(n)
-
-        async { todo!() }
+        self.service.notification(n)
     }
 }
 
@@ -583,7 +548,6 @@ impl ToRpcParams for ParamsWithItemId<'_> {
 #[derive(Debug, Clone)]
 pub struct IdThreadClient<Inner: ClientT + Send + Sync> {
     pub(crate) client: Inner,
-    // trace_ctx: HashMap<String, String>,
     item_id: Option<ItemId>,
 }
 
@@ -592,12 +556,11 @@ pub trait WithId: Sized + ClientT + Send + Sync
 where
     for<'a> &'a Self: ClientT,
 {
-    fn with_id_and_current_context(&self, item_id: Option<ItemId>) -> IdThreadClient<&Self> {
+    fn with_id(&self, item_id: Option<ItemId>) -> IdThreadClient<&Self> {
         trace!(?item_id, "threading id");
 
         IdThreadClient {
             client: self,
-            // trace_ctx,
             item_id,
         }
     }
@@ -636,16 +599,6 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
             propagator.inject_context(&Span::current().context(), &mut trace_ctx)
         });
 
-        warn!(
-            ?trace_ctx,
-            "WithId::with_id_and_current_context: INJECTING CURRENT TRACE_CTX"
-        );
-
-        warn!(
-            ?trace_ctx,
-            "IdThreadClient::request: INJECTING OUTGOING TRACE_CTX INTO PARAMS"
-        );
-
         // thread the item id through the request if it is present
         match self.item_id {
             Some(item_id) => {
@@ -654,8 +607,6 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
                         method,
                         ParamsWithItemId {
                             item_id,
-                            // // TODO: Don't clone here
-                            // trace_ctx: self.trace_ctx.clone(),
                             trace_ctx,
                             params: params.to_rpc_params()?.map(Cow::Owned),
                         },
