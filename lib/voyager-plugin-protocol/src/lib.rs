@@ -337,8 +337,7 @@ where
                             );
                         }
 
-                        let span =
-                            info_span!("ExtractItemIdService::call", item_id = item_id.raw());
+                        let span = info_span!("call", item_id = item_id.raw());
 
                         match span.set_parent(parent_context) {
                             Ok(()) => {}
