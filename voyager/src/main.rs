@@ -193,7 +193,7 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
 
                 let result = run_filter(
                     &filter,
-                    &plugin_name,
+                    plugin_name,
                     serde_json::from_str::<serde_json::Value>(&message)?.into(),
                 );
 

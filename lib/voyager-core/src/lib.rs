@@ -217,13 +217,11 @@ impl<Q: Queue<VoyagerMessage>> Engine<Q> {
                 tasks.push(Box::pin(
                     AssertUnwindSafe(
                         async {
-                            let plugin_name = plugin_name.clone();
-
                             let pass = PluginOptPass::new(
                                 self.context
                                     .get()
                                     .unwrap()
-                                    .plugin(&plugin_name)
+                                    .plugin(plugin_name)
                                     .expect("plugin exists")
                                     .client(),
                             );
@@ -233,7 +231,7 @@ impl<Q: Queue<VoyagerMessage>> Engine<Q> {
 
                                 let res = self
                                     .queue
-                                    .optimize(&plugin_name, &self.interest_filters, &pass)
+                                    .optimize(plugin_name, &self.interest_filters, &pass)
                                     .await
                                     .map_err(|e| {
                                         e.map_either::<_, _, BoxDynError, BoxDynError>(

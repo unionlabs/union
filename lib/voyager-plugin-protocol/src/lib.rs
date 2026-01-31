@@ -42,7 +42,7 @@ use jsonrpsee::{
     types::{ErrorObject, Response, ResponsePayload},
 };
 use opentelemetry::{
-    KeyValue, global,
+    Context, KeyValue, global,
     trace::{FutureExt as _, TraceContextExt, Tracer},
 };
 use reth_ipc::{
@@ -54,7 +54,7 @@ use serde_json::value::RawValue;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tower::Layer;
-use tracing::{Instrument, Span, debug, debug_span, error, info, info_span, instrument, trace};
+use tracing::{Instrument, debug, debug_span, error, info, info_span, instrument, trace};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use unionlabs::{ErrorReporter, ethereum::slot::keccak256, primitives::encoding::HexUnprefixed};
 use voyager_client::VoyagerClient;
@@ -109,7 +109,7 @@ pub async fn coordinator_server<
 /// Run the worker server.
 ///
 /// This will listen to messages from the coordinator on `coordinator_socket`, and send messages to the coordinator on `worker_socket`.
-#[instrument(skip_all, fields(%id))]
+#[instrument(level = "debug", skip_all, fields(%id))]
 pub async fn worker_server<T>(
     id: String,
     coordinator_socket: String,
@@ -318,7 +318,7 @@ where
 
                         let tracer = global::tracer("voyager");
                         let span = tracer
-                            .span_builder("ExtractItemIdService::call")
+                            .span_builder("")
                             .with_attributes([KeyValue::new("item_id", item_id.raw())])
                             .start_with_context(&tracer, &parent_context);
 
@@ -337,7 +337,8 @@ where
                             );
                         }
 
-                        let span = info_span!("item_id", item_id = item_id.raw());
+                        let span =
+                            info_span!("ExtractItemIdService::call", item_id = item_id.raw());
 
                         match span.set_parent(parent_context) {
                             Ok(()) => {}
@@ -401,11 +402,6 @@ where
     ) -> impl Future<Output = Self::MethodResponse> + 'a {
         let item_id = request.extensions.get::<ItemId>().cloned();
 
-        let mut trace_ctx = HashMap::new();
-        global::get_text_map_propagator(|propagator| {
-            propagator.inject_context(&Span::current().context(), &mut trace_ctx)
-        });
-
         request
             .extensions
             .insert(VoyagerClient::new(IdThreadClient {
@@ -421,11 +417,6 @@ where
         mut requests: jsonrpsee::core::middleware::Batch<'a>,
     ) -> impl Future<Output = Self::BatchResponse> + Send + 'a {
         let item_id = requests.extensions().get::<ItemId>().cloned();
-
-        let mut trace_ctx = HashMap::new();
-        global::get_text_map_propagator(|propagator| {
-            propagator.inject_context(&Span::current().context(), &mut trace_ctx)
-        });
 
         requests
             .extensions_mut()
@@ -443,11 +434,6 @@ where
         mut n: jsonrpsee::core::middleware::Notification<'a>,
     ) -> impl Future<Output = Self::NotificationResponse> + Send + 'a {
         let item_id = n.extensions.get::<ItemId>().cloned();
-
-        let mut trace_ctx = HashMap::new();
-        global::get_text_map_propagator(|propagator| {
-            propagator.inject_context(&Span::current().context(), &mut trace_ctx)
-        });
 
         n.extensions.insert(VoyagerClient::new(IdThreadClient {
             client: self.client.clone(),
@@ -582,7 +568,7 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
         ))
     }
 
-    #[instrument(skip_all, fields(method))]
+    #[instrument(level = "debug", skip_all, fields(method))]
     async fn request<R, Params>(
         &self,
         method: &str,
@@ -596,7 +582,7 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
 
         let mut trace_ctx = HashMap::new();
         global::get_text_map_propagator(|propagator| {
-            propagator.inject_context(&Span::current().context(), &mut trace_ctx)
+            propagator.inject_context(&Context::current(), &mut trace_ctx)
         });
 
         // thread the item id through the request if it is present
@@ -630,7 +616,7 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
     }
 }
 
-#[instrument(skip_all, fields(%name))]
+#[instrument(level = "debug", skip_all, fields(%name))]
 pub async fn worker_child_process(
     name: String,
     path: PathBuf,
@@ -659,7 +645,7 @@ pub async fn worker_child_process(
 }
 
 /// Spawn a worker process with the given args, re-spawning it indefinitely unless it exits with [`INVALID_CONFIG_EXIT_CODE`] or the passed in cancellation token is cancelled.
-#[instrument(skip_all)]
+#[instrument(level = "debug", skip_all)]
 async fn lazarus_pit(
     name: &str,
     cmd: &Path,

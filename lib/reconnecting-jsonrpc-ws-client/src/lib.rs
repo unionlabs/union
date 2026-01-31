@@ -248,7 +248,7 @@ impl ClientT for &Client {
     }
 }
 
-#[instrument(name = "reconnect", skip_all)]
+#[instrument(level = "debug", name = "reconnect", skip_all)]
 async fn reconnect<
     B: (Fn() -> Fut) + Send + 'static,
     Fut: Future<Output = Result<jsonrpsee::core::client::Client, E>> + Send + 'static,

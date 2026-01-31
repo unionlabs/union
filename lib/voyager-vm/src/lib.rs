@@ -17,7 +17,7 @@ use either::Either::{self, Left, Right};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tokio::time::sleep;
-use tracing::{debug, info, trace, warn};
+use tracing::{Instrument, debug, debug_span, info, trace, warn};
 use unionlabs::bounded::{BoundedI64, BoundedIntError};
 
 use crate::{filter::InterestFilter, pass::Pass};
@@ -238,7 +238,7 @@ impl<H: Handler<T>, T: QueueMessage> Handler<T> for &H {
 pub type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
 
 // NOTE: Box is required bc recursion
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::too_many_lines)]
 pub fn process<'a, T: QueueMessage, H: Handler<T>>(
     op: Op<T>,
     handler: &'a H,
@@ -257,82 +257,106 @@ pub fn process<'a, T: QueueMessage, H: Handler<T>>(
                 Ok(None)
             }
 
-            Op::Call(call) => handler.call(call).await.map(Some),
-            Op::Defer { until: seconds } => {
-                // if we haven't hit the time yet, requeue the defer op
-                let current_ts_seconds = now();
-                if current_ts_seconds < seconds {
-                    trace!(
-                        %current_ts_seconds,
-                        %seconds,
-                        delta = %seconds - current_ts_seconds,
-                        "defer timestamp not hit yet"
-                    );
+            Op::Call(call) => handler
+                .call(call)
+                .instrument(debug_span!("op.call"))
+                .await
+                .map(Some),
+            Op::Defer { until } => {
+                debug_span!("op.defer", until)
+                    .in_scope(async || {
+                        // if we haven't hit the time yet, requeue the defer op
+                        let current_ts_seconds = now();
+                        if current_ts_seconds < until {
+                            trace!(
+                                %current_ts_seconds,
+                                %until,
+                                delta = %until - current_ts_seconds,
+                                "defer timestamp not hit yet"
+                            );
 
-                    // TODO: Make the time configurable?
-                    sleep(Duration::from_millis(10)).await;
+                            // TODO: Make the time configurable?
+                            sleep(Duration::from_millis(10)).await;
 
-                    Ok(Some(defer(seconds)))
-                } else {
-                    Ok(None)
-                }
+                            Ok(Some(defer(until)))
+                        } else {
+                            Ok(None)
+                        }
+                    })
+                    .await
             }
             Op::DeferRelative { secs } => Ok(Some(defer(now() + secs))),
-            Op::Seq(mut queue) => match queue.pop_front() {
-                Some(op) => {
-                    let op = process(op, handler, depth + 1).await?;
+            Op::Seq(mut queue) => {
+                debug_span!("op.seq", len = queue.len())
+                    .in_scope(async || match queue.pop_front() {
+                        Some(op) => {
+                            let op = process(op, handler, depth + 1).await?;
 
-                    if let Some(op) = op {
-                        queue.push_front(op);
-                    }
+                            if let Some(op) = op {
+                                queue.push_front(op);
+                            }
 
-                    Ok(Some(seq(queue)))
-                }
-                None => Ok(None),
-            },
-            Op::Conc(mut queue) => match queue.pop_front() {
-                Some(op) => {
-                    let op = process(op, handler, depth + 1).await?;
+                            Ok(Some(seq(queue)))
+                        }
+                        None => Ok(None),
+                    })
+                    .await
+            }
+            Op::Conc(mut queue) => {
+                debug_span!("op.conc", len = queue.len())
+                    .in_scope(async || match queue.pop_front() {
+                        Some(op) => {
+                            let op = process(op, handler, depth + 1).await?;
 
-                    if let Some(op) = op {
-                        queue.push_back(op);
-                    }
+                            if let Some(op) = op {
+                                queue.push_back(op);
+                            }
 
-                    Ok(Some(conc(queue)))
-                }
-                None => Ok(None),
-            },
+                            Ok(Some(conc(queue)))
+                        }
+                        None => Ok(None),
+                    })
+                    .await
+            }
             Op::Promise(Promise {
                 mut queue,
                 mut data,
                 receiver,
             }) => {
-                if let Some(op) = queue.pop_front() {
-                    match op {
-                        Op::Data(d) => {
-                            data.push_back(d);
-                        }
-                        op => {
-                            let op = process(op, handler, depth + 1).await?;
+                debug_span!("op.promise", queue = queue.len(), data = data.len())
+                    .in_scope(async || {
+                        if let Some(op) = queue.pop_front() {
+                            match op {
+                                Op::Data(d) => {
+                                    data.push_back(d);
+                                }
+                                op => {
+                                    let op = process(op, handler, depth + 1).await?;
 
-                            if let Some(op) = op {
-                                match op {
-                                    Op::Data(d) => {
-                                        data.push_back(d);
-                                    }
-                                    m => {
-                                        queue.push_back(m);
+                                    if let Some(op) = op {
+                                        match op {
+                                            Op::Data(d) => {
+                                                data.push_back(d);
+                                            }
+                                            m => {
+                                                queue.push_back(m);
+                                            }
+                                        }
                                     }
                                 }
                             }
-                        }
-                    }
 
-                    Ok(Some(promise(queue, data, receiver)))
-                } else {
-                    // queue is empty, handle op
-                    handler.callback(receiver, data).await.map(Some)
-                }
+                            Ok(Some(promise(queue, data, receiver)))
+                        } else {
+                            // queue is empty, handle op
+                            handler
+                                .callback(receiver, data)
+                                .instrument(debug_span!("op.callback"))
+                                .await
+                                .map(Some)
+                        }
+                    })
+                    .await
             }
             Op::Void(op) => {
                 // TODO: distribute across seq/conc
