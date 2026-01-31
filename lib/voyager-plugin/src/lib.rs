@@ -1,7 +1,7 @@
 use std::{env::VarError, time::Duration};
 
 use opentelemetry::{KeyValue, global, trace::TracerProvider};
-use opentelemetry_otlp::{MetricExporter, SpanExporter};
+use opentelemetry_otlp::{MetricExporter, Protocol, SpanExporter, WithExportConfig};
 use opentelemetry_sdk::{
     Resource,
     metrics::{MeterProviderBuilder, PeriodicReader, Temporality},
@@ -317,18 +317,19 @@ fn init(trace_ratio: Option<f64>, name: &str) {
             .with_attribute(KeyValue::new("service.name", name.to_owned()))
             .build();
 
-        let reader = PeriodicReader::builder(
-            MetricExporter::builder()
-                .with_http()
-                .with_temporality(Temporality::default())
-                .build()
-                .unwrap(),
-        )
-        .with_interval(Duration::from_secs(30))
-        .build();
-
         let meter_provider = MeterProviderBuilder::default()
-            .with_reader(reader)
+            .with_reader(
+                PeriodicReader::builder(
+                    MetricExporter::builder()
+                        .with_http()
+                        .with_protocol(Protocol::HttpBinary)
+                        .with_temporality(Temporality::default())
+                        .build()
+                        .unwrap(),
+                )
+                .with_interval(Duration::from_secs(30))
+                .build(),
+            )
             .with_resource(resource.clone())
             .build();
 
@@ -338,21 +339,25 @@ fn init(trace_ratio: Option<f64>, name: &str) {
             ))))
             .with_id_generator(RandomIdGenerator::default())
             .with_resource(resource)
-            .with_batch_exporter(SpanExporter::builder().with_http().build().unwrap())
+            .with_batch_exporter(
+                SpanExporter::builder()
+                    .with_http()
+                    .with_protocol(Protocol::HttpBinary)
+                    .build()
+                    .unwrap(),
+            )
             .build();
-
-        let tracer = tracer_provider.tracer("voyager");
 
         global::set_text_map_propagator(TraceContextPropagator::new());
         global::set_meter_provider(meter_provider.clone());
-        global::set_tracer_provider(tracer_provider);
+        global::set_tracer_provider(tracer_provider.clone());
 
         let registry = tracing_subscriber::registry()
             .with(tracing_opentelemetry::MetricsLayer::new(
                 meter_provider.clone(),
             ))
             .with(
-                OpenTelemetryLayer::new(tracer).with_filter(
+                OpenTelemetryLayer::new(tracer_provider.tracer("voyager")).with_filter(
                     // prevent reentrant tracing
                     EnvFilter::from_default_env()
                         .add_directive("tower=off".parse().expect("valid directive; qed;"))

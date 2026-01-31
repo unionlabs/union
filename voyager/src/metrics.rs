@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use opentelemetry::{KeyValue, global, trace::TracerProvider};
-use opentelemetry_otlp::{MetricExporter, SpanExporter};
+use opentelemetry_otlp::{MetricExporter, Protocol, SpanExporter, WithExportConfig};
 use opentelemetry_sdk::{
     Resource,
     metrics::{MeterProviderBuilder, PeriodicReader, Temporality},
@@ -25,7 +25,12 @@ pub fn init_logging(log_format: LogFormat, trace_ratio: Option<f64>) -> anyhow::
             ))))
             .with_id_generator(RandomIdGenerator::default())
             .with_resource(resource.clone())
-            .with_batch_exporter(SpanExporter::builder().with_http().build()?)
+            .with_batch_exporter(
+                SpanExporter::builder()
+                    .with_http()
+                    .with_protocol(Protocol::HttpBinary)
+                    .build()?,
+            )
             .build();
 
         let meter_provider = MeterProviderBuilder::default()
@@ -33,6 +38,7 @@ pub fn init_logging(log_format: LogFormat, trace_ratio: Option<f64>) -> anyhow::
                 PeriodicReader::builder(
                     MetricExporter::builder()
                         .with_http()
+                        .with_protocol(Protocol::HttpBinary)
                         .with_temporality(Temporality::default())
                         .build()?,
                 )
