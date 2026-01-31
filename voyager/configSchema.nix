@@ -161,10 +161,6 @@ let
             "secs" = 60;
           };
         };
-        "metrics_endpoint" = mkOption {
-          type = types.str;
-          default = "http://localhost:4318";
-        };
         "num_workers" = mkOption { type = types.int; };
         "optimizer_delay_milliseconds" = mkOption {
           type = types.int;
@@ -178,6 +174,10 @@ let
         "rpc_laddr" = mkOption {
           type = types.str;
           default = "0.0.0.0:7178";
+        };
+        "trace_ratio" = mkOption {
+          type = types.number;
+          default = 1.0;
         };
       };
     };
