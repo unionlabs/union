@@ -6027,17 +6027,15 @@ contract ZkgmTests is Test {
         vm.assume(destinationChannelId != 0);
 
         // Predict the proxy address
-        (address predicted,) = zkgm.doPredictProxyAccount(
-            path, destinationChannelId, sender
-        );
+        (address predicted,) =
+            zkgm.doPredictProxyAccount(path, destinationChannelId, sender);
 
         // Execute a non-eureka call targeting the predicted proxy address.
         // The proxy gets deployed, then onZkgm is called on it.
         // The proxy's onZkgm requires the sender to be a remote admin,
         // which it is since it was just initialized with that sender.
         // Encode a no-op execute call as the message.
-        bytes memory message =
-            abi.encode(address(0), uint256(0), bytes(""));
+        bytes memory message = abi.encode(address(0), uint256(0), bytes(""));
 
         vm.expectEmit();
         emit ZkgmLib.CreateProxyAccount(
@@ -6069,8 +6067,6 @@ contract ZkgmTests is Test {
         assertTrue(predicted.code.length > 0);
         ProxyAccount account = ProxyAccount(predicted);
         assertEq(account.zkgm(), address(zkgm));
-        assertTrue(
-            account.isRemoteAdmin(path, destinationChannelId, sender)
-        );
+        assertTrue(account.isRemoteAdmin(path, destinationChannelId, sender));
     }
 }
