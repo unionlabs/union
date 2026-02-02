@@ -31,6 +31,28 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
 }
 
 impl<C: VoyagerRpcClient> VoyagerClient<C> {
+    #[instrument(
+        skip_all,
+        fields(
+            %chain_id,
+            finalized
+        )
+    )]
+    pub async fn query_latest_height(
+        &self,
+        chain_id: ChainId,
+        finalized: bool,
+    ) -> RpcResult<Height> {
+        Ok(self.0.query_latest_height(chain_id, finalized).await?)
+    }
+
+    #[instrument(
+        skip_all,
+        fields(
+            %chain_id,
+            finalized
+        )
+    )]
     pub async fn query_latest_timestamp(
         &self,
         chain_id: ChainId,
@@ -39,6 +61,15 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
         Ok(self.0.query_latest_timestamp(chain_id, finalized).await?)
     }
 
+    #[instrument(
+        skip_all,
+        fields(
+            %chain_id,
+            %client_type,
+            %height,
+            %config,
+        )
+    )]
     pub async fn self_client_state(
         &self,
         chain_id: ChainId,
@@ -52,6 +83,15 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             .await?)
     }
 
+    #[instrument(
+        skip_all,
+        fields(
+            %chain_id,
+            %client_type,
+            %height,
+            %config,
+        )
+    )]
     pub async fn self_consensus_state(
         &self,
         chain_id: ChainId,
@@ -65,23 +105,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             .await?)
     }
 
-    pub async fn query_latest_height(
-        &self,
-        chain_id: ChainId,
-        finalized: bool,
-    ) -> RpcResult<Height> {
-        Ok(self.0.query_latest_height(chain_id, finalized).await?)
-    }
-
-    #[instrument(
-        skip_all,
-        name = "voyager_client_encode_proof",
-        fields(
-            %client_type,
-            %ibc_interface,
-            %proof
-        )
-    )]
+    #[instrument(skip_all, fields(%client_type, %ibc_interface))]
     pub async fn encode_proof<V: IbcSpec>(
         &self,
         client_type: ClientType,
@@ -94,15 +118,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             .await?)
     }
 
-    #[instrument(
-        skip_all,
-        name = "voyager_client_encode_header",
-        fields(
-            %client_type,
-            %ibc_interface,
-            %header
-        )
-    )]
+    #[instrument(skip_all, fields(%client_type, %ibc_interface))]
     pub async fn encode_header<V: IbcSpec>(
         &self,
         client_type: ClientType,
@@ -115,6 +131,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             .await?)
     }
 
+    #[instrument(skip_all, fields(%client_type, %ibc_interface))]
     pub async fn decode_client_state<V: IbcSpec, T: DeserializeOwned>(
         &self,
         client_type: ClientType,
@@ -131,6 +148,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
         ))
     }
 
+    #[instrument(skip_all, fields(%client_type, %ibc_interface))]
     pub async fn decode_consensus_state<V: IbcSpec, T: DeserializeOwned>(
         &self,
         client_type: ClientType,
@@ -147,6 +165,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
         ))
     }
 
+    #[instrument(skip_all, fields(%client_type, %ibc_interface))]
     pub async fn encode_client_state<V: IbcSpec>(
         &self,
         client_type: ClientType,
@@ -160,6 +179,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             .await?)
     }
 
+    #[instrument(skip_all, fields(%client_type, %ibc_interface))]
     pub async fn encode_consensus_state<V: IbcSpec>(
         &self,
         client_type: ClientType,
@@ -172,6 +192,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             .await?)
     }
 
+    #[instrument(skip_all, fields(%chain_id))]
     pub async fn query<Q: IbcQuery>(&self, chain_id: ChainId, query: Q) -> RpcResult<Q::Response> {
         self.0
             .query(
@@ -188,6 +209,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             })
     }
 
+    #[instrument(skip_all, fields(%chain_id, %height))]
     pub async fn query_ibc_state<P: IbcStorePathKey>(
         &self,
         chain_id: ChainId,
@@ -209,6 +231,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
         Ok(state)
     }
 
+    #[instrument(skip_all, fields(%chain_id, %height))]
     pub async fn maybe_query_ibc_state<P: IbcStorePathKey>(
         &self,
         chain_id: ChainId,
@@ -237,6 +260,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
         })
     }
 
+    #[instrument(skip_all, fields(%chain_id, %height))]
     pub async fn query_ibc_proof<P: IbcStorePathKey>(
         &self,
         chain_id: ChainId,
@@ -256,10 +280,12 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
         Ok(ibc_proof)
     }
 
+    #[instrument(skip_all, fields(%chain_id))]
     pub async fn equivalent_chain_ids(&self, chain_id: ChainId) -> RpcResult<Vec<ChainId>> {
         Ok(self.0.equivalent_chain_ids(chain_id).await?)
     }
 
+    #[instrument(skip_all, fields(%chain_id, %client_id))]
     pub async fn client_info<V: IbcSpec>(
         &self,
         chain_id: ChainId,
@@ -277,6 +303,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             })
     }
 
+    #[instrument(skip_all, fields(%chain_id, %client_id))]
     pub async fn maybe_client_info<V: IbcSpec>(
         &self,
         chain_id: ChainId,
@@ -288,6 +315,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             .await?)
     }
 
+    #[instrument(skip_all, fields(%chain_id, %client_id))]
     pub async fn client_info_raw(
         &self,
         chain_id: ChainId,
@@ -306,6 +334,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             })
     }
 
+    #[instrument(skip_all, fields(%chain_id, %client_id))]
     pub async fn maybe_client_info_raw(
         &self,
         chain_id: ChainId,
@@ -315,6 +344,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
         Ok(self.0.client_info(chain_id, ibc_spec_id, client_id).await?)
     }
 
+    #[instrument(skip_all, fields(%chain_id, %at, %client_id))]
     pub async fn client_state_meta<V: IbcSpec>(
         &self,
         chain_id: ChainId,
@@ -334,6 +364,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             })
     }
 
+    #[instrument(skip_all, fields(%chain_id, %at, %client_id))]
     pub async fn maybe_client_state_meta<V: IbcSpec>(
         &self,
         chain_id: ChainId,
@@ -346,6 +377,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             .await?)
     }
 
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, %at, %client_id))]
     pub async fn client_state_meta_raw(
         &self,
         chain_id: ChainId,
@@ -366,6 +398,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             })
     }
 
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, %at, %client_id))]
     pub async fn maybe_client_state_meta_raw(
         &self,
         chain_id: ChainId,
@@ -379,6 +412,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             .await?)
     }
 
+    #[instrument(skip_all, fields(%chain_id, %at, %client_id, %counterparty_height))]
     pub async fn consensus_state_meta<V: IbcSpec>(
         &self,
         chain_id: ChainId,
@@ -405,6 +439,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
         })
     }
 
+    #[instrument(skip_all, fields(%chain_id, %at, %client_id, %counterparty_height))]
     pub async fn maybe_consensus_state_meta<V: IbcSpec>(
         &self,
         chain_id: ChainId,
@@ -424,6 +459,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             .await?)
     }
 
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, %at, %client_id, %counterparty_height))]
     pub async fn consensus_state_meta_raw(
         &self,
         chain_id: ChainId,
@@ -452,6 +488,7 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
         })
     }
 
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, %at, %client_id, %counterparty_height))]
     pub async fn maybe_consensus_state_meta_raw(
         &self,
         chain_id: ChainId,
@@ -508,18 +545,18 @@ impl<C: ClientT> ClientT for VoyagerPluginClient<'_, C> {
         let mut p = ArrayParams::new();
 
         p.insert(&self.plugin)
-            .expect("serializaiton is infallible; qed;");
-        p.insert(method).expect("serializaiton is infallible; qed;");
+            .expect("serialization is infallible; qed;");
+        p.insert(method).expect("serialization is infallible; qed;");
 
         if let Some(params) = params
             .to_rpc_params()
             .expect("serialization is infallible; qed;")
         {
-            p.insert(params).expect("serializaiton is infallible; qed;");
+            p.insert(params).expect("serialization is infallible; qed;");
         } else {
             // just need an empty array
             p.insert([0u8; 0])
-                .expect("serializaiton is infallible; qed;");
+                .expect("serialization is infallible; qed;");
         };
 
         self.inner.0.request("voyager_pluginCustom", p)

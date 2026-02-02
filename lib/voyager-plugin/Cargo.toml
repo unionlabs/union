@@ -15,11 +15,12 @@ workspace = true
 anyhow                  = { workspace = true }
 clap                    = { workspace = true, features = ["derive"] }
 opentelemetry           = { workspace = true }
-opentelemetry-otlp      = { workspace = true, features = ["http-json", "metrics", "reqwest-blocking-client"] }
+opentelemetry-otlp      = { workspace = true, features = ["http-proto", "metrics", "reqwest-blocking-client"] }
 opentelemetry_sdk       = { workspace = true }
 serde                   = { workspace = true, features = ["derive"] }
 serde_json              = { workspace = true }
 tracing                 = { workspace = true }
+tracing-opentelemetry   = "0.32.1"
 tracing-subscriber      = { workspace = true, features = ["json", "env-filter"] }
 unionlabs               = { workspace = true, features = ["ethabi"] }
 voyager-plugin-protocol = { workspace = true }

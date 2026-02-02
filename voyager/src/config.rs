@@ -4,8 +4,8 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use voyager_core::{
     context::{ModulesConfig, PluginConfig},
-    default_ipc_client_request_timeout, default_metrics_endpoint,
-    default_optimizer_delay_milliseconds, default_rest_laddr, default_rpc_laddr,
+    default_ipc_client_request_timeout, default_optimizer_delay_milliseconds, default_rest_laddr,
+    default_rpc_laddr, default_trace_ratio,
     equivalent_chain_ids::EquivalentChainIds,
 };
 
@@ -32,9 +32,8 @@ pub struct VoyagerConfig {
     pub rest_laddr: SocketAddr,
     #[serde(default = "default_rpc_laddr")]
     pub rpc_laddr: SocketAddr,
-    // REVIEW: Make optional? I.e. not set == don't export metrics
-    #[serde(default = "default_metrics_endpoint")]
-    pub metrics_endpoint: String,
+    #[serde(default = "default_trace_ratio")]
+    pub trace_ratio: Option<f64>,
     pub queue: QueueConfig,
     // TODO: Specify per plugin
     #[serde(default = "default_optimizer_delay_milliseconds")]

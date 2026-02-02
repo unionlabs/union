@@ -504,9 +504,9 @@ jsonrpsee          = { version = "0.26.0", default-features = false }
 lazy_static        = { version = "1.5.0", default-features = false }
 moka               = { version = "0.12.10", default-features = false }
 num-bigint         = { version = "0.4", default-features = false }
-opentelemetry      = { version = "0.29.1", default-features = false }
-opentelemetry-otlp = { version = "0.29.0", default-features = false }
-opentelemetry_sdk  = { version = "0.29.0", default-features = false }
+opentelemetry      = { version = "0.31.0", default-features = false }
+opentelemetry-otlp = { version = "0.31.0", default-features = false }
+opentelemetry_sdk  = { version = "0.31.0", default-features = false }
 pathfinder-crypto  = { version = "0.21.3", default-features = false }
 primitive-types    = { version = "0.12.2", default-features = false }
 proc-macro2        = { version = "1.0.95", default-features = true }

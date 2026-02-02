@@ -10,7 +10,7 @@ use jsonrpsee::core::{
 };
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
-use tracing::{Instrument, debug, debug_span, instrument, trace};
+use tracing::{Instrument, debug, instrument, trace, trace_span};
 
 #[derive(Debug, Clone)]
 pub struct Client {
@@ -93,7 +93,7 @@ impl Client {
                             }
                         }
                     })
-                    .instrument(debug_span!("ws client reconnect task"))
+                    .instrument(trace_span!("ws client reconnect task"))
                     .await
             }
         });
@@ -248,7 +248,7 @@ impl ClientT for &Client {
     }
 }
 
-#[instrument(name = "reconnect", skip_all)]
+#[instrument(level = "debug", name = "reconnect", skip_all)]
 async fn reconnect<
     B: (Fn() -> Fut) + Send + 'static,
     Fut: Future<Output = Result<jsonrpsee::core::client::Client, E>> + Send + 'static,

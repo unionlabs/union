@@ -21,6 +21,7 @@
 use std::{
     borrow::Cow,
     cmp,
+    collections::HashMap,
     fmt::Debug,
     future::Future,
     path::{Path, PathBuf},
@@ -40,7 +41,10 @@ use jsonrpsee::{
     server::middleware::rpc::RpcServiceT,
     types::{ErrorObject, Response, ResponsePayload},
 };
-use opentelemetry::{KeyValue, global};
+use opentelemetry::{
+    Context, KeyValue, global,
+    trace::{FutureExt as _, TraceContextExt, Tracer},
+};
 use reth_ipc::{
     client::IpcClientBuilder,
     server::{RpcService, RpcServiceBuilder},
@@ -51,6 +55,7 @@ use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tower::Layer;
 use tracing::{Instrument, debug, debug_span, error, info, info_span, instrument, trace};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 use unionlabs::{ErrorReporter, ethereum::slot::keccak256, primitives::encoding::HexUnprefixed};
 use voyager_client::VoyagerClient;
 use voyager_rpc::VoyagerRpcServer;
@@ -104,7 +109,7 @@ pub async fn coordinator_server<
 /// Run the worker server.
 ///
 /// This will listen to messages from the coordinator on `coordinator_socket`, and send messages to the coordinator on `worker_socket`.
-#[instrument(skip_all, fields(%id))]
+#[instrument(level = "debug", skip_all, fields(%id))]
 pub async fn worker_server<T>(
     id: String,
     coordinator_socket: String,
@@ -295,7 +300,11 @@ where
         async move {
             if let Some(params) = request.params.take() {
                 match serde_json::from_str(params.get()) {
-                    Ok(ParamsWithItemId { item_id, params }) => {
+                    Ok(ParamsWithItemId {
+                        item_id,
+                        trace_ctx,
+                        params,
+                    }) => {
                         let mut request = jsonrpsee::types::Request {
                             params: params.map(|rv| Cow::Owned(rv.into_owned())),
                             ..request
@@ -303,9 +312,44 @@ where
 
                         request.extensions.insert(item_id);
 
+                        let parent_context = global::get_text_map_propagator(|propagator| {
+                            propagator.extract(&trace_ctx)
+                        });
+
+                        let tracer = global::tracer("voyager");
+                        let span = tracer
+                            .span_builder("")
+                            .with_attributes([KeyValue::new("item_id", item_id.raw())])
+                            .start_with_context(&tracer, &parent_context);
+
+                        let cx = parent_context.with_span(span);
+
+                        {
+                            // just for logging
+                            let sc = parent_context.span().span_context().clone();
+                            trace!(
+                                trace_id = %sc.trace_id(),
+                                span_id  = %sc.span_id(),
+                                valid    = sc.is_valid(),
+                                remote   = sc.is_remote(),
+                                sampled  = sc.trace_flags().is_sampled(),
+                                "extracted trace context"
+                            );
+                        }
+
+                        let span = info_span!("call", item_id = item_id.raw());
+
+                        match span.set_parent(parent_context) {
+                            Ok(()) => {}
+                            Err(err) => {
+                                error!("could not set span parent: {err}");
+                            }
+                        };
+
                         return service
                             .call(request)
-                            .instrument(info_span!("item_id", item_id = item_id.raw()))
+                            .instrument(span)
+                            .with_context(cx)
                             .await;
                     }
                     Err(_) => {
@@ -377,6 +421,7 @@ where
             .extensions_mut()
             .insert(VoyagerClient::new(IdThreadClient {
                 client: self.client.clone(),
+                // trace_ctx,
                 item_id,
             }));
 
@@ -387,13 +432,12 @@ where
         &self,
         mut n: jsonrpsee::core::middleware::Notification<'a>,
     ) -> impl Future<Output = Self::NotificationResponse> + Send + 'a {
-        let item_id = n.extensions().get::<ItemId>().cloned();
+        let item_id = n.extensions.get::<ItemId>().cloned();
 
-        n.extensions_mut()
-            .insert(VoyagerClient::new(IdThreadClient {
-                client: self.client.clone(),
-                item_id,
-            }));
+        n.extensions.insert(VoyagerClient::new(IdThreadClient {
+            client: self.client.clone(),
+            item_id,
+        }));
 
         self.service.notification(n)
     }
@@ -469,6 +513,8 @@ where
 struct ParamsWithItemId<'a> {
     #[serde(rename = "$$__id__$$")]
     item_id: ItemId,
+    #[serde(rename = "$$__trace_context__$$")]
+    trace_ctx: HashMap<String, String>,
     #[serde(rename = "$$__params__$$", borrow)]
     params: Option<Cow<'a, RawValue>>,
 }
@@ -521,7 +567,7 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
         ))
     }
 
-    #[instrument(skip_all)]
+    #[instrument(level = "debug", skip_all, fields(method))]
     async fn request<R, Params>(
         &self,
         method: &str,
@@ -533,6 +579,11 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
     {
         trace!(item_id = ?self.item_id);
 
+        let mut trace_ctx = HashMap::new();
+        global::get_text_map_propagator(|propagator| {
+            propagator.inject_context(&Context::current(), &mut trace_ctx)
+        });
+
         // thread the item id through the request if it is present
         match self.item_id {
             Some(item_id) => {
@@ -541,6 +592,7 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
                         method,
                         ParamsWithItemId {
                             item_id,
+                            trace_ctx,
                             params: params.to_rpc_params()?.map(Cow::Owned),
                         },
                     )
@@ -563,7 +615,7 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
     }
 }
 
-#[instrument(skip_all, fields(%name))]
+#[instrument(level = "debug", skip_all, fields(%name))]
 pub async fn worker_child_process(
     name: String,
     path: PathBuf,
@@ -592,7 +644,7 @@ pub async fn worker_child_process(
 }
 
 /// Spawn a worker process with the given args, re-spawning it indefinitely unless it exits with [`INVALID_CONFIG_EXIT_CODE`] or the passed in cancellation token is cancelled.
-#[instrument(skip_all)]
+#[instrument(level = "debug", skip_all)]
 async fn lazarus_pit(
     name: &str,
     cmd: &Path,
