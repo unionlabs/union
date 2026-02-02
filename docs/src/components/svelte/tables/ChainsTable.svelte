@@ -17,7 +17,7 @@ const graphqlQuery = dedent /* GraphQL */`
         chain_id
         logo_uri
         display_name
-        explorers(limit: 1) {
+        explorers {
           home_url
         }
       }
