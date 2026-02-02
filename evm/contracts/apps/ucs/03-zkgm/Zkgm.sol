@@ -453,7 +453,7 @@ contract UCS03Zkgm is
         uint32 channelId,
         bytes calldata sender
     ) internal {
-        (bytes32 proxySalt, address proxyAccount) =
+        (address proxyAccount, bytes32 proxySalt) =
             _predictProxyAccount(path, channelId, sender);
         if (targetContract == proxyAccount && !ZkgmLib.isDeployed(proxyAccount))
         {

@@ -98,6 +98,23 @@ contract TestZkgm is UCS03Zkgm {
     ) public {
         _setBucketConfig(token, capacity, refillRate, reset);
     }
+
+    function doDeployProxyAccount(
+        address targetContract,
+        uint256 path,
+        uint32 channelId,
+        bytes calldata sender
+    ) public {
+        _deployProxyAccount(targetContract, path, channelId, sender);
+    }
+
+    function doPredictProxyAccount(
+        uint256 path,
+        uint32 channelId,
+        bytes calldata sender
+    ) public returns (address, bytes32) {
+        return _predictProxyAccount(path, channelId, sender);
+    }
 }
 
 contract TestIBCHandler is IIBCModulePacket {
@@ -5904,6 +5921,156 @@ contract ZkgmTests is Test {
                 abi.encodePacked(quoteToken)
             ),
             0
+        );
+    }
+
+    function test_deployProxyAccount_ok(
+        uint256 path,
+        uint32 channelId,
+        bytes calldata sender
+    ) public {
+        (address predicted,) =
+            zkgm.doPredictProxyAccount(path, channelId, sender);
+
+        // Expect the CreateProxyAccount event
+        vm.expectEmit();
+        emit ZkgmLib.CreateProxyAccount(path, channelId, sender, predicted);
+
+        // Deploy by passing the predicted address as targetContract
+        zkgm.doDeployProxyAccount(predicted, path, channelId, sender);
+
+        // Verify the proxy was deployed
+        assertTrue(predicted.code.length > 0);
+
+        // Verify the proxy account is initialized correctly
+        ProxyAccount account = ProxyAccount(predicted);
+        assertEq(account.zkgm(), address(zkgm));
+        assertTrue(account.isRemoteAdmin(path, channelId, sender));
+    }
+
+    function test_deployProxyAccount_skipsWhenTargetMismatch(
+        uint256 path,
+        uint32 channelId,
+        bytes calldata sender,
+        address wrongTarget
+    ) public {
+        (address predicted,) =
+            zkgm.doPredictProxyAccount(path, channelId, sender);
+        vm.assume(wrongTarget != predicted);
+
+        // Should not deploy (no event, no code at predicted address)
+        zkgm.doDeployProxyAccount(wrongTarget, path, channelId, sender);
+
+        // Proxy should NOT be deployed
+        assertEq(predicted.code.length, 0);
+    }
+
+    function test_deployProxyAccount_idempotent(
+        uint256 path,
+        uint32 channelId,
+        bytes calldata sender
+    ) public {
+        (address predicted,) =
+            zkgm.doPredictProxyAccount(path, channelId, sender);
+
+        // First deploy
+        zkgm.doDeployProxyAccount(predicted, path, channelId, sender);
+        assertTrue(predicted.code.length > 0);
+
+        // Second deploy with same params should not revert
+        zkgm.doDeployProxyAccount(predicted, path, channelId, sender);
+
+        // Proxy is still there and functional
+        ProxyAccount account = ProxyAccount(predicted);
+        assertEq(account.zkgm(), address(zkgm));
+    }
+
+    function test_deployProxyAccount_deterministicAddress(
+        uint256 path,
+        uint32 channelId,
+        bytes calldata sender
+    ) public {
+        // Predict twice, should return same address
+        (address predicted1,) =
+            zkgm.doPredictProxyAccount(path, channelId, sender);
+        (address predicted2,) =
+            zkgm.doPredictProxyAccount(path, channelId, sender);
+        assertEq(predicted1, predicted2);
+
+        // Deploy and verify the actual address matches prediction
+        zkgm.doDeployProxyAccount(predicted1, path, channelId, sender);
+        assertTrue(predicted1.code.length > 0);
+    }
+
+    function test_deployProxyAccount_differentParamsYieldDifferentAddresses(
+        uint256 path1,
+        uint256 path2,
+        uint32 channelId,
+        bytes calldata sender
+    ) public {
+        vm.assume(path1 != path2);
+        (address predicted1,) =
+            zkgm.doPredictProxyAccount(path1, channelId, sender);
+        (address predicted2,) =
+            zkgm.doPredictProxyAccount(path2, channelId, sender);
+        assertTrue(predicted1 != predicted2);
+    }
+
+    function test_deployProxyAccount_viaExecuteCall(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 path,
+        bytes32 salt,
+        bytes memory sender
+    ) public {
+        vm.assume(sourceChannelId != 0);
+        vm.assume(destinationChannelId != 0);
+
+        // Predict the proxy address
+        (address predicted,) = zkgm.doPredictProxyAccount(
+            path, destinationChannelId, sender
+        );
+
+        // Execute a non-eureka call targeting the predicted proxy address.
+        // The proxy gets deployed, then onZkgm is called on it.
+        // The proxy's onZkgm requires the sender to be a remote admin,
+        // which it is since it was just initialized with that sender.
+        // Encode a no-op execute call as the message.
+        bytes memory message =
+            abi.encode(address(0), uint256(0), bytes(""));
+
+        vm.expectEmit();
+        emit ZkgmLib.CreateProxyAccount(
+            path, destinationChannelId, sender, predicted
+        );
+
+        zkgm.doExecuteCall(
+            address(this),
+            IBCPacket({
+                sourceChannelId: sourceChannelId,
+                destinationChannelId: destinationChannelId,
+                data: hex"",
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            }),
+            address(this),
+            hex"",
+            path,
+            salt,
+            Call({
+                sender: sender,
+                eureka: false,
+                contractAddress: abi.encodePacked(predicted),
+                contractCalldata: message
+            })
+        );
+
+        // Verify proxy was deployed and initialized
+        assertTrue(predicted.code.length > 0);
+        ProxyAccount account = ProxyAccount(predicted);
+        assertEq(account.zkgm(), address(zkgm));
+        assertTrue(
+            account.isRemoteAdmin(path, destinationChannelId, sender)
         );
     }
 }
