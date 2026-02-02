@@ -220,8 +220,6 @@ async fn do_main() -> Result<()> {
                     });
             }
 
-            dbg!(&contracts);
-
             for (address, deployment) in contracts {
                 if args.update_deployment_heights {
                     deployment.height =
@@ -295,7 +293,7 @@ alloy::sol! {
 }
 
 async fn get_commit_evm(provider: &impl Provider<AnyNetwork>, address: H160) -> Result<Rev> {
-    let client = Versioned::new(dbg!(address).get().into(), provider);
+    let client = Versioned::new(address.get().into(), provider);
 
     match client.gitRev().call().await {
         Ok(rev) => rev.as_str().parse().context("parsing gitRev() response"),
