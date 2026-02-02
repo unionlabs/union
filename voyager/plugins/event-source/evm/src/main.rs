@@ -15,8 +15,8 @@ use ibc_union_spec::{
     event::{
         ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-        ConnectionOpenTry, CounterpartyChannelMetadata, CreateClient, FullEvent, PacketAck,
-        PacketMetadata, PacketRecv, PacketSend, PacketTimeout, UpdateClient, WriteAck,
+        ConnectionOpenTry, CounterpartyChannelMetadata, CreateClient, PacketAck, PacketMetadata,
+        PacketRecv, PacketSend, PacketTimeout, UpdateClient, WriteAck,
     },
     path::{BatchPacketsPath, BatchReceiptsPath, ChannelPath, ConnectionPath},
     query::PacketByHash,
@@ -34,14 +34,13 @@ use voyager_sdk::{
     DefaultCmd, ExtensionsExt, VoyagerClient,
     anyhow::{self, bail},
     hook::simple_take_filter,
-    into_value,
     message::{
         PluginMessage, VoyagerMessage,
         call::{Call, WaitForHeight},
         data::{ChainEvent, Data, EventProvableHeight},
     },
     plugin::Plugin,
-    primitives::{ChainId, ClientInfo, IbcSpec, QueryHeight},
+    primitives::{ChainId, ClientInfo, QueryHeight},
     rpc::{PluginServer, RpcError, RpcErrorExt, RpcResult, types::PluginInfo},
     serde_json::json,
     vm::{Op, call, conc, data, noop, pass::PassResult, seq},
@@ -575,7 +574,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info.clone(),
                     ChainId::new(raw_event.counterparty_chain_id),
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -613,7 +612,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info.clone(),
                     client_state_meta.counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -649,7 +648,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info,
                     client_state_meta.counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -687,7 +686,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info.clone(),
                     client_state_meta.counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -725,7 +724,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info.clone(),
                     client_state_meta.counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -763,7 +762,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info.clone(),
                     client_state_meta.counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -820,7 +819,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info.clone(),
                     client_state_meta.counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -879,7 +878,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info.clone(),
                     client_state_meta.counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -933,7 +932,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info.clone(),
                     client_state_meta.counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -987,7 +986,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info.clone(),
                     client_state_meta.counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -1062,15 +1061,14 @@ impl Module {
 
                                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                                Ok(data(ChainEvent {
-                                    chain_id: self.chain_id.clone(),
+                                Ok(data(ChainEvent::new::<IbcUnion>(
+                                    self.chain_id.clone(),
                                     client_info,
                                     counterparty_chain_id,
-                                    tx_hash,
-                                    provable_height: EventProvableHeight::Min(min_provable_height),
-                                    ibc_spec_id: IbcUnion::ID,
-                                    event: into_value::<FullEvent>(event),
-                                }))
+                                    Some(tx_hash),
+                                    EventProvableHeight::Min(min_provable_height),
+                                    event,
+                                )))
                             }
                         }
                     }
@@ -1100,7 +1098,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info,
                     counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -1142,7 +1140,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info,
                     counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -1184,7 +1182,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info,
                     counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -1292,7 +1290,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info,
                     counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))
@@ -1334,7 +1332,7 @@ impl Module {
                     self.chain_id.clone(),
                     client_info,
                     counterparty_chain_id,
-                    tx_hash,
+                    Some(tx_hash),
                     EventProvableHeight::Min(min_provable_height),
                     event,
                 )))

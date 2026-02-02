@@ -545,10 +545,11 @@ impl Module {
 
                 return Ok(PacketByHashResponse {
                     packet,
-                    tx_hash: log
-                        .transaction_hash
-                        .expect("log must have tx hash; qed;")
-                        .into(),
+                    tx_hash: Some(
+                        log.transaction_hash
+                            .expect("log must have tx hash; qed;")
+                            .into(),
+                    ),
                     provable_height: log.block_number.expect("log must have block number; qed;"),
                 });
             } else {
@@ -697,10 +698,11 @@ impl Module {
 
                 return Ok(PacketAckByHashResponse {
                     ack: packet_log.acknowledgement.into(),
-                    tx_hash: log
-                        .transaction_hash
-                        .expect("log must have tx hash; qed;")
-                        .into(),
+                    tx_hash: Some(
+                        log.transaction_hash
+                            .expect("log must have tx hash; qed;")
+                            .into(),
+                    ),
                     provable_height: log.block_number.expect("log must have block number; qed;"),
                 });
             } else {

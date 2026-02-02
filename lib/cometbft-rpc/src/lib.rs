@@ -26,9 +26,9 @@ use unionlabs::{
 
 use crate::rpc_types::{
     AbciInfoResponse, AbciQueryResponse, AllValidatorsResponse, BlockResponse,
-    BlockResultsResponse, BlockchainResponse, BroadcastTxSyncResponse, CommitResponse,
-    GrpcAbciQueryResponse, HeaderResponse, Order, StatusResponse, TxResponse, TxSearchResponse,
-    ValidatorsResponse,
+    BlockResultsResponse, BlockSearchResponse, BlockchainResponse, BroadcastTxSyncResponse,
+    CommitResponse, GrpcAbciQueryResponse, HeaderResponse, Order, StatusResponse, TxResponse,
+    TxSearchResponse, ValidatorsResponse,
 };
 
 #[cfg(test)]
@@ -341,6 +341,43 @@ impl Client {
             .await?;
 
         debug!(total_count = response.total_count, "tx_search");
+
+        Ok(response)
+    }
+
+    #[instrument(
+        skip_all,
+        fields(
+            query = query.as_ref(),
+            prove,
+            page,
+            per_page,
+            ?order_by
+        )
+    )]
+    pub async fn block_search(
+        &self,
+        query: impl AsRef<str>,
+        page: NonZeroU32,
+        // REVIEW: Is this bounded in the same way as the validators pagination?
+        per_page: NonZeroU8,
+        // REVIEW: There is the enum `cosmos.tx.v1beta.OrderBy`, is that related to this?
+        order_by: Order,
+    ) -> Result<BlockSearchResponse, JsonRpcError> {
+        let response = self
+            .inner
+            .request::<BlockSearchResponse, _>(
+                "block_search",
+                rpc_params![
+                    query.as_ref(),
+                    page.to_string(),
+                    per_page.to_string(),
+                    order_by
+                ],
+            )
+            .await?;
+
+        debug!(total_count = response.total_count, "block_search");
 
         Ok(response)
     }

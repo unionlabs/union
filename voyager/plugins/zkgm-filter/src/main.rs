@@ -233,6 +233,7 @@ if ."@type" == "data"
     and ."@value"."@type" == "ibc_event"
     and ."@value"."@value".ibc_spec_id == "{ibc_union_id}"
     and ."@value"."@value".chain_id == "{chain_id}"
+    and ."@value"."@value".tx_hash != null
     and (
         ."@value"."@value".event."@type" == "write_ack"
         or ."@value"."@value".event."@type" == "packet_send"
@@ -461,7 +462,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                                     ModuleCall::CheckSendPacket(CheckSendPacket {
                                         event: packet_send.clone(),
                                         chain_id: chain_event.chain_id.clone(),
-                                        tx_hash: chain_event.tx_hash,
+                                        tx_hash: chain_event.tx_hash.expect("checked in filter"),
                                         counterparty_chain_id: chain_event
                                             .counterparty_chain_id
                                             .clone(),

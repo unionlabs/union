@@ -48,7 +48,8 @@ pub struct ChainEvent {
     pub client_info: ClientInfo,
     /// The chain on the other end of this IBC event.
     pub counterparty_chain_id: ChainId,
-    pub tx_hash: H256,
+    /// The
+    pub tx_hash: Option<H256>,
     /// The "provable height" of the event. This is the minimum height at which
     /// the effect of the IBC action that caused this event is provable in
     /// the state root of the chain identified by [`Self::chain_id`].
@@ -65,7 +66,7 @@ impl ChainEvent {
         chain_id: ChainId,
         client_info: ClientInfo,
         counterparty_chain_id: ChainId,
-        tx_hash: H256,
+        tx_hash: Option<H256>,
         provable_height: EventProvableHeight,
         event: V::Event,
     ) -> Self {

@@ -411,6 +411,98 @@ impl Module {
 
         let mut seen_batches = BTreeSet::new();
 
+        let mut handle_event = |event: cometbft_rpc::types::abci::event::Event,
+                                tx_hash: Option<_>| {
+            trace!(%event.ty, "observed event");
+
+            let event = match CosmosSdkEvent::<IbcEvent>::new(event) {
+                Ok(event) => event,
+                Err(cosmos_sdk_event::Error::Deserialize(error)) => {
+                    trace!("unable to parse event: {error}");
+                    return;
+                }
+                Err(err) => {
+                    error!("error parsing event: {}", ErrorReporter(err));
+                    return;
+                }
+            };
+
+            match (&event.contract_address, &self.ibc_host_contract_address) {
+                (None, _) => {}
+                (Some(addr), None) => {
+                    debug!(
+                        "found ibc-union event for contract {addr}, but no contract address is configured",
+                    );
+                    return;
+                }
+                (Some(event_addr), Some(configured_addr)) => {
+                    if event_addr == configured_addr {
+                    } else {
+                        debug!(
+                            "found ibc-union event for contract {event_addr}, but the configured contract address is {configured_addr}",
+                        );
+                        return;
+                    }
+                }
+            }
+
+            let mut make_chain_event = || {
+                if event.event.is_trivial() && !self.index_trivial_events {
+                    debug!("not indexing trivial event");
+                    None
+                } else {
+                    let event = match event.event {
+                        IbcEvent::WasmBatchSend {
+                            channel_id,
+                            batch_hash,
+                            packet_hash,
+                        } => {
+                            debug!(%packet_hash, %batch_hash, %channel_id, "found batch send event");
+                            if seen_batches.insert((channel_id, batch_hash)) {
+                                info!(%batch_hash, %channel_id, "found batch send event");
+                                event.clone()
+                            } else {
+                                return None;
+                            }
+                        }
+                        _ => event.clone(),
+                    };
+                    Some(call(PluginMessage::new(
+                        self.plugin_name(),
+                        ModuleCall::from(MakeChainEvent {
+                            height,
+                            tx_hash,
+                            event: event.event,
+                        }),
+                    )))
+                }
+            };
+
+            if let Some(ref mut already_seen_events) = already_seen_events {
+                match already_seen_events.entry(event.event.hash()) {
+                    Entry::Vacant(vacant_entry) => {
+                        info!("found previously missed event");
+                        vacant_entry.insert(EventState::SeenNow);
+                        make_chain_event_ops.push(make_chain_event());
+                    }
+                    Entry::Occupied(mut occupied_entry) => match occupied_entry.get() {
+                        EventState::SeenPreviously => {
+                            info!("found previously seen event");
+                            occupied_entry.insert(EventState::SeenNow);
+                        }
+                        EventState::SeenNow => {
+                            warn!(
+                                "found duplicate event, likely due to a load-balanced rpc with poor nodes. additional data may have been missed!"
+                            );
+                        }
+                    },
+                };
+            } else {
+                found_events.insert(event.event.hash());
+                make_chain_event_ops.push(make_chain_event());
+            }
+        };
+
         loop {
             info!(%height, %page, "fetching page {page}");
 
@@ -433,94 +525,7 @@ impl Module {
             for tx_response in response.txs {
                 let _span = info_span!("tx_result.events", tx_hash = %tx_response.hash).entered();
                 for event in tx_response.tx_result.events {
-                    trace!(%event.ty, "observed event");
-
-                    let event = match CosmosSdkEvent::<IbcEvent>::new(event) {
-                        Ok(event) => event,
-                        Err(cosmos_sdk_event::Error::Deserialize(error)) => {
-                            trace!("unable to parse event: {error}");
-                            continue;
-                        }
-                        Err(err) => {
-                            error!("error parsing event: {}", ErrorReporter(err));
-                            continue;
-                        }
-                    };
-
-                    match (&event.contract_address, &self.ibc_host_contract_address) {
-                        (None, _) => {}
-                        (Some(addr), None) => {
-                            debug!(
-                                "found ibc-union event for contract {addr}, but no contract address is configured",
-                            );
-                            continue;
-                        }
-                        (Some(event_addr), Some(configured_addr)) => {
-                            if event_addr == configured_addr {
-                            } else {
-                                debug!(
-                                    "found ibc-union event for contract {event_addr}, but the configured contract address is {configured_addr}",
-                                );
-                                continue;
-                            }
-                        }
-                    }
-
-                    let mut make_chain_event = || {
-                        if event.event.is_trivial() && !self.index_trivial_events {
-                            debug!("not indexing trivial event");
-                            None
-                        } else {
-                            let event = match event.event {
-                                IbcEvent::WasmBatchSend {
-                                    channel_id,
-                                    batch_hash,
-                                    packet_hash,
-                                } => {
-                                    debug!(%packet_hash, %batch_hash, %channel_id, "found batch send event");
-                                    if seen_batches.insert((channel_id, batch_hash)) {
-                                        info!(%batch_hash, %channel_id, "found batch send event");
-                                        event.clone()
-                                    } else {
-                                        return None;
-                                    }
-                                }
-                                _ => event.clone(),
-                            };
-                            Some(call(PluginMessage::new(
-                                self.plugin_name(),
-                                ModuleCall::from(MakeChainEvent {
-                                    height,
-                                    tx_hash: tx_response.hash.into_encoding(),
-                                    event: event.event,
-                                }),
-                            )))
-                        }
-                    };
-
-                    if let Some(ref mut already_seen_events) = already_seen_events {
-                        match already_seen_events.entry(event.event.hash()) {
-                            Entry::Vacant(vacant_entry) => {
-                                info!("found previously missed event");
-                                vacant_entry.insert(EventState::SeenNow);
-                                make_chain_event_ops.push(make_chain_event());
-                            }
-                            Entry::Occupied(mut occupied_entry) => match occupied_entry.get() {
-                                EventState::SeenPreviously => {
-                                    info!("found previously seen event");
-                                    occupied_entry.insert(EventState::SeenNow);
-                                }
-                                EventState::SeenNow => {
-                                    warn!(
-                                        "found duplicate event, likely due to a load-balanced rpc with poor nodes. additional data may have been missed!"
-                                    );
-                                }
-                            },
-                        };
-                    } else {
-                        found_events.insert(event.event.hash());
-                        make_chain_event_ops.push(make_chain_event());
-                    }
+                    handle_event(event, Some(tx_response.hash.into_encoding()))
                 }
             }
 
@@ -531,6 +536,24 @@ impl Module {
                     .checked_add(1)
                     .expect("how many events does this block have???");
             }
+        }
+
+        info!("querying block events");
+
+        let block_events = self
+            .cometbft_client
+            .block_results(Some(height.height().try_into().unwrap()))
+            .await
+            .map_err(RpcError::retryable(format!(
+                "error querying block results at height {height}"
+            )))?
+            .finalize_block_events
+            .unwrap_or_default();
+
+        info!("found {} events in block {height}", block_events.len());
+
+        for event in block_events {
+            handle_event(event, None)
         }
 
         Ok(conc(make_chain_event_ops.into_iter().flatten().chain(
@@ -553,12 +576,12 @@ impl Module {
         )))
     }
 
-    #[instrument(level = "info", skip_all, fields(%height, %tx_hash))]
+    #[instrument(level = "info", skip_all, fields(%height, tx_hash = tx_hash.map(|h| h.to_string())))]
     async fn make_chain_event(
         &self,
         voyager_client: &VoyagerClient,
         height: Height,
-        tx_hash: H256,
+        tx_hash: Option<H256>,
         event: IbcEvent,
     ) -> RpcResult<Op<VoyagerMessage>> {
         // events at height N are provable at height N+k where k>0

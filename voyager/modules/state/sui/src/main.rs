@@ -199,7 +199,7 @@ impl Module {
 
         Ok(PacketByHashResponse {
             packet: packet.into(),
-            tx_hash,
+            tx_hash: Some(tx_hash),
             provable_height: height,
         })
     }

@@ -119,14 +119,16 @@ impl Module {
         let mut tx_result = self
             .cometbft_client
             .tx_search(
-                query,
+                &query,
                 false,
                 const { NonZeroU32::new(1).unwrap() },
                 const { NonZeroU8::new(1).unwrap() },
                 Order::Asc,
             )
             .await
-            .map_err(RpcError::retryable("error querying packet by packet hash"))?;
+            .map_err(RpcError::retryable(
+                "error querying packet by packet hash in tx",
+            ))?;
 
         if tx_result.total_count != 1 {
             return Err(RpcError::retryable_from_message(format!(
@@ -139,7 +141,7 @@ impl Module {
 
         let tx = tx_result.txs.pop().expect("len is > 1; qed;");
 
-        let maybe_packet = tx.tx_result.events.iter().find_map(|event| {
+        let extract_event = |event: &cometbft_rpc::types::abci::event::Event| {
             CosmosSdkEvent::<IbcEvent>::new(event.clone())
                 .ok()
                 .and_then(|e| match e.event {
@@ -164,23 +166,83 @@ impl Module {
                     }),
                     _ => None,
                 })
-        });
-
-        let Some(packet) = maybe_packet else {
-            return Err(RpcError::retryable_from_message(format!(
-                "error querying for packet {packet_hash}, channel \
-                {channel_id}; the wasm-write_ack event was not found",
-            ))
-            .with_data(json!({ "tx": tx })));
         };
 
-        info!(%packet_hash, %channel_id, "queried packet");
+        let maybe_packet = tx.tx_result.events.iter().find_map(extract_event);
 
-        Ok(PacketByHashResponse {
-            packet,
-            tx_hash: tx.hash.into_encoding(),
-            provable_height: tx.height.expect("tx must have a height; qed;").get() + 1,
-        })
+        match maybe_packet {
+            Some(packet) => {
+                info!(%packet_hash, %channel_id, "queried packet");
+
+                Ok(PacketByHashResponse {
+                    packet,
+                    tx_hash: Some(tx.hash.into_encoding()),
+                    provable_height: tx.height.expect("tx must have a height; qed;").get() + 1,
+                })
+            }
+            None => {
+                info!("packet not found in a tx, checking for block events");
+
+                let mut block_search_response = self
+                    .cometbft_client
+                    .block_search(
+                        query,
+                        const { NonZeroU32::new(1).unwrap() },
+                        const { NonZeroU8::new(1).unwrap() },
+                        Order::Asc,
+                    )
+                    .await
+                    .map_err(RpcError::retryable(
+                        "error querying packet by packet hash in block",
+                    ))?;
+
+                if block_search_response.total_count != 1 {
+                    return Err(RpcError::retryable_from_message(format!(
+                        "error querying for packet {packet_hash}, \
+                        expected 1 block but found {}",
+                        block_search_response.total_count,
+                    ))
+                    .with_data(json!({ "block_response": block_search_response })));
+                }
+
+                let block_response = block_search_response
+                    .blocks
+                    .pop()
+                    .expect("len is > 1; qed;");
+
+                let block_results = self
+                    .cometbft_client
+                    .block_results(Some(
+                        (block_response.block.header.height.inner() as u64)
+                            .try_into()
+                            .expect("block number is valid"),
+                    ))
+                    .await
+                    .map_err(RpcError::retryable(format!(
+                        "error querying block {}",
+                        block_response.block.header.height
+                    )))?;
+
+                let packet = block_results
+                    .finalize_block_events
+                    .iter()
+                    .flatten()
+                    .find_map(extract_event)
+                    .ok_or_else(|| {
+                        RpcError::retryable_from_message(format!(
+                            "error querying for packet {packet_hash}, channel \
+                            {channel_id}; the wasm-packet_send event was not found",
+                        ))
+                        .with_data(json!({ "block_results": block_results }))
+                    })?;
+
+                Ok(PacketByHashResponse {
+                    packet,
+                    tx_hash: Some(tx.hash.into_encoding()),
+                    provable_height: block_response.block.header.height.inner() as u64 + 1,
+                })
+            }
+        }
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %channel_id, %packet_hash))]
@@ -196,7 +258,7 @@ impl Module {
         let mut tx_result = self
             .cometbft_client
             .tx_search(
-                query,
+                &query,
                 false,
                 const { NonZeroU32::new(1).unwrap() },
                 const { NonZeroU8::new(1).unwrap() },
@@ -204,7 +266,7 @@ impl Module {
             )
             .await
             .map_err(RpcError::retryable(
-                "error querying packet ack by packet hash",
+                "error querying packet ack by packet hash in tx",
             ))?;
 
         if tx_result.total_count != 1 {
@@ -214,11 +276,11 @@ impl Module {
                 tx_result.total_count,
             ))
             .with_data(json!({ "tx_result": tx_result })));
-        };
+        }
 
         let tx = tx_result.txs.pop().expect("len is > 1; qed;");
 
-        let maybe_ack = tx.tx_result.events.iter().find_map(|event| {
+        let extract_event = |event: &cometbft_rpc::types::abci::event::Event| {
             CosmosSdkEvent::<IbcEvent>::new(event.clone())
                 .ok()
                 .and_then(|e| match e.event {
@@ -233,22 +295,83 @@ impl Module {
                     .then_some(acknowledgement),
                     _ => None,
                 })
-        });
-        let Some(ack) = maybe_ack else {
-            return Err(RpcError::retryable_from_message(format!(
-                "error querying for acknowledgement for packet {packet_hash}, \
-                channel {channel_id}; the wasm-write_ack event was not found",
-            ))
-            .with_data(json!({ "tx": tx })));
         };
 
-        info!(%ack, %packet_hash, %channel_id, "queried ack for packet");
+        let maybe_ack = tx.tx_result.events.iter().find_map(extract_event);
 
-        Ok(PacketAckByHashResponse {
-            ack: ack.into_encoding(),
-            tx_hash: tx.hash.into_encoding(),
-            provable_height: tx.height.expect("tx must have a height; qed;").get() + 1,
-        })
+        match maybe_ack {
+            Some(ack) => {
+                info!(%packet_hash, %channel_id, "queried packet");
+
+                Ok(PacketAckByHashResponse {
+                    ack: ack.into_encoding(),
+                    tx_hash: Some(tx.hash.into_encoding()),
+                    provable_height: tx.height.expect("tx must have a height; qed;").get() + 1,
+                })
+            }
+            None => {
+                info!("packet not found in a tx, checking for block events");
+
+                let mut block_search_response = self
+                    .cometbft_client
+                    .block_search(
+                        query,
+                        const { NonZeroU32::new(1).unwrap() },
+                        const { NonZeroU8::new(1).unwrap() },
+                        Order::Asc,
+                    )
+                    .await
+                    .map_err(RpcError::retryable(
+                        "error querying packet ack by packet hash in block",
+                    ))?;
+
+                if block_search_response.total_count != 1 {
+                    return Err(RpcError::retryable_from_message(format!(
+                        "error querying for packet {packet_hash}, \
+                        expected 1 block but found {}",
+                        block_search_response.total_count,
+                    ))
+                    .with_data(json!({ "block_response": block_search_response })));
+                }
+
+                let block_response = block_search_response
+                    .blocks
+                    .pop()
+                    .expect("len is > 1; qed;");
+
+                let block_results = self
+                    .cometbft_client
+                    .block_results(Some(
+                        (block_response.block.header.height.inner() as u64)
+                            .try_into()
+                            .expect("block number is valid"),
+                    ))
+                    .await
+                    .map_err(RpcError::retryable(format!(
+                        "error querying block {}",
+                        block_response.block.header.height
+                    )))?;
+
+                let ack = block_results
+                    .finalize_block_events
+                    .iter()
+                    .flatten()
+                    .find_map(extract_event)
+                    .ok_or_else(|| {
+                        RpcError::retryable_from_message(format!(
+                            "error querying for packet {packet_hash}, channel \
+                            {channel_id}; the wasm-packet_ack event was not found",
+                        ))
+                        .with_data(json!({ "block_results": block_results }))
+                    })?;
+
+                Ok(PacketAckByHashResponse {
+                    ack: ack.into_encoding(),
+                    tx_hash: Some(tx.hash.into_encoding()),
+                    provable_height: block_response.block.header.height.inner() as u64 + 1,
+                })
+            }
+        }
     }
 
     #[instrument(skip_all, fields(?height))]
@@ -514,6 +637,7 @@ impl StateModuleServer<IbcUnion> for Module {
                 .query_packet_by_hash(channel_id, packet_hash)
                 .await
                 .map(into_value),
+            // TODO: Also query block events here
             Query::PacketsByBatchHash(PacketsByBatchHash {
                 channel_id,
                 batch_hash,
@@ -532,7 +656,7 @@ impl StateModuleServer<IbcUnion> for Module {
                         Order::Asc,
                     )
                     .await
-                    .map_err(RpcError::fatal("error querying packet by packet hash"))?;
+                    .map_err(RpcError::fatal("error querying batch by batch hash"))?;
 
                 if res.total_count != 1 {
                     return Err(RpcError::retryable_from_message(format!(
