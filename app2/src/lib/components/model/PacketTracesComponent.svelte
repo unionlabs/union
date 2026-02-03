@@ -1,11 +1,13 @@
 <script lang="ts">
 import { type DisplayMode, PACKET_TRACE_DISPLAY_NAMES } from "$lib/constants/packet-trace-names"
+import { TOKEN_BLACKLIST } from "$lib/constants/tokens"
 import { chains } from "$lib/stores/chains.svelte"
 import { getChain, PacketTrace } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import type { HTMLAttributes } from "svelte/elements"
 import SharpCheckIcon from "../icons/SharpCheckIcon.svelte"
 import DateTimeComponent from "../ui/DateTimeComponent.svelte"
+import BlockHeightComponent from "./BlockHeightComponent.svelte"
 import ChainComponent from "./ChainComponent.svelte"
 import TransactionHashComponent from "./TransactionHashComponent.svelte"
 
@@ -200,6 +202,14 @@ function getArrowSpan(
                   <TransactionHashComponent
                     chain={chain.value}
                     hash={formattedTxHash.value}
+                  />
+                </div>
+              {:else if Option.isSome(trace.height) && Option.isSome(trace.timestamp)
+              && Option.isNone(formattedTxHash) && Option.isSome(chain)}
+                <div class="text-xs text-zinc-400">
+                  <BlockHeightComponent
+                    chain={chain.value}
+                    height={trace.height.value}
                   />
                 </div>
               {/if}

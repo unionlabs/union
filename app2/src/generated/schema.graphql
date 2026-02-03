@@ -61,7 +61,7 @@ type Query {
   v2_channels(args: v2_channels_args! = {p_comparison: lt, p_destination_channel_id: null, p_destination_client_id: null, p_destination_connection_id: null, p_destination_port_id: null, p_destination_universal_chain_id: null, p_limit: null, p_recommended: null, p_sort_order: null, p_source_channel_id: null, p_source_client_id: null, p_source_connection_id: null, p_source_port_id: null, p_source_universal_chain_id: null, p_tags: null, p_version: null}): [v2_channel_type!]!
   v2_clients(args: v2_clients_args! = {p_client_id: null, p_comparison: lt, p_counterparty_universal_chain_id: null, p_limit: null, p_sort_order: null, p_universal_chain_id: null}): [v2_client_type!]!
   v2_connections(args: v2_connections_args! = {p_comparison: lt, p_destination_client_id: null, p_destination_connection_id: null, p_destination_universal_chain_id: null, p_limit: null, p_sort_order: null, p_source_client_id: null, p_source_connection_id: null, p_source_universal_chain_id: null}): [v2_connection_type!]!
-  v2_dust_withdraws(args: v2_dust_withdraws_args! = {p_addresses_canonical: null, p_block_hash: null, p_comparison: lt, p_destination_universal_chain_id: null, p_limit: null, p_network: null, p_packet_hash: null, p_sort_order: null, p_source_universal_chain_id: null, p_transaction_hash: null}): [v2_dust_withdraw_type!]!
+  v2_dust_withdraws(args: v2_dust_withdraws_args! = {p_addresses_canonical: null, p_block_hash: null, p_comparison: lt, p_destination_universal_chain_id: null, p_limit: null, p_network: null, p_packet_hash: null, p_remote_universal_chain_id: null, p_sort_order: null, p_source_universal_chain_id: null, p_transaction_hash: null}): [v2_dust_withdraw_type!]!
   v2_errors: [v2_error_type!]!
   v2_health_check: [v2_health_check_type!]!
   v2_instructions(args: v2_instructions_args! = {p_block_hash: null, p_comparison: lt, p_limit: null, p_multiplex_contract_address: null, p_multiplex_sender: null, p_network: null, p_packet_hash: null, p_sort_order: null, p_transaction_hash: null}): [v2_instruction_type!]!
@@ -392,6 +392,7 @@ input v2_dust_withdraws_args {
   p_limit: Int
   p_network: String
   p_packet_hash: String
+  p_remote_universal_chain_id: String
   p_sort_order: String
   p_source_universal_chain_id: String
   p_transaction_hash: String
