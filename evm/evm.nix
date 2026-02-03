@@ -405,7 +405,7 @@ _: {
           ucs04-chain-id = "bsc.97";
 
           name = "bsc-testnet";
-          rpc-url = "https://bsc-testnet.bnbchain.org";
+          rpc-url = "https://bnb-testnet.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0xae13d989dac2f0debff460ac112a837c89baa7cd";
           rate-limit-enabled = "false";

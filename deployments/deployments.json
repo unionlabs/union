@@ -444,6 +444,12 @@
         "height": 55472262,
         "commit": "7e4a5f433f478f2b7999a27cbe8d2eb8fbe5980e"
       },
+      "0xba5ed44733953d79717f6269357c77718c8ba5ed": {
+        "name": "u",
+        "salt": "0x12c206e42a6e7773c97d1f1b855d7848492f9e4e396b33fcf0172d6758e9b047",
+        "height": 88232123,
+        "commit": "f15673cd2647721328f2fec5558afbe94cd391bc"
+      },
       "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7": {
         "name": "core",
         "salt": "0x6962632d69732d6261736564",
