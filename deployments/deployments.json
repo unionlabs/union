@@ -757,6 +757,13 @@
         "commit": "5fcb9df377231acdec7d6cc89faf03f8bca78004",
         "code_id": 2
       },
+      "into169tcux77zuwtxmt2rljrnay95exand68vue5lzx8l8r05tvm7ggs54e57a": {
+        "name": "protocols/ucs03/cw20-token-minter",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 24781,
+        "commit": "5fcb9df377231acdec7d6cc89faf03f8bca78004",
+        "code_id": 8
+      },
       "into16ump44jecz0mphenf2xr3gvn3c2g4ng406p2hhxntjjrflq2t7psd0kujc": {
         "name": "lightclients/tendermint",
         "salt": "0x6c69676874636c69656e74732f74656e6465726d696e74",
