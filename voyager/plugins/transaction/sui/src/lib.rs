@@ -13,7 +13,7 @@ use sui_sdk::{
         transaction::{ProgrammableTransaction, Transaction, TransactionData},
     },
 };
-use tracing::{debug, info};
+use tracing::{info, trace};
 use voyager_sdk::rpc::{RpcError, RpcResult};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,7 +69,7 @@ pub async fn send_transactions(
         .next()
         .expect("sender has a gas token");
 
-    let gas_budget = 180_000_000; //TODO: change it later
+    let gas_budget = 180_000_000; // TODO: change it later
     let gas_price = sui_client
         .read_api()
         .get_reference_gas_price()
@@ -78,7 +78,7 @@ pub async fn send_transactions(
             "error fetching the reference gas price",
         ))?;
 
-    debug!(?ptb, "ptb");
+    trace!(?ptb, "ptb");
 
     let tx_data = TransactionData::new_programmable(
         sender,
@@ -113,11 +113,10 @@ pub async fn send_transactions(
             SuiTransactionBlockResponseOptions::default(),
             None,
         )
-        .await;
+        .await
+        .map_err(RpcError::retryable("error executing tx"))?;
 
-    info!("{transaction_response:?}");
+    info!(tx_hash = %transaction_response.digest, "sui tx");
 
-    transaction_response.map_err(RpcError::retryable(
-        "error executing RpcError::retryablea tx",
-    ))
+    Ok(transaction_response)
 }

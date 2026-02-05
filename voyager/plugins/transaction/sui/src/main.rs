@@ -31,7 +31,7 @@ use voyager_sdk::{
     primitives::{ChainId, QueryHeight},
     rpc::{PluginServer, RpcError, RpcErrorExt, RpcResult, types::PluginInfo},
     serde_json::{self, json},
-    vm::{Op, Visit, call, noop, pass::PassResult},
+    vm::{Op, Visit, noop, pass::PassResult},
 };
 use voyager_transaction_plugin_sui::{ModuleInfo, TransactionPluginClient, send_transactions};
 
@@ -491,20 +491,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     AssertUnwindSafe(async move {
                         let ptb = self
                             .process_msgs(e.voyager_client()?, pk, msgs, sender)
-                            .await
-                            .unwrap();
+                            .await?;
 
                         let _ = send_transactions(&self.sui_client, pk, ptb).await?;
-                        Ok(noop())
+
+                        RpcResult::Ok(noop())
                     })
                 })
                 .await
-                .unwrap_or_else(|| {
-                    Ok(call(PluginMessage::new(
-                        self.plugin_name(),
-                        ModuleCall::SubmitTransaction(msgs),
-                    )))
-                }),
+                .transpose()?
+                .ok_or_else(|| RpcError::retryable_from_message("no signers available")),
         }
     }
 
