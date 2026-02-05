@@ -773,15 +773,15 @@
         "name": "lightclients/state-lens/ics23/mpt",
         "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
         "height": 27869886,
-        "commit": "1b172ff9247e5eedcddc6665c856b0bf4427035d",
-        "code_id": 13053
+        "commit": "e92e70dec5ce1fbdd7e2f13fc33d9ba01d771a52",
+        "code_id": 13061
       },
       "osmo1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qs2uecc": {
         "name": "protocols/ucs03",
         "salt": "0x70726f746f636f6c732f7563733033",
         "height": 27869895,
-        "commit": "1b172ff9247e5eedcddc6665c856b0bf4427035d",
-        "code_id": 13055
+        "commit": "e92e70dec5ce1fbdd7e2f13fc33d9ba01d771a52",
+        "code_id": 13064
       },
       "osmo13ulc6pqhm60qnx58ss7s3cft8cqfycexq3uy3dd2v0l8qsnkvk4sj22sn6": {
         "name": "protocols/ucs03/osmosis-tokenfactory-token-minter",
@@ -793,8 +793,8 @@
         "name": "core",
         "salt": "0x6962632d69732d6261736564",
         "height": 27869833,
-        "commit": "1b172ff9247e5eedcddc6665c856b0bf4427035d",
-        "code_id": 13051
+        "commit": "e92e70dec5ce1fbdd7e2f13fc33d9ba01d771a52",
+        "code_id": 13063
       },
       "osmo1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqstzzrn": {
         "name": "lightclients/tendermint",
@@ -807,8 +807,8 @@
         "name": "lightclients/cometbls",
         "salt": "0x6c69676874636c69656e74732f636f6d6574626c73",
         "height": 27869882,
-        "commit": "1b172ff9247e5eedcddc6665c856b0bf4427035d",
-        "code_id": 13052
+        "commit": "e92e70dec5ce1fbdd7e2f13fc33d9ba01d771a52",
+        "code_id": 13062
       },
       "osmo1managerhl8ka4alvaewkhflcc44m6385pf94zmrh2f4d3yzc2y4q4l623x": {
         "name": "manager",
@@ -816,6 +816,13 @@
         "height": 43100450,
         "commit": "1b172ff9247e5eedcddc6665c856b0bf4427035d",
         "code_id": 13048
+      },
+      "osmo1at0ne9aywh35pmlz0exl5fl3ljwpey4gc620yyxthqspdw9e60mslfjxm3": {
+        "name": "atone",
+        "salt": "0x62848041ba49141096961bdfd2ffc9a1149cd15ad42b0faede546ede6619408e",
+        "height": 48575479,
+        "commit": "e92e70dec5ce1fbdd7e2f13fc33d9ba01d771a52",
+        "code_id": 13065
       }
     }
   },
