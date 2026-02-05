@@ -217,7 +217,7 @@ _: {
           multisig-admin = null;
           rpc-url = "https://osmosis-testnet-rpc.polkachu.com";
           deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
-          ops-key = ''"$(op item get operation --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
+          ops-key = ''"$(op item get 'cosmos testnet multisig 1 / manager admin' --vault union-testnet-10 --field private-key --reveal)"'';
           gas-config = {
             type = "fixed";
             gas_price = "0.1";
@@ -807,10 +807,10 @@ _: {
                   PRIVATE_KEY=${ops-key} \
                   RUST_LOG=info \
                     cosmwasm-deployer \
-                    migrate \
+                    upgrade \
                     --rpc-url ${rpc-url} \
-                    --address ${getDeployedContractAddress ucs04-chain-id} \
-                    --new-bytecode ${(mk-app app).release} \
+                    --address ${getDeployedContractAddress ucs04-chain-id "protocols/ucs03"} \
+                    --new-bytecode ${(mk-app "ucs03-zkgm").release} \
                     ${
                       pkgs.lib.optionalString (
                         multisig-admin != null
