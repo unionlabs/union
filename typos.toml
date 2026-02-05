@@ -1,6 +1,7 @@
 default.locale = "en-us"
 
 files.extend-exclude = [
+  "deployments/deployments.json",
   "dictionary.txt",
   "ceremony/src/lib/constants/*",
   "**/*.splinecode",
