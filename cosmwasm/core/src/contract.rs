@@ -2495,7 +2495,7 @@ fn commit_non_membership_proof(
             path: path.clone(),
         }
         .key(),
-        &commit(NON_MEMBERSHIP_COMMITMENT_VALUE),
+        &NON_MEMBERSHIP_COMMITMENT_VALUE,
     );
 
     Ok(Response::new().add_event(CommitNonMembershipProof {
