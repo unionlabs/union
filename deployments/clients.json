@@ -206,6 +206,11 @@
       "client_type": "proof-lens",
       "counterparty": "bsc.97",
       "refresh_rate": "50000"
+    },
+    "9": {
+      "client_type": "state-lens/ics23/ics23",
+      "counterparty": "osmosis.osmo-test-5",
+      "refresh_rate": "500"
     }
   },
   "intento.intento-dev-1": {
@@ -225,6 +230,16 @@
       "client_type": "tendermint",
       "counterparty": "xion.xion-testnet-2",
       "refresh_rate": "500"
+    },
+    "11": {
+      "client_type": "cometbls",
+      "counterparty": "union.union-testnet-10",
+      "refresh_rate": "500"
+    },
+    "13": {
+      "client_type": "state-lens/ics23/mpt",
+      "counterparty": "ethereum.11155111",
+      "refresh_rate": "5000"
     }
   },
   "osmosis.osmosis-1": {

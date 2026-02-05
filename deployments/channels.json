@@ -289,6 +289,10 @@
     "3": {
       "comments": "trusted connection to union.union-testnet-10 channel 3 intended for development and testing only",
       "tags": ["development"]
+    },
+    "22": {
+      "comments": "osmosis.osmo-test-5 channel 5",
+      "tags": ["canonical", "tokenorder-v2"]
     }
   },
   "osmosis.osmosis-1": {
