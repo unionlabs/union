@@ -32,6 +32,6 @@ pub struct FetchBlock {
 #[model]
 pub struct MakeChainEvent {
     pub height: Height,
-    pub tx_hash: H256,
+    pub tx_hash: Option<H256>,
     pub event: crate::ibc_events::IbcEvent,
 }

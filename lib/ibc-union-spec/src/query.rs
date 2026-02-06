@@ -46,7 +46,7 @@ pub struct PacketByHash {
 )]
 pub struct PacketByHashResponse {
     pub packet: Packet,
-    pub tx_hash: H256,
+    pub tx_hash: Option<H256>,
     // TODO: This needs to be EventProvableHeight
     pub provable_height: u64,
 }
@@ -108,7 +108,7 @@ pub struct PacketAckByHash {
 )]
 pub struct PacketAckByHashResponse {
     pub ack: Bytes,
-    pub tx_hash: H256,
+    pub tx_hash: Option<H256>,
     // TODO: This needs to be EventProvableHeight
     pub provable_height: u64,
 }

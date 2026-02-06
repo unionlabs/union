@@ -1,7 +1,8 @@
-use std::num::NonZeroU64;
+use std::num::{NonZero, NonZeroU64};
 
 use anyhow::{Result, bail};
 use clap::{Args, Subcommand};
+use cometbft_rpc::rpc_types::Order;
 use unionlabs::{bounded::BoundedI64, primitives::Bytes};
 
 use crate::print_json;
@@ -37,7 +38,16 @@ pub enum Method {
     /// /block_results?height=_
     BlockResults,
     /// /block_search?query=_&page=_&per_page=_&order_by=_
-    BlockSearch,
+    BlockSearch {
+        #[arg(long, short = 'q')]
+        query: String,
+        #[arg(long, default_value = "1")]
+        page: NonZero<u32>,
+        #[arg(long, default_value = "10")]
+        per_page: NonZero<u8>,
+        #[arg(long, default_value_t = Order::Desc)]
+        order_by: Order,
+    },
     /// /blockchain?minHeight=_&maxHeight=_
     Blockchain,
     /// /broadcast_evidence?evidence=_
@@ -109,6 +119,12 @@ impl Cmd {
             Method::Status => print_json(&client.status().await?),
             Method::Commit { height } => print_json(&client.commit(height).await?),
             Method::Header { height } => print_json(&client.header(height).await?),
+            Method::BlockSearch {
+                query,
+                page,
+                per_page,
+                order_by,
+            } => print_json(&client.block_search(query, page, per_page, order_by).await?),
             _ => bail!("not yet implemented"),
         }
 

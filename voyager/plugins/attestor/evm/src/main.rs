@@ -298,7 +298,9 @@ impl PluginServer<ModuleCall, Never> for Module {
                             plugin_name(&self.chain_id),
                             ModuleCall::SubmitAttestation(SubmitAttestation {
                                 event: chain_event.decode_event::<IbcUnion>().unwrap().unwrap(),
-                                tx_hash: chain_event.tx_hash,
+                                tx_hash: chain_event
+                                    .tx_hash
+                                    .expect("all evm events have a tx hash"),
                                 height: chain_event.provable_height.height().height(),
                             }),
                         )),

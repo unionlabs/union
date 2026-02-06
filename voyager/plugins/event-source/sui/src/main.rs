@@ -24,14 +24,13 @@ use unionlabs::{ibc::core::client::height::Height, primitives::H256};
 use voyager_sdk::{
     DefaultCmd, ExtensionsExt, VoyagerClient,
     hook::simple_take_filter,
-    into_value,
     message::{
         PluginMessage, VoyagerMessage,
         call::{Call, WaitForHeight, WaitForHeightRelative},
         data::{ChainEvent, Data, EventProvableHeight},
     },
     plugin::Plugin,
-    primitives::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
+    primitives::{ChainId, ClientInfo, ClientType, QueryHeight},
     rpc::{PluginServer, RpcError, RpcResult, types::PluginInfo},
     vm::{Op, call, conc, data, noop, pass::PassResult, seq},
 };
@@ -345,15 +344,14 @@ impl Module {
 
         ibc_union_spec::log_event(&event, &self.chain_id);
 
-        Ok(data(ChainEvent {
-            chain_id: self.chain_id.clone(),
+        Ok(data(ChainEvent::new::<IbcUnion>(
+            self.chain_id.clone(),
             client_info,
-            counterparty_chain_id: client_state_meta.counterparty_chain_id,
-            tx_hash,
-            provable_height: EventProvableHeight::Exactly(Height::new(provable_height)),
-            ibc_spec_id: IbcUnion::ID,
-            event: into_value::<FullEvent>(event),
-        }))
+            client_state_meta.counterparty_chain_id,
+            Some(tx_hash),
+            EventProvableHeight::Exactly(Height::new(provable_height)),
+            event,
+        )))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -405,15 +403,14 @@ impl Module {
 
         ibc_union_spec::log_event(&event, &self.chain_id);
 
-        Ok(data(ChainEvent {
-            chain_id: self.chain_id.clone(),
+        Ok(data(ChainEvent::new::<IbcUnion>(
+            self.chain_id.clone(),
             client_info,
-            counterparty_chain_id: client_state_meta.counterparty_chain_id,
-            tx_hash,
-            provable_height: EventProvableHeight::Exactly(provable_height),
-            ibc_spec_id: IbcUnion::ID,
-            event: into_value::<FullEvent>(event),
-        }))
+            client_state_meta.counterparty_chain_id,
+            Some(tx_hash),
+            EventProvableHeight::Exactly(provable_height),
+            event,
+        )))
     }
 }
 
@@ -598,15 +595,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                  -> RpcResult<Op<VoyagerMessage>> {
                     ibc_union_spec::log_event(&event, &self.chain_id);
 
-                    Ok(data(ChainEvent {
-                        chain_id: self.chain_id.clone(),
+                    Ok(data(ChainEvent::new::<IbcUnion>(
+                        self.chain_id.clone(),
                         client_info,
                         counterparty_chain_id,
-                        tx_hash,
-                        provable_height: EventProvableHeight::Exactly(Height::new(height)),
-                        ibc_spec_id: IbcUnion::ID,
-                        event: into_value::<FullEvent>(event),
-                    }))
+                        Some(tx_hash),
+                        EventProvableHeight::Exactly(Height::new(height)),
+                        event,
+                    )))
                 };
 
                 let voyager_client = e.voyager_client()?;

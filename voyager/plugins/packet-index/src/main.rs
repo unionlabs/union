@@ -15,14 +15,14 @@ use serde::{Deserialize, Serialize};
 use tracing::{info, instrument, warn};
 use unionlabs::{ibc::core::client::height::Height, never::Never, primitives::H256};
 use voyager_sdk::{
-    DefaultCmd, ExtensionsExt, VoyagerClient, anyhow, into_value,
+    DefaultCmd, ExtensionsExt, VoyagerClient, anyhow,
     message::{
         VoyagerMessage,
         call::SubmitTx,
         data::{ChainEvent, Data, EventProvableHeight, IbcDatagram},
     },
     plugin::Plugin,
-    primitives::{ChainId, IbcSpec, QueryHeight},
+    primitives::{ChainId, QueryHeight},
     rpc::{PluginServer, RpcResult, types::PluginInfo},
     vm::{Op, call, data, noop, pass::PassResult},
 };
@@ -254,16 +254,13 @@ impl Module {
 
                 noop()
             } else {
-                data(ChainEvent {
-                    chain_id: counterparty_chain_id,
+                data(ChainEvent::new::<IbcUnion>(
+                    counterparty_chain_id,
                     client_info,
-                    counterparty_chain_id: chain_id,
-                    tx_hash: ack_response.tx_hash,
-                    provable_height: EventProvableHeight::Min(Height::new(
-                        ack_response.provable_height,
-                    )),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value(FullEvent::WriteAck(WriteAck {
+                    chain_id,
+                    ack_response.tx_hash,
+                    EventProvableHeight::Min(Height::new(ack_response.provable_height)),
+                    FullEvent::WriteAck(WriteAck {
                         acknowledgement: ack_response.ack,
                         packet_data: packet_response.packet.data,
                         packet: PacketMetadata {
@@ -284,8 +281,8 @@ impl Module {
                             },
                             timeout_timestamp: packet_response.packet.timeout_timestamp,
                         },
-                    })),
-                })
+                    }),
+                ))
             }
         } else {
             let client_info = voyager_client
@@ -307,16 +304,13 @@ impl Module {
                     })],
                 })
             } else {
-                data(ChainEvent {
+                data(ChainEvent::new::<IbcUnion>(
                     chain_id,
                     client_info,
                     counterparty_chain_id,
-                    tx_hash: packet_response.tx_hash,
-                    provable_height: EventProvableHeight::Min(Height::new(
-                        packet_response.provable_height,
-                    )),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value(FullEvent::PacketSend(PacketSend {
+                    packet_response.tx_hash,
+                    EventProvableHeight::Min(Height::new(packet_response.provable_height)),
+                    FullEvent::PacketSend(PacketSend {
                         packet_data: packet_response.packet.data,
                         packet: PacketMetadata {
                             source_channel: ChannelMetadata {
@@ -336,8 +330,8 @@ impl Module {
                             },
                             timeout_timestamp: packet_response.packet.timeout_timestamp,
                         },
-                    })),
-                })
+                    }),
+                ))
             }
         };
 

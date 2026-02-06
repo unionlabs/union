@@ -1,4 +1,8 @@
-use std::num::{NonZeroU32, NonZeroU64};
+use std::{
+    fmt::Display,
+    num::{NonZeroU32, NonZeroU64},
+    str::FromStr,
+};
 
 use cometbft_types::{
     abci::{
@@ -29,6 +33,31 @@ pub enum Order {
     Asc,
     Desc,
 }
+
+impl Display for Order {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Order::Asc => "asc",
+            Order::Desc => "desc",
+        })
+    }
+}
+
+impl FromStr for Order {
+    type Err = InvalidOrder;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "asc" => Ok(Order::Asc),
+            "desc" => Ok(Order::Desc),
+            _ => Err(InvalidOrder {}),
+        }
+    }
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+#[error("invalid order, must be either `asc` or `desc`")]
+pub struct InvalidOrder {}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -199,6 +228,14 @@ pub struct TxResponse {
 #[serde(deny_unknown_fields)]
 pub struct TxSearchResponse {
     pub txs: Vec<TxResponse>,
+    #[serde(with = "::serde_utils::string")]
+    pub total_count: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BlockSearchResponse {
+    pub blocks: Vec<BlockResponse>,
     #[serde(with = "::serde_utils::string")]
     pub total_count: u32,
 }
