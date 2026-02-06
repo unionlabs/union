@@ -5,7 +5,7 @@ use cosmwasm_std::instantiate2_address;
 use deployments::Deployment;
 use ibc_union_spec::ChannelId;
 use ucs03_zkgm::contract::proxy_account_salt;
-use unionlabs::primitives::{Bech32, Bytes, U256};
+use unionlabs::primitives::{Bech32, Bytes, H160, U256};
 use voyager_primitives::IbcInterface;
 
 use crate::deployments::DEPLOYMENTS;
@@ -64,9 +64,7 @@ impl Cmd {
 
             match ibc_interface {
                 Some(ibc_interface) => match ibc_interface.as_str() {
-                    IbcInterface::IBC_SOLIDITY => {
-                        unimplemented!()
-                    }
+                    IbcInterface::IBC_SOLIDITY => predict_proxy_account_evm(zkgm_address, args),
                     IbcInterface::IBC_COSMWASM => {
                         predict_proxy_account_cosmwasm(zkgm_address, args)
                     }
@@ -75,7 +73,7 @@ impl Cmd {
                 None => {
                     // try to guess the ibc interface based on the address format
                     if zkgm_address.starts_with("0x") {
-                        unimplemented!()
+                        predict_proxy_account_evm(zkgm_address, args)
                     } else {
                         predict_proxy_account_cosmwasm(zkgm_address, args)
                     }
@@ -98,9 +96,16 @@ impl Cmd {
             }
 
             match deployment {
-                Deployment::IbcSolidity { contracts: _, .. } => {
-                    unimplemented!()
-                }
+                Deployment::IbcSolidity { contracts, .. } => predict_proxy_account_evm(
+                    contracts
+                        .iter()
+                        .find(|(_, deployment)| deployment.name == "protocols/ucs03")
+                        .as_ref()
+                        .context(anyhow!("no ucs03 deployment for {chain_id}"))?
+                        .0
+                        .to_string(),
+                    args,
+                ),
                 Deployment::IbcCosmwasm { contracts, .. } => predict_proxy_account_cosmwasm(
                     contracts
                         .iter()
@@ -136,6 +141,22 @@ fn predict_proxy_account_cosmwasm(zkgm_address: String, args: CallProxySalt) -> 
     )?;
 
     println!("{}", Bech32::new(zkgm_address.hrp(), res.as_slice()));
+
+    Ok(())
+}
+
+fn predict_proxy_account_evm(zkgm_address: String, args: CallProxySalt) -> Result<()> {
+    let salt = proxy_account_salt(&ucs03_zkgm::state::CallProxySalt {
+        path: args.path,
+        channel_id: args.channel_id,
+        sender: args.sender_bytes()?.into(),
+    });
+
+    let zkgm_address = zkgm_address.parse::<H160>()?;
+
+    let res = create3::predict_deterministic_address(zkgm_address.into(), salt.into());
+
+    println!("{res}");
 
     Ok(())
 }
