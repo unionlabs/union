@@ -47,6 +47,23 @@
         })
         // schema.packages
         // {
+          voyager-docker-image = pkgs.dockerTools.buildImage {
+            name = "voyager-image";
+            copyToRoot = pkgs.buildEnv {
+              name = "image-root";
+              paths = [
+                pkgs.coreutils-full
+                pkgs.cacert
+                self'.packages.voyager-modules-plugins-single-build
+              ];
+              pathsToLink = [ "/bin" ];
+            };
+            config = {
+              Entrypoint = [ (pkgs.lib.getExe self'.packages.voyager) ];
+              Env = [ "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt" ];
+            };
+          };
+
           voyager-modules-plugins-names = builtins.toFile "voyager-modules-plugins-names.json" (
             builtins.toJSON (
               map (
