@@ -64,6 +64,13 @@ jobs:
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
               ;;
+            voyager-image)
+              attrs="[\"voyager-docker-image\"]"
+              systems="[\"x86_64-linux\", \"aarch64-linux\"]"
+              echo "COMPONENT=voyager-docker" >> $GITHUB_OUTPUT
+              echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
+              echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
+              ;;
             evm-contracts)
               attrs="[\"evm-contracts\"]"
               systems="[\"x86_64-linux\"]"
