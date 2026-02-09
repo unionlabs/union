@@ -1,16 +1,14 @@
 use std::{fmt::Display, path::PathBuf};
 
-use alloy::{
-    eips::BlockNumberOrTag, hex, network::AnyNetwork, primitives::keccak256, providers::Provider,
-};
-use anyhow::{Context, Result, bail};
+use alloy::{hex, network::AnyNetwork, primitives::keccak256, providers::Provider};
+use anyhow::{Context, Result};
 use clap::Parser;
 use cosmwasm_std::instantiate2_address;
 use deployments::{DeployedContract, Deployments, IbcCosmwasmDeployedContractExtra, Rev};
 use protos::cosmwasm::wasm::v1::{
     QueryCodeRequest, QueryCodeResponse, QueryContractInfoRequest, QueryContractInfoResponse,
 };
-use tracing::info;
+use tracing::{info, instrument};
 use ucs04::UniversalChainId;
 use unionlabs::primitives::{Bech32, H160, H256};
 
@@ -37,14 +35,6 @@ struct Args {
     lst: bool,
     #[arg(long)]
     on_zkgm_call_proxy: bool,
-    #[arg(long, default_value_t = false)]
-    update_deployment_heights: bool,
-    #[arg(
-        long,
-        default_value_t = 0,
-        required_if_eq("update_deployment_heights", "true")
-    )]
-    eth_get_logs_window: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, clap::ValueEnum)]
@@ -221,10 +211,7 @@ async fn do_main() -> Result<()> {
             }
 
             for (address, deployment) in contracts {
-                if args.update_deployment_heights {
-                    deployment.height =
-                        get_init_height(&provider, *address, args.eth_get_logs_window).await?;
-                }
+                deployment.height = get_init_height(&provider, *address, deployment.height).await?;
                 deployment.commit = get_commit_evm(&provider, *address).await?;
                 info!(
                     %address,
@@ -307,41 +294,67 @@ async fn get_commit_evm(provider: &impl Provider<AnyNetwork>, address: H160) -> 
     }
 }
 
+#[instrument(skip_all, fields(%address))]
 async fn get_init_height(
     provider: &impl Provider<AnyNetwork>,
     address: H160,
-    window: u64,
+    current_height: u64,
 ) -> Result<u64> {
     let client = Versioned::new(address.get().into(), provider);
 
-    let mut latest_height = provider.get_block_number().await?;
+    let latest_height = provider.get_block_number().await?;
 
-    for (from, to) in std::iter::from_fn(|| -> Option<(BlockNumberOrTag, BlockNumberOrTag)> {
-        if latest_height == 0 {
-            None
-        } else {
-            let upper_bound = latest_height;
-            let lower_bound = latest_height.saturating_sub(window);
-            latest_height = lower_bound;
-            Some((lower_bound.into(), upper_bound.into()))
-        }
-    }) {
-        info!(%from, %to, "querying range for init event");
+    if (1..=latest_height).contains(&current_height) {
+        info!("checking if current height {current_height} is correct");
 
         let query = client.Initialized_filter();
 
-        let batch_logs = query.from_block(from).to_block(to).query().await?;
+        let block_logs = query
+            .from_block(current_height)
+            .to_block(current_height)
+            .query()
+            .await?;
 
-        if batch_logs.is_empty() {
-            info!(%from, %to, "event not found in range");
-            continue;
+        if block_logs.is_empty() {
+            info!(
+                "event not found at current deployed height {current_height}, will scan from latest"
+            );
         } else {
-            return batch_logs
+            info!("current height {current_height} is already correct");
+
+            return block_logs
                 .into_iter()
                 .find_map(|(_, log)| log.block_number)
                 .context("no height found");
         }
     }
 
-    bail!("init height not found for {address}");
+    // bisect to find deployment height
+    let mut low = 1;
+    let mut high = latest_height;
+    while low < high {
+        let mid = (low + high) / 2;
+
+        info!("checking between {low} and {high}, mid = {mid}");
+
+        let code = provider
+            .get_code_at(address.into())
+            .block_id(mid.into())
+            .await?;
+
+        if code.is_empty() {
+            low = mid + 1;
+        } else {
+            high = mid;
+        }
+    }
+
+    let query = client.Initialized_filter();
+
+    let block_logs = query.from_block(low).to_block(low).query().await?;
+
+    return block_logs
+        .into_iter()
+        .find_map(|(_, log)| log.block_number)
+        .context("no height found");
 }

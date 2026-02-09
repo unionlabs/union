@@ -928,7 +928,7 @@ impl Module {
                 let proof_lens_client_state = self
                     .query_proof_lens_client_state(
                         v,
-                        event.packet.destination_channel.connection.client_id,
+                        event.packet.source_channel.connection.client_id,
                     )
                     .await?;
 

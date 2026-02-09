@@ -387,7 +387,7 @@ _: {
           ucs04-chain-id = "sei.1328";
 
           name = "sei-atlantic";
-          rpc-url = "https://evm-rpc-testnet.sei-apis.com";
+          rpc-url = "https://sei-testnet.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0xDc78B593dD44914C326D1ed37501EAd48c4C5628";
           rate-limit-enabled = "false";
@@ -405,7 +405,7 @@ _: {
           ucs04-chain-id = "bsc.97";
 
           name = "bsc-testnet";
-          rpc-url = "https://bsc-testnet.bnbchain.org";
+          rpc-url = "https://bnb-testnet.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0xae13d989dac2f0debff460ac112a837c89baa7cd";
           rate-limit-enabled = "false";
@@ -520,7 +520,7 @@ _: {
           ucs04-chain-id = "bsc.56";
 
           name = "bsc";
-          rpc-url = "https://bsc-rpc.publicnode.com";
+          rpc-url = "https://bnb-mainnet.g.alchemy.com/v2/Xn_VBUDyUtXUYb9O6b5ZmuBNDaSlH-BB";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
 
           # Wrapped BNB
@@ -1157,6 +1157,8 @@ _: {
                 forge script scripts/Deploy.s.sol:Deploy${kind} \
                 -vvvv \
                 --rpc-url "''${RPC_URL:-${rpc-url}}" \
+                --batch-size 1 \
+                --slow \
                 --broadcast "''${VERIFICATION_ARGS[@]}"
 
               popd
@@ -1413,12 +1415,21 @@ _: {
                       (throw "many networks with ucs04 chain id ${ucs04chainId} found")
                       networks;
                 in
-                pkgs.lib.concatMapStringsSep "\n\n" (ucs04ChainId: ''
-                  echo "updating ${ucs04ChainId}"
-                  ${pkgs.lib.getExe
-                    self'.packages.evm-scripts.${(getNetwork ucs04ChainId).name}.update-deployments-json
-                  }
-                '') (builtins.attrNames deployments);
+                pkgs.lib.concatMapStringsSep "\n\n"
+                  (ucs04ChainId: ''
+                    echo "updating ${ucs04ChainId}"
+                    ${pkgs.lib.getExe
+                      self'.packages.evm-scripts.${(getNetwork ucs04ChainId).name}.update-deployments-json
+                    }
+                  '')
+                  (
+                    builtins.attrNames (
+                      builtins.removeAttrs deployments [
+                        # skip sei testnet bc archive nodes don't exist for it
+                        "sei.1328"
+                      ]
+                    )
+                  );
             };
           }
           // (builtins.listToAttrs (

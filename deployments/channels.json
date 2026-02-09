@@ -147,6 +147,28 @@
         "reverse": "PT45M"
       },
       "tags": ["canonical", "tokenorder-v2"]
+    },
+    "4": {
+      "comments": "osmosis-1 channel 3",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "258650",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        },
+        "reverse": {
+          "PACKET_RECV": "532511",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "1028227"
+        }
+      },
+      "sla": {
+        "forward": "PT3H",
+        "reverse": "PT20M"
+      },
+      "tags": ["canonical", "tokenorder-v2"]
     }
   },
   "base.84532": {
@@ -289,6 +311,10 @@
     "3": {
       "comments": "trusted connection to union.union-testnet-10 channel 3 intended for development and testing only",
       "tags": ["development"]
+    },
+    "22": {
+      "comments": "osmosis.osmo-test-5 channel 5",
+      "tags": ["canonical", "tokenorder-v2"]
     }
   },
   "osmosis.osmosis-1": {
