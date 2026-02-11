@@ -11,6 +11,7 @@ jobs:
       build: ${{ steps.eval.outputs.BUILD }}
       component: ${{ steps.eval.outputs.COMPONENT }}
       image-produced: ${{ steps.eval.outputs.IMAGE_PRODUCED}}
+      binary-produced: ${{ steps.eval.outputs.binary_PRODUCED}}
       version: ${{ steps.eval.outputs.VERSION }}
       systems: ${{ steps.eval.outputs.SYSTEMS }}
       archive: ${{ steps.eval.outputs.ARCHIVE }}
@@ -26,6 +27,7 @@ jobs:
               systems="[\"x86_64-linux\", \"aarch64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
+              echo "BINARY_PRODUCED=true" >> $GITHUB_OUTPUT
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
               echo "ARCHIVE=true" >> $GITHUB_OUTPUT
               ;;
@@ -34,6 +36,7 @@ jobs:
               systems="[\"x86_64-linux\", \"aarch64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
+              echo "BINARY_PRODUCED=true" >> $GITHUB_OUTPUT
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
               echo "ARCHIVE=true" >> $GITHUB_OUTPUT
               ;;
@@ -43,6 +46,7 @@ jobs:
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
               echo "ARCHIVE=true" >> $GITHUB_OUTPUT
+              echo "BINARY_PRODUCED=true" >> $GITHUB_OUTPUT
               ;;
             ucs01-relay)
               attrs="[\"ucs01-relay\"]"
@@ -50,6 +54,7 @@ jobs:
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
               echo "ARCHIVE=true" >> $GITHUB_OUTPUT
+              echo "BINARY_PRODUCED=true" >> $GITHUB_OUTPUT
               ;;
             uniond)
               attrs="[\"uniond-release\", \"uniond-release-image\"]"
@@ -57,12 +62,21 @@ jobs:
               echo "COMPONENT=uniond-release" >> $GITHUB_OUTPUT
               echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
+              echo "BINARY_PRODUCED=true" >> $GITHUB_OUTPUT
               ;;
             voyager)
               attrs="[\"voyager\"]"
               systems="[\"x86_64-linux\", \"aarch64-linux\"]"
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
+              echo "BINARY_PRODUCED=true" >> $GITHUB_OUTPUT
+              ;;
+            voyager-image)
+              attrs="[\"voyager-docker-image\"]"
+              systems="[\"x86_64-linux\", \"aarch64-linux\"]"
+              echo "COMPONENT=voyager-docker" >> $GITHUB_OUTPUT
+              echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
+              echo "IMAGE_PRODUCED=true" >> $GITHUB_OUTPUT
               ;;
             evm-contracts)
               attrs="[\"evm-contracts\"]"
@@ -70,6 +84,7 @@ jobs:
               echo "COMPONENT=$component" >> $GITHUB_OUTPUT
               echo "SYSTEMS=$systems" >> $GITHUB_OUTPUT
               echo "ARCHIVE=true" >> $GITHUB_OUTPUT
+              echo "BINARY_PRODUCED=true" >> $GITHUB_OUTPUT
               ;;
             *)
               echo "Invalid tag $TAG"
@@ -130,6 +145,7 @@ jobs:
           path: aarch64-linux.${{ needs.eval-tag.outputs.component }}-image
 
   download-binaries-x86_64:
+    if: ${{ needs.eval-tag.outputs.binary-produced }}
     needs: [eval-tag]
     runs-on: ubuntu-24.04
     steps:
@@ -161,6 +177,7 @@ jobs:
           path: ${{ needs.eval-tag.outputs.component }}-x86_64-linux
 
   download-binaries-aarch64:
+    if: ${{ needs.eval-tag.outputs.binary-produced }}
     needs: [eval-tag]
     runs-on: ubuntu-24.04-arm
     steps:
@@ -290,6 +307,7 @@ jobs:
           echo "Copied $COMPONENT:$TAG multi-arch to GHCR"
 
   public-release:
+    if: ${{ needs.eval-tag.outputs.binary-produced }}
     needs: [download-binaries-x86_64, download-binaries-aarch64, eval-tag]
     runs-on: ubuntu-latest
     steps:
