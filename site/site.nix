@@ -17,7 +17,7 @@ _: {
     {
       packages = {
         site = mkCi false (buildPnpmPackage {
-          hash = "sha256-WkDdok2luYp/q1s2cb4Aa7iWzKsifJ7HpRKMnf0pTG4=";
+          hash = "sha256-boej23zQsZ1RcMjMaGqFTDqMrsW/P/DOsM2ev2czQ0I=";
           packageJsonPath = ./package.json;
           extraSrcs = pkgs.lib.fileset.unions [
             ./.
