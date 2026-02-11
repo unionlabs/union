@@ -102,9 +102,9 @@ export const unionTestnet = InternalChainInfo.make({
       coinMinimalDenom: "au",
       coinDecimals: 18,
       gasPriceStep: {
-        low: 0.0001,
-        average: 0.0001,
-        high: 0.0001,
+        low: 100000000000,
+        average: 100000000000,
+        high: 200000000000,
       },
       coinImageUrl:
         "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/union-testnet/chain.png",
