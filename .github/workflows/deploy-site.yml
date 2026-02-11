@@ -50,7 +50,7 @@ jobs:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="site" deploy result/static >> /tmp/site_deploy.txt
+        run: npx --yes wrangler@latest pages --project-name="site" deploy result >> /tmp/site_deploy.txt
 
       - name: Set Deploy Output
         run: |
@@ -95,7 +95,7 @@ jobs:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="site" deploy result/static
+        run: npx --yes wrangler@latest pages --project-name="site" deploy result
 
   deploy-staging:
     runs-on: ['ubuntu-latest']
@@ -123,7 +123,7 @@ jobs:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="site" --branch="staging" deploy result/static
+        run: npx --yes wrangler@latest pages --project-name="site" --branch="staging" deploy result
 
   deploy-production:
     runs-on: ['ubuntu-latest']
@@ -151,5 +151,5 @@ jobs:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-        run: npx --yes wrangler@latest pages --project-name="site" --branch="main" deploy result/static
+        run: npx --yes wrangler@latest pages --project-name="site" --branch="main" deploy result
 
