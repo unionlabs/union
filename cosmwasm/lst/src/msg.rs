@@ -188,6 +188,9 @@ pub enum ExecuteMsg {
     SlashBatches {
         new_amounts: Vec<BatchExpectedAmount>,
     },
+
+    /// Call Staker to received unstaked tokens for specific batch
+    ReceiveBatch { batch_id: BatchId },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -338,4 +341,8 @@ pub enum StakerExecuteMsg {
     ///
     /// This must only be callable by the LST hub itself.
     Rebase {},
+    /// Receive unstaked tokens to mark batch as received
+    ///
+    /// This must only be callable by the LST hub itself.
+    ReceiveUnstakedTokens { batch_id: BatchId },
 }
