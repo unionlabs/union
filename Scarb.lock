@@ -244,6 +244,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "payments_zkp_verifier"
+version = "0.1.0"
+dependencies = [
+ "garaga",
+ "snforge_std",
+]
+
+[[package]]
 name = "snforge_scarb_plugin"
 version = "0.53.0"
 source = "registry+https://scarbs.xyz/"
@@ -256,6 +264,19 @@ source = "registry+https://scarbs.xyz/"
 checksum = "sha256:85dd728289a4903e0e6f87f9ab9d27350b883e781b238bb117e7ee995e257ee2"
 dependencies = [
  "snforge_scarb_plugin",
+]
+
+[[package]]
+name = "zasset"
+version = "0.1.0"
+dependencies = [
+ "alexandria_bytes",
+ "alexandria_encoding",
+ "ibc",
+ "loopback_light_client",
+ "openzeppelin",
+ "payments_zkp_verifier",
+ "snforge_std",
 ]
 
 [[package]]
