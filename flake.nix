@@ -235,6 +235,7 @@
         ./zkgm-dev/zkgm-dev.nix
         ./sentinel2/sentinel.nix
         ./lib/embed-commit
+        ./lib/kimlik
         ./networks/services/voyager.nix
         ./tools/union-test/tests/e2e.nix
         treefmt-nix.flakeModule
