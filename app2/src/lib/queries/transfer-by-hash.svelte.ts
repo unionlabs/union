@@ -1,7 +1,7 @@
 import { transferDetails } from "$lib/stores/transfer-details.svelte"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { TransferDetails } from "@unionlabs/sdk/schema"
-import { Option, Schema } from "effect"
+import { Array as A, Option, pipe, Schema } from "effect"
 import { NoSuchElementException } from "effect/Cause"
 import { graphql } from "gql.tada"
 
@@ -50,12 +50,20 @@ export const transferByPacketHashQuery = (packetHash: string) =>
     `),
     variables: { packet_hash: packetHash },
     refetchInterval: "1 second",
-    writeData: data => {
-      if (data.pipe(Option.map(d => d.v2_transfers.length)).pipe(Option.getOrElse(() => 0)) === 0) {
-        transferDetails.error = Option.some(new NoSuchElementException())
-      }
-      transferDetails.data = data.pipe(Option.map(d => d.v2_transfers[0]))
-    },
+    writeData: (data) =>
+      pipe(
+        data,
+        Option.map(x => x.v2_transfers),
+        Option.flatMap(A.head),
+        Option.match({
+          onNone: () => {
+            transferDetails.error = Option.some(new NoSuchElementException())
+          },
+          onSome: (data) => {
+            transferDetails.data = Option.some(data)
+          },
+        }),
+      ),
     writeError: error => {
       transferDetails.error = error
     },
