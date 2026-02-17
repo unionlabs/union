@@ -1,8 +1,6 @@
-use std::{
-    fmt::Debug,
-    num::{NonZeroU64, ParseIntError},
-};
+use std::{fmt::Debug, num::ParseIntError};
 
+use cometbft_rpc::types::CometbftHeight;
 use cometbls_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
@@ -124,7 +122,7 @@ impl ClientBootstrapModuleServer for Module {
 
         let commit = self
             .cometbft_client
-            .commit(Some(NonZeroU64::new(height.height()).unwrap()))
+            .commit(Some(CometbftHeight::try_from(height.height()).unwrap()))
             .await
             .unwrap();
 
@@ -170,7 +168,7 @@ impl ClientBootstrapModuleServer for Module {
 
         let commit = self
             .cometbft_client
-            .commit(Some(NonZeroU64::new(height.height()).unwrap()))
+            .commit(Some(CometbftHeight::try_from(height.height()).unwrap()))
             .await
             .unwrap();
 

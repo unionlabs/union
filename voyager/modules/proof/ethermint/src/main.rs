@@ -2,6 +2,7 @@
 
 use std::num::ParseIntError;
 
+use cometbft_rpc::types::CometbftHeight;
 use ibc_union_spec::{IbcUnion, path::StorePath};
 use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
@@ -111,7 +112,7 @@ impl ProofModuleServer<IbcUnion> for Module {
                 // a proof at height H is provable at height H + 1
                 // we assume that the height passed in to this function is the intended height to prove against, thus we have to query the height - 1
                 Some(
-                    BoundedI64::new(at.height() - 1)
+                    CometbftHeight::try_from(at.height() - 1)
                         .map_err(RpcError::fatal("invalid height value: {at}"))?,
                 ),
                 true,

@@ -127,8 +127,7 @@ pub struct ValidatorInfo {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ValidatorsResponse {
-    #[serde(with = "::serde_utils::string")]
-    pub block_height: NonZeroU64,
+    pub block_height: CometbftHeight,
     pub validators: Vec<Validator>,
     #[serde(with = "::serde_utils::string")]
     pub count: u64,
@@ -139,8 +138,7 @@ pub struct ValidatorsResponse {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AllValidatorsResponse {
-    #[serde(with = "::serde_utils::string")]
-    pub block_height: NonZeroU64,
+    pub block_height: CometbftHeight,
     pub validators: Vec<Validator>,
 }
 

@@ -1,13 +1,9 @@
-use std::num::{NonZero, NonZeroU64};
+use std::num::NonZero;
 
 use anyhow::{Result, bail};
 use clap::{Args, Subcommand};
-use cometbft_rpc::rpc_types::Order;
-use unionlabs::{bounded::BoundedI64, primitives::Bytes};
-use unionlabs::{
-    bounded::BoundedI64,
-    primitives::{Bytes, H256, encoding::HexUnprefixed},
-};
+use cometbft_rpc::{rpc_types::Order, types::CometbftHeight};
+use unionlabs::primitives::{Bytes, H256, encoding::HexUnprefixed};
 
 use crate::print_json;
 
@@ -27,16 +23,16 @@ pub enum Method {
     AbciQuery {
         path: String,
         data: Bytes,
-        height: Option<BoundedI64<1>>,
+        height: Option<CometbftHeight>,
         #[arg(long, short = 'p', default_value_t = false)]
         prove: bool,
     },
     /// /block?height=_
-    Block { height: Option<BoundedI64<1>> },
+    Block { height: Option<CometbftHeight> },
     /// /block_by_hash?hash=_
     BlockByHash,
     /// /block_results?height=_
-    BlockResults { height: Option<BoundedI64<1>> },
+    BlockResults { height: Option<CometbftHeight> },
     /// /block_search?query=_&page=_&per_page=_&order_by=_
     BlockSearch {
         #[arg(long, short = 'q')]
@@ -61,7 +57,7 @@ pub enum Method {
     /// /check_tx?tx=_
     CheckTx,
     /// /commit?height=_
-    Commit { height: Option<NonZeroU64> },
+    Commit { height: Option<CometbftHeight> },
     /// /consensus_params?height=_
     ConsensusParams,
     /// /consensus_state?
@@ -73,7 +69,7 @@ pub enum Method {
     /// /genesis_chunked?chunk=_
     GenesisChunked,
     /// /header?height=_
-    Header { height: Option<BoundedI64<1>> },
+    Header { height: Option<CometbftHeight> },
     /// /header_by_hash?hash=_
     HeaderByHash,
     /// /health?
