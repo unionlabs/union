@@ -1,4 +1,5 @@
 use cometbft_types::{
+    CometbftHeight,
     crypto::public_key::PublicKey,
     types::{commit::Commit, signed_header::SignedHeader, validator_set::ValidatorSet},
 };
@@ -290,7 +291,7 @@ pub fn set_total_voting_power(validator_set: &mut ValidatorSet) -> Result<(), Ma
 
 pub fn construct_partial_header(
     chain_id: String,
-    height: BoundedI64<0, { i64::MAX }>,
+    height: CometbftHeight,
     time: Timestamp,
     next_validators_hash: H256<HexUnprefixed>,
 ) -> SignedHeader {

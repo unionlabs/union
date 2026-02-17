@@ -4,7 +4,7 @@ use unionlabs::{
     primitives::{Bytes, encoding::Base64},
 };
 
-use crate::{abci::event::Event, code::Code};
+use crate::{CometbftHeight, abci::event::Event, code::Code};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExecTxResult {
@@ -15,9 +15,9 @@ pub struct ExecTxResult {
     /// nondeterministic
     pub info: String,
     #[serde(with = "::serde_utils::string")]
-    pub gas_wanted: BoundedI64<0, { i64::MAX }>,
-    #[serde(with = "::serde_utils::string")]
-    pub gas_used: BoundedI64<0, { i64::MAX }>,
+    // dydx has a -1 value sometimes for some reason?
+    pub gas_wanted: BoundedI64<-1, { i64::MAX }>,
+    pub gas_used: CometbftHeight,
     /// nondeterministic
     pub events: Vec<Event>,
     pub codespace: String,

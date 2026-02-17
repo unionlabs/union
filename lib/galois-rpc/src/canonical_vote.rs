@@ -2,14 +2,16 @@ use cometbft_types::types::{canonical_block_id::CanonicalBlockId, signed_msg_typ
 use serde::{Deserialize, Serialize};
 use unionlabs::bounded::BoundedI64;
 
+use crate::CometbftHeight;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CanonicalVote {
     /// type alias for byte
     pub ty: SignedMsgType,
     /// canonicalization requires fixed size encoding here
-    pub height: BoundedI64<0, { i64::MAX }>,
+    pub height: CometbftHeight,
     /// canonicalization requires fixed size encoding here
-    pub round: BoundedI64<0, { i64::MAX }>,
+    pub round: CometbftHeight,
     pub block_id: CanonicalBlockId,
     pub chain_id: String,
 }

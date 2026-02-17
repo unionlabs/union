@@ -742,27 +742,20 @@ pub mod parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none {
     pub fn serialize<S, T>(data: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
-        T: Clone,
+        T: Copy + Default,
         DateTime<Utc>: TryFrom<T, Error: Debug>,
     {
-        match data {
-            Some(data) => {
-                serializer.collect_str(
-                    &<DateTime<Utc>>::try_from(data.clone())
-                        .map_err(|err| {
-                            serde::ser::Error::custom(format!(
-                                "unable to convert to datetime: {err:?}"
-                            ))
-                        })?
-                        .to_rfc3339_opts(
-                            SecondsFormat::Nanos,
-                            // use_z
-                            true,
-                        ),
-                )
-            }
-            None => serializer.serialize_none(),
-        }
+        serializer.collect_str(
+            &<DateTime<Utc>>::try_from(data.unwrap_or_default())
+                .map_err(|err| {
+                    serde::ser::Error::custom(format!("unable to convert to datetime: {err:?}"))
+                })?
+                .to_rfc3339_opts(
+                    SecondsFormat::Nanos,
+                    // use_z
+                    true,
+                ),
+        )
     }
 
     pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>

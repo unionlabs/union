@@ -153,6 +153,66 @@ pub enum UniversalChainIdParseError {
 #[repr(transparent)]
 pub struct Id(str);
 
+impl PartialEq<String> for Id {
+    fn eq(&self, other: &String) -> bool {
+        &self.0 == other
+    }
+}
+
+impl PartialEq<Id> for String {
+    fn eq(&self, other: &Id) -> bool {
+        self == &other.0
+    }
+}
+
+impl PartialEq<String> for &Id {
+    fn eq(&self, other: &String) -> bool {
+        &self.0 == other
+    }
+}
+
+impl PartialEq<&Id> for String {
+    fn eq(&self, other: &&Id) -> bool {
+        self == &other.0
+    }
+}
+
+impl PartialEq<&String> for Id {
+    fn eq(&self, other: &&String) -> bool {
+        &&self.0 == other
+    }
+}
+
+impl PartialEq<Id> for &String {
+    fn eq(&self, other: &Id) -> bool {
+        self == &&other.0
+    }
+}
+
+impl PartialEq<Id> for str {
+    fn eq(&self, other: &Id) -> bool {
+        self == &other.0
+    }
+}
+
+impl PartialEq<str> for Id {
+    fn eq(&self, other: &str) -> bool {
+        &self.0 == other
+    }
+}
+
+impl PartialEq<Id> for &str {
+    fn eq(&self, other: &Id) -> bool {
+        *self == &other.0
+    }
+}
+
+impl PartialEq<&str> for Id {
+    fn eq(&self, other: &&str) -> bool {
+        &self.0 == *other
+    }
+}
+
 impl Display for Id {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(&self.0, f)

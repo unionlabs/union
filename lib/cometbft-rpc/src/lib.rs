@@ -28,6 +28,8 @@ use crate::rpc_types::{
     AbciInfoResponse, AbciQueryResponse, AllValidatorsResponse, BlockResponse,
     BlockResultsResponse, BlockSearchResponse, BlockchainResponse, BroadcastTxSyncResponse,
     CommitResponse, GrpcAbciQueryResponse, HeaderResponse, Order, StatusResponse, TxResponse,
+    BlockResultsResponse, BlockchainResponse, BroadcastTxSyncResponse, CommitResponse,
+    GenesisResponse, GrpcAbciQueryResponse, HeaderResponse, Order, StatusResponse, TxResponse,
     TxSearchResponse, ValidatorsResponse,
 };
 
@@ -404,11 +406,17 @@ impl Client {
 
     pub async fn block_results(
         &self,
-        height: Option<NonZeroU64>,
+        height: Option<BoundedI64<1>>,
     ) -> Result<BlockResultsResponse, JsonRpcError> {
         self.inner
             .request("block_results", rpc_params![height.map(|x| x.to_string())])
             .await
+    }
+
+    pub async fn genesis<AppState: DeserializeOwned>(
+        &self,
+    ) -> Result<GenesisResponse<AppState>, JsonRpcError> {
+        self.inner.request("genesis", rpc_params![]).await
     }
 }
 

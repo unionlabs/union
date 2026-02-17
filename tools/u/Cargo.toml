@@ -38,7 +38,7 @@ parlia-verifier    = { workspace = true }
 protos             = { workspace = true, features = ["proto_full", "serde"] }
 rand               = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
-serde_json         = { workspace = true }
+serde_json         = { workspace = true, features = ["preserve_order"] }
 sha2               = { workspace = true, features = ["asm", "asm-aarch64"] }
 subtle-encoding    = { workspace = true, features = ["bech32-preview"] }
 tokio              = { workspace = true, features = ["macros"] }

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    bounded::{BoundedI32, BoundedI64},
+    bounded::BoundedI32,
     google::protobuf::timestamp::Timestamp,
     primitives::{
         Bytes, H160,
@@ -8,14 +8,16 @@ use unionlabs::{
     },
 };
 
-use crate::types::{block_id::BlockId, signed_msg_type::SignedMsgType};
+use crate::{
+    CometbftHeight,
+    types::{block_id::BlockId, signed_msg_type::SignedMsgType},
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Vote {
     #[serde(rename = "type")]
     pub ty: SignedMsgType,
-    #[serde(with = "::serde_utils::string")]
-    pub height: BoundedI64<0, { i64::MAX }>,
+    pub height: CometbftHeight,
     pub round: BoundedI32<0, { i32::MAX }>,
     pub block_id: BlockId,
     pub timestamp: Timestamp,
@@ -42,7 +44,7 @@ pub mod proto {
         fn from(value: Vote) -> Self {
             Self {
                 r#type: value.ty.into(),
-                height: value.height.inner(),
+                height: value.height.into(),
                 round: value.round.inner(),
                 block_id: Some(value.block_id.into()),
                 timestamp: Some(value.timestamp.into()),
