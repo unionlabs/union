@@ -1,4 +1,4 @@
-use std::{fmt, str::FromStr};
+use std::{fmt, ops::Add, str::FromStr};
 
 use unionlabs::bounded::{BoundedI64, BoundedIntError, BoundedIntParseError};
 
@@ -12,9 +12,23 @@ pub mod version;
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct CometbftHeight(BoundedI64<0, { i64::MAX }>);
 
+impl Add<i64> for CometbftHeight {
+    type Output = Self;
+
+    fn add(self, rhs: i64) -> Self::Output {
+        Self(self.0.add(&rhs))
+    }
+}
+
 impl CometbftHeight {
     pub const fn inner(self) -> i64 {
         self.0.inner()
+    }
+}
+
+impl From<CometbftHeight> for BoundedI64<0, { i64::MAX }> {
+    fn from(value: CometbftHeight) -> Self {
+        value.0
     }
 }
 

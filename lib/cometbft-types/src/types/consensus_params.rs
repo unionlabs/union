@@ -1,12 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::types::{
-    block_params::BlockParams, evidence_params::EvidenceParams, synchrony_params::SynchronyParams,
+    abci_params::AbciParams, block_params::BlockParams, evidence_params::EvidenceParams,
+    feature_params::FeatureParams, synchrony_params::SynchronyParams,
+    validator_params::ValidatorParams, version_params::VersionParams,
 };
-use crate::types::validator_params::ValidatorParams;
-use crate::types::version_params::VersionParams;
-use crate::types::abci_params::AbciParams;
-use crate::types::feature_params::FeatureParams;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

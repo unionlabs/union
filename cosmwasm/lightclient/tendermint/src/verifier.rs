@@ -1,54 +1,131 @@
-use cometbft_types::crypto::public_key::PublicKey;
+use cometbft_types::{crypto::public_key::PublicKey, types::block_id_flag::BlockIdFlag};
 use cosmwasm_std::Deps;
-use tendermint_verifier::types::HostFns;
+use tendermint_verifier::{
+    error::Error,
+    types::{ValidatorSig, Verification},
+};
 
 pub struct Ed25519Verifier<'a> {
     deps: Deps<'a>,
+    pubkeys: Vec<Vec<u8>>,
+    msgs: Vec<Vec<u8>>,
+    signatures: Vec<Vec<u8>>,
 }
 
 impl<'a> Ed25519Verifier<'a> {
     pub fn new(deps: Deps<'a>) -> Self {
-        Self { deps }
+        Self {
+            deps,
+            pubkeys: Vec::new(),
+            msgs: Vec::new(),
+            signatures: Vec::new(),
+        }
     }
 }
 
-#[allow(clippy::manual_unwrap_or)]
-impl HostFns for Ed25519Verifier<'_> {
-    fn verify_signature(&self, pubkey: &PublicKey, msg: &[u8], sig: &[u8]) -> bool {
-        match pubkey {
-            PublicKey::Ed25519(key) => self
-                .deps
-                .api
-                .ed25519_verify(msg, sig, key)
-                .unwrap_or_default(),
-            _ => false,
+#[derive(Debug, thiserror::Error)]
+pub enum VerificationError {
+    #[error("timestamp must be set for the committed validators")]
+    TimestampMustBeSet,
+    #[error("signature must exist for the committed validators")]
+    SignatureMustExist,
+    #[error("validator address must exist for the committed validators")]
+    ValidatorAddressMustExist,
+    #[error("message must exist for all commits")]
+    MessageMustExist,
+    #[error("invalid public key type: {0}")]
+    InvalidPublicKeyType(String),
+    #[error("inner verification")]
+    InnerVerification(#[source] cosmwasm_std::VerificationError),
+    #[error("signature verification failed")]
+    SignatureVerificationFailed,
+}
+
+impl From<VerificationError> for Error {
+    fn from(value: VerificationError) -> Self {
+        Error::ClientSpecific(Box::new(value))
+    }
+}
+
+impl<'a> Verification for Ed25519Verifier<'a> {
+    type Error = VerificationError;
+
+    type CanonicalVoteProto = protos::tendermint::types::CanonicalVote;
+
+    fn filter_commit(
+        &self,
+        commit_sig: &cometbft_types::types::commit_sig::CommitSigRaw,
+    ) -> Result<Option<ValidatorSig>, Self::Error> {
+        if commit_sig.block_id_flag == Into::<i32>::into(BlockIdFlag::Commit) {
+            let timestamp = commit_sig
+                .timestamp
+                .ok_or(VerificationError::TimestampMustBeSet)?;
+            let signature = commit_sig
+                .signature
+                .clone()
+                .ok_or(VerificationError::SignatureMustExist)?;
+
+            let validator_address = commit_sig
+                .validator_address
+                .ok_or(VerificationError::SignatureMustExist)?
+                .into_encoding();
+
+            Ok(Some(ValidatorSig {
+                validator_address,
+                timestamp,
+                signature: Some(signature.into_vec()),
+            }))
+        } else {
+            Ok(None)
         }
     }
 
-    fn verify_batch_signature(
-        &self,
-        pubkeys: &[PublicKey],
-        msgs: &[&[u8]],
-        sigs: &[&[u8]],
-    ) -> bool {
-        let Ok(pubkeys) = pubkeys
-            .iter()
-            .map(|pk| match pk {
-                PublicKey::Ed25519(pkey) => Ok(pkey.as_ref()),
-                _ => Err(()),
-            })
-            .collect::<Result<Vec<_>, _>>()
-        else {
-            return false;
+    fn process_signature(
+        &mut self,
+        public_key: PublicKey,
+        msg: Option<Vec<u8>>,
+        signature: Option<Vec<u8>>,
+    ) -> Result<(), Self::Error> {
+        let msg = msg.ok_or(VerificationError::MessageMustExist)?;
+        let signature = signature.ok_or(VerificationError::SignatureMustExist)?;
+
+        let PublicKey::Ed25519(public_key) = public_key else {
+            return Err(VerificationError::InvalidPublicKeyType(
+                "public key type must be ed25519".to_string(),
+            ));
         };
 
-        self.deps
+        // TODO(aeryz): verify here
+        self.pubkeys.push(public_key.into_vec());
+        self.msgs.push(msg);
+        self.signatures.push(signature);
+
+        Ok(())
+    }
+
+    fn finish(&mut self) -> Result<(), Self::Error> {
+        let pubkeys: Vec<&[u8]> = self.pubkeys.iter().map(|x| x.as_slice()).collect();
+        let msgs: Vec<&[u8]> = self.msgs.iter().map(|x| x.as_slice()).collect();
+        let sigs: Vec<&[u8]> = self.signatures.iter().map(|x| x.as_slice()).collect();
+
+        let ret = if self
+            .deps
             .api
-            .ed25519_batch_verify(msgs, sigs, &pubkeys)
-            .unwrap_or_default()
+            .ed25519_batch_verify(&msgs, &sigs, &pubkeys)
+            .map_err(VerificationError::InnerVerification)?
+        {
+            Ok(())
+        } else {
+            Err(VerificationError::SignatureVerificationFailed)
+        };
+
+        self.pubkeys = Vec::new();
+        self.msgs = Vec::new();
+        self.signatures = Vec::new();
+
+        ret
     }
 }
-
 #[cfg(feature = "bls")]
 pub mod bls {
     use cometbft_types::crypto::public_key::PublicKey;

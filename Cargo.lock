@@ -14111,6 +14111,7 @@ dependencies = [
  "ibc-union-spec",
  "ics23",
  "lazy_static",
+ "protos",
  "serde_json",
  "sha2 0.10.9",
  "tendermint-light-client-types",
@@ -14154,7 +14155,10 @@ dependencies = [
 name = "tendermint-verifier"
 version = "0.0.0"
 dependencies = [
+ "ark-bls12-381 0.5.0",
+ "ark-serialize 0.5.0",
  "cometbft-types",
+ "cosmwasm-std",
  "ed25519-dalek",
  "hex-literal 1.1.0",
  "prost 0.12.6",

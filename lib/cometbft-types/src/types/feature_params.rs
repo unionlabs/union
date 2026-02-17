@@ -19,7 +19,11 @@ pub struct FeatureParams {
     /// used by the application in PrepareProposal, when proposing the next block.
     ///
     /// Cannot be set to heights lower or equal to the current blockchain height.
-    #[serde(with = "::serde_utils::string_opt", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        with = "::serde_utils::string_opt",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub vote_extensions_enable_height: Option<BoundedI64<0>>,
 
     /// Height at which Proposer-Based Timestamps (PBTS) will be enabled.
@@ -33,10 +37,18 @@ pub struct FeatureParams {
     /// algorithm is used to produce and validate timestamps.
     ///
     /// Cannot be set to heights lower or equal to the current blockchain height.
-    #[serde(with = "::serde_utils::string_opt", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        with = "::serde_utils::string_opt",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub pbts_enable_height: Option<BoundedI64<0>>,
 
-    #[serde(with = "::serde_utils::string_opt", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        with = "::serde_utils::string_opt",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub sbt_enable_height: Option<BoundedI64<0>>,
 }
 

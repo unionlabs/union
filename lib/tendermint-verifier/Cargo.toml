@@ -26,5 +26,9 @@ thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true }
 
 [dev-dependencies]
-ed25519-dalek = { workspace = true, features = ["default", "batch"] }
+ark-serialize = "0.5.0"
+cosmwasm-std  = { workspace = true, features = ["cosmwasm_2_1"] }
+ed25519-dalek = { version = "2.1.0", features = ["batch"] }
 serde_json    = { workspace = true }
+
+ark-bls12-381 = { version = "0.5.0" }

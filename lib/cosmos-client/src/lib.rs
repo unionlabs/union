@@ -224,7 +224,7 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
                 }
                 Err(err) => {
                     debug!(err = %ErrorReporter(err), "unable to retrieve tx inclusion, trying again");
-                    target_height = reached_height.add(&1);
+                    target_height = reached_height + 1;
                     i += 1;
                     continue;
                 }

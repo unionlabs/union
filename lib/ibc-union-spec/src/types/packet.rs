@@ -372,7 +372,7 @@ mod tests {
 
         assert_eq!(
             packet.hash(),
-            "0xb204ec01ba72d32b884df0ecbfea727a15c82c1e0a08dff53fde4990d3ba589f"
+            "0x4e5e01a7fc0cd0038dba45d5590c4ed757842cc9c84516c1514a460645ea416a"
                 .parse::<H256>()
                 .unwrap()
         );

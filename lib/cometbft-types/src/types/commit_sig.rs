@@ -36,10 +36,54 @@ pub struct CommitSigRaw {
     pub validator_address: Option<H160<HexUnprefixed>>,
     #[serde(
         default,
-        with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none"
+        with = "parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none"
     )]
     pub timestamp: Option<Timestamp>,
     pub signature: Option<Bytes<Base64>>,
+}
+
+// This is used for the very strange representation of nil protobuf timestamps in cometbft json responses
+#[allow(non_snake_case)]
+pub mod parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none {
+    use std::{format, string::String};
+
+    use serde::{Deserializer, Serializer, de::Deserialize};
+    use unionlabs::google::protobuf::timestamp::Timestamp;
+
+    pub fn serialize<S>(data: &Option<Timestamp>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.collect_str(&data.unwrap_or_else(|| {
+            "0001-01-01T00:00:00Z"
+                .parse::<Timestamp>()
+                .expect("valid date time; qed;")
+        }))
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Timestamp>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        <Option<String>>::deserialize(deserializer).and_then(|s| match s {
+            Some(s) => {
+                if s == "0001-01-01T00:00:00Z" {
+                    Ok(None)
+                } else {
+                    let datetime = s.parse::<Timestamp>().map_err(|err| {
+                        serde::de::Error::custom(format!("unable to parse data: {err:?}"))
+                    })?;
+
+                    Ok(Some(Timestamp::try_from(datetime).map_err(|err| {
+                        serde::de::Error::custom(format!(
+                            "unable to convert data from rfc3339 datetime: {err:?}"
+                        ))
+                    })?))
+                }
+            }
+            None => Ok(None),
+        })
+    }
 }
 
 mod commit_sig_validator_address {
