@@ -1,5 +1,6 @@
 #![warn(clippy::unwrap_used)]
 
+use cometbft_rpc::types::CometbftHeight;
 use ibc_union_spec::{
     IbcUnion,
     path::{IBC_UNION_COSMWASM_COMMITMENT_PREFIX, StorePath},
@@ -9,7 +10,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, instrument, warn};
 use unionlabs::{
-    bounded::BoundedI64,
     cosmos::ics23::commitment_proof::CommitmentProof,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
     primitives::{Bech32, Bytes, H256},
@@ -96,7 +96,7 @@ impl ProofModuleServer<IbcUnion> for Module {
                 // a proof at height H is provable at height H + 1
                 // we assume that the height passed in to this function is the intended height to prove against, thus we have to query the height - 1
                 Some(
-                    BoundedI64::new(at.height() - 1)
+                    CometbftHeight::try_from(at.height() - 1)
                         .map_err(RpcError::fatal(format!("invalid height value: {at}")))?,
                 ),
                 true,

@@ -1,10 +1,10 @@
 [package]
-authors      = ["Union Labs"]
-edition      = "2021"
-license-file = { workspace = true }
-name         = "state-lens-ics23-smt-light-client"
-publish      = false
-version      = "0.0.0"
+authors = ["Union Labs"]
+edition = "2021"
+license = { workspace = true }
+name    = "state-lens-ics23-smt-light-client"
+publish = false
+version = "0.0.0"
 
 [lints]
 workspace = true

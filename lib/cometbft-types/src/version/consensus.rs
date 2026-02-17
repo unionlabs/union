@@ -5,9 +5,16 @@ use serde::{Deserialize, Serialize};
 pub struct Consensus {
     #[serde(with = "::serde_utils::string")]
     pub block: u64,
-    // REVIEW: Why default?
-    #[serde(with = "::serde_utils::string", default)]
+    #[serde(
+        with = "::serde_utils::string",
+        default,
+        skip_serializing_if = "is_zero"
+    )]
     pub app: u64,
+}
+
+const fn is_zero(n: &u64) -> bool {
+    *n == 0
 }
 
 #[cfg(feature = "proto")]

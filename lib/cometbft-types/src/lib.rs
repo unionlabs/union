@@ -1,8 +1,99 @@
+use std::{fmt, ops::Add, str::FromStr};
+
+use unionlabs::bounded::{BoundedI64, BoundedIntError, BoundedIntParseError};
+
 pub mod abci;
 pub mod crypto;
 pub mod p2p;
 pub mod types;
 pub mod version;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct CometbftHeight(BoundedI64<0, { i64::MAX }>);
+
+impl Add<i64> for CometbftHeight {
+    type Output = Self;
+
+    fn add(self, rhs: i64) -> Self::Output {
+        Self(self.0.add(&rhs))
+    }
+}
+
+impl CometbftHeight {
+    pub const fn inner(self) -> i64 {
+        self.0.inner()
+    }
+}
+
+impl From<CometbftHeight> for BoundedI64<0, { i64::MAX }> {
+    fn from(value: CometbftHeight) -> Self {
+        value.0
+    }
+}
+
+impl ::serde::Serialize for CometbftHeight {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ::serde::Serializer,
+    {
+        if serializer.is_human_readable() {
+            serializer.collect_str(self)
+        } else {
+            serializer.serialize_i64(self.0.inner())
+        }
+    }
+}
+
+impl<'de> ::serde::Deserialize<'de> for CometbftHeight {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            String::deserialize(deserializer)
+                .and_then(|s| s.parse().map(Self).map_err(::serde::de::Error::custom))
+        } else {
+            BoundedI64::deserialize(deserializer).map(Self)
+        }
+    }
+}
+
+impl fmt::Display for CometbftHeight {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
+impl FromStr for CometbftHeight {
+    type Err = BoundedIntParseError<i64>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse().map(Self)
+    }
+}
+
+impl TryFrom<i64> for CometbftHeight {
+    type Error = BoundedIntError<i64, i64>;
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        value.try_into().map(Self)
+    }
+}
+
+impl From<CometbftHeight> for i64 {
+    fn from(value: CometbftHeight) -> i64 {
+        value.0.inner()
+    }
+}
+
+impl TryFrom<u64> for CometbftHeight {
+    type Error = BoundedIntError<i64, u64>;
+
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        BoundedI64::new(value).map(Self)
+    }
+}
 
 pub mod utils {
     use unionlabs::{

@@ -27,20 +27,19 @@ struct JsonRpcResponse<T> {
 }
 
 mod validators {
-    use std::num::NonZeroU64;
-
     use cometbft_types::{crypto::public_key::PublicKey, types::validator::Validator};
     use hex_literal::hex;
     use unionlabs::bounded::BoundedI64;
 
     use super::*;
+    use crate::CometbftHeight;
 
     #[test]
     fn validators() {
         ensure_json(
             "testdata/validators/bartio-6760022.json",
             crate::rpc_types::ValidatorsResponse {
-                block_height: NonZeroU64::new(6760022).unwrap(),
+                block_height: CometbftHeight::try_from(6760022_u64).unwrap(),
                 validators: vec![
                     Validator {
                         address: hex!("00c3b8dfaf3819df26bfa0917d6fac6b370c9896").into(),

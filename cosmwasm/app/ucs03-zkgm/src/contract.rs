@@ -3528,3 +3528,17 @@ fn proxy_salt() {
         &hex_literal::hex!("6122846875c88a0694bb88749a175b0409aba7377dec45ba67824daef3fed7ab")
     );
 }
+
+#[test]
+fn salt_salt() {
+    let sender = "osmo1ucfp73mvq2nvyzjdm9qq7u02e69yggd27r38an8gkg4jdpxhy0xscusxnn".as_bytes();
+    let salt: H256 = hex_literal::hex!("078d4a6dcc423d93beb8367b6e9ec195837e0c562edb89d5e4275f9233b80831").into();
+
+    let preimage: Bytes = (sender, salt).abi_encode().into();
+
+    dbg!(&preimage);
+
+    let salted_salt = keccak256(preimage);
+
+    dbg!(salted_salt);
+}

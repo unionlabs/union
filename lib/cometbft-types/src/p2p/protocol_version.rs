@@ -6,8 +6,16 @@ pub struct ProtocolVersion {
     pub p2p: u64,
     #[serde(with = "::serde_utils::string")]
     pub block: u64,
-    #[serde(with = "::serde_utils::string")]
+    #[serde(
+        with = "::serde_utils::string",
+        default,
+        skip_serializing_if = "is_zero"
+    )]
     pub app: u64,
+}
+
+const fn is_zero(n: &u64) -> bool {
+    *n == 0
 }
 
 #[cfg(feature = "proto")]

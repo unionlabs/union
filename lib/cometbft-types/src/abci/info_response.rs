@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::{
-    bounded::BoundedI64,
-    primitives::{H256, encoding::Base64},
-};
+use unionlabs::primitives::{H256, encoding::Base64};
+
+use crate::CometbftHeight;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -15,8 +14,7 @@ pub struct InfoResponse {
         skip_serializing_if = "is_zero"
     )]
     pub app_version: u64,
-    #[serde(with = "::serde_utils::string")]
-    pub last_block_height: BoundedI64<0, { i64::MAX }>,
+    pub last_block_height: CometbftHeight,
     pub last_block_app_hash: H256<Base64>,
 }
 

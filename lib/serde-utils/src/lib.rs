@@ -730,67 +730,6 @@ pub mod bitvec_string {
     }
 }
 
-// This is used for the very strange representation of nil protobuf timestamps in cometbft json responses
-#[allow(non_snake_case)]
-pub mod parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none {
-    use alloc::{format, string::String};
-    use core::fmt::Debug;
-
-    use chrono::{DateTime, SecondsFormat, Utc};
-    use serde::{Deserializer, Serializer, de::Deserialize};
-
-    pub fn serialize<S, T>(data: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-        T: Clone,
-        DateTime<Utc>: TryFrom<T, Error: Debug>,
-    {
-        match data {
-            Some(data) => {
-                serializer.collect_str(
-                    &<DateTime<Utc>>::try_from(data.clone())
-                        .map_err(|err| {
-                            serde::ser::Error::custom(format!(
-                                "unable to convert to datetime: {err:?}"
-                            ))
-                        })?
-                        .to_rfc3339_opts(
-                            SecondsFormat::Nanos,
-                            // use_z
-                            true,
-                        ),
-                )
-            }
-            None => serializer.serialize_none(),
-        }
-    }
-
-    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
-    where
-        D: Deserializer<'de>,
-        T: TryFrom<DateTime<Utc>, Error: Debug>,
-    {
-        <Option<String>>::deserialize(deserializer).and_then(|s| match s {
-            Some(s) => {
-                if s == "0001-01-01T00:00:00Z" {
-                    Ok(None)
-                } else {
-                    let datetime = DateTime::parse_from_rfc3339(&s).map_err(|err| {
-                        serde::de::Error::custom(format!("unable to parse data: {err:?}"))
-                    })?;
-
-                    Ok(Some(T::try_from(datetime.into()).map_err(|err| {
-                        serde::de::Error::custom(format!(
-                            "unable to convert data from rfc3339 datetime: {err:?}"
-                        ))
-                    })?))
-                }
-            }
-            None => Ok(None),
-        })
-    }
-}
-
 pub mod fmt {
     use core::{
         fmt::{self, Write},
