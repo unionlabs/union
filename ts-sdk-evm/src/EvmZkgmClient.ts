@@ -46,7 +46,13 @@ export namespace EvmZkgmClient {
      */
     readonly prepareEip1193: (
       request: ZkgmClientRequest.ZkgmClientRequest,
-    ) => Effect.Effect<Viem.RpcTransactionRequest, ZkgmClientError.RequestError>
+    ) => Effect.Effect<{
+      readonly preparedRequest: Viem.RpcTransactionRequest
+      readonly packetMetadata: {
+        readonly salt: `0x${string}`
+        readonly timeoutTimestamp: bigint
+      }
+    }, ZkgmClientError.RequestError>
   }
 }
 
