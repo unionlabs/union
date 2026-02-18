@@ -209,7 +209,7 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
         const liveFetch = fetch<D, any>({ document, variables })
         const invalidate = cache.invalidate(request)
 
-        // attempt cache invalidation before ultimatetly querying live endpoint
+        // attempt cache invalidation before ultimately querying live endpoint
         const recover = invalidate.pipe(
           Effect.andThen(() => liveFetch),
           Effect.catchTag("PersistenceError", () => liveFetch),
