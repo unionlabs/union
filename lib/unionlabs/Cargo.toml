@@ -1,5 +1,4 @@
 [package]
-include = ["README.md"]
 name    = "unionlabs"
 version = "0.0.0"
 
@@ -8,6 +7,8 @@ edition    = { workspace = true }
 license    = { workspace = true }
 publish    = { workspace = true }
 repository = { workspace = true }
+
+include = ["src/", "README.md"]
 
 [lints]
 workspace = true

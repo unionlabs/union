@@ -8,8 +8,6 @@ license    = { workspace = true }
 publish    = { workspace = true }
 repository = { workspace = true }
 
-include = []
-
 [package.metadata.crane]
 test-include = []
 
