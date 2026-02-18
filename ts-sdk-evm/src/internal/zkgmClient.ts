@@ -508,7 +508,15 @@ export const makeDual: Effect.Effect<
                 }),
             })
 
-            return formatTransactionRequest(preparedRequest)
+            const packetMetadata = {
+              salt,
+              timeoutTimestamp,
+            } as const
+
+            return {
+              preparedRequest: formatTransactionRequest(preparedRequest),
+              packetMetadata,
+            } as const
           },
         )
 
@@ -642,7 +650,15 @@ export const makePure: Effect.Effect<
         data,
       }
 
-      return formatTransactionRequest(preparedRequest)
+      const packetMetadata = {
+        salt,
+        timeoutTimestamp,
+      } as const
+
+      return {
+        preparedRequest: formatTransactionRequest(preparedRequest),
+        packetMetadata,
+      } as const
     },
   )
 
