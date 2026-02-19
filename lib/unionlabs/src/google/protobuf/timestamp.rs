@@ -200,11 +200,19 @@ impl Timestamp {
 
 impl Display for Timestamp {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_str(&DateTime::<Utc>::from(*self).to_rfc3339_opts(
-            SecondsFormat::Nanos,
+        let s = DateTime::<Utc>::from(*self).to_rfc3339_opts(
+            SecondsFormat::AutoSi,
             // use_z
             true,
-        ))
+        );
+
+        // hackery to match go's time.Time formatting
+        if self.nanos.inner() == 0 {
+            f.write_str(&s)
+        } else {
+            f.write_str(&s.trim_end_matches('Z').trim_end_matches('0'))?;
+            f.write_str("Z")
+        }
     }
 }
 
@@ -416,13 +424,54 @@ mod tests {
 
     #[test]
     fn parse() {
-        Timestamp::from_str("2017-01-15T01:30:15.03441Z").unwrap();
+        assert_string_roundtrip("2017-01-15T01:30:15.03441Z", &ts!(1484443815, 34410000));
 
-        assert_string_roundtrip(&ts!(12345, 6789));
+        assert_string_roundtrip("0001-01-01T00:00:00Z", &ts!(TIMESTAMP_SECONDS_MIN, 0));
 
-        Timestamp::from_str("0001-01-01T00:00:00Z").unwrap();
+        assert_string_roundtrip(
+            "0001-01-01T00:00:00.000000001Z",
+            &ts!(TIMESTAMP_SECONDS_MIN, 1),
+        );
 
-        assert_string_roundtrip(&ts!(TIMESTAMP_SECONDS_MIN, 0));
+        assert_string_roundtrip(
+            "0001-01-01T00:00:00.00000001Z",
+            &ts!(TIMESTAMP_SECONDS_MIN, 10),
+        );
+
+        assert_string_roundtrip(
+            "0001-01-01T00:00:00.0000001Z",
+            &ts!(TIMESTAMP_SECONDS_MIN, 100),
+        );
+
+        assert_string_roundtrip(
+            "0001-01-01T00:00:00.000001Z",
+            &ts!(TIMESTAMP_SECONDS_MIN, 1_000),
+        );
+
+        assert_string_roundtrip(
+            "0001-01-01T00:00:00.00001Z",
+            &ts!(TIMESTAMP_SECONDS_MIN, 10_000),
+        );
+
+        assert_string_roundtrip(
+            "0001-01-01T00:00:00.0001Z",
+            &ts!(TIMESTAMP_SECONDS_MIN, 100_000),
+        );
+
+        assert_string_roundtrip(
+            "0001-01-01T00:00:00.001Z",
+            &ts!(TIMESTAMP_SECONDS_MIN, 1_000_000),
+        );
+
+        assert_string_roundtrip(
+            "0001-01-01T00:00:00.01Z",
+            &ts!(TIMESTAMP_SECONDS_MIN, 10_000_000),
+        );
+
+        assert_string_roundtrip(
+            "0001-01-01T00:00:00.1Z",
+            &ts!(TIMESTAMP_SECONDS_MIN, 100_000_000),
+        );
     }
 
     #[test]

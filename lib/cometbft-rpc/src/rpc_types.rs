@@ -5,6 +5,7 @@ use std::{
 };
 
 use cometbft_types::{
+    CometbftHeight,
     abci::{
         event::Event, exec_tx_result::ExecTxResult, info_response::InfoResponse,
         query_response::QueryResponse,
@@ -13,13 +14,13 @@ use cometbft_types::{
     crypto::{proof_ops::ProofOps, public_key::PublicKey},
     p2p::default_node_info::DefaultNodeInfo,
     types::{
-        block::Block, block_id::BlockId, header::Header, signed_header::SignedHeader,
-        tx_proof::TxProof, validator::Validator,
+        block::Block, block_id::BlockId, consensus_params::ConsensusParams, header::Header,
+        signed_header::SignedHeader, tx_proof::TxProof, validator::Validator,
     },
 };
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    bounded::{BoundedI64, BoundedU8},
+    bounded::BoundedU8,
     google::protobuf::timestamp::Timestamp,
     primitives::{
         Bytes, H160, H256,
@@ -126,8 +127,7 @@ pub struct ValidatorInfo {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ValidatorsResponse {
-    #[serde(with = "::serde_utils::string")]
-    pub block_height: NonZeroU64,
+    pub block_height: CometbftHeight,
     pub validators: Vec<Validator>,
     #[serde(with = "::serde_utils::string")]
     pub count: u64,
@@ -135,9 +135,10 @@ pub struct ValidatorsResponse {
     pub total: u64,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AllValidatorsResponse {
-    pub block_height: NonZeroU64,
+    pub block_height: CometbftHeight,
     pub validators: Vec<Validator>,
 }
 
@@ -172,7 +173,7 @@ pub struct GrpcAbciQueryResponse<T> {
     pub key: Option<Bytes<Base64>>,
     pub value: Option<T>,
     pub proof_ops: Option<ProofOps>,
-    pub height: BoundedI64<0, { i64::MAX }>,
+    pub height: CometbftHeight,
     pub codespace: String,
 }
 
@@ -242,8 +243,7 @@ pub struct BlockSearchResponse {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockResultsResponse {
-    #[serde(with = "::serde_utils::string")]
-    pub height: u64,
+    pub height: CometbftHeight,
     pub txs_results: Option<Vec<ExecTxResult>>,
     pub finalize_block_events: Option<Vec<Event>>,
 }
@@ -256,4 +256,24 @@ pub struct BroadcastTxSyncResponse {
     pub data: Bytes<Base64>,
     pub log: String,
     pub hash: H256<HexUnprefixed>,
+}
+
+#[derive(macros::Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GenesisResponse<AppState> {
+    pub genesis: Genesis<AppState>,
+}
+
+#[derive(macros::Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Genesis<AppState> {
+    pub genesis_time: Timestamp,
+    pub chain_id: String,
+    pub initial_height: CometbftHeight,
+    pub consensus_params: ConsensusParams,
+    #[serde(rename = "$schema", default, skip_serializing_if = "Option::is_none")]
+    pub validators: Option<Vec<ValidatorInfo>>,
+    #[serde(with = "::cometbft_types::serde::maybe_empty_h256")]
+    pub app_hash: Option<H256<HexUnprefixed>>,
+    pub app_state: AppState,
 }

@@ -40,7 +40,7 @@ mod validators {
         ensure_json(
             "testdata/validators/bartio-6760022.json",
             crate::rpc_types::ValidatorsResponse {
-                block_height: NonZeroU64::new(6760022).unwrap(),
+                block_height: CometbftHeight::new(6760022).unwrap(),
                 validators: vec![
                     Validator {
                         address: hex!("00c3b8dfaf3819df26bfa0917d6fac6b370c9896").into(),

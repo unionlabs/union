@@ -292,11 +292,11 @@ members = [
 ]
 
 [workspace.package]
-authors      = ["Union Labs"]
-edition      = "2024"
-license-file = "LICENSE"
-publish      = false
-repository   = "https://github.com/unionlabs/union"
+authors    = ["Union Labs"]
+edition    = "2024"
+license    = "MIT OR Apache-2.0"
+publish    = false
+repository = "https://github.com/unionlabs/union"
 
 [workspace.metadata.cargo-machete]
 ignored = ["embed-commit"]

@@ -6,6 +6,7 @@ use std::{
 };
 
 use ::serde::de::DeserializeOwned;
+use cometbft_types::CometbftHeight;
 use jsonrpsee::{
     core::{
         client::{BatchResponse, ClientT},
@@ -17,18 +18,13 @@ use jsonrpsee::{
     ws_client::{PingConfig, WsClientBuilder},
 };
 use tracing::{Instrument, debug, debug_span, instrument, trace};
-use unionlabs::{
-    ErrorReporter,
-    bounded::{BoundedI64, BoundedU8},
-    primitives::H256,
-    result_unwrap,
-};
+use unionlabs::{ErrorReporter, bounded::BoundedU8, primitives::H256, result_unwrap};
 
 use crate::rpc_types::{
     AbciInfoResponse, AbciQueryResponse, AllValidatorsResponse, BlockResponse,
     BlockResultsResponse, BlockSearchResponse, BlockchainResponse, BroadcastTxSyncResponse,
-    CommitResponse, GrpcAbciQueryResponse, HeaderResponse, Order, StatusResponse, TxResponse,
-    TxSearchResponse, ValidatorsResponse,
+    CommitResponse, GenesisResponse, GrpcAbciQueryResponse, HeaderResponse, Order, StatusResponse,
+    TxResponse, TxSearchResponse, ValidatorsPagination, ValidatorsResponse,
 };
 
 #[cfg(test)]
@@ -86,7 +82,10 @@ impl Client {
     }
 
     // TODO: This should be bounded correctly
-    pub async fn commit(&self, height: Option<NonZeroU64>) -> Result<CommitResponse, JsonRpcError> {
+    pub async fn commit(
+        &self,
+        height: Option<CometbftHeight>,
+    ) -> Result<CommitResponse, JsonRpcError> {
         self.inner
             .request("commit", (height.map(|x| x.to_string()),))
             .await
@@ -94,7 +93,7 @@ impl Client {
 
     pub async fn header(
         &self,
-        height: Option<BoundedI64<1>>,
+        height: Option<CometbftHeight>,
     ) -> Result<HeaderResponse, JsonRpcError> {
         self.inner
             .request("header", (height.map(|x| x.to_string()),))
@@ -103,8 +102,8 @@ impl Client {
 
     pub async fn validators(
         &self,
-        height: Option<NonZeroU64>,
-        pagination: Option<rpc_types::ValidatorsPagination>,
+        height: Option<CometbftHeight>,
+        pagination: Option<ValidatorsPagination>,
     ) -> Result<ValidatorsResponse, JsonRpcError> {
         self.inner
             .request(
@@ -121,7 +120,7 @@ impl Client {
     /// Auto-paginated version of [`Self::validators`].
     pub async fn all_validators(
         &self,
-        mut height: Option<NonZeroU64>,
+        mut height: Option<CometbftHeight>,
     ) -> Result<AllValidatorsResponse, JsonRpcError> {
         const PER_PAGE: BoundedU8<1, 100> =
             const { result_unwrap!(BoundedU8::<1, 100>::new_const(100)) };
@@ -193,7 +192,7 @@ impl Client {
         &self,
         path: impl AsRef<str>,
         data: impl AsRef<[u8]>,
-        height: Option<BoundedI64<1>>,
+        height: Option<CometbftHeight>,
         prove: bool,
     ) -> Result<AbciQueryResponse, JsonRpcError> {
         trace!(data = %::serde_utils::to_hex(data.as_ref()), "data");
@@ -247,7 +246,7 @@ impl Client {
         &self,
         path: impl AsRef<str>,
         data: &Q,
-        height: Option<BoundedI64<1>>,
+        height: Option<CometbftHeight>,
         prove: bool,
     ) -> Result<GrpcAbciQueryResponse<R>, JsonRpcError> {
         debug!("fetching grpc abci query");
@@ -280,7 +279,7 @@ impl Client {
 
     pub async fn block(
         &self,
-        height: Option<BoundedI64<1>>,
+        height: Option<CometbftHeight>,
     ) -> Result<BlockResponse, JsonRpcError> {
         self.inner
             .request("block", (height.map(|x| x.to_string()),))
@@ -404,11 +403,17 @@ impl Client {
 
     pub async fn block_results(
         &self,
-        height: Option<NonZeroU64>,
+        height: Option<CometbftHeight>,
     ) -> Result<BlockResultsResponse, JsonRpcError> {
         self.inner
             .request("block_results", rpc_params![height.map(|x| x.to_string())])
             .await
+    }
+
+    pub async fn genesis<AppState: DeserializeOwned>(
+        &self,
+    ) -> Result<GenesisResponse<AppState>, JsonRpcError> {
+        self.inner.request("genesis", rpc_params![]).await
     }
 }
 

@@ -64,7 +64,7 @@ impl Module {
                 {
                     let mut header = Header {
                         signed_header: LightHeader {
-                            height: prove_request.untrusted_header.height,
+                            height: prove_request.untrusted_header.height.into(),
                             time: prove_request.untrusted_header.time,
                             validators_hash: prove_request
                                 .untrusted_header
