@@ -1,5 +1,5 @@
 [package]
-name    = "embed-commit-verifier"
+name    = "kimlik-verifier"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -13,8 +13,6 @@ workspace = true
 
 [dependencies]
 anyhow       = { workspace = true }
-bytemuck     = { workspace = true }
 clap         = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
-elf          = "0.8.0"
 embed-commit = { workspace = true }
 wasmtime     = { git = "https://github.com/bytecodealliance/wasmtime", rev = "b2e585cfa2992142058e691c1a522b801830bc7b" } # https://github.com/bytecodealliance/wasmtime/pull/10352, https://github.com/bytecodealliance/wasmtime/pull/10330

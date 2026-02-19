@@ -289,6 +289,8 @@ members = [
   "lib/starknet-types",
   "lib/starknet-light-client-types",
   "lib/cosmwasm-event",
+  "lib/kimlik",
+  "lib/kimlik/verifier",
 ]
 
 [workspace.package]
@@ -392,6 +394,7 @@ ibc-union-light-client                    = { path = "cosmwasm/core/light-client
 ibc-union-msg                             = { path = "cosmwasm/core/msg", default-features = false }
 ibc-union-spec                            = { path = "lib/ibc-union-spec", default-features = false }
 ics23                                     = { path = "lib/ics23", default-features = false }
+kimlik                                    = { path = "lib/kimlik", default-features = false }
 lst                                       = { path = "cosmwasm/lst", default-features = false }
 lst-staker                                = { path = "cosmwasm/lst-staker", default-features = false }
 macros                                    = { path = "lib/macros", default-features = false }
