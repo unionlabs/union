@@ -159,26 +159,71 @@ impl Instruction {
 mod wasm_bindgen_exports {
     use alloc::{string::ToString, vec::Vec};
 
+    use serde::Serialize;
     use serde_wasm_bindgen::Serializer;
     use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
-    use crate::ZkgmPacket;
+    use crate::{Ack, Root, RootShape, ZkgmPacket};
 
+    const S: Serializer = Serializer::new().serialize_large_number_types_as_bigints(true);
+
+    /// bytes -> packet
     #[wasm_bindgen]
     pub fn decode_packet(packet: Vec<u8>) -> Result<JsValue, JsValue> {
         let packet =
             ZkgmPacket::decode(packet).map_err(|err| JsValue::from_str(&err.to_string()))?;
 
-        let mut s = Serializer::new().serialize_large_number_types_as_bigints(true);
-
-        Ok(serde_wasm_bindgen::to_value(&packet)?)
+        Ok(packet.encode().serialize(&S)?)
     }
 
+    /// packet -> bytes
     #[wasm_bindgen]
     pub fn encode_packet(packet: JsValue) -> Result<JsValue, JsValue> {
-        let packet = serde_wasm_bindgen::from_value(packet)?;
+        let packet = serde_wasm_bindgen::from_value::<ZkgmPacket>(packet)?;
 
-        Ok(serde_wasm_bindgen::to_value(&ZkgmPacket::encode(packet))?)
+        Ok(packet.encode().serialize(&S)?)
+    }
+
+    /// bytes -> instruction
+    #[wasm_bindgen]
+    pub fn decode_instruction(instruction: Vec<u8>) -> Result<JsValue, JsValue> {
+        let instruction =
+            Root::decode(&instruction).map_err(|err| JsValue::from_str(&err.to_string()))?;
+
+        Ok(instruction.encode().serialize(&S)?)
+    }
+
+    /// instruction -> bytes
+    #[wasm_bindgen]
+    pub fn encode_instruction(instruction: JsValue) -> Result<JsValue, JsValue> {
+        let instruction = serde_wasm_bindgen::from_value::<Root>(instruction)?;
+
+        Ok(instruction.encode().serialize(&S)?)
+    }
+
+    /// instruction -> shape
+    #[wasm_bindgen]
+    pub fn packet_shape(instruction: JsValue) -> Result<JsValue, JsValue> {
+        let instruction = serde_wasm_bindgen::from_value::<Root>(instruction)?;
+
+        Ok(instruction.shape().serialize(&S)?)
+    }
+
+    /// (shape, bytes) -> ack
+    #[wasm_bindgen]
+    pub fn decode_ack(shape: JsValue, ack: Vec<u8>) -> Result<JsValue, JsValue> {
+        let shape = serde_wasm_bindgen::from_value::<RootShape>(shape)?;
+        let ack = Ack::decode(shape, ack).map_err(|err| JsValue::from_str(&err.to_string()))?;
+
+        Ok(ack.encode().serialize(&S)?)
+    }
+
+    /// ack -> bytes
+    #[wasm_bindgen]
+    pub fn encode_ack(ack: JsValue) -> Result<JsValue, JsValue> {
+        let ack = serde_wasm_bindgen::from_value::<Ack>(ack)?;
+
+        Ok(ack.encode().serialize(&S)?)
     }
 }
 

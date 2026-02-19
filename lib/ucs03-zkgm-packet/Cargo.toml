@@ -15,13 +15,12 @@ workspace = true
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-alloy-sol-types = { workspace = true }
-dlmalloc        = { version = "0.2.11", features = ["global"] }
-embed-commit    = { workspace = true }
-enumorph        = { workspace = true }
-hex-literal     = { workspace = true }
-serde           = { workspace = true, optional = true, features = ["alloc", "derive"] }
-# serde-wasm-bindgen   = { path = "../../../../benluelo/serde-wasm-bindgen", optional = true, default-features = false }
+alloy-sol-types      = { workspace = true }
+dlmalloc             = { version = "0.2.11", features = ["global"] }
+embed-commit         = { workspace = true }
+enumorph             = { workspace = true }
+hex-literal          = { workspace = true }
+serde                = { workspace = true, optional = true, features = ["alloc", "derive"] }
 serde-wasm-bindgen   = { version = "0.6.5", optional = true }
 serde_bytes          = { version = "0.11.19", optional = true, default-features = false, features = ["alloc"] }
 unionlabs-primitives = { workspace = true, features = ["alloy-primitives-compat"] }
