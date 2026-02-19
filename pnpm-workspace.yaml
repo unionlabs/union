@@ -29,6 +29,7 @@ catalog:
   '@effect/language-service': ^0.41.0
   '@effect/opentelemetry': ^0.57.0
   '@effect/platform': ^0.91.1
+  '@effect/platform-node': ^0.97.0
   '@effect/typeclass': 0.36.0
   '@effect/vitest': ^0.25.1
   '@opentelemetry/exporter-logs-otlp-proto': ^0.203.0

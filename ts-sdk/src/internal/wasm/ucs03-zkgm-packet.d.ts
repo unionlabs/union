@@ -1,25 +1,45 @@
 /* tslint:disable */
 /* eslint-disable */
+/**
+ * bytes -> packet
+ */
 export function decode_packet(packet: Uint8Array): any;
+/**
+ * packet -> bytes
+ */
 export function encode_packet(packet: any): any;
+/**
+ * bytes -> instruction
+ */
+export function decode_instruction(instruction: Uint8Array): any;
+/**
+ * instruction -> bytes
+ */
+export function encode_instruction(instruction: any): any;
+/**
+ * instruction -> shape
+ */
+export function packet_shape(instruction: any): any;
+/**
+ * (shape, bytes) -> ack
+ */
+export function decode_ack(shape: any, ack: Uint8Array): any;
+/**
+ * ack -> bytes
+ */
+export function encode_ack(ack: any): any;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
+  readonly decode_ack: (a: number, b: number, c: number, d: number) => void;
+  readonly decode_instruction: (a: number, b: number, c: number) => void;
   readonly decode_packet: (a: number, b: number, c: number) => void;
+  readonly encode_ack: (a: number, b: number) => void;
+  readonly encode_instruction: (a: number, b: number) => void;
   readonly encode_packet: (a: number, b: number) => void;
-  readonly allocate: (a: number) => number;
-  readonly deallocate: (a: number) => void;
-  readonly interface_version_8: () => void;
-  readonly requires_cosmwasm_1_1: () => void;
-  readonly requires_cosmwasm_1_2: () => void;
-  readonly requires_cosmwasm_1_3: () => void;
-  readonly requires_cosmwasm_1_4: () => void;
-  readonly requires_cosmwasm_2_0: () => void;
-  readonly requires_iterator: () => void;
-  readonly requires_staking: () => void;
-  readonly requires_stargate: () => void;
+  readonly packet_shape: (a: number, b: number) => void;
   readonly commit_hash: (a: number) => void;
   readonly __wbindgen_export_0: (a: number) => void;
   readonly __wbindgen_export_1: (a: number, b: number) => number;

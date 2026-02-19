@@ -54,6 +54,7 @@
     "@effect/docgen": "catalog:",
     "@effect/experimental": "catalog:",
     "@effect/platform": "catalog:",
+    "@effect/platform-node": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "babel-plugin-annotate-pure-calls": "catalog:",
