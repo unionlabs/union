@@ -243,8 +243,7 @@ pub struct BlockSearchResponse {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BlockResultsResponse {
-    #[serde(with = "::serde_utils::string")]
-    pub height: u64,
+    pub height: CometbftHeight,
     pub txs_results: Option<Vec<ExecTxResult>>,
     pub finalize_block_events: Option<Vec<Event>>,
 }
