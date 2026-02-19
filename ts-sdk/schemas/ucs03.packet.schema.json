@@ -1,0 +1,556 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "ZkgmPacket",
+  "type": "object",
+  "required": [
+    "instruction",
+    "path",
+    "salt"
+  ],
+  "properties": {
+    "instruction": {
+      "$ref": "#/definitions/Root"
+    },
+    "path": {
+      "$ref": "#/definitions/U256"
+    },
+    "salt": {
+      "$ref": "#/definitions/FixedBytes<HexPrefixed, 32>"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "BatchInstructionV0": {
+      "oneOf": [
+        {
+          "type": "object",
+          "oneOf": [
+            {
+              "deprecated": true,
+              "type": "object",
+              "required": [
+                "@version",
+                "base_amount",
+                "base_token",
+                "base_token_decimals",
+                "base_token_name",
+                "base_token_path",
+                "base_token_symbol",
+                "quote_amount",
+                "quote_token",
+                "receiver",
+                "sender"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v1"
+                  ]
+                },
+                "base_amount": {
+                  "$ref": "#/definitions/U256"
+                },
+                "base_token": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "base_token_decimals": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                },
+                "base_token_name": {
+                  "type": "string"
+                },
+                "base_token_path": {
+                  "$ref": "#/definitions/U256"
+                },
+                "base_token_symbol": {
+                  "type": "string"
+                },
+                "quote_amount": {
+                  "$ref": "#/definitions/U256"
+                },
+                "quote_token": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "receiver": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "sender": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "@version",
+                "base_amount",
+                "base_token",
+                "metadata",
+                "quote_amount",
+                "quote_token",
+                "receiver",
+                "sender"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v2"
+                  ]
+                },
+                "base_amount": {
+                  "$ref": "#/definitions/U256"
+                },
+                "base_token": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "metadata": {
+                  "$ref": "#/definitions/TokenOrderV2Metadata"
+                },
+                "quote_amount": {
+                  "$ref": "#/definitions/U256"
+                },
+                "quote_token": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "receiver": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "sender": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "@opcode"
+          ],
+          "properties": {
+            "@opcode": {
+              "type": "string",
+              "enum": [
+                "token_order"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "@version",
+                "contract_address",
+                "contract_calldata",
+                "eureka",
+                "sender"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v0"
+                  ]
+                },
+                "contract_address": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "contract_calldata": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "eureka": {
+                  "type": "boolean"
+                },
+                "sender": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "@opcode"
+          ],
+          "properties": {
+            "@opcode": {
+              "type": "string",
+              "enum": [
+                "call"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Bytes<HexPrefixed>": {
+      "description": "A string representation of bytes, encoded via HexPrefixed",
+      "type": "string"
+    },
+    "FixedBytes<HexPrefixed, 32>": {
+      "description": "A string representation of fixed bytes of length 32, encoded via HexPrefixed",
+      "type": "string"
+    },
+    "Root": {
+      "oneOf": [
+        {
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "@version",
+                "instructions"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v0"
+                  ]
+                },
+                "instructions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/BatchInstructionV0"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "@opcode"
+          ],
+          "properties": {
+            "@opcode": {
+              "type": "string",
+              "enum": [
+                "batch"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "oneOf": [
+            {
+              "deprecated": true,
+              "type": "object",
+              "required": [
+                "@version",
+                "base_amount",
+                "base_token",
+                "base_token_decimals",
+                "base_token_name",
+                "base_token_path",
+                "base_token_symbol",
+                "quote_amount",
+                "quote_token",
+                "receiver",
+                "sender"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v1"
+                  ]
+                },
+                "base_amount": {
+                  "$ref": "#/definitions/U256"
+                },
+                "base_token": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "base_token_decimals": {
+                  "type": "integer",
+                  "format": "uint8",
+                  "minimum": 0.0
+                },
+                "base_token_name": {
+                  "type": "string"
+                },
+                "base_token_path": {
+                  "$ref": "#/definitions/U256"
+                },
+                "base_token_symbol": {
+                  "type": "string"
+                },
+                "quote_amount": {
+                  "$ref": "#/definitions/U256"
+                },
+                "quote_token": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "receiver": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "sender": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "@version",
+                "base_amount",
+                "base_token",
+                "metadata",
+                "quote_amount",
+                "quote_token",
+                "receiver",
+                "sender"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v2"
+                  ]
+                },
+                "base_amount": {
+                  "$ref": "#/definitions/U256"
+                },
+                "base_token": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "metadata": {
+                  "$ref": "#/definitions/TokenOrderV2Metadata"
+                },
+                "quote_amount": {
+                  "$ref": "#/definitions/U256"
+                },
+                "quote_token": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "receiver": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "sender": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "@opcode"
+          ],
+          "properties": {
+            "@opcode": {
+              "type": "string",
+              "enum": [
+                "token_order"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "@version",
+                "contract_address",
+                "contract_calldata",
+                "eureka",
+                "sender"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v0"
+                  ]
+                },
+                "contract_address": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "contract_calldata": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                },
+                "eureka": {
+                  "type": "boolean"
+                },
+                "sender": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "@opcode"
+          ],
+          "properties": {
+            "@opcode": {
+              "type": "string",
+              "enum": [
+                "call"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "@version",
+                "instruction",
+                "path",
+                "timeout_height",
+                "timeout_timestamp"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v0"
+                  ]
+                },
+                "instruction": {
+                  "$ref": "#/definitions/Root"
+                },
+                "path": {
+                  "$ref": "#/definitions/U256"
+                },
+                "timeout_height": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                },
+                "timeout_timestamp": {
+                  "type": "integer",
+                  "format": "uint64",
+                  "minimum": 0.0
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "@opcode"
+          ],
+          "properties": {
+            "@opcode": {
+              "type": "string",
+              "enum": [
+                "forward"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TokenOrderV2Metadata": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "@kind",
+            "implementation",
+            "initializer"
+          ],
+          "properties": {
+            "@kind": {
+              "type": "string",
+              "enum": [
+                "initialize"
+              ]
+            },
+            "implementation": {
+              "$ref": "#/definitions/Bytes<HexPrefixed>"
+            },
+            "initializer": {
+              "$ref": "#/definitions/Bytes<HexPrefixed>"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "@kind",
+            "data"
+          ],
+          "properties": {
+            "@kind": {
+              "type": "string",
+              "enum": [
+                "escrow"
+              ]
+            },
+            "data": {
+              "$ref": "#/definitions/Bytes<HexPrefixed>"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "@kind",
+            "data"
+          ],
+          "properties": {
+            "@kind": {
+              "type": "string",
+              "enum": [
+                "unescrow"
+              ]
+            },
+            "data": {
+              "$ref": "#/definitions/Bytes<HexPrefixed>"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "@kind",
+            "metadata",
+            "solver_address"
+          ],
+          "properties": {
+            "@kind": {
+              "type": "string",
+              "enum": [
+                "solve"
+              ]
+            },
+            "metadata": {
+              "$ref": "#/definitions/Bytes<HexPrefixed>"
+            },
+            "solver_address": {
+              "$ref": "#/definitions/Bytes<HexPrefixed>"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "U256": {
+      "description": "256-bit unsigned integer, represented as a decimal string",
+      "type": "string",
+      "pattern": "\\d+"
+    }
+  }
+}

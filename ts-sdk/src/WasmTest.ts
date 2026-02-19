@@ -1,7 +1,11 @@
 import * as FileSystem from "@effect/platform/FileSystem"
 import * as Context from "effect/Context"
 import * as Effect from "effect/Effect"
+import { dual, identity, pipe } from "effect/Function"
 import * as Layer from "effect/Layer"
+import * as Schema from "effect/Schema"
+import * as String from "effect/String"
+import type * as Ucs03Ng from "./Ucs03Ng.js"
 
 const wasmModule = Effect.tryPromise(
   () => import("./internal/wasm/ucs03-zkgm-packet.js"),
@@ -14,42 +18,141 @@ const wasmUrl = new URL(
   import.meta.url,
 )
 
+export class WasmError extends Schema.TaggedError<WasmError>("WasmError")("WasmError", {
+  message: Schema.String,
+  cause: Schema.optional(Schema.Any),
+}) {}
+
+/**
+ * WARNING: Direct usage of this servivce is unsafe as return types are not validated.
+ *          Use the `Ucs03Ng` module instead for improved safety.
+ */
 export class WasmTest extends Context.Tag("WasmTest")<
   WasmTest,
   {
-    decodePacket: (packet: Uint8Array<ArrayBufferLike>) => Effect.Effect<any, any, never>
-    encodePacket: (packet: any) => Effect.Effect<any, any, never>
-    decodeAck: (shape: any, ack: Uint8Array<ArrayBufferLike>) => Effect.Effect<any, any, never>
-    encodeAck: (ack: any) => Effect.Effect<any, any, never>
-    decodeInstruction: (instruction: Uint8Array<ArrayBufferLike>) => Effect.Effect<any, any, never>
-    encodeInstruction: (instruction: any) => Effect.Effect<any, any, never>
-    packetShape: (instruction: any) => Effect.Effect<any, any, never>
+    decodePacket: (
+      packet: Uint8Array<ArrayBufferLike>,
+    ) => Effect.Effect<Ucs03Ng.ZkgmPacket, WasmError, never>
+    encodePacket: (
+      packet: Ucs03Ng.ZkgmPacket,
+    ) => Effect.Effect<Uint8Array<ArrayBufferLike>, WasmError, never>
+    decodeAck: {
+      (
+        shape: Ucs03Ng.RootShape,
+      ): (ack: Uint8Array<ArrayBufferLike>) => Effect.Effect<Ucs03Ng.Ack, never, never>
+      (
+        ack: Uint8Array<ArrayBufferLike>,
+        shape: Ucs03Ng.RootShape,
+      ): Effect.Effect<Ucs03Ng.Ack, WasmError, never>
+    }
+    encodeAck: (ack: Ucs03Ng.Ack) => Effect.Effect<Uint8Array<ArrayBufferLike>, WasmError, never>
+    decodeInstruction: (
+      instruction: Uint8Array<ArrayBufferLike>,
+    ) => Effect.Effect<Ucs03Ng.Root, WasmError, never>
+    encodeInstruction: (
+      instruction: Ucs03Ng.Root,
+    ) => Effect.Effect<Uint8Array<ArrayBufferLike>, WasmError, never>
+    packetShape: (instruction: Ucs03Ng.Root) => Effect.Effect<Ucs03Ng.RootShape, WasmError, never>
   }
 >() {}
 
 const make = (
-  wasm: WasmModule,
+  mod: WasmModule,
 ) => ({
   decodePacket: Effect.fn("decodePacket")(
-    (packet: Uint8Array) => Effect.try(() => wasm.decode_packet(packet)),
+    (packet: Uint8Array<ArrayBufferLike>) =>
+      pipe(
+        Effect.try({
+          try: () => mod.decode_packet(packet),
+          catch: (cause) => new WasmError({ message: "could not decode packet", cause }),
+        }),
+        Effect.map(identity<Ucs03Ng.ZkgmPacket>),
+      ),
   ),
   encodePacket: Effect.fn("encodePacket")(
-    (packet: any) => Effect.try(() => wasm.encode_packet(packet)),
+    (packet: Ucs03Ng.ZkgmPacket) =>
+      pipe(
+        Effect.try({
+          try: () => mod.encode_packet(packet),
+          catch: (cause) =>
+            new WasmError({
+              message: "could not encode packet" + (`${cause}`),
+              cause,
+            }),
+        }),
+        Effect.map(String.substring(2)),
+        Effect.flatMap(Schema.decode(Schema.Uint8ArrayFromHex)),
+        Effect.catchTag("ParseError", (cause) =>
+          new WasmError({
+            message: cause.message,
+            cause,
+          })),
+      ),
   ),
-  decodeAck: Effect.fn("decodePacket")(
-    (shape: any, ack: Uint8Array) => Effect.try(() => wasm.decode_ack(shape, ack)),
+  decodeAck: dual(2, (ack, shape) =>
+    pipe(
+      Effect.try({
+        try: () => mod.decode_ack(shape, ack),
+        catch: (cause) =>
+          new WasmError({
+            message: "could not encode packet" + (`${cause}`),
+            cause,
+          }),
+      }),
+      Effect.map(identity<Ucs03Ng.Ack>),
+      Effect.withSpan("decodeAck"),
+    )),
+  encodeAck: Effect.fn("encodeAck")(
+    (ack: Ucs03Ng.Ack) =>
+      pipe(
+        Effect.try({
+          try: () => mod.encode_ack(ack),
+          catch: (cause) =>
+            new WasmError({
+              message: "could not encode ack" + (`${cause}`),
+              cause,
+            }),
+        }),
+        Effect.map(identity<Uint8Array<ArrayBufferLike>>),
+      ),
   ),
-  encodeAck: Effect.fn("encodePacket")(
-    (ack: any) => Effect.try(() => wasm.encode_ack(ack)),
+  decodeInstruction: Effect.fn("decodeInstruction")(
+    (instruction: Uint8Array<ArrayBufferLike>) =>
+      pipe(
+        Effect.try({
+          try: () => mod.decode_instruction(instruction),
+          catch: (cause) => new WasmError({ message: "could not decode instruction", cause }),
+        }),
+        Effect.map(identity<Ucs03Ng.Root>),
+      ),
   ),
-  decodeInstruction: Effect.fn("encodePacket")(
-    (instruction: Uint8Array) => Effect.try(() => wasm.decode_instruction(instruction)),
+  encodeInstruction: Effect.fn("encodeInstruction")(
+    (instruction: Ucs03Ng.Root) =>
+      pipe(
+        Effect.try({
+          try: () => mod.encode_instruction(instruction),
+          catch: (cause) =>
+            new WasmError({
+              message: "could not encode instruction" + (`${cause}`),
+              cause,
+            }),
+        }),
+        Effect.map(identity<Uint8Array<ArrayBufferLike>>),
+      ),
   ),
-  encodeInstruction: Effect.fn("encodePacket")(
-    (instruction: any) => Effect.try(() => wasm.encode_instruction(instruction)),
-  ),
-  packetShape: Effect.fn("encodePacket")(
-    (instruction: any) => Effect.try(() => wasm.packet_shape(instruction)),
+  packetShape: Effect.fn("packetShape")(
+    (instruction: Ucs03Ng.Root) =>
+      pipe(
+        Effect.try({
+          try: () => mod.packet_shape(instruction),
+          catch: (cause) =>
+            new WasmError({
+              message: "could not determine packet shape" + (`${cause}`),
+              cause,
+            }),
+        }),
+        Effect.map(identity<Ucs03Ng.RootShape>),
+      ),
   ),
 })
 
@@ -68,46 +171,7 @@ export const layerPlatform = Layer.scoped(
     const fs = yield* FileSystem.FileSystem
     const wasm = yield* wasmModule
     const bytes = yield* fs.readFile(wasmUrl.pathname)
-    yield* Effect.tryPromise(() => wasm.default({ module_or_path: bytes }))
+    yield* Effect.tryPromise(() => wasm.default(bytes))
     return make(wasm)
   }),
 )
-// function isNodeRuntime(): boolean {
-//   return typeof process !== "undefined" && !!process.versions?.node
-// }
-
-// export class WasmTest extends Effect.Service<WasmTest>()("WasmTest", {
-//   scoped: Effect.fn(function*(workerUrl?: string) {
-//     const wasm = yield* Effect.tryPromise(() => import("./internal/wasm/ucs03-zkgm-packet.js"))
-
-//     yield* Effect.log({ wasm })
-
-//     const wasmUrl = workerUrl ?? new URL(
-//       "./internal/wasm/ucs03-zkgm-packet_bg.wasm",
-//       import.meta.url,
-//     )
-
-//     if (isNodeRuntime()) {
-//       const { readFile } = yield* Effect.tryPromise(() => import("node:fs/promises"))
-//       const bytes = yield* Effect.tryPromise(() => readFile(wasmUrl))
-//       yield* Effect.tryPromise(() => wasm.default({ module_or_path: bytes }))
-//     } else {
-//       console.log("TRYING TO INSTANTIATE IN BROWSER")
-//       yield* Effect.tryPromise(() => wasm.default(workerUrl))
-//     }
-
-//     const decodePacket = Effect.fn("decodePacket")(
-//       (packet: Uint8Array) => Effect.try(() => wasm.decode_packet(packet)),
-//     )
-
-//     const encodePacket = Effect.fn("encodePacket")(
-//       (packet: Uint8Array) => Effect.try(() => wasm.encode_packet(packet)),
-//     )
-
-//     return {
-//       wasm,
-//       decodePacket,
-//       encodePacket,
-//     } as const
-//   }),
-// }) {}
