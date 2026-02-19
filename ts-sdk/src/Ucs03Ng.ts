@@ -2,28 +2,49 @@ import * as Effect from "effect/Effect"
 import { pipe } from "effect/Function"
 import * as ParseResult from "effect/ParseResult"
 import * as Schema from "effect/Schema"
+import * as Uint256 from "./schema/uint256.js"
+import * as Uint64 from "./schema/uint64.js"
 import * as WasmTest from "./WasmTest.js"
 
-export const FixedBytes_HexPrefixed__32_ = Schema.String.pipe(
-  Schema.annotations({
-    description: "A string representation of fixed bytes of length 32, encoded via HexPrefixed",
-  }),
-)
-export type FixedBytes_HexPrefixed__32_ = typeof FixedBytes_HexPrefixed__32_
+const HexPrefixed = (description: string) =>
+  Schema.String.pipe(
+    Schema.pattern(/^0x([0-9a-f]{2})*$/),
+    Schema.annotations({
+      description,
+      arbitrary: () => (fc) =>
+        fc.integer({ min: 0, max: 128 }).chain(n =>
+          fc.string({
+            unit: fc.constantFrom(..."0123456789abcdef"),
+            maxLength: n * 2,
+            minLength: n * 2,
+          })
+        ).map(s => `0x${s}`),
+    }),
+  )
 
-export const U256 = Schema.String.pipe(
-  Schema.annotations({
-    description: "256-bit unsigned integer, represented as a decimal string",
-  }),
-)
-export type U256 = typeof U256.Type
+const FixedHexPrefixed = (bytes: number) => {
+  const len = bytes * 2
+  return Schema.String.pipe(
+    Schema.pattern(new RegExp(`^0x[0-9a-f]{${len}}$`)),
+    Schema.annotations({
+      description: `A hex-prefixed string of exactly ${bytes} bytes`,
+      arbitrary: () => (fc) =>
+        fc.string({ unit: fc.constantFrom(..."0123456789abcdef"), maxLength: len, minLength: len })
+          .map(s => `0x${s}`),
+    }),
+  )
+}
 
-export const Bytes_HexPrefixed_ = Schema.String.pipe(
-  Schema.annotations({
-    description: "A string representation of bytes, encoded via HexPrefixed",
-  }),
+export const BytesHexPrefixed32 = FixedHexPrefixed(32)
+export type BytesHexPrefixed32 = typeof BytesHexPrefixed32.Type
+
+export const BytesHexPrefixed20 = FixedHexPrefixed(20)
+export type BytesHexPrefixed20 = typeof BytesHexPrefixed20.Type
+
+export const BytesHexPrefixed = HexPrefixed(
+  "A string representation of bytes, encoded via HexPrefixed",
 )
-export type Bytes_HexPrefixed_ = typeof Bytes_HexPrefixed_.Type
+export type BytesHexPrefixed = typeof BytesHexPrefixed.Type
 
 export const ForwardV0Ack = Schema.Struct({})
 export type ForwardV0Ack = typeof ForwardV0Ack.Type
@@ -33,20 +54,20 @@ export const BatchInstructionV0Ack = Schema.Union(
     Schema.Union(
       Schema.Literal("protocol"),
       Schema.Struct({
-        market_maker: Schema.Struct({ market_maker: Bytes_HexPrefixed_ }),
+        market_maker: Schema.Struct({ market_maker: BytesHexPrefixed }),
       }),
     ),
     Schema.Union(
       Schema.Literal("protocol"),
       Schema.Struct({
-        market_maker: Schema.Struct({ market_maker: Bytes_HexPrefixed_ }),
+        market_maker: Schema.Struct({ market_maker: BytesHexPrefixed }),
       }),
     ),
   ),
   Schema.Union(
     Schema.Union(
       Schema.Literal("non_eureka"),
-      Schema.Struct({ eureka: Bytes_HexPrefixed_ }),
+      Schema.Struct({ eureka: BytesHexPrefixed }),
     ),
   ),
 )
@@ -55,7 +76,7 @@ export type BatchInstructionV0Ack = typeof BatchInstructionV0Ack.Type
 export const CallAck = Schema.Union(
   Schema.Union(
     Schema.Literal("non_eureka"),
-    Schema.Struct({ eureka: Bytes_HexPrefixed_ }),
+    Schema.Struct({ eureka: BytesHexPrefixed }),
   ),
 )
 export type CallAck = typeof CallAck.Type
@@ -64,13 +85,13 @@ export const TokenOrderAck = Schema.Union(
   Schema.Union(
     Schema.Literal("protocol"),
     Schema.Struct({
-      market_maker: Schema.Struct({ market_maker: Bytes_HexPrefixed_ }),
+      market_maker: Schema.Struct({ market_maker: BytesHexPrefixed }),
     }),
   ),
   Schema.Union(
     Schema.Literal("protocol"),
     Schema.Struct({
-      market_maker: Schema.Struct({ market_maker: Bytes_HexPrefixed_ }),
+      market_maker: Schema.Struct({ market_maker: BytesHexPrefixed }),
     }),
   ),
 )
@@ -99,7 +120,7 @@ export type RootAck = typeof RootAck.Type
 
 export const Ack = Schema.Union(
   Schema.Struct({ success: RootAck }),
-  Schema.Struct({ failure: Bytes_HexPrefixed_ }),
+  Schema.Struct({ failure: BytesHexPrefixed }),
 ).pipe(
   Schema.annotations({ title: "Ack" }),
 )
@@ -108,192 +129,130 @@ export type Ack = typeof Ack.Type
 export const TokenOrderV2Metadata = Schema.Union(
   Schema.Struct({
     "@kind": Schema.Literal("initialize"),
-    "implementation": Bytes_HexPrefixed_,
-    "initializer": Bytes_HexPrefixed_,
+    "implementation": BytesHexPrefixed,
+    "initializer": BytesHexPrefixed,
   }),
   Schema.Struct({
     "@kind": Schema.Literal("escrow"),
-    "data": Bytes_HexPrefixed_,
+    "data": BytesHexPrefixed,
   }),
   Schema.Struct({
     "@kind": Schema.Literal("unescrow"),
-    "data": Bytes_HexPrefixed_,
+    "data": BytesHexPrefixed,
   }),
   Schema.Struct({
     "@kind": Schema.Literal("solve"),
-    "metadata": Bytes_HexPrefixed_,
-    "solver_address": Bytes_HexPrefixed_,
+    "metadata": BytesHexPrefixed,
+    "solver_address": BytesHexPrefixed,
   }),
 )
 export type TokenOrderV2Metadata = typeof TokenOrderV2Metadata.Type
 
+export const TokenOrderV1 = Schema.Struct({
+  "@version": Schema.Literal("v1"),
+  "@opcode": Schema.Literal("token_order"),
+  "base_amount": Uint256.Uint256,
+  "base_token": BytesHexPrefixed,
+  "base_token_decimals": Schema.Uint8.pipe(
+    Schema.int(),
+  ),
+  "base_token_name": Schema.String,
+  "base_token_path": Uint256.Uint256,
+  "base_token_symbol": Schema.String,
+  "quote_amount": Uint256.Uint256,
+  "quote_token": BytesHexPrefixed,
+  "receiver": BytesHexPrefixed,
+  "sender": BytesHexPrefixed,
+})
+export type TokenOrderV1 = typeof TokenOrderV1.Type
+
+export const TokenOrderV2 = Schema.Struct({
+  "@version": Schema.Literal("v2"),
+  "@opcode": Schema.Literal("token_order"),
+  "base_amount": Uint256.Uint256,
+  "base_token": BytesHexPrefixed,
+  "metadata": TokenOrderV2Metadata,
+  "quote_amount": Uint256.Uint256,
+  "quote_token": BytesHexPrefixed,
+  "receiver": BytesHexPrefixed,
+  "sender": BytesHexPrefixed,
+})
+export type TokenOrderV2 = typeof TokenOrderV2.Type
+
+export const TokenOrder = Schema.Union(
+  TokenOrderV1,
+  TokenOrderV2,
+)
+export type TokenOrder = typeof TokenOrder.Type
+
+export const Call = Schema.Struct({
+  "@version": Schema.Literal("v0"),
+  "@opcode": Schema.Literal("call"),
+  "contract_address": BytesHexPrefixed,
+  "contract_calldata": BytesHexPrefixed,
+  "eureka": Schema.Boolean,
+  "sender": BytesHexPrefixed,
+})
+export type Call = typeof Call.Type
+
 export const BatchInstructionV0 = Schema.Union(
-  Schema.Union(
-    Schema.Struct({
-      "@version": Schema.Literal("v1"),
-      "@opcode": Schema.String, // XXX: replace with string literal union
-      "base_amount": U256,
-      "base_token": Bytes_HexPrefixed_,
-      "base_token_decimals": Schema.Number.pipe(
-        Schema.annotations({ format: "uint8" }),
-        Schema.int(),
-        Schema.greaterThan(0),
-      ),
-      "base_token_name": Schema.String,
-      "base_token_path": U256,
-      "base_token_symbol": Schema.String,
-      "quote_amount": U256,
-      "quote_token": Bytes_HexPrefixed_,
-      "receiver": Bytes_HexPrefixed_,
-      "sender": Bytes_HexPrefixed_,
-    }),
-    Schema.Struct({
-      "@version": Schema.Literal("v2"),
-      "@opcode": Schema.String, // XXX: replace with string literal union
-      "base_amount": U256,
-      "base_token": Bytes_HexPrefixed_,
-      "metadata": TokenOrderV2Metadata,
-      "quote_amount": U256,
-      "quote_token": Bytes_HexPrefixed_,
-      "receiver": Bytes_HexPrefixed_,
-      "sender": Bytes_HexPrefixed_,
-    }),
-  ),
-  Schema.Union(
-    Schema.Struct({
-      "@version": Schema.Literal("v0"),
-      "@opcode": Schema.String, // XXX: replace with string literal union
-      "contract_address": Bytes_HexPrefixed_,
-      "contract_calldata": Bytes_HexPrefixed_,
-      "eureka": Schema.Boolean,
-      "sender": Bytes_HexPrefixed_,
-    }),
-  ),
+  TokenOrder,
+  Call,
 )
 export type BatchInstructionV0 = typeof BatchInstructionV0.Type
 
-export type Root =
-  // TODO: replace with encoded types as union members are extracted
-  | {
-    readonly "@version": "v0"
-    readonly "@opcode": "batch"
-    readonly "instructions": ReadonlyArray<BatchInstructionV0>
-  }
-  | (
-    | {
-      readonly "@version": "v1"
-      readonly "@opcode": "token_order"
-      readonly "base_amount": string
-      readonly "base_token": string
-      readonly "base_token_decimals": number
-      readonly "base_token_name": string
-      readonly "base_token_path": string
-      readonly "base_token_symbol": string
-      readonly "quote_amount": string
-      readonly "quote_token": string
-      readonly "receiver": string
-      readonly "sender": string
-    }
-    | {
-      readonly "@version": "v2"
-      readonly "@opcode": "token_order"
-      readonly "base_amount": string
-      readonly "base_token": string
-      readonly "metadata": TokenOrderV2Metadata
-      readonly "quote_amount": string
-      readonly "quote_token": string
-      readonly "receiver": string
-      readonly "sender": string
-    }
-  )
-  | {
-    readonly "@version": "v0"
-    readonly "@opcode": "call"
-    readonly "contract_address": string
-    readonly "contract_calldata": string
-    readonly "eureka": boolean
-    readonly "sender": string
-  }
-  | {
-    readonly "@version": "v0"
-    readonly "instruction": Root
-    readonly "path": string
-    readonly "timeout_height": number
-    readonly "timeout_timestamp": number
-  }
+export const Batch = Schema.Struct({
+  "@version": Schema.Literal("v0"),
+  "@opcode": Schema.Literal("batch"),
+  "instructions": Schema.Array(BatchInstructionV0),
+})
+export type Batch = typeof Batch.Type
+
+export interface Forward {
+  readonly "@version": "v0"
+  readonly "@opcode": "forward"
+  readonly "instruction": Root
+  readonly "path": bigint
+  readonly "timeout_height": bigint
+  readonly "timeout_timestamp": bigint
+}
+
+export interface ForwardEncoded {
+  readonly "@version": "v0"
+  readonly "@opcode": "forward"
+  readonly "instruction": RootEncoded
+  readonly "path": string
+  readonly "timeout_height": string
+  readonly "timeout_timestamp": string
+}
+
+export const Forward = Schema.Struct({
+  "@version": Schema.Literal("v0"),
+  "@opcode": Schema.Literal("forward"),
+  "instruction": Schema.suspend((): Schema.Schema<Root, RootEncoded> => Root),
+  "path": Uint256.Uint256,
+  "timeout_height": Uint64.Uint64,
+  "timeout_timestamp": Uint64.Uint64,
+})
+
+export type Root = Batch | TokenOrder | Call | Forward
+export type RootEncoded =
+  | typeof Batch.Encoded
+  | typeof TokenOrder.Encoded
+  | typeof Call.Encoded
+  | ForwardEncoded
 
 export const Root = Schema.Union(
-  Schema.Union(
-    Schema.Struct({
-      "@version": Schema.Literal("v0"),
-      "@opcode": Schema.Literal("batch"),
-      "instructions": Schema.Array(BatchInstructionV0),
-    }),
-  ),
-  Schema.Union(
-    Schema.Struct({
-      "@version": Schema.Literal("v1"),
-      "@opcode": Schema.Literal("token_order"),
-      "base_amount": U256,
-      "base_token": Bytes_HexPrefixed_,
-      "base_token_decimals": Schema.Number.pipe(
-        Schema.annotations({ format: "uint8" }),
-        Schema.int(),
-        Schema.greaterThan(0),
-      ),
-      "base_token_name": Schema.String,
-      "base_token_path": U256,
-      "base_token_symbol": Schema.String,
-      "quote_amount": U256,
-      "quote_token": Bytes_HexPrefixed_,
-      "receiver": Bytes_HexPrefixed_,
-      "sender": Bytes_HexPrefixed_,
-    }),
-    Schema.Struct({
-      "@version": Schema.Literal("v2"),
-      "@opcode": Schema.Literal("token_order"),
-      "base_amount": U256,
-      "base_token": Bytes_HexPrefixed_,
-      "metadata": TokenOrderV2Metadata,
-      "quote_amount": U256,
-      "quote_token": Bytes_HexPrefixed_,
-      "receiver": Bytes_HexPrefixed_,
-      "sender": Bytes_HexPrefixed_,
-    }),
-  ),
-  Schema.Union(
-    Schema.Struct({
-      "@version": Schema.Literal("v0"),
-      "@opcode": Schema.Literal("call"),
-      "contract_address": Bytes_HexPrefixed_,
-      "contract_calldata": Bytes_HexPrefixed_,
-      "eureka": Schema.Boolean,
-      "sender": Bytes_HexPrefixed_,
-    }),
-  ),
-  Schema.Union(
-    Schema.Struct({
-      "@version": Schema.Literal("v0"),
-      "instruction": Schema.suspend((): Schema.Schema<Root> => Root),
-      "path": U256,
-      "timeout_height": Schema.Number.pipe(
-        Schema.annotations({ format: "uint64" }),
-        Schema.int(),
-        Schema.greaterThan(0),
-      ),
-      "timeout_timestamp": Schema.Number.pipe(
-        Schema.annotations({ format: "uint64" }),
-        Schema.int(),
-        Schema.greaterThan(0),
-      ),
-    }),
-  ),
+  Batch,
+  TokenOrder,
+  Call,
+  Forward,
 )
 
 export const ZkgmPacket = Schema.Struct({
   instruction: Root,
-  path: U256,
-  salt: FixedBytes_HexPrefixed__32_,
+  path: Uint256.Uint256,
+  salt: BytesHexPrefixed32,
 }).pipe(
   Schema.annotations({ title: "ZkgmPacket" }),
 )
@@ -330,13 +289,13 @@ export const ZkgmPacketFromUint8Array = Schema.transformOrFail(
   Schema.Uint8ArrayFromSelf,
   ZkgmPacket,
   {
-    decode: (fromA, _options, ast) =>
+    decode: (fromA, _options, ast, _fromI) =>
       pipe(
         WasmTest.WasmTest,
         Effect.andThen((wasm) => wasm.decodePacket(fromA)),
         Effect.mapError((e) => new ParseResult.Type(ast, fromA, e.message)),
       ),
-    encode: (toI, _options, ast) =>
+    encode: (toI, _options, ast, _toA) =>
       pipe(
         WasmTest.WasmTest,
         Effect.andThen((wasm) => wasm.encodePacket(toI)),

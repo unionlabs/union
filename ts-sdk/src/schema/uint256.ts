@@ -13,7 +13,7 @@ export class Uint256FromSelf extends S.BigIntFromSelf.pipe(
 export class Uint256 extends S.BigInt.pipe(
   S.betweenBigInt(0n, MAX_UINT256, {
     identifier: "Uint256",
-    description: "a 256-bit unsigned integer, in a string",
+    description: "a 256-bit unsigned integer, represented as a decimal string",
     arbitrary: () => fc => fc.bigInt(0n, MAX_UINT256),
   }),
 ) {}

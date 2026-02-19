@@ -1,8 +1,15 @@
+BigInt["prototype"].toJSON = function() {
+  return `BigInt(${this.toString()})`
+}
+
 import * as NodeContext from "@effect/platform-node/NodeContext"
 import { assert, describe, it } from "@effect/vitest"
+import * as Arbitrary from "effect/Arbitrary"
 import * as Effect from "effect/Effect"
+import * as fc from "effect/FastCheck"
 import { pipe } from "effect/Function"
 import * as Layer from "effect/Layer"
+import * as Runtime from "effect/Runtime"
 import * as Schema from "effect/Schema"
 
 import * as Ucs03Ng from "@unionlabs/sdk/Ucs03Ng"
@@ -13,102 +20,128 @@ const WasmTestTest = pipe(
   Layer.provideMerge(NodeContext.layer),
 )
 
-const PACKET =
+const PACKET_HEX =
   `79176e1d5f2779e14b2f5f885bfe7b35e78802643522ce0dad5cac4e4a44271f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000066000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001e00000000000000000000000000000000000000000000000000000000000002710000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000002600000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000002a00000000000000000000000000000000000000000000000000000000000002710000000000000000000000000000000000000000000000000000000000000001415ee7c367f4232241028c36e720803100757c6e9000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b356700000000000000000000000000000000000000000000000000000000000000000014e53dcec07d16d88e386ae0710e86d9a400f83c31000000000000000000000000000000000000000000000000000000000000000000000000000000000000000442414259000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007426162796c6f6e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000047562626e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000001415ee7c367f4232241028c36e720803100757c6e9000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b3567000000000000000000000000000000000000000000000000000000000000000000b27b22626f6e64223a7b22616d6f756e74223a223130303030222c2273616c74223a22307833313333303831396135613232336439376163373134663239616535653361646265396565663833383233373830663761393063636536363461626138366565222c226578706563746564223a2239373237222c22726563697069656e74223a2262626e3168637533306461647770686638397533783375366a327a35387233376339616b687866637330227d7d0000000000000000000000000000`
+
+const PACKET_BYTES = Uint8Array.from(Buffer.from(PACKET_HEX, "hex"))
+
+const PACKET_DECODED = {
+  salt: "0x79176e1d5f2779e14b2f5f885bfe7b35e78802643522ce0dad5cac4e4a44271f",
+  path: 0n,
+  instruction: {
+    "@opcode": "batch",
+    "@version": "v0",
+    "instructions": [
+      {
+        "@opcode": "token_order",
+        "@version": "v1",
+        "sender": "0x15ee7c367f4232241028c36e720803100757c6e9",
+        "receiver":
+          "0x62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b3567",
+        "base_token": "0xe53dcec07d16d88e386ae0710e86d9a400f83c31",
+        "base_amount": 10000n,
+        "base_token_symbol": "BABY",
+        "base_token_name": "Babylon",
+        "base_token_decimals": 6,
+        "base_token_path": 1n,
+        "quote_token": "0x7562626e",
+        "quote_amount": 10000n,
+      },
+      {
+        "@opcode": "call",
+        "@version": "v0",
+        "sender": "0x15ee7c367f4232241028c36e720803100757c6e9",
+        "eureka": false,
+        "contract_address":
+          "0x62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b3567",
+        "contract_calldata":
+          "0x7b22626f6e64223a7b22616d6f756e74223a223130303030222c2273616c74223a22307833313333303831396135613232336439376163373134663239616535653361646265396565663833383233373830663761393063636536363461626138366565222c226578706563746564223a2239373237222c22726563697069656e74223a2262626e3168637533306461647770686638397533783375366a327a35387233376339616b687866637330227d7d",
+      },
+    ],
+  },
+} as const
 
 describe("WasmTest", () => {
   it.layer(WasmTestTest)((it) => {
     it.effect("raw packet decode", () =>
       Effect.gen(function*() {
         const wasm = yield* WasmTest.WasmTest
-        const buf = Uint8Array.from(Buffer.from(PACKET, "hex"))
-        const decoded = yield* wasm.decodePacket(buf)
+        const decoded = yield* wasm.decodePacket(PACKET_BYTES)
         const encoded = yield* wasm.encodePacket(decoded)
-        assert.deepStrictEqual(encoded, buf)
-        assert.deepStrictEqual(
-          decoded,
-          {
-            salt: "0x79176e1d5f2779e14b2f5f885bfe7b35e78802643522ce0dad5cac4e4a44271f",
-            path: "0",
-            instruction: {
-              "@opcode": "batch",
-              "@version": "v0",
-              "instructions": [
-                {
-                  "@opcode": "token_order",
-                  "@version": "v1",
-                  "sender": "0x15ee7c367f4232241028c36e720803100757c6e9",
-                  "receiver":
-                    "0x62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b3567",
-                  "base_token": "0xe53dcec07d16d88e386ae0710e86d9a400f83c31",
-                  "base_amount": "10000",
-                  "base_token_symbol": "BABY",
-                  "base_token_name": "Babylon",
-                  "base_token_decimals": 6,
-                  "base_token_path": "1",
-                  "quote_token": "0x7562626e",
-                  "quote_amount": "10000",
-                },
-                {
-                  "@opcode": "call",
-                  "@version": "v0",
-                  "sender": "0x15ee7c367f4232241028c36e720803100757c6e9",
-                  "eureka": false,
-                  "contract_address":
-                    "0x62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b3567",
-                  "contract_calldata":
-                    "0x7b22626f6e64223a7b22616d6f756e74223a223130303030222c2273616c74223a22307833313333303831396135613232336439376163373134663239616535653361646265396565663833383233373830663761393063636536363461626138366565222c226578706563746564223a2239373237222c22726563697069656e74223a2262626e3168637533306461647770686638397533783375366a327a35387233376339616b687866637330227d7d",
-                },
-              ],
-            },
-          },
-        )
+        assert.deepStrictEqual(encoded, PACKET_BYTES)
+        const expected = yield* Schema.encode(Ucs03Ng.ZkgmPacket)(PACKET_DECODED)
+        assert.deepStrictEqual(decoded, expected)
       }))
 
     it.effect("schema packet iso", () =>
       Effect.gen(function*() {
-        const buf = Uint8Array.from(Buffer.from(PACKET, "hex"))
-        const decoded = yield* Schema.decode(Ucs03Ng.ZkgmPacketFromUint8Array)(buf)
+        const decoded = yield* Schema.decode(Ucs03Ng.ZkgmPacketFromUint8Array)(PACKET_BYTES)
         const encoded = yield* Schema.encode(Ucs03Ng.ZkgmPacketFromUint8Array)(decoded)
-        assert.deepStrictEqual(
-          decoded,
-          {
-            salt: "0x79176e1d5f2779e14b2f5f885bfe7b35e78802643522ce0dad5cac4e4a44271f",
-            path: "0",
-            instruction: {
-              "@opcode": "batch",
+        assert.deepStrictEqual(decoded, PACKET_DECODED)
+        assert.deepStrictEqual(encoded, PACKET_BYTES)
+      }))
+
+    it.effect("forward round trip", () =>
+      Effect.gen(function*() {
+        const wasm = yield* WasmTest.WasmTest
+        const packet = yield* Schema.encode(Ucs03Ng.ZkgmPacket)({
+          salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
+          path: 0n,
+          instruction: {
+            "@version": "v0",
+            "@opcode": "forward",
+            "path": 0n,
+            "timeout_height": 100n,
+            "timeout_timestamp": 200n,
+            "instruction": {
               "@version": "v0",
-              "instructions": [
-                {
-                  "@opcode": "token_order",
-                  "@version": "v1",
-                  "sender": "0x15ee7c367f4232241028c36e720803100757c6e9",
-                  "receiver":
-                    "0x62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b3567",
-                  "base_token": "0xe53dcec07d16d88e386ae0710e86d9a400f83c31",
-                  "base_amount": "10000",
-                  "base_token_symbol": "BABY",
-                  "base_token_name": "Babylon",
-                  "base_token_decimals": 6,
-                  "base_token_path": "1",
-                  "quote_token": "0x7562626e",
-                  "quote_amount": "10000",
-                },
-                {
-                  "@opcode": "call",
-                  "@version": "v0",
-                  "sender": "0x15ee7c367f4232241028c36e720803100757c6e9",
-                  "eureka": false,
-                  "contract_address":
-                    "0x62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b3567",
-                  "contract_calldata":
-                    "0x7b22626f6e64223a7b22616d6f756e74223a223130303030222c2273616c74223a22307833313333303831396135613232336439376163373134663239616535653361646265396565663833383233373830663761393063636536363461626138366565222c226578706563746564223a2239373237222c22726563697069656e74223a2262626e3168637533306461647770686638397533783375366a327a35387233376339616b687866637330227d7d",
-                },
-              ],
+              "@opcode": "call",
+              "sender": "0x00",
+              "eureka": false,
+              "contract_address": "0x00",
+              "contract_calldata": "0x00",
             },
           },
+        })
+        console.log("wire form:", JSON.stringify(packet, null, 2))
+        const bytes = yield* wasm.encodePacket(packet)
+        const decoded = yield* wasm.decodePacket(bytes)
+        console.log("wasm returned:", JSON.stringify(decoded, null, 2))
+      }))
+
+    it.effect("schema roundtrip (no wasm)", () =>
+      Effect.gen(function*() {
+        const arb = Arbitrary.make(Ucs03Ng.ZkgmPacket)
+        fc.assert(
+          fc.property(arb, (packet) => {
+            const encoded = Schema.encodeSync(Ucs03Ng.ZkgmPacket)(packet)
+            const decoded = Schema.decodeSync(Ucs03Ng.ZkgmPacket)(encoded)
+            assert.deepStrictEqual(decoded, packet)
+          }),
         )
-        assert.deepStrictEqual(encoded, buf)
+      }))
+
+    it.effect.skip("wasm roundtrip (no schema transforms)", () =>
+      Effect.gen(function*() {
+        const runtime = yield* Effect.runtime()
+        const run = Runtime.runPromise(runtime)
+        const arb = Arbitrary.make(Ucs03Ng.ZkgmPacket)
+        yield* Effect.promise(() =>
+          fc.assert(
+            fc.asyncProperty(arb, (packet) =>
+              run(
+                Effect.gen(function*() {
+                  const wasm = yield* WasmTest.WasmTest
+                  const wireForm = yield* Schema.encode(Ucs03Ng.ZkgmPacket)(packet)
+                  const bytes = yield* wasm.encodePacket(wireForm)
+                  const decoded = yield* wasm.decodePacket(bytes)
+                  const decodedPacket = yield* Schema.decode(Ucs03Ng.ZkgmPacket)(decoded)
+                  assert.deepStrictEqual(decodedPacket, packet)
+                }),
+              )),
+            { numRuns: 100, size: "small" },
+          )
+        )
       }))
   })
 })

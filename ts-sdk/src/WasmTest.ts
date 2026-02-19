@@ -32,27 +32,33 @@ export class WasmTest extends Context.Tag("WasmTest")<
   {
     decodePacket: (
       packet: Uint8Array<ArrayBufferLike>,
-    ) => Effect.Effect<Ucs03Ng.ZkgmPacket, WasmError, never>
+    ) => Effect.Effect<typeof Ucs03Ng.ZkgmPacket.Encoded, WasmError, never>
     encodePacket: (
-      packet: Ucs03Ng.ZkgmPacket,
+      packet: typeof Ucs03Ng.ZkgmPacket.Encoded,
     ) => Effect.Effect<Uint8Array<ArrayBufferLike>, WasmError, never>
     decodeAck: {
       (
-        shape: Ucs03Ng.RootShape,
-      ): (ack: Uint8Array<ArrayBufferLike>) => Effect.Effect<Ucs03Ng.Ack, never, never>
+        shape: typeof Ucs03Ng.RootShape.Encoded,
+      ): (
+        ack: Uint8Array<ArrayBufferLike>,
+      ) => Effect.Effect<typeof Ucs03Ng.Ack.Encoded, never, never>
       (
         ack: Uint8Array<ArrayBufferLike>,
-        shape: Ucs03Ng.RootShape,
-      ): Effect.Effect<Ucs03Ng.Ack, WasmError, never>
+        shape: typeof Ucs03Ng.RootShape.Encoded,
+      ): Effect.Effect<typeof Ucs03Ng.Ack.Encoded, WasmError, never>
     }
-    encodeAck: (ack: Ucs03Ng.Ack) => Effect.Effect<Uint8Array<ArrayBufferLike>, WasmError, never>
+    encodeAck: (
+      ack: typeof Ucs03Ng.Ack.Encoded,
+    ) => Effect.Effect<Uint8Array<ArrayBufferLike>, WasmError, never>
     decodeInstruction: (
       instruction: Uint8Array<ArrayBufferLike>,
-    ) => Effect.Effect<Ucs03Ng.Root, WasmError, never>
+    ) => Effect.Effect<typeof Ucs03Ng.Root.Encoded, WasmError, never>
     encodeInstruction: (
-      instruction: Ucs03Ng.Root,
+      instruction: typeof Ucs03Ng.Root.Encoded,
     ) => Effect.Effect<Uint8Array<ArrayBufferLike>, WasmError, never>
-    packetShape: (instruction: Ucs03Ng.Root) => Effect.Effect<Ucs03Ng.RootShape, WasmError, never>
+    packetShape: (
+      instruction: typeof Ucs03Ng.Root.Encoded,
+    ) => Effect.Effect<typeof Ucs03Ng.RootShape.Encoded, WasmError, never>
   }
 >() {}
 
@@ -66,11 +72,11 @@ const make = (
           try: () => mod.decode_packet(packet),
           catch: (cause) => new WasmError({ message: "could not decode packet", cause }),
         }),
-        Effect.map(identity<Ucs03Ng.ZkgmPacket>),
+        Effect.map(identity<typeof Ucs03Ng.ZkgmPacket.Encoded>),
       ),
   ),
   encodePacket: Effect.fn("encodePacket")(
-    (packet: Ucs03Ng.ZkgmPacket) =>
+    (packet: typeof Ucs03Ng.ZkgmPacket.Encoded) =>
       pipe(
         Effect.try({
           try: () => mod.encode_packet(packet),
@@ -99,11 +105,11 @@ const make = (
             cause,
           }),
       }),
-      Effect.map(identity<Ucs03Ng.Ack>),
+      Effect.map(identity<typeof Ucs03Ng.Ack.Encoded>),
       Effect.withSpan("decodeAck"),
     )),
   encodeAck: Effect.fn("encodeAck")(
-    (ack: Ucs03Ng.Ack) =>
+    (ack: typeof Ucs03Ng.Ack.Encoded) =>
       pipe(
         Effect.try({
           try: () => mod.encode_ack(ack),
@@ -123,11 +129,11 @@ const make = (
           try: () => mod.decode_instruction(instruction),
           catch: (cause) => new WasmError({ message: "could not decode instruction", cause }),
         }),
-        Effect.map(identity<Ucs03Ng.Root>),
+        Effect.map(identity<typeof Ucs03Ng.Root.Encoded>),
       ),
   ),
   encodeInstruction: Effect.fn("encodeInstruction")(
-    (instruction: Ucs03Ng.Root) =>
+    (instruction: typeof Ucs03Ng.Root.Encoded) =>
       pipe(
         Effect.try({
           try: () => mod.encode_instruction(instruction),
@@ -141,7 +147,7 @@ const make = (
       ),
   ),
   packetShape: Effect.fn("packetShape")(
-    (instruction: Ucs03Ng.Root) =>
+    (instruction: typeof Ucs03Ng.Root.Encoded) =>
       pipe(
         Effect.try({
           try: () => mod.packet_shape(instruction),
@@ -151,7 +157,7 @@ const make = (
               cause,
             }),
         }),
-        Effect.map(identity<Ucs03Ng.RootShape>),
+        Effect.map(identity<typeof Ucs03Ng.RootShape.Encoded>),
       ),
   ),
 })
