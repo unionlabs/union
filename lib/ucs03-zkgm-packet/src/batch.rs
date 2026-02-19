@@ -17,6 +17,7 @@ use crate::{
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum Batch {
     V0(BatchV0),
 }
@@ -27,6 +28,7 @@ pub enum Batch {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum BatchShape {
     V0(BatchV0Shape),
 }
@@ -60,6 +62,7 @@ impl Batch {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum BatchAck {
     V0(BatchV0Ack),
 }
@@ -115,6 +118,7 @@ impl BatchAck {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct BatchV0 {
     pub instructions: Vec<BatchInstructionV0>,
 }
@@ -126,6 +130,7 @@ pub struct BatchV0 {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct BatchV0Ack {
     pub acknowledgements: Vec<BatchInstructionV0Ack>,
 }
@@ -137,6 +142,7 @@ pub struct BatchV0Ack {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct BatchV0Shape {
     pub instructions: Vec<BatchInstructionV0Shape>,
 }
@@ -174,6 +180,7 @@ impl BatchV0 {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@opcode")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum BatchInstructionV0 {
     TokenOrder(TokenOrder),
     Call(Call),
@@ -185,6 +192,7 @@ pub enum BatchInstructionV0 {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@opcode")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum BatchInstructionV0Ack {
     TokenOrder(TokenOrderAck),
     Call(CallAck),
@@ -219,6 +227,7 @@ impl BatchInstructionV0Ack {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@opcode")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum BatchInstructionV0Shape {
     TokenOrder(TokenOrderShape),
     Call(CallShape),

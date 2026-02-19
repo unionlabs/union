@@ -19,6 +19,7 @@ use crate::{
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@opcode")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum Root {
     Batch(Batch),
     TokenOrder(TokenOrder),
@@ -77,6 +78,7 @@ impl Root {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@opcode")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum RootShape {
     Batch(BatchShape),
     TokenOrder(TokenOrderShape),
@@ -90,6 +92,7 @@ pub enum RootShape {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum RootAck {
     Batch(BatchAck),
     TokenOrder(TokenOrderAck),

@@ -15,6 +15,7 @@ use crate::{
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum Call {
     V0(CallV0),
 }
@@ -25,6 +26,7 @@ pub enum Call {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum CallShape {
     V0(CallV0Shape),
 }
@@ -35,6 +37,7 @@ pub enum CallShape {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct CallV0Shape {
     pub eureka: bool,
 }
@@ -66,6 +69,7 @@ impl Call {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct CallV0 {
     pub sender: Bytes,
     pub eureka: bool,
@@ -109,6 +113,7 @@ impl CallV0 {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum CallAck {
     V0(CallV0Ack),
 }
@@ -133,6 +138,7 @@ impl CallAck {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum CallV0Ack {
     NonEureka,
     Eureka(Bytes),

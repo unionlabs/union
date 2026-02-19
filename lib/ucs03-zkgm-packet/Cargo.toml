@@ -20,6 +20,7 @@ dlmalloc             = { version = "0.2.11", features = ["global"] }
 embed-commit         = { workspace = true }
 enumorph             = { workspace = true }
 hex-literal          = { workspace = true }
+schemars             = { workspace = true, optional = true, features = ["derive"] }
 serde                = { workspace = true, optional = true, features = ["alloc", "derive"] }
 serde-wasm-bindgen   = { version = "0.6.5", optional = true }
 serde_bytes          = { version = "0.11.19", optional = true, default-features = false, features = ["alloc"] }
@@ -28,6 +29,7 @@ wasm-bindgen         = { version = "=0.2.100", optional = true, default-features
 
 [features]
 default      = ["serde"]
+schemars     = ["dep:schemars", "unionlabs-primitives/schemars"]
 serde        = ["dep:serde", "unionlabs-primitives/serde"]
 wasm-bindgen = ["serde", "dep:wasm-bindgen", "dep:serde-wasm-bindgen", "dep:serde_bytes"]
 

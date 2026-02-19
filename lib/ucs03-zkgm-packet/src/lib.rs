@@ -47,6 +47,7 @@ pub type Result<T> = core::result::Result<T, alloc::boxed::Box<dyn Error + Send 
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct ZkgmPacket {
     pub salt: H256,
     pub path: U256,
@@ -84,6 +85,7 @@ impl ZkgmPacket {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum Ack {
     Success(RootAck),
     Failure(Bytes),
@@ -347,5 +349,32 @@ mod tests {
         let decoded_packet = ZkgmPacket::decode(packet).unwrap();
 
         println!("{}", serde_json::to_string_pretty(&decoded_packet).unwrap());
+    }
+
+    #[test]
+    // #[cfg(feature = "schemars")]
+    fn schemars() {
+        use schemars::{JsonSchema, SchemaGenerator, r#gen::SchemaSettings};
+
+        use crate::Root;
+
+        fn generate_schema<T: JsonSchema>(path: &str) {
+            std::fs::write(
+                format!("{}/{path}", env!("SCHEMAS_OUT_DIR")),
+                serde_json::to_string_pretty(
+                    &SchemaGenerator::new(SchemaSettings::draft2019_09().with(|s| {
+                        s.option_nullable = true;
+                        s.option_add_null_type = false;
+                    }))
+                    .into_root_schema_for::<T>(),
+                )
+                .expect("schema serialization is infallible; qed;"),
+            )
+            .expect("unable to write file")
+        }
+
+        generate_schema::<ZkgmPacket>("ucs03.packet.schema.json");
+        generate_schema::<RootShape>("ucs03.shape.schema.json");
+        generate_schema::<Ack>("ucs03.ack.schema.json");
     }
 }

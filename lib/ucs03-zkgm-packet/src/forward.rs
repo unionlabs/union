@@ -16,6 +16,7 @@ use crate::{
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum Forward {
     V0(ForwardV0),
 }
@@ -26,6 +27,7 @@ pub enum Forward {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum ForwardShape {
     V0,
 }
@@ -57,6 +59,7 @@ impl Forward {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct ForwardV0 {
     path: U256,
     // TODO: Forward v2 to remove this field
@@ -101,6 +104,7 @@ impl ForwardV0 {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum ForwardAck {
     V0(ForwardV0Ack),
 }
@@ -125,6 +129,7 @@ impl ForwardAck {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct ForwardV0Ack {}
 
 impl ForwardV0Ack {

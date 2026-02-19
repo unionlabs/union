@@ -20,6 +20,7 @@ use crate::{
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum TokenOrder {
     #[deprecated(since = "TBD")]
     V1(TokenOrderV1) = INSTR_VERSION_1,
@@ -33,6 +34,7 @@ pub enum TokenOrder {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum TokenOrderShape {
     #[deprecated(since = "TBD")]
     V1 = INSTR_VERSION_1,
@@ -70,6 +72,7 @@ impl TokenOrder {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum TokenOrderAck {
     #[deprecated(since = "TBD")]
     V1(TokenOrderV1Ack) = INSTR_VERSION_1,
@@ -99,6 +102,7 @@ impl TokenOrderAck {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct TokenOrderV1 {
     pub sender: Bytes,
     pub receiver: Bytes,
@@ -167,6 +171,7 @@ impl TokenOrderV1 {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum TokenOrderV1Ack {
     Protocol,
     MarketMaker { market_maker: Bytes },
@@ -219,6 +224,7 @@ impl TokenOrderV1Ack {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum TokenOrderV2Ack {
     Protocol,
     MarketMaker { market_maker: Bytes },
@@ -271,6 +277,7 @@ impl TokenOrderV2Ack {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct TokenOrderV2 {
     pub sender: Bytes,
     pub receiver: Bytes,
@@ -330,6 +337,7 @@ impl TokenOrderV2 {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case", tag = "@kind")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum TokenOrderV2Metadata {
     Initialize(TokenMetadata),
     Escrow { data: Bytes },
@@ -343,6 +351,7 @@ pub enum TokenOrderV2Metadata {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct TokenMetadata {
     pub implementation: Bytes,
     pub initializer: Bytes,
@@ -354,6 +363,7 @@ pub struct TokenMetadata {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields, rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub struct SolverMetadata {
     pub solver_address: Bytes,
     pub metadata: Bytes,

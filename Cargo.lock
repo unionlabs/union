@@ -15271,6 +15271,7 @@ dependencies = [
  "embed-commit",
  "enumorph",
  "hex-literal 1.1.0",
+ "schemars 0.8.22",
  "serde",
  "serde-wasm-bindgen",
  "serde_bytes",
