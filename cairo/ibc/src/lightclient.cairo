@@ -157,4 +157,8 @@ pub trait ILightClient<TContractState> {
     ) -> Timestamp;
 
     fn get_latest_height(self: @TContractState, client_id: ClientId) -> u64;
+
+    fn get_consensus_state(
+        self: @TContractState, client_id: ClientId, height: u64,
+    ) -> Array<felt252>;
 }
