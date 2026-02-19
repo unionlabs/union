@@ -173,7 +173,7 @@ mod wasm_bindgen_exports {
         let packet =
             ZkgmPacket::decode(packet).map_err(|err| JsValue::from_str(&err.to_string()))?;
 
-        Ok(packet.encode().serialize(&S)?)
+        Ok(packet.serialize(&S)?)
     }
 
     /// packet -> bytes
@@ -190,7 +190,7 @@ mod wasm_bindgen_exports {
         let instruction =
             Root::decode(&instruction).map_err(|err| JsValue::from_str(&err.to_string()))?;
 
-        Ok(instruction.encode().serialize(&S)?)
+        Ok(instruction.serialize(&S)?)
     }
 
     /// instruction -> bytes
@@ -215,7 +215,7 @@ mod wasm_bindgen_exports {
         let shape = serde_wasm_bindgen::from_value::<RootShape>(shape)?;
         let ack = Ack::decode(shape, ack).map_err(|err| JsValue::from_str(&err.to_string()))?;
 
-        Ok(ack.encode().serialize(&S)?)
+        Ok(ack.serialize(&S)?)
     }
 
     /// ack -> bytes
