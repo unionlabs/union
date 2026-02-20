@@ -205,7 +205,7 @@ export const TokenOrder = Schema.Union(
 )
 export type TokenOrder = typeof TokenOrder.Type
 
-export const Call = Schema.Struct({
+export const CallV0 = Schema.Struct({
   "@version": Schema.Literal("v0"),
   "@opcode": Schema.Literal("call"),
   "contract_address": BytesHexPrefixed,
@@ -213,6 +213,11 @@ export const Call = Schema.Struct({
   "eureka": Schema.Boolean,
   "sender": BytesHexPrefixed,
 })
+export type CallV0 = typeof CallV0.Type
+
+export const Call = Schema.Union(
+  CallV0,
+)
 export type Call = typeof Call.Type
 
 export const BatchInstructionV0 = Schema.Union(
