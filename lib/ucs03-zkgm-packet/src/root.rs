@@ -1,7 +1,6 @@
 use alloc::format;
 
 use alloy_sol_types::SolValue;
-use enumorph::Enumorph;
 use unionlabs_primitives::Bytes;
 
 use crate::{
@@ -13,18 +12,15 @@ use crate::{
     token_order::{TokenOrder, TokenOrderAck, TokenOrderShape},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@opcode")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum Root {
-    Batch(Batch),
-    TokenOrder(TokenOrder),
-    Call(Call),
-    Forward(Forward),
+attrs! {
+    #[tag("@opcode")]
+    #[enumorph]
+    pub enum Root {
+        Batch(Batch),
+        TokenOrder(TokenOrder),
+        Call(Call),
+        Forward(Forward),
+    }
 }
 
 impl Root {
@@ -72,32 +68,26 @@ impl Root {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@opcode")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum RootShape {
-    Batch(BatchShape),
-    TokenOrder(TokenOrderShape),
-    Call(CallShape),
-    Forward(ForwardShape),
+attrs! {
+    #[tag("@opcode")]
+    #[enumorph]
+    pub enum RootShape {
+        Batch(BatchShape),
+        TokenOrder(TokenOrderShape),
+        Call(CallShape),
+        Forward(ForwardShape),
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum RootAck {
-    Batch(BatchAck),
-    TokenOrder(TokenOrderAck),
-    Call(CallAck),
-    Forward(ForwardAck),
+attrs! {
+    #[tag("@opcode")]
+    #[enumorph]
+    pub enum RootAck {
+        Batch(BatchAck),
+        TokenOrder(TokenOrderAck),
+        Call(CallAck),
+        Forward(ForwardAck),
+    }
 }
 
 impl RootAck {
