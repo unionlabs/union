@@ -88,20 +88,22 @@ const arbRootAck = (root: Ucs03Ng.Root) =>
         (r.instructions.length === 0
           ? fc.constant([] as Array<Ucs03Ng.BatchInstructionV0Ack>)
           : fc.tuple(...r.instructions.map(arbBatchInstructionAck))).map(acks => ({
-            batch: { "@version": "v0" as const, "acknowledgements": acks },
+            "@opcode": "batch" as const,
+            "@version": "v0" as const,
+            "acknowledgements": acks,
           })),
     ),
     Match.discriminator("@opcode")(
       "token_order",
-      (r) => arbTokenOrderAck(r["@version"]).map(ack => ({ token_order: ack })),
+      (r) => arbTokenOrderAck(r["@version"]),
     ),
     Match.discriminator("@opcode")(
       "call",
-      (r) => arbCallAck(r.eureka).map(ack => ({ call: ack })),
+      (r) => arbCallAck(r.eureka),
     ),
     Match.discriminator("@opcode")(
       "forward",
-      () => fc.constant({ forward: { "@version": "v0" as const } }),
+      () => fc.constant({ "@opcode": "forward" as const, "@version": "v0" as const }),
     ),
     Match.exhaustive,
   )
@@ -153,35 +155,6 @@ describe("WasmTest", () => {
           assert.deepStrictEqual(decoded, packet)
         }),
     )
-
-    it.effect("Ack decode asymmetry check", () =>
-      Effect.gen(function*() {
-        const wasm = yield* ZkgmWasm.ZkgmWasm
-
-        const ack = {
-          success: {
-            batch: {
-              "@version": "v0",
-              "acknowledgements": [{
-                "@opcode": "token_order",
-                "@version": "v1",
-                "market_maker": { market_maker: "0xdeadbeef" },
-              }],
-            },
-          },
-        } as const
-
-        const shape = {
-          "@opcode": "batch",
-          "@version": "v0",
-          "instructions": [{ "@opcode": "token_order", "@version": "v1" }],
-        } as const
-
-        const bytes = yield* wasm.encodeAck(ack)
-        const decoded = yield* wasm.decodeAck(bytes, shape)
-
-        assert.deepStrictEqual(decoded, ack)
-      }))
 
     it.effect.prop(
       "AckFromUint8ArrayWithInstruction roundtrip",

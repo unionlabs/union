@@ -53,8 +53,13 @@ export type ForwardV0Ack = typeof ForwardV0Ack.Type
  * NOTE: Union order is important given matching behavior with `optionalWith`.
  */
 export const CallAck = Schema.Union(
-  Schema.Struct({ "@version": Schema.Literal("v0"), "eureka": BytesHexPrefixed }),
   Schema.Struct({
+    "@opcode": Schema.Literal("call"),
+    "@version": Schema.Literal("v0"),
+    "eureka": BytesHexPrefixed,
+  }),
+  Schema.Struct({
+    "@opcode": Schema.Literal("call"),
     "@version": Schema.Literal("v0"),
     "non_eureka": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
   }),
@@ -66,25 +71,32 @@ export type CallAck = typeof CallAck.Type
  */
 export const TokenOrderAck = Schema.Union(
   Schema.Struct({
+    "@opcode": Schema.Literal("token_order"),
     "@version": Schema.Literal("v1"),
     "market_maker": Schema.Struct({ market_maker: BytesHexPrefixed }),
   }),
   Schema.Struct({
+    "@opcode": Schema.Literal("token_order"),
     "@version": Schema.Literal("v2"),
     "market_maker": Schema.Struct({ market_maker: BytesHexPrefixed }),
   }),
   Schema.Struct({
+    "@opcode": Schema.Literal("token_order"),
     "@version": Schema.Literal("v1"),
     "protocol": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
   }),
   Schema.Struct({
+    "@opcode": Schema.Literal("token_order"),
     "@version": Schema.Literal("v2"),
     "protocol": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
   }),
 )
 export type TokenOrderAck = typeof TokenOrderAck
 
-export const ForwardAck = Schema.Struct({ "@version": Schema.Literal("v0") })
+export const ForwardAck = Schema.Struct({
+  "@opcode": Schema.Literal("forward"),
+  "@version": Schema.Literal("v0"),
+})
 export type ForwardAck = typeof ForwardAck.Type
 
 export const BatchInstructionV0Ack = Schema.Union(
@@ -123,6 +135,7 @@ export type BatchInstructionV0Ack = typeof BatchInstructionV0Ack.Type
 
 export const BatchAck = Schema.Union(
   Schema.Struct({
+    "@opcode": Schema.Literal("batch"),
     "@version": Schema.Literal("v0"),
     "acknowledgements": Schema.Array(BatchInstructionV0Ack),
   }),
@@ -130,10 +143,10 @@ export const BatchAck = Schema.Union(
 export type BatchAck = typeof BatchAck.Type
 
 export const RootAck = Schema.Union(
-  Schema.Struct({ batch: BatchAck }),
-  Schema.Struct({ token_order: TokenOrderAck }),
-  Schema.Struct({ call: CallAck }),
-  Schema.Struct({ forward: ForwardAck }),
+  BatchAck,
+  TokenOrderAck,
+  CallAck,
+  ForwardAck,
 )
 export type RootAck = typeof RootAck.Type
 
