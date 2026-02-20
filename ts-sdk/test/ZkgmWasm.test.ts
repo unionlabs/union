@@ -1,10 +1,10 @@
 import * as NodeContext from "@effect/platform-node/NodeContext"
 import { assert, describe, it } from "@effect/vitest"
 import * as Effect from "effect/Effect"
-import * as Either from "effect/Either"
 import * as fc from "effect/FastCheck"
 import { pipe } from "effect/Function"
 import * as Layer from "effect/Layer"
+import * as Match from "effect/Match"
 import * as Schema from "effect/Schema"
 
 import * as Ucs03Ng from "@unionlabs/sdk/Ucs03Ng"
@@ -57,34 +57,60 @@ const PACKET_DECODED = {
   },
 } as const
 
-const arbAckForInstruction = (instruction: Ucs03Ng.Root): fc.Arbitrary<Ucs03Ng.Ack> => {
-  const arbRootAck = (root: Ucs03Ng.Root): fc.Arbitrary<Ucs03Ng.RootAck> => {
-    switch (root["@opcode"]) {
-      case "batch":
-        return (root.instructions.length === 0
-          ? fc.constant([])
-          : fc.tuple(...root.instructions.map(arbBatchInstructionAck))).map(acks => ({
+const arbTokenOrderAck = (version: "v1" | "v2") =>
+  Arbitrary.make(Ucs03Ng.TokenOrderAck).filter(ack => ack["@version"] === version)
+
+const arbCallAck = (eureka: boolean) =>
+  Arbitrary.make(Ucs03Ng.CallAck).filter(ack => eureka ? "eureka" in ack : "non_eureka" in ack)
+
+const arbBatchInstructionAck = (instr: Ucs03Ng.BatchInstructionV0) =>
+  Arbitrary.make(Ucs03Ng.BatchInstructionV0Ack).filter(ack =>
+    pipe(
+      Match.value(instr),
+      Match.discriminator("@opcode")(
+        "token_order",
+        (i) => ack["@opcode"] === "token_order" && ack["@version"] === i["@version"],
+      ),
+      Match.discriminator("@opcode")(
+        "call",
+        (i) => ack["@opcode"] === "call" && (i.eureka ? "eureka" in ack : "non_eureka" in ack),
+      ),
+      Match.exhaustive,
+    )
+  )
+
+const arbRootAck = (root: Ucs03Ng.Root) =>
+  pipe(
+    Match.value(root),
+    Match.discriminator("@opcode")(
+      "batch",
+      (r) =>
+        (r.instructions.length === 0
+          ? fc.constant([] as Array<Ucs03Ng.BatchInstructionV0Ack>)
+          : fc.tuple(...r.instructions.map(arbBatchInstructionAck))).map(acks => ({
             batch: { "@version": "v0" as const, "acknowledgements": acks },
-          }))
-      case "token_order":
-        return Arbitrary.make(Ucs03Ng.TokenOrderAck).map(ack => ({ token_order: ack }))
-      case "call":
-        return Arbitrary.make(Ucs03Ng.CallAck).map(ack => ({ call: ack }))
-      case "forward":
-        return fc.constant({ forward: { "@version": "v0" as const } })
-    }
-  }
+          })),
+    ),
+    Match.discriminator("@opcode")(
+      "token_order",
+      (r) => arbTokenOrderAck(r["@version"]).map(ack => ({ token_order: ack })),
+    ),
+    Match.discriminator("@opcode")(
+      "call",
+      (r) => arbCallAck(r.eureka).map(ack => ({ call: ack })),
+    ),
+    Match.discriminator("@opcode")(
+      "forward",
+      () => fc.constant({ forward: { "@version": "v0" as const } }),
+    ),
+    Match.exhaustive,
+  )
 
-  const arbBatchInstructionAck = (instr: Ucs03Ng.BatchInstructionV0) =>
-    Arbitrary.make(
-      instr["@opcode"] === "token_order" ? Ucs03Ng.TokenOrderAck : Ucs03Ng.CallAck,
-    ).map(ack => ({ "@opcode": instr["@opcode"] as any, ...ack }))
-
-  return fc.oneof(
+const arbAckForInstruction = (instruction: Ucs03Ng.Root) =>
+  fc.oneof(
     arbRootAck(instruction).map(success => ({ success })),
     Arbitrary.make(Ucs03Ng.BytesHexPrefixed).map(failure => ({ failure })),
   )
-}
 
 describe("WasmTest", () => {
   it.layer(ZkgmWasmTest)((it) => {
@@ -128,23 +154,7 @@ describe("WasmTest", () => {
         }),
     )
 
-    // Ack roundtrip — needs correlated generation (ack must match instruction shape),
-    // so we generate the packet via prop and build matching acks inside the body
-    it.effect.prop(
-      "ack roundtrip",
-      { packet: Ucs03Ng.ZkgmPacket },
-      ({ packet }) =>
-        Effect.gen(function*() {
-          const ackArb = arbAckForInstruction(packet.instruction)
-          const [ack] = fc.sample(ackArb, 1)
-          const schema = Ucs03Ng.AckFromUint8ArrayWithInstruction(packet.instruction)
-          const bytes = yield* Schema.encode(schema)(ack)
-          const decoded = yield* Schema.decode(schema)(bytes)
-          assert.deepStrictEqual(decoded, ack)
-        }),
-    )
-
-    it.effect("ack decode asymmetry check", () =>
+    it.effect("Ack decode asymmetry check", () =>
       Effect.gen(function*() {
         const wasm = yield* ZkgmWasm.ZkgmWasm
 
@@ -174,11 +184,11 @@ describe("WasmTest", () => {
       }))
 
     it.effect.prop(
-      "ack roundtrip",
+      "AckFromUint8ArrayWithInstruction roundtrip",
       { packet: Ucs03Ng.ZkgmPacket },
       ({ packet }) =>
         Effect.gen(function*() {
-          const ack = fc.sample(arbAckForInstruction(packet.instruction), 1)[0]
+          const [ack] = fc.sample(arbAckForInstruction(packet.instruction), 1)
           const schema = Ucs03Ng.AckFromUint8ArrayWithInstruction(packet.instruction)
           const bytes = yield* Schema.encode(schema)(ack)
           const decoded = yield* Schema.decode(schema)(bytes)
@@ -186,37 +196,4 @@ describe("WasmTest", () => {
         }),
     )
   })
-
-  it.effect.only("call ack shape check", () =>
-    Effect.gen(function*() {
-      const wasm = yield* ZkgmWasm.ZkgmWasm
-
-      const shape = {
-        "@opcode": "call",
-        "@version": "v0",
-        "eureka": false,
-      } as const
-
-      // Try different call ack shapes
-      const attempts = [
-        { success: { call: { "@version": "v0", "non_eureka": {} } } },
-        { success: { call: { "@version": "v0", "non_eureka": "non_eureka" } } },
-        { success: { call: "non_eureka" } },
-      ]
-
-      for (const attempt of attempts) {
-        const bytes = yield* Effect.either(wasm.encodeAck(attempt))
-        if (Either.isLeft(bytes)) {
-          console.log("ENCODE FAILED:", JSON.stringify(attempt), String(bytes.left))
-        } else {
-          const decoded = yield* Effect.either(wasm.decodeAck(bytes.right, shape))
-          if (Either.isRight(decoded)) {
-            console.log("SUCCESS:", JSON.stringify(attempt))
-            console.log("decoded:", JSON.stringify(decoded.right, null, 2))
-          } else {
-            console.log("DECODE FAILED:", JSON.stringify(attempt), String(decoded.left))
-          }
-        }
-      }
-    }))
 })
