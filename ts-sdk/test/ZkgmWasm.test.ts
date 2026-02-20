@@ -1,8 +1,6 @@
 import * as NodeContext from "@effect/platform-node/NodeContext"
 import { assert, describe, it } from "@effect/vitest"
-import * as Arbitrary from "effect/Arbitrary"
 import * as Effect from "effect/Effect"
-import * as fc from "effect/FastCheck"
 import { pipe } from "effect/Function"
 import * as Layer from "effect/Layer"
 import * as Schema from "effect/Schema"
@@ -58,7 +56,7 @@ const PACKET_DECODED = {
 
 describe("WasmTest", () => {
   it.layer(ZkgmWasmTest)((it) => {
-    it.effect("raw packet decode", () =>
+    it.effect("example packet iso (wasm)", () =>
       Effect.gen(function*() {
         const wasm = yield* ZkgmWasm.ZkgmWasm
         const decoded = yield* wasm.decodePacket(PACKET_BYTES)
@@ -68,7 +66,7 @@ describe("WasmTest", () => {
         assert.deepStrictEqual(decoded, expected)
       }))
 
-    it.effect("schema packet iso", () =>
+    it.effect("example packet iso (schema)", () =>
       Effect.gen(function*() {
         const decoded = yield* Schema.decode(Ucs03Ng.ZkgmPacketFromUint8Array)(PACKET_BYTES)
         const encoded = yield* Schema.encode(Ucs03Ng.ZkgmPacketFromUint8Array)(decoded)
@@ -76,57 +74,26 @@ describe("WasmTest", () => {
         assert.deepStrictEqual(encoded, PACKET_BYTES)
       }))
 
-    it.effect("forward round trip", () =>
-      Effect.gen(function*() {
-        const wasm = yield* ZkgmWasm.ZkgmWasm
-        const packet = yield* Schema.encode(Ucs03Ng.ZkgmPacket)({
-          salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
-          path: 0n,
-          instruction: {
-            "@version": "v0",
-            "@opcode": "forward",
-            "path": 0n,
-            "timeout_height": 100n,
-            "timeout_timestamp": 200n,
-            "instruction": {
-              "@version": "v0",
-              "@opcode": "call",
-              "sender": "0x00",
-              "eureka": false,
-              "contract_address": "0x00",
-              "contract_calldata": "0x00",
-            },
-          },
-        })
-        console.log("wire form:", JSON.stringify(packet, null, 2))
-        const bytes = yield* wasm.encodePacket(packet)
-        const decoded = yield* wasm.decodePacket(bytes)
-        console.log("wasm returned:", JSON.stringify(decoded, null, 2))
-      }))
-
-    it.effect("schema roundtrip (no wasm)", () =>
-      Effect.gen(function*() {
-        const arb = Arbitrary.make(Ucs03Ng.ZkgmPacket)
-        fc.assert(
-          fc.property(arb, (packet) => {
-            const encoded = Schema.encodeSync(Ucs03Ng.ZkgmPacket)(packet)
-            const decoded = Schema.decodeSync(Ucs03Ng.ZkgmPacket)(encoded)
-            assert.deepStrictEqual(decoded, packet)
-          }),
-        )
-      }))
-
     it.effect.prop(
-      "wasm roundtrip (no schema transforms)",
+      "ZkgmPacketFromUint8Array roundtrip",
       { packet: Ucs03Ng.ZkgmPacket },
       ({ packet }) =>
         Effect.gen(function*() {
-          const wasm = yield* ZkgmWasm.ZkgmWasm
-          const wireForm = yield* Schema.encode(Ucs03Ng.ZkgmPacket)(packet)
-          const bytes = yield* wasm.encodePacket(wireForm)
-          const decoded = yield* wasm.decodePacket(bytes)
-          const decodedPacket = yield* Schema.decode(Ucs03Ng.ZkgmPacket)(decoded)
-          assert.deepStrictEqual(decodedPacket, packet)
+          const encoded = yield* Schema.encode(Ucs03Ng.ZkgmPacketFromUint8Array)(packet)
+          const decoded = yield* Schema.decode(Ucs03Ng.ZkgmPacketFromUint8Array)(encoded)
+          assert.deepStrictEqual(decoded, packet)
+        }),
+    )
+
+    it.effect.prop(
+      "ZkgmPacketFromHex roundtrip",
+      { packet: Ucs03Ng.ZkgmPacket },
+      ({ packet }) =>
+        Effect.gen(function*() {
+          const encoded = yield* Schema.encode(Ucs03Ng.ZkgmPacketFromHex)(packet)
+          console.log(encoded)
+          const decoded = yield* Schema.decode(Ucs03Ng.ZkgmPacketFromHex)(encoded)
+          assert.deepStrictEqual(decoded, packet)
         }),
     )
   })

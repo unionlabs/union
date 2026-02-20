@@ -303,3 +303,8 @@ export const ZkgmPacketFromUint8Array = Schema.transformOrFail(
       ),
   },
 )
+
+export const ZkgmPacketFromHex = Schema.compose(
+  Schema.Uint8ArrayFromHex,
+  ZkgmPacketFromUint8Array,
+)

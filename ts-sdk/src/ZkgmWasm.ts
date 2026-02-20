@@ -8,14 +8,14 @@ import * as String from "effect/String"
 import type * as Ucs03Ng from "./Ucs03Ng.js"
 
 const importWasm = Effect.tryPromise(
-  () => import("./internal/wasm/ucs03-zkgm-packet.js"),
+  () => import("./internal/wasm/ucs03_zkgm_packet.js"),
 )
 
-type Mod = typeof import("./internal/wasm/ucs03-zkgm-packet.js")
+type Mod = typeof import("./internal/wasm/ucs03_zkgm_packet.js")
 
 const wasmUrl = constant(
   new URL(
-    "./internal/wasm/ucs03-zkgm-packet_bg.wasm",
+    "./internal/wasm/ucs03_zkgm_packet_bg.wasm",
     import.meta.url,
   ),
 )
