@@ -375,6 +375,12 @@ export const AckFromUint8ArrayWithInstruction = (instruction: Root) =>
     },
   )
 
+export const AckFromHexWithInstruction = (instruction: Root) =>
+  Schema.compose(
+    Schema.Uint8ArrayFromHex,
+    AckFromUint8ArrayWithInstruction(instruction),
+  )
+
 export const InstructionFromUint8Array = Schema.transformOrFail(
   Schema.Uint8ArrayFromSelf,
   Root,

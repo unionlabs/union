@@ -1,5 +1,6 @@
 import { Runtime } from "@unionlabs/effect-svelte"
 import type { PriceOracle } from "@unionlabs/sdk/PriceOracle"
+import type { ZkgmWasm } from "@unionlabs/sdk/ZkgmWasm"
 import { Layer, ManagedRuntime, Match, pipe } from "effect"
 import { isNotUndefined } from "effect/Predicate"
 import type { SupabaseClient } from "./dashboard/client"
@@ -9,7 +10,11 @@ import type { GraphQL } from "./graphql/service"
 const IS_VITEST = isNotUndefined(import.meta.vitest)
 
 // TODO: determine how to handle error channel due to dynamic imports in services
-type AppLayer = Layer.Layer<SupabaseClient | GasPriceMap | GraphQL | PriceOracle, never, never>
+type AppLayer = Layer.Layer<
+  SupabaseClient | GasPriceMap | GraphQL | PriceOracle | ZkgmWasm,
+  never,
+  never
+>
 export type AppContext = Layer.Layer.Success<AppLayer>
 
 const make = async () => {

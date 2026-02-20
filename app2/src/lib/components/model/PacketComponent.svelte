@@ -9,11 +9,10 @@ import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import * as AppRuntime from "$lib/runtime"
 import { chains } from "$lib/stores/chains.svelte"
 import { packetDetails } from "$lib/stores/packets.svelte"
-import ucs03Wasm from "$wasm/ucs03-zkgm-packet_bg.wasm?url"
 import { getChain } from "@unionlabs/sdk/schema"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
-import { WasmTest } from "@unionlabs/sdk/WasmTest"
-import { Effect, Option } from "effect"
+import * as Ucs03Ng from "@unionlabs/sdk/Ucs03Ng"
+import { Effect, Option, String, Struct } from "effect"
 import { pipe } from "effect/Function"
 import * as S from "effect/Schema"
 import { fromHex, hexToBytes } from "viem"
@@ -39,25 +38,6 @@ const destinationChain = $derived(
         chainsData => getChain(chainsData, data.destination_universal_chain_id),
       ),
   ),
-)
-
-const wasmDetails = AppRuntime.runPromiseExit$(() =>
-  pipe(
-    WasmTest,
-    Effect.andThen((wasm) =>
-      pipe(
-        packetDetails.data,
-        Effect.flatMap((data) =>
-          pipe(
-            data.data,
-            hexToBytes,
-            wasm.decodePacket,
-          )
-        ),
-      )
-    ),
-    Effect.provide(WasmTest.Default(ucs03Wasm)),
-  )
 )
 </script>
 
@@ -240,14 +220,52 @@ const wasmDetails = AppRuntime.runPromiseExit$(() =>
     </div>
 
     <div class="p-4">
-      <Label>Raw Packet Data (WASM)</Label>
-      <pre>{wasmDetails.current}</pre>
+      <Label>Raw Packet Data [<code class="lowercase">@unionlabs/sdk</code>]</Label>
+      {#await AppRuntime.runPromise(pipe(
+        packetDetails.data,
+        Effect.flatMap((x) => S.decode(Ucs03Ng.ZkgmPacketFromHex)(x.data.substring(2))),
+      ))
+      }
+        <pre class="text-zinc-500 mt-2">Decoding...</pre>
+      {:then decoded}
+        <pre class="overflow-auto text-sm mt-2">{JSON.stringify(decoded, null, 2)}</pre>
+      {:catch error}
+        <div class="text-zinc-500 mt-2">No data decoding available for this packet.</div>
+        <pre class="text-red-700 mt-2 overflow-auto">{error}</pre>
+      {/await}
     </div>
 
     {#if Option.isSome(packetDetails.data.value.acknowledgement)}
       <div class="p-4">
         <Label>Acknowledgement</Label>
         <LongMonoWord class="mt-2">{packetDetails.data.value.acknowledgement.value}</LongMonoWord>
+      </div>
+    {/if}
+    {#if Option.isSome(packetDetails.data)
+      && Option.isSome(packetDetails.data.value.acknowledgement)}
+      {@const packetData = String.substring(2)(packetDetails.data.value.data)}
+      {@const ack = String.substring(2)(packetDetails.data.value.acknowledgement.value)}
+      <div class="p-4">
+        <Label>Acknowledgement Data [<code class="lowercase">@unionlabs/sdk</code>]</Label>
+        {#await AppRuntime.runPromise(pipe(
+        packetData,
+        S.decode(Ucs03Ng.ZkgmPacketFromHex),
+        Effect.map(Struct.get("instruction")),
+        Effect.andThen((instruction) =>
+          pipe(
+            ack,
+            S.decode(Ucs03Ng.AckFromHexWithInstruction(instruction)),
+          )
+        ),
+      ))
+        }
+          <pre class="text-zinc-500 mt-2">Decoding...</pre>
+        {:then decoded}
+          <pre class="overflow-auto text-sm mt-2">{JSON.stringify(decoded, null, 2)}</pre>
+        {:catch error}
+          <div class="text-zinc-500 mt-2">No data decoding available for this packet.</div>
+          <pre class="text-red-700 mt-2 overflow-auto">{error}</pre>
+        {/await}
       </div>
     {/if}
     <PacketTracesComponent packetTraces={packetDetails.data.value.traces} />

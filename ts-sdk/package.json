@@ -19,6 +19,7 @@
   },
   "exports": {
     "./package.json": "./package.json",
+    "./zkgm.wasm": "./src/internal/wasm/ucs03_zkgm_packet_bg.wasm",
     ".": "./src/index.ts",
     "./*": "./src/*.ts",
     "./examples/*": "./examples/*.ts",

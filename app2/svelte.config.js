@@ -20,7 +20,6 @@ const config = {
     alias: {
       "@unionlabs/sdk": "../ts-sdk/src/index.js",
       "@unionlabs/sdk/*": "../ts-sdk/src/*",
-      "@unionlabs/sdk/ucs03.wasm": "../ts-sdk/src/internal/wasm/ucs03-zkgm-packet_bg.wasm",
       "@unionlabs/sdk-evm": "../ts-sdk-evm/src/index.js",
       "@unionlabs/sdk-evm/*": "../ts-sdk-evm/src/*",
       "@unionlabs/sdk-cosmos": "../ts-sdk-cosmos/src/index.js",

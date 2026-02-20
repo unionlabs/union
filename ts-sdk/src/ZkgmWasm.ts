@@ -176,18 +176,19 @@ const make = (
   ),
 })
 
-export const layerBrowser = Layer.scoped(
-  ZkgmWasm,
-  pipe(
-    importWasm,
-    Effect.andThen((wasm) =>
-      pipe(
-        Effect.tryPromise(() => wasm.default(wasmUrl())),
-        Effect.andThen(() => make(wasm)),
-      )
+export const layerBrowser = (url: URL | string) =>
+  Layer.scoped(
+    ZkgmWasm,
+    pipe(
+      importWasm,
+      Effect.andThen((wasm) =>
+        pipe(
+          Effect.tryPromise(() => wasm.default(url)),
+          Effect.andThen(() => make(wasm)),
+        )
+      ),
     ),
-  ),
-)
+  )
 
 export const layerPlatform = Layer.scoped(
   ZkgmWasm,

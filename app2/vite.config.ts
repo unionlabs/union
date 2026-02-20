@@ -14,11 +14,15 @@ export default defineConfig({
   assetsInclude: ["**/*.wasm"],
   resolve: {
     alias: {
-      $wasm: Path.resolve(__dirname, "../ts-sdk/src/internal/wasm"),
-      // "@unionlabs/sdk/ucs03.wasm": Path.resolve(
-      //   __dirname,
-      //   "../ts-sdk/src/internal/wasm/ucs03-zkgm-packet_bg.wasm",
-      // ),
+      /**
+       * XXX: Needed probably (hopefully?) only for us given monorepo context
+       * with source-based project references and Vite + SvelteKit + tsc
+       * shadowing issues.
+       */
+      "$unionlabs/sdk/internal/wasm": Path.resolve(
+        __dirname,
+        "../ts-sdk/src/internal/wasm",
+      ),
     },
   },
   server: {
