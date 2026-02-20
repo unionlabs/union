@@ -374,3 +374,22 @@ export const AckFromUint8ArrayWithInstruction = (instruction: Root) =>
         ),
     },
   )
+
+export const InstructionFromUint8Array = Schema.transformOrFail(
+  Schema.Uint8ArrayFromSelf,
+  Root,
+  {
+    decode: (fromA, _options, ast, _fromI) =>
+      pipe(
+        ZkgmWasm.ZkgmWasm,
+        Effect.andThen((wasm) => wasm.decodeInstruction(fromA)),
+        Effect.mapError((e) => new ParseResult.Type(ast, fromA, e.message)),
+      ),
+    encode: (toI, _options, ast, _toA) =>
+      pipe(
+        ZkgmWasm.ZkgmWasm,
+        Effect.andThen((wasm) => wasm.encodeInstruction(toI)),
+        Effect.mapError((e) => new ParseResult.Type(ast, toI, e.message)),
+      ),
+  },
+)

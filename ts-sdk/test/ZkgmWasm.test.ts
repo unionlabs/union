@@ -195,5 +195,15 @@ describe("WasmTest", () => {
           assert.deepStrictEqual(decoded, ack)
         }),
     )
+    it.effect.prop(
+      "InstructionFromUint8Array roundtrip",
+      { instruction: Ucs03Ng.Root },
+      ({ instruction }) =>
+        Effect.gen(function*() {
+          const encoded = yield* Schema.encode(Ucs03Ng.InstructionFromUint8Array)(instruction)
+          const decoded = yield* Schema.decode(Ucs03Ng.InstructionFromUint8Array)(encoded)
+          assert.deepStrictEqual(decoded, instruction)
+        }),
+    )
   })
 })
