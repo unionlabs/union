@@ -46,90 +46,78 @@ export const BytesHexPrefixed = HexPrefixed(
 )
 export type BytesHexPrefixed = typeof BytesHexPrefixed.Type
 
-export const ForwardV0Ack = Schema.Struct({})
-export type ForwardV0Ack = typeof ForwardV0Ack.Type
+export const CallV0Ack = Schema.Union(
+  Schema.Struct({
+    "@opcode": Schema.Literal("call"),
+    "@version": Schema.Literal("v0"),
+    "eureka": BytesHexPrefixed,
+  }),
+  Schema.Struct({
+    "@opcode": Schema.Literal("call"),
+    "@version": Schema.Literal("v0"),
+    "non_eureka": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
+  }),
+)
 
 /**
  * NOTE: Union order is important given matching behavior with `optionalWith`.
  */
 export const CallAck = Schema.Union(
-  Schema.Struct({
-    "@opcode": Schema.Literal("call"),
-    "@version": Schema.Literal("v0"),
-    "eureka": BytesHexPrefixed,
-  }),
-  Schema.Struct({
-    "@opcode": Schema.Literal("call"),
-    "@version": Schema.Literal("v0"),
-    "non_eureka": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
-  }),
+  CallV0Ack,
 )
 export type CallAck = typeof CallAck.Type
+
+export const TokenOrderV1Ack = Schema.Union(
+  Schema.Struct({
+    "@opcode": Schema.Literal("token_order"),
+    "@version": Schema.Literal("v1"),
+    "market_maker": Schema.Struct({ market_maker: BytesHexPrefixed }),
+  }),
+  Schema.Struct({
+    "@opcode": Schema.Literal("token_order"),
+    "@version": Schema.Literal("v1"),
+    "protocol": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
+  }),
+)
+export type TokenOrderV1Ack = typeof TokenOrderV1Ack.Type
+
+export const TokenOrderV2Ack = Schema.Union(
+  Schema.Struct({
+    "@opcode": Schema.Literal("token_order"),
+    "@version": Schema.Literal("v2"),
+    "market_maker": Schema.Struct({ market_maker: BytesHexPrefixed }),
+  }),
+  Schema.Struct({
+    "@opcode": Schema.Literal("token_order"),
+    "@version": Schema.Literal("v2"),
+    "protocol": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
+  }),
+)
+export type TokenOrderV2Ack = typeof TokenOrderV2Ack.Type
 
 /**
  * NOTE: Union order is important given matching behavior with `optionalWith`.
  */
 export const TokenOrderAck = Schema.Union(
-  Schema.Struct({
-    "@opcode": Schema.Literal("token_order"),
-    "@version": Schema.Literal("v1"),
-    "market_maker": Schema.Struct({ market_maker: BytesHexPrefixed }),
-  }),
-  Schema.Struct({
-    "@opcode": Schema.Literal("token_order"),
-    "@version": Schema.Literal("v2"),
-    "market_maker": Schema.Struct({ market_maker: BytesHexPrefixed }),
-  }),
-  Schema.Struct({
-    "@opcode": Schema.Literal("token_order"),
-    "@version": Schema.Literal("v1"),
-    "protocol": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
-  }),
-  Schema.Struct({
-    "@opcode": Schema.Literal("token_order"),
-    "@version": Schema.Literal("v2"),
-    "protocol": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
-  }),
+  TokenOrderV1Ack,
+  TokenOrderV2Ack,
 )
 export type TokenOrderAck = typeof TokenOrderAck
 
-export const ForwardAck = Schema.Struct({
+export const ForwardV0Ack = Schema.Struct({
   "@opcode": Schema.Literal("forward"),
   "@version": Schema.Literal("v0"),
 })
+export type ForwardV0Ack = typeof ForwardV0Ack.Type
+
+export const ForwardAck = Schema.Union(
+  ForwardV0Ack,
+)
 export type ForwardAck = typeof ForwardAck.Type
 
 export const BatchInstructionV0Ack = Schema.Union(
-  Schema.Struct({
-    "@opcode": Schema.Literal("token_order"),
-    "@version": Schema.Literal("v1"),
-    "market_maker": Schema.Struct({ market_maker: BytesHexPrefixed }),
-  }),
-  Schema.Struct({
-    "@opcode": Schema.Literal("token_order"),
-    "@version": Schema.Literal("v1"),
-    "protocol": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
-  }),
-  Schema.Struct({
-    "@opcode": Schema.Literal("token_order"),
-    "@version": Schema.Literal("v2"),
-    "market_maker": Schema.Struct({ market_maker: BytesHexPrefixed }),
-  }),
-  Schema.Struct({
-    "@opcode": Schema.Literal("token_order"),
-    "@version": Schema.Literal("v2"),
-    "protocol": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
-  }),
-  Schema.Struct({
-    "@opcode": Schema.Literal("call"),
-    "@version": Schema.Literal("v0"),
-    "eureka": BytesHexPrefixed,
-  }),
-  Schema.Struct({
-    "@opcode": Schema.Literal("call"),
-    "@version": Schema.Literal("v0"),
-    "non_eureka": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
-  }),
+  TokenOrderAck,
+  CallAck,
 )
 export type BatchInstructionV0Ack = typeof BatchInstructionV0Ack.Type
 
