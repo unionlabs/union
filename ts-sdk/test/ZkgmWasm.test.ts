@@ -1,7 +1,3 @@
-BigInt["prototype"].toJSON = function() {
-  return `BigInt(${this.toString()})`
-}
-
 import * as NodeContext from "@effect/platform-node/NodeContext"
 import { assert, describe, it } from "@effect/vitest"
 import * as Arbitrary from "effect/Arbitrary"
@@ -9,14 +5,13 @@ import * as Effect from "effect/Effect"
 import * as fc from "effect/FastCheck"
 import { pipe } from "effect/Function"
 import * as Layer from "effect/Layer"
-import * as Runtime from "effect/Runtime"
 import * as Schema from "effect/Schema"
 
 import * as Ucs03Ng from "@unionlabs/sdk/Ucs03Ng"
-import * as WasmTest from "@unionlabs/sdk/WasmTest"
+import * as ZkgmWasm from "@unionlabs/sdk/ZkgmWasm"
 
-const WasmTestTest = pipe(
-  WasmTest.layerPlatform,
+const ZkgmWasmTest = pipe(
+  ZkgmWasm.layerPlatform,
   Layer.provideMerge(NodeContext.layer),
 )
 
@@ -62,10 +57,10 @@ const PACKET_DECODED = {
 } as const
 
 describe("WasmTest", () => {
-  it.layer(WasmTestTest)((it) => {
+  it.layer(ZkgmWasmTest)((it) => {
     it.effect("raw packet decode", () =>
       Effect.gen(function*() {
-        const wasm = yield* WasmTest.WasmTest
+        const wasm = yield* ZkgmWasm.ZkgmWasm
         const decoded = yield* wasm.decodePacket(PACKET_BYTES)
         const encoded = yield* wasm.encodePacket(decoded)
         assert.deepStrictEqual(encoded, PACKET_BYTES)
@@ -83,7 +78,7 @@ describe("WasmTest", () => {
 
     it.effect("forward round trip", () =>
       Effect.gen(function*() {
-        const wasm = yield* WasmTest.WasmTest
+        const wasm = yield* ZkgmWasm.ZkgmWasm
         const packet = yield* Schema.encode(Ucs03Ng.ZkgmPacket)({
           salt: "0x0000000000000000000000000000000000000000000000000000000000000001",
           path: 0n,
@@ -121,27 +116,18 @@ describe("WasmTest", () => {
         )
       }))
 
-    it.effect.skip("wasm roundtrip (no schema transforms)", () =>
-      Effect.gen(function*() {
-        const runtime = yield* Effect.runtime()
-        const run = Runtime.runPromise(runtime)
-        const arb = Arbitrary.make(Ucs03Ng.ZkgmPacket)
-        yield* Effect.promise(() =>
-          fc.assert(
-            fc.asyncProperty(arb, (packet) =>
-              run(
-                Effect.gen(function*() {
-                  const wasm = yield* WasmTest.WasmTest
-                  const wireForm = yield* Schema.encode(Ucs03Ng.ZkgmPacket)(packet)
-                  const bytes = yield* wasm.encodePacket(wireForm)
-                  const decoded = yield* wasm.decodePacket(bytes)
-                  const decodedPacket = yield* Schema.decode(Ucs03Ng.ZkgmPacket)(decoded)
-                  assert.deepStrictEqual(decodedPacket, packet)
-                }),
-              )),
-            { numRuns: 100, size: "small" },
-          )
-        )
-      }))
+    it.effect.prop(
+      "wasm roundtrip (no schema transforms)",
+      { packet: Ucs03Ng.ZkgmPacket },
+      ({ packet }) =>
+        Effect.gen(function*() {
+          const wasm = yield* ZkgmWasm.ZkgmWasm
+          const wireForm = yield* Schema.encode(Ucs03Ng.ZkgmPacket)(packet)
+          const bytes = yield* wasm.encodePacket(wireForm)
+          const decoded = yield* wasm.decodePacket(bytes)
+          const decodedPacket = yield* Schema.decode(Ucs03Ng.ZkgmPacket)(decoded)
+          assert.deepStrictEqual(decodedPacket, packet)
+        }),
+    )
   })
 })

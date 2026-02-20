@@ -4,7 +4,7 @@ import * as ParseResult from "effect/ParseResult"
 import * as Schema from "effect/Schema"
 import * as Uint256 from "./schema/uint256.js"
 import * as Uint64 from "./schema/uint64.js"
-import * as WasmTest from "./WasmTest.js"
+import * as ZkgmWasm from "./ZkgmWasm.js"
 
 const HexPrefixed = (description: string) =>
   Schema.String.pipe(
@@ -291,13 +291,13 @@ export const ZkgmPacketFromUint8Array = Schema.transformOrFail(
   {
     decode: (fromA, _options, ast, _fromI) =>
       pipe(
-        WasmTest.WasmTest,
+        ZkgmWasm.ZkgmWasm,
         Effect.andThen((wasm) => wasm.decodePacket(fromA)),
         Effect.mapError((e) => new ParseResult.Type(ast, fromA, e.message)),
       ),
     encode: (toI, _options, ast, _toA) =>
       pipe(
-        WasmTest.WasmTest,
+        ZkgmWasm.ZkgmWasm,
         Effect.andThen((wasm) => wasm.encodePacket(toI)),
         Effect.mapError((e) => new ParseResult.Type(ast, toI, e.message)),
       ),

@@ -184,8 +184,8 @@ export * as Staking from "./Staking.js"
 //
 
 /**
- * This module provides a WASM-bound decode/encode functionality.
+ * This module provides a WASM-bound ZKGM decode/encode functionality.
  *
  * @since 2.0.0
  */
-export * as WasmTest from "./WasmTest.js"
+export * as ZkgmWasm from "./ZkgmWasm.js"
