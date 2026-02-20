@@ -1,7 +1,6 @@
 use alloc::{borrow::ToOwned, format, string::String};
 
 use alloy_sol_types::SolValue;
-use enumorph::Enumorph;
 use unionlabs_primitives::{Bytes, U256};
 
 use crate::{
@@ -13,32 +12,23 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[repr(u8)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum TokenOrder {
-    #[deprecated(since = "TBD")]
-    V1(TokenOrderV1) = INSTR_VERSION_1,
-    V2(TokenOrderV2) = INSTR_VERSION_2,
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum TokenOrder {
+        #[deprecated(since = "TBD")]
+        V1(TokenOrderV1) = INSTR_VERSION_1,
+        V2(TokenOrderV2) = INSTR_VERSION_2,
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[repr(u8)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum TokenOrderShape {
-    #[deprecated(since = "TBD")]
-    V1 = INSTR_VERSION_1,
-    V2 = INSTR_VERSION_2,
+attrs! {
+    #[tag("@version")]
+    pub enum TokenOrderShape {
+        #[deprecated(since = "TBD")]
+        V1 = INSTR_VERSION_1,
+        V2 = INSTR_VERSION_2,
+    }
 }
 
 impl TokenOrder {
@@ -65,18 +55,14 @@ impl TokenOrder {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[repr(u8)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum TokenOrderAck {
-    #[deprecated(since = "TBD")]
-    V1(TokenOrderV1Ack) = INSTR_VERSION_1,
-    V2(TokenOrderV2Ack) = INSTR_VERSION_2,
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum TokenOrderAck {
+        #[deprecated(since = "TBD")]
+        V1(TokenOrderV1Ack) = INSTR_VERSION_1,
+        V2(TokenOrderV2Ack) = INSTR_VERSION_2,
+    }
 }
 
 impl TokenOrderAck {
@@ -95,25 +81,20 @@ impl TokenOrderAck {
     }
 }
 
-#[deprecated(note = "token order v1 will be superseded by v2", since = "TBD")]
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub struct TokenOrderV1 {
-    pub sender: Bytes,
-    pub receiver: Bytes,
-    pub base_token: Bytes,
-    pub base_amount: U256,
-    pub base_token_symbol: String,
-    pub base_token_name: String,
-    pub base_token_decimals: u8,
-    pub base_token_path: U256,
-    pub quote_token: Bytes,
-    pub quote_amount: U256,
+attrs! {
+    #[deprecated(note = "token order v1 will be superseded by v2", since = "TBD")]
+    pub struct TokenOrderV1 {
+        pub sender: Bytes,
+        pub receiver: Bytes,
+        pub base_token: Bytes,
+        pub base_amount: U256,
+        pub base_token_symbol: String,
+        pub base_token_name: String,
+        pub base_token_decimals: u8,
+        pub base_token_path: U256,
+        pub quote_token: Bytes,
+        pub quote_amount: U256,
+    }
 }
 
 impl TokenOrderV1 {
@@ -164,17 +145,12 @@ impl TokenOrderV1 {
     }
 }
 
-#[deprecated(note = "token order v1 will be superseded by v2", since = "TBD")]
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum TokenOrderV1Ack {
-    Protocol,
-    MarketMaker { market_maker: Bytes },
+attrs! {
+    #[deprecated(note = "token order v1 will be superseded by v2", since = "TBD")]
+    pub enum TokenOrderV1Ack {
+        Protocol,
+        MarketMaker { market_maker: Bytes },
+    }
 }
 
 impl TokenOrderV1Ack {
@@ -198,7 +174,7 @@ impl TokenOrderV1Ack {
             FILL_TYPE_MARKETMAKER => Ok(Self::MarketMaker {
                 market_maker: market_maker.into(),
             }),
-            invalid => Err(format!("invalid token order v1 fill type: {invalid}"))?,
+            invalid => Err(format!("invalid token order v1 fill type: {invalid:x}"))?,
         }
     }
 
@@ -218,16 +194,11 @@ impl TokenOrderV1Ack {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum TokenOrderV2Ack {
-    Protocol,
-    MarketMaker { market_maker: Bytes },
+attrs! {
+    pub enum TokenOrderV2Ack {
+        Protocol,
+        MarketMaker { market_maker: Bytes },
+    }
 }
 
 impl TokenOrderV2Ack {
@@ -271,21 +242,16 @@ impl TokenOrderV2Ack {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub struct TokenOrderV2 {
-    pub sender: Bytes,
-    pub receiver: Bytes,
-    pub base_token: Bytes,
-    pub base_amount: U256,
-    pub quote_token: Bytes,
-    pub quote_amount: U256,
-    pub metadata: TokenOrderV2Metadata,
+attrs! {
+    pub struct TokenOrderV2 {
+        pub sender: Bytes,
+        pub receiver: Bytes,
+        pub base_token: Bytes,
+        pub base_amount: U256,
+        pub quote_token: Bytes,
+        pub quote_amount: U256,
+        pub metadata: TokenOrderV2Metadata,
+    }
 }
 
 impl TokenOrderV2 {
@@ -331,42 +297,31 @@ impl TokenOrderV2 {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@kind")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum TokenOrderV2Metadata {
-    Initialize(TokenMetadata),
-    Escrow { data: Bytes },
-    Unescrow { data: Bytes },
-    Solve(SolverMetadata),
+attrs! {
+    #[tag("@kind")]
+    #[enumorph]
+    pub enum TokenOrderV2Metadata {
+        Initialize(TokenMetadata),
+        #[enumorph(ignore)]
+        Escrow { data: Bytes },
+        #[enumorph(ignore)]
+        Unescrow { data: Bytes },
+        Solve(SolverMetadata),
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub struct TokenMetadata {
-    pub implementation: Bytes,
-    pub initializer: Bytes,
+attrs! {
+    pub struct TokenMetadata {
+        pub implementation: Bytes,
+        pub initializer: Bytes,
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub struct SolverMetadata {
-    pub solver_address: Bytes,
-    pub metadata: Bytes,
+attrs! {
+    pub struct SolverMetadata {
+        pub solver_address: Bytes,
+        pub metadata: Bytes,
+    }
 }
 
 impl TokenOrderV2Metadata {

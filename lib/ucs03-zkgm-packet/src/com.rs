@@ -12,8 +12,8 @@ pub const OP_TOKEN_ORDER: u8 = 0x03;
 pub const TAG_ACK_FAILURE: U256 = U256::ZERO;
 pub const TAG_ACK_SUCCESS: U256 = U256::ONE;
 
-pub const FILL_TYPE_PROTOCOL: U256 = U256::from_limbs([0, 0, 0, 0xB0CAD0]);
-pub const FILL_TYPE_MARKETMAKER: U256 = U256::from_limbs([0, 0, 0, 0xD1CEC45E]);
+pub const FILL_TYPE_PROTOCOL: U256 = U256::from_limbs([0xB0CAD0, 0, 0, 0]);
+pub const FILL_TYPE_MARKETMAKER: U256 = U256::from_limbs([0xD1CEC45E, 0, 0, 0]);
 
 pub const TOKEN_ORDER_KIND_INITIALIZE: u8 = 0x00;
 pub const TOKEN_ORDER_KIND_ESCROW: u8 = 0x01;

@@ -15273,6 +15273,7 @@ dependencies = [
  "hex-literal 1.1.0",
  "schemars 0.8.22",
  "serde",
+ "serde-utils",
  "serde-wasm-bindgen",
  "serde_bytes",
  "serde_json",

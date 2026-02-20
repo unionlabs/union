@@ -1,7 +1,6 @@
 use alloc::{format, vec::Vec};
 
 use alloy_sol_types::SolValue;
-use enumorph::Enumorph;
 use unionlabs_primitives::Bytes;
 
 use crate::{
@@ -11,26 +10,20 @@ use crate::{
     token_order::{TokenOrder, TokenOrderAck, TokenOrderShape},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum Batch {
-    V0(BatchV0),
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum Batch {
+        V0(BatchV0) = INSTR_VERSION_0,
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum BatchShape {
-    V0(BatchV0Shape),
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum BatchShape {
+        V0(BatchV0Shape) = INSTR_VERSION_0,
+    }
 }
 
 impl Batch {
@@ -56,15 +49,12 @@ impl Batch {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum BatchAck {
-    V0(BatchV0Ack),
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum BatchAck {
+        V0(BatchV0Ack) = INSTR_VERSION_0,
+    }
 }
 
 impl BatchAck {
@@ -112,39 +102,24 @@ impl BatchAck {
 }
 
 // TODO: Non-empty
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub struct BatchV0 {
-    pub instructions: Vec<BatchInstructionV0>,
+attrs! {
+    pub struct BatchV0 {
+        pub instructions: Vec<BatchInstructionV0>,
+    }
 }
 
 // TODO: Non-empty
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub struct BatchV0Ack {
-    pub acknowledgements: Vec<BatchInstructionV0Ack>,
+attrs! {
+    pub struct BatchV0Ack {
+        pub acknowledgements: Vec<BatchInstructionV0Ack>,
+    }
 }
 
 // TODO: Non-empty
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub struct BatchV0Shape {
-    pub instructions: Vec<BatchInstructionV0Shape>,
+attrs! {
+    pub struct BatchV0Shape {
+        pub instructions: Vec<BatchInstructionV0Shape>,
+    }
 }
 
 impl BatchV0 {
@@ -174,28 +149,22 @@ impl BatchV0 {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@opcode")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum BatchInstructionV0 {
-    TokenOrder(TokenOrder),
-    Call(Call),
+attrs! {
+    #[tag("@opcode")]
+    #[enumorph]
+    pub enum BatchInstructionV0 {
+        TokenOrder(TokenOrder),
+        Call(Call),
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@opcode")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum BatchInstructionV0Ack {
-    TokenOrder(TokenOrderAck),
-    Call(CallAck),
+attrs! {
+    #[tag("@opcode")]
+    #[enumorph]
+    pub enum BatchInstructionV0Ack {
+        TokenOrder(TokenOrderAck),
+        Call(CallAck),
+    }
 }
 
 impl BatchInstructionV0Ack {
@@ -221,16 +190,13 @@ impl BatchInstructionV0Ack {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@opcode")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum BatchInstructionV0Shape {
-    TokenOrder(TokenOrderShape),
-    Call(CallShape),
+attrs! {
+    #[tag("@opcode")]
+    #[enumorph]
+    pub enum BatchInstructionV0Shape {
+        TokenOrder(TokenOrderShape),
+        Call(CallShape),
+    }
 }
 
 impl BatchInstructionV0 {

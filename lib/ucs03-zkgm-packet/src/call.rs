@@ -1,7 +1,6 @@
 use alloc::format;
 
 use alloy_sol_types::SolValue;
-use enumorph::Enumorph;
 use unionlabs_primitives::Bytes;
 
 use crate::{
@@ -9,37 +8,26 @@ use crate::{
     com::{INSTR_VERSION_0, OP_CALL, TAG_ACK_SUCCESS},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum Call {
-    V0(CallV0),
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum Call {
+        V0(CallV0) = INSTR_VERSION_0,
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum CallShape {
-    V0(CallV0Shape),
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum CallShape {
+        V0(CallV0Shape) = INSTR_VERSION_0,
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub struct CallV0Shape {
-    pub eureka: bool,
+attrs! {
+    pub struct CallV0Shape {
+        pub eureka: bool,
+    }
 }
 
 impl Call {
@@ -63,18 +51,13 @@ impl Call {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub struct CallV0 {
-    pub sender: Bytes,
-    pub eureka: bool,
-    pub contract_address: Bytes,
-    pub contract_calldata: Bytes,
+attrs! {
+    pub struct CallV0 {
+        pub sender: Bytes,
+        pub eureka: bool,
+        pub contract_address: Bytes,
+        pub contract_calldata: Bytes,
+    }
 }
 
 impl CallV0 {
@@ -107,15 +90,12 @@ impl CallV0 {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum CallAck {
-    V0(CallV0Ack),
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum CallAck {
+        V0(CallV0Ack) = INSTR_VERSION_0,
+    }
 }
 
 impl CallAck {
@@ -132,16 +112,11 @@ impl CallAck {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum CallV0Ack {
-    NonEureka,
-    Eureka(Bytes),
+attrs! {
+    pub enum CallV0Ack {
+        NonEureka,
+        Eureka(Bytes),
+    }
 }
 
 impl CallV0Ack {

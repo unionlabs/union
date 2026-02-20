@@ -31,6 +31,57 @@ static GLOBAL: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
 //     loop {}
 // }
 
+macro_rules! attrs {
+    (
+        $(#[tag($tag:literal)])?
+        $(#[deprecated($($deprecated:meta),*)])?
+        #[enumorph]
+        pub enum $T:ident $tt:tt
+    ) => {
+        #[derive(Debug, Clone, PartialEq, Eq, ::enumorph::Enumorph)]
+        #[repr(u8)]
+        #[cfg_attr(
+            feature = "serde",
+            derive(serde::Serialize, serde::Deserialize),
+            serde(deny_unknown_fields, rename_all = "snake_case", $(tag = $tag)?)
+        )]
+        #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+        $(#[deprecated($($deprecated),*)])?
+        pub enum $T $tt
+    };
+    // same as above, but no enumorph
+    (
+        $(#[tag($tag:literal)])?
+        $(#[deprecated($($deprecated:meta),*)])?
+        pub enum $T:ident $tt:tt
+    ) => {
+        #[derive(Debug, Clone, PartialEq, Eq)]
+        #[repr(u8)]
+        #[cfg_attr(
+            feature = "serde",
+            derive(serde::Serialize, serde::Deserialize),
+            serde(deny_unknown_fields, rename_all = "snake_case", $(tag = $tag)?)
+        )]
+        #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+        $(#[deprecated($($deprecated),*)])?
+        pub enum $T $tt
+    };
+    (
+        $(#[deprecated($($deprecated:meta),*)])?
+        pub struct $T:ident $tt:tt
+    ) => {
+        #[derive(Debug, Clone, PartialEq, Eq)]
+        #[cfg_attr(
+            feature = "serde",
+            derive(serde::Serialize, serde::Deserialize),
+            serde(deny_unknown_fields, rename_all = "snake_case")
+        )]
+        #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+        $(#[deprecated($($deprecated),*)])?
+        pub struct $T $tt
+    };
+}
+
 mod com;
 
 pub mod batch;
@@ -41,17 +92,12 @@ pub mod token_order;
 
 pub type Result<T> = core::result::Result<T, alloc::boxed::Box<dyn Error + Send + Sync + 'static>>;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub struct ZkgmPacket {
-    pub salt: H256,
-    pub path: U256,
-    pub instruction: Root,
+attrs! {
+    pub struct ZkgmPacket {
+        pub salt: H256,
+        pub path: U256,
+        pub instruction: Root,
+    }
 }
 
 impl ZkgmPacket {
@@ -79,16 +125,11 @@ impl ZkgmPacket {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum Ack {
-    Success(RootAck),
-    Failure(Bytes),
+attrs! {
+    pub enum Ack {
+        Success(RootAck),
+        Failure(Bytes),
+    }
 }
 
 impl Ack {
@@ -121,16 +162,12 @@ impl Ack {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-pub struct Instruction {
-    opcode: u8,
-    version: u8,
-    operand: Bytes,
+attrs! {
+    pub struct Instruction {
+        opcode: u8,
+        version: u8,
+        operand: Bytes,
+    }
 }
 
 impl Instruction {
@@ -352,11 +389,10 @@ mod tests {
     }
 
     #[test]
-    // #[cfg(feature = "schemars")]
+    #[ignore = "only run to generate schemas"]
+    #[cfg(feature = "schemars")]
     fn schemars() {
         use schemars::{JsonSchema, SchemaGenerator, r#gen::SchemaSettings};
-
-        use crate::Root;
 
         fn generate_schema<T: JsonSchema>(path: &str) {
             std::fs::write(
@@ -376,5 +412,6 @@ mod tests {
         generate_schema::<ZkgmPacket>("ucs03.packet.schema.json");
         generate_schema::<RootShape>("ucs03.shape.schema.json");
         generate_schema::<Ack>("ucs03.ack.schema.json");
+        generate_schema::<BatchInstructionV0>("ucs03.batch-instruction-v0.schema.json");
     }
 }

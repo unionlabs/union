@@ -1,7 +1,6 @@
 use alloc::{boxed::Box, format};
 
 use alloy_sol_types::SolType;
-use enumorph::Enumorph;
 use unionlabs_primitives::{Bytes, U256};
 
 use crate::{
@@ -10,26 +9,19 @@ use crate::{
     root::Root,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum Forward {
-    V0(ForwardV0),
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum Forward {
+        V0(ForwardV0) = INSTR_VERSION_0,
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum ForwardShape {
-    V0,
+attrs! {
+    #[tag("@version")]
+    pub enum ForwardShape {
+        V0 = INSTR_VERSION_0,
+    }
 }
 
 impl Forward {
@@ -53,19 +45,18 @@ impl Forward {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub struct ForwardV0 {
-    path: U256,
-    // TODO: Forward v2 to remove this field
-    timeout_height: u64,
-    timeout_timestamp: u64,
-    instruction: Box<Root>,
+attrs! {
+    pub struct ForwardV0 {
+        path: U256,
+        // TODO: Forward v2 to remove this field
+        #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
+        #[cfg_attr(feature = "schemars", schemars(with = "String"))]
+        timeout_height: u64,
+        #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
+        #[cfg_attr(feature = "schemars", schemars(with = "String"))]
+        timeout_timestamp: u64,
+        instruction: Box<Root>,
+    }
 }
 
 impl ForwardV0 {
@@ -98,15 +89,12 @@ impl ForwardV0 {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub enum ForwardAck {
-    V0(ForwardV0Ack),
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum ForwardAck {
+        V0(ForwardV0Ack) = INSTR_VERSION_0,
+    }
 }
 
 impl ForwardAck {
@@ -123,21 +111,16 @@ impl ForwardAck {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-pub struct ForwardV0Ack {}
+attrs! {
+    pub struct ForwardV0Ack {}
+}
 
 impl ForwardV0Ack {
     fn decode(bz: impl AsRef<[u8]>) -> Result<Self> {
         if bz.as_ref().is_empty() {
             Ok(Self {})
         } else {
-            Err("Forward v0 ack must be empty".into())
+            Err("forward v0 ack must be empty".into())
         }
     }
 
