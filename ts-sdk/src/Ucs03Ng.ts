@@ -48,13 +48,21 @@ export type BytesHexPrefixed = typeof BytesHexPrefixed.Type
 
 export const CallV0Ack = Schema.Union(
   Schema.Struct({
-    "@opcode": Schema.Literal("call"),
-    "@version": Schema.Literal("v0"),
+    "@opcode": Schema.propertySignature(Schema.Literal("call")).pipe(
+      Schema.withConstructorDefault(() => "call" as const),
+    ),
+    "@version": Schema.propertySignature(Schema.Literal("v0")).pipe(
+      Schema.withConstructorDefault(() => "v0" as const),
+    ),
     "eureka": BytesHexPrefixed,
   }),
   Schema.Struct({
-    "@opcode": Schema.Literal("call"),
-    "@version": Schema.Literal("v0"),
+    "@opcode": Schema.propertySignature(Schema.Literal("call")).pipe(
+      Schema.withConstructorDefault(() => "call" as const),
+    ),
+    "@version": Schema.propertySignature(Schema.Literal("v0")).pipe(
+      Schema.withConstructorDefault(() => "v0" as const),
+    ),
     "non_eureka": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
   }),
 )
@@ -69,13 +77,21 @@ export type CallAck = typeof CallAck.Type
 
 export const TokenOrderV1Ack = Schema.Union(
   Schema.Struct({
-    "@opcode": Schema.Literal("token_order"),
-    "@version": Schema.Literal("v1"),
+    "@opcode": Schema.propertySignature(Schema.Literal("token_order")).pipe(
+      Schema.withConstructorDefault(() => "token_order" as const),
+    ),
+    "@version": Schema.propertySignature(Schema.Literal("v1")).pipe(
+      Schema.withConstructorDefault(() => "v1" as const),
+    ),
     "market_maker": Schema.Struct({ market_maker: BytesHexPrefixed }),
   }),
   Schema.Struct({
-    "@opcode": Schema.Literal("token_order"),
-    "@version": Schema.Literal("v1"),
+    "@opcode": Schema.propertySignature(Schema.Literal("token_order")).pipe(
+      Schema.withConstructorDefault(() => "token_order" as const),
+    ),
+    "@version": Schema.propertySignature(Schema.Literal("v1")).pipe(
+      Schema.withConstructorDefault(() => "v1" as const),
+    ),
     "protocol": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
   }),
 )
@@ -83,13 +99,21 @@ export type TokenOrderV1Ack = typeof TokenOrderV1Ack.Type
 
 export const TokenOrderV2Ack = Schema.Union(
   Schema.Struct({
-    "@opcode": Schema.Literal("token_order"),
-    "@version": Schema.Literal("v2"),
+    "@opcode": Schema.propertySignature(Schema.Literal("token_order")).pipe(
+      Schema.withConstructorDefault(() => "token_order" as const),
+    ),
+    "@version": Schema.propertySignature(Schema.Literal("v2")).pipe(
+      Schema.withConstructorDefault(() => "v2" as const),
+    ),
     "market_maker": Schema.Struct({ market_maker: BytesHexPrefixed }),
   }),
   Schema.Struct({
-    "@opcode": Schema.Literal("token_order"),
-    "@version": Schema.Literal("v2"),
+    "@opcode": Schema.propertySignature(Schema.Literal("token_order")).pipe(
+      Schema.withConstructorDefault(() => "token_order" as const),
+    ),
+    "@version": Schema.propertySignature(Schema.Literal("v2")).pipe(
+      Schema.withConstructorDefault(() => "v2" as const),
+    ),
     "protocol": Schema.optionalWith(Schema.Struct({}), { default: () => ({}) }),
   }),
 )
@@ -105,8 +129,12 @@ export const TokenOrderAck = Schema.Union(
 export type TokenOrderAck = typeof TokenOrderAck
 
 export const ForwardV0Ack = Schema.Struct({
-  "@opcode": Schema.Literal("forward"),
-  "@version": Schema.Literal("v0"),
+  "@opcode": Schema.propertySignature(Schema.Literal("forward")).pipe(
+    Schema.withConstructorDefault(() => "forward" as const),
+  ),
+  "@version": Schema.propertySignature(Schema.Literal("v0")).pipe(
+    Schema.withConstructorDefault(() => "v0" as const),
+  ),
 })
 export type ForwardV0Ack = typeof ForwardV0Ack.Type
 
@@ -123,8 +151,12 @@ export type BatchInstructionV0Ack = typeof BatchInstructionV0Ack.Type
 
 export const BatchAck = Schema.Union(
   Schema.Struct({
-    "@opcode": Schema.Literal("batch"),
-    "@version": Schema.Literal("v0"),
+    "@opcode": Schema.propertySignature(Schema.Literal("batch")).pipe(
+      Schema.withConstructorDefault(() => "batch" as const),
+    ),
+    "@version": Schema.propertySignature(Schema.Literal("v0")).pipe(
+      Schema.withConstructorDefault(() => "v0" as const),
+    ),
     "acknowledgements": Schema.Array(BatchInstructionV0Ack),
   }),
 )
@@ -169,8 +201,12 @@ export const TokenOrderV2Metadata = Schema.Union(
 export type TokenOrderV2Metadata = typeof TokenOrderV2Metadata.Type
 
 export const TokenOrderV1 = Schema.Struct({
-  "@version": Schema.Literal("v1"),
-  "@opcode": Schema.Literal("token_order"),
+  "@opcode": Schema.propertySignature(Schema.Literal("token_order")).pipe(
+    Schema.withConstructorDefault(() => "token_order" as const),
+  ),
+  "@version": Schema.propertySignature(Schema.Literal("v1")).pipe(
+    Schema.withConstructorDefault(() => "v1" as const),
+  ),
   "base_amount": Uint256.Uint256,
   "base_token": BytesHexPrefixed,
   "base_token_decimals": Schema.Uint8.pipe(
@@ -187,8 +223,12 @@ export const TokenOrderV1 = Schema.Struct({
 export type TokenOrderV1 = typeof TokenOrderV1.Type
 
 export const TokenOrderV2 = Schema.Struct({
-  "@version": Schema.Literal("v2"),
-  "@opcode": Schema.Literal("token_order"),
+  "@opcode": Schema.propertySignature(Schema.Literal("token_order")).pipe(
+    Schema.withConstructorDefault(() => "token_order" as const),
+  ),
+  "@version": Schema.propertySignature(Schema.Literal("v2")).pipe(
+    Schema.withConstructorDefault(() => "v2" as const),
+  ),
   "base_amount": Uint256.Uint256,
   "base_token": BytesHexPrefixed,
   "metadata": TokenOrderV2Metadata,
@@ -206,8 +246,12 @@ export const TokenOrder = Schema.Union(
 export type TokenOrder = typeof TokenOrder.Type
 
 export const CallV0 = Schema.Struct({
-  "@version": Schema.Literal("v0"),
-  "@opcode": Schema.Literal("call"),
+  "@opcode": Schema.propertySignature(Schema.Literal("call")).pipe(
+    Schema.withConstructorDefault(() => "call" as const),
+  ),
+  "@version": Schema.propertySignature(Schema.Literal("v0")).pipe(
+    Schema.withConstructorDefault(() => "v0" as const),
+  ),
   "contract_address": BytesHexPrefixed,
   "contract_calldata": BytesHexPrefixed,
   "eureka": Schema.Boolean,
@@ -226,14 +270,23 @@ export const BatchInstructionV0 = Schema.Union(
 )
 export type BatchInstructionV0 = typeof BatchInstructionV0.Type
 
-export const Batch = Schema.Struct({
-  "@version": Schema.Literal("v0"),
-  "@opcode": Schema.Literal("batch"),
+export const BatchV0 = Schema.Struct({
+  "@opcode": Schema.propertySignature(Schema.Literal("batch")).pipe(
+    Schema.withConstructorDefault(() => "batch" as const),
+  ),
+  "@version": Schema.propertySignature(Schema.Literal("v0")).pipe(
+    Schema.withConstructorDefault(() => "v0" as const),
+  ),
   "instructions": Schema.Array(BatchInstructionV0),
 })
+export type BatchV0 = typeof BatchV0.Type
+
+export const Batch = Schema.Union(
+  BatchV0,
+)
 export type Batch = typeof Batch.Type
 
-export interface Forward {
+export interface ForwardV0 {
   readonly "@version": "v0"
   readonly "@opcode": "forward"
   readonly "instruction": Root
@@ -242,7 +295,7 @@ export interface Forward {
   readonly "timeout_timestamp": bigint
 }
 
-export interface ForwardEncoded {
+export interface ForwardV0Encoded {
   readonly "@version": "v0"
   readonly "@opcode": "forward"
   readonly "instruction": RootEncoded
@@ -251,14 +304,26 @@ export interface ForwardEncoded {
   readonly "timeout_timestamp": string
 }
 
-export const Forward = Schema.Struct({
-  "@version": Schema.Literal("v0"),
-  "@opcode": Schema.Literal("forward"),
+export type Forward = ForwardV0
+
+export type ForwardEncoded = ForwardV0Encoded
+
+export const ForwardV0 = Schema.Struct({
+  "@opcode": Schema.propertySignature(Schema.Literal("forward")).pipe(
+    Schema.withConstructorDefault(() => "forward" as const),
+  ),
+  "@version": Schema.propertySignature(Schema.Literal("v0")).pipe(
+    Schema.withConstructorDefault(() => "v0" as const),
+  ),
   "instruction": Schema.suspend((): Schema.Schema<Root, RootEncoded> => Root),
   "path": Uint256.Uint256,
   "timeout_height": Uint64.Uint64,
   "timeout_timestamp": Uint64.Uint64,
 })
+
+export const Forward = Schema.Union(
+  ForwardV0,
+)
 
 export type Root = Batch | TokenOrder | Call | Forward
 export type RootEncoded =

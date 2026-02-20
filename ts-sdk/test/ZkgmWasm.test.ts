@@ -24,33 +24,27 @@ const PACKET_BYTES = Uint8Array.from(Buffer.from(PACKET_HEX, "hex"))
 const PACKET_DECODED = Ucs03Ng.ZkgmPacket.make({
   salt: "0x79176e1d5f2779e14b2f5f885bfe7b35e78802643522ce0dad5cac4e4a44271f",
   path: 0n,
-  instruction: Ucs03Ng.Batch.make({
-    "@opcode": "batch",
-    "@version": "v0",
-    "instructions": [
+  instruction: Ucs03Ng.BatchV0.make({
+    instructions: [
       Ucs03Ng.TokenOrderV1.make({
-        "@opcode": "token_order",
-        "@version": "v1",
-        "sender": "0x15ee7c367f4232241028c36e720803100757c6e9",
-        "receiver":
+        sender: "0x15ee7c367f4232241028c36e720803100757c6e9",
+        receiver:
           "0x62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b3567",
-        "base_token": "0xe53dcec07d16d88e386ae0710e86d9a400f83c31",
-        "base_amount": 10000n,
-        "base_token_symbol": "BABY",
-        "base_token_name": "Babylon",
-        "base_token_decimals": 6,
-        "base_token_path": 1n,
-        "quote_token": "0x7562626e",
-        "quote_amount": 10000n,
+        base_token: "0xe53dcec07d16d88e386ae0710e86d9a400f83c31",
+        base_amount: 10000n,
+        base_token_symbol: "BABY",
+        base_token_name: "Babylon",
+        base_token_decimals: 6,
+        base_token_path: 1n,
+        quote_token: "0x7562626e",
+        quote_amount: 10000n,
       }),
       Ucs03Ng.CallV0.make({
-        "@opcode": "call",
-        "@version": "v0",
-        "sender": "0x15ee7c367f4232241028c36e720803100757c6e9",
-        "eureka": false,
-        "contract_address":
+        sender: "0x15ee7c367f4232241028c36e720803100757c6e9",
+        eureka: false,
+        contract_address:
           "0x62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b3567",
-        "contract_calldata":
+        contract_calldata:
           "0x7b22626f6e64223a7b22616d6f756e74223a223130303030222c2273616c74223a22307833313333303831396135613232336439376163373134663239616535653361646265396565663833383233373830663761393063636536363461626138366565222c226578706563746564223a2239373237222c22726563697069656e74223a2262626e3168637533306461647770686638397533783375366a327a35387233376339616b687866637330227d7d",
       }),
     ],
