@@ -1,3 +1,4 @@
+import * as Arbitrary from "effect/Arbitrary"
 import * as Effect from "effect/Effect"
 import { pipe } from "effect/Function"
 import * as ParseResult from "effect/ParseResult"
@@ -49,58 +50,36 @@ export type BytesHexPrefixed = typeof BytesHexPrefixed.Type
 export const ForwardV0Ack = Schema.Struct({})
 export type ForwardV0Ack = typeof ForwardV0Ack.Type
 
-export const BatchInstructionV0Ack = Schema.Union(
-  Schema.Union(
-    Schema.Union(
-      Schema.Literal("protocol"),
-      Schema.Struct({
-        market_maker: Schema.Struct({ market_maker: BytesHexPrefixed }),
-      }),
-    ),
-    Schema.Union(
-      Schema.Literal("protocol"),
-      Schema.Struct({
-        market_maker: Schema.Struct({ market_maker: BytesHexPrefixed }),
-      }),
-    ),
-  ),
-  Schema.Union(
-    Schema.Union(
-      Schema.Literal("non_eureka"),
-      Schema.Struct({ eureka: BytesHexPrefixed }),
-    ),
-  ),
-)
-export type BatchInstructionV0Ack = typeof BatchInstructionV0Ack.Type
-
 export const CallAck = Schema.Union(
-  Schema.Union(
-    Schema.Literal("non_eureka"),
-    Schema.Struct({ eureka: BytesHexPrefixed }),
-  ),
+  Schema.Struct({ "@version": Schema.Literal("v0"), "non_eureka": Schema.Struct({}) }),
+  Schema.Struct({ "@version": Schema.Literal("v0"), "eureka": BytesHexPrefixed }),
 )
 export type CallAck = typeof CallAck.Type
 
 export const TokenOrderAck = Schema.Union(
-  Schema.Union(
-    Schema.Literal("protocol"),
-    Schema.Struct({
-      market_maker: Schema.Struct({ market_maker: BytesHexPrefixed }),
-    }),
-  ),
-  Schema.Union(
-    Schema.Literal("protocol"),
-    Schema.Struct({
-      market_maker: Schema.Struct({ market_maker: BytesHexPrefixed }),
-    }),
-  ),
+  Schema.Struct({ "@version": Schema.Literal("v1"), "protocol": Schema.Struct({}) }),
+  Schema.Struct({
+    "@version": Schema.Literal("v1"),
+    "market_maker": Schema.Struct({ market_maker: BytesHexPrefixed }),
+  }),
+  Schema.Struct({ "@version": Schema.Literal("v2"), "protocol": Schema.Struct({}) }),
+  Schema.Struct({
+    "@version": Schema.Literal("v2"),
+    "market_maker": Schema.Struct({ market_maker: BytesHexPrefixed }),
+  }),
 )
 export type TokenOrderAck = typeof TokenOrderAck
 
-export const ForwardAck = Schema.Union(
-  Schema.Struct({ v0: ForwardV0Ack }),
-)
+export const ForwardAck = Schema.Struct({ "@version": Schema.Literal("v0") })
 export type ForwardAck = typeof ForwardAck.Type
+
+export const BatchInstructionV0Ack = Schema.Union(
+  ...TokenOrderAck.members.map(m =>
+    Schema.Struct({ "@opcode": Schema.Literal("token_order"), ...m.fields })
+  ),
+  ...CallAck.members.map(m => Schema.Struct({ "@opcode": Schema.Literal("call"), ...m.fields })),
+)
+export type BatchInstructionV0Ack = typeof BatchInstructionV0Ack.Type
 
 export const BatchAck = Schema.Union(
   Schema.Struct({
@@ -308,3 +287,50 @@ export const ZkgmPacketFromHex = Schema.compose(
   Schema.Uint8ArrayFromHex,
   ZkgmPacketFromUint8Array,
 )
+
+export const AckFromUint8ArrayWithShape = (shape: RootShape) =>
+  Schema.transformOrFail(
+    Schema.Uint8ArrayFromSelf,
+    Ack,
+    {
+      decode: (fromA, _options, ast, _fromI) =>
+        pipe(
+          ZkgmWasm.ZkgmWasm,
+          Effect.andThen((wasm) => wasm.decodeAck(fromA, shape)),
+          Effect.mapError((e) => new ParseResult.Type(ast, fromA, e.message)),
+        ),
+      encode: (toI, _options, ast, _toA) =>
+        pipe(
+          ZkgmWasm.ZkgmWasm,
+          Effect.andThen((wasm) => wasm.encodeAck(toI)),
+          Effect.mapError((e) => new ParseResult.Type(ast, toI, e.message)),
+        ),
+    },
+  )
+
+export const AckFromUint8ArrayWithInstruction = (instruction: Root) =>
+  Schema.transformOrFail(
+    Schema.Uint8ArrayFromSelf,
+    Ack,
+    {
+      decode: (fromA, _options, ast, _fromI) =>
+        pipe(
+          ZkgmWasm.ZkgmWasm,
+          Effect.andThen((wasm) =>
+            pipe(
+              instruction,
+              Schema.encode(Root),
+              Effect.andThen(wasm.packetShape),
+              Effect.andThen((shape) => wasm.decodeAck(fromA, shape)),
+            )
+          ),
+          Effect.mapError((e) => new ParseResult.Type(ast, fromA, e.message)),
+        ),
+      encode: (toI, _options, ast, _toA) =>
+        pipe(
+          ZkgmWasm.ZkgmWasm,
+          Effect.andThen((wasm) => wasm.encodeAck(toI)),
+          Effect.mapError((e) => new ParseResult.Type(ast, toI, e.message)),
+        ),
+    },
+  )

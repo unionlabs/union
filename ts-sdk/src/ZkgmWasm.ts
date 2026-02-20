@@ -121,7 +121,13 @@ const make = (
               cause,
             }),
         }),
-        Effect.map(identity<Uint8Array<ArrayBufferLike>>),
+        Effect.map(String.substring(2)),
+        Effect.flatMap(Schema.decode(Schema.Uint8ArrayFromHex)),
+        Effect.catchTag("ParseError", (cause) =>
+          new WasmError({
+            message: cause.message,
+            cause,
+          })),
       ),
   ),
   decodeInstruction: Effect.fn("decodeInstruction")(
@@ -145,7 +151,13 @@ const make = (
               cause,
             }),
         }),
-        Effect.map(identity<Uint8Array<ArrayBufferLike>>),
+        Effect.map(String.substring(2)),
+        Effect.flatMap(Schema.decode(Schema.Uint8ArrayFromHex)),
+        Effect.catchTag("ParseError", (cause) =>
+          new WasmError({
+            message: cause.message,
+            cause,
+          })),
       ),
   ),
   packetShape: Effect.fn("packetShape")(

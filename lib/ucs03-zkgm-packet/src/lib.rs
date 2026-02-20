@@ -204,7 +204,9 @@ mod wasm_bindgen_exports {
 
     use crate::{Ack, Root, RootShape, ZkgmPacket};
 
-    const S: Serializer = Serializer::new().serialize_large_number_types_as_bigints(true);
+    const S: Serializer = Serializer::new()
+        .serialize_large_number_types_as_bigints(true)
+        .serialize_maps_as_objects(true);
 
     /// bytes -> packet
     #[wasm_bindgen]
