@@ -202,7 +202,7 @@ mod wasm_bindgen_exports {
     use serde_wasm_bindgen::Serializer;
     use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
-    use crate::{Ack, Root, RootShape, ZkgmPacket};
+    use crate::{Ack, Root, RootShape, ZkgmPacket, token_order::TokenOrderV2Metadata};
 
     const S: Serializer = Serializer::new()
         .serialize_large_number_types_as_bigints(true)
@@ -265,6 +265,15 @@ mod wasm_bindgen_exports {
         let ack = serde_wasm_bindgen::from_value::<Ack>(ack)?;
 
         Ok(ack.encode().serialize(&S)?)
+    }
+
+    /// (metadata kind, bytes) -> metadata
+    #[wasm_bindgen]
+    pub fn decode_metadata(kind: u8, metadata: Vec<u8>) -> Result<JsValue, JsValue> {
+        let metadata = TokenOrderV2Metadata::decode(kind, metadata)
+            .map_err(|err| JsValue::from_str(&err.to_string()))?;
+
+        Ok(metadata.serialize(&S)?)
     }
 }
 
