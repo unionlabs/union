@@ -19,10 +19,12 @@
   },
   "exports": {
     "./package.json": "./package.json",
+    "./zkgm.wasm": "./src/internal/wasm/ucs03_zkgm_packet_bg.wasm",
     ".": "./src/index.ts",
     "./*": "./src/*.ts",
     "./examples/*": "./examples/*.ts",
-    "./internal/*": null
+    "./internal/*": null,
+    "./ucs03.wasm": "./src/internal/wasm/ucs03-zkgm-packet_bg.wasm"
   },
   "scripts": {
     "build": "pnpm build-esm && pnpm build-annotate && pnpm build-cjs && build-utils pack-v3",
@@ -53,6 +55,7 @@
     "@effect/docgen": "catalog:",
     "@effect/experimental": "catalog:",
     "@effect/platform": "catalog:",
+    "@effect/platform-node": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "babel-plugin-annotate-pure-calls": "catalog:",

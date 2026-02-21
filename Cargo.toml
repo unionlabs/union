@@ -384,7 +384,6 @@ fork-schedules                            = { path = "lib/fork-schedules", defau
 frissitheto                               = { path = "lib/frissitheto", default-features = false }
 galois-rpc                                = { path = "lib/galois-rpc", default-features = false }
 gnark-key-parser                          = { path = "lib/gnark-key-parser", default-features = false }
-gnark-mimc                                = { path = "lib/gnark-mimc", default-features = false }
 ibc-classic-spec                          = { path = "lib/ibc-classic-spec", default-features = false }
 ibc-solidity                              = { path = "lib/ibc-solidity", default-features = false }
 ibc-union                                 = { path = "cosmwasm/core", default-features = false }
@@ -398,14 +397,12 @@ macros                                    = { path = "lib/macros", default-featu
 move-core-types                           = { git = "https://github.com/mystenlabs/sui", default-features = false }
 movement-light-client-types               = { path = "lib/movement-light-client-types", default-features = false }
 mpc-shared                                = { path = "mpc/shared", default-features = false }
-on-zkgm-call-proxy                        = { path = "cosmwasm/on-zkgm-call-proxy", default-features = false }
 osmosis-tokenfactory-token-minter         = { path = "cosmwasm/osmosis-tokenfactory-token-minter", default-features = false }
 parlia-light-client-types                 = { path = "lib/parlia-light-client-types", default-features = false }
 parlia-types                              = { path = "lib/parlia-types", default-features = false }
 parlia-verifier                           = { path = "lib/parlia-verifier", default-features = false }
 pausable                                  = { path = "cosmwasm/pausable", default-features = false }
 pg-queue                                  = { path = "lib/pg-queue", default-features = false }
-proof-lens-light-client                   = { path = "cosmwasm/lightclient/proof-lens", default-features = false }
 proof-lens-light-client-types             = { path = "lib/proof-lens-light-client-types", default-features = false }
 protos                                    = { path = "generated/rust/protos", default-features = false }
 reconnecting-jsonrpc-ws-client            = { path = "lib/reconnecting-jsonrpc-ws-client", default-features = false }
@@ -467,7 +464,7 @@ wasm-client-type                          = { path = "lib/wasm-client-type", def
 # =====================
 alloy              = { version = "1.0", default-features = false }
 alloy-primitives   = { version = "1.1", default-features = false }
-alloy-sol-types    = { version = "1.1", default-features = true }
+alloy-sol-types    = { version = "1.1", default-features = false }
 anyhow             = { version = "1" }
 async-sqlite       = { version = "0.4.0", default-features = false }
 axum               = { version = "0.8", default-features = false }
@@ -493,7 +490,6 @@ derive_more        = { version = "2.1.1", default-features = false }
 ed25519-dalek      = { version = "2.1.1", default-features = false }
 either             = { version = "1.15.0", default-features = false }
 enumorph           = { version = "0.1.2", default-features = false }
-ethabi             = { version = "18.0.0", default-features = false }
 fastcrypto         = { git = "https://github.com/MystenLabs/fastcrypto", rev = "4db0e90c732bbf7420ca20de808b698883148d9c", default-features = false }
 futures            = { version = "0.3.31", default-features = false }
 generic-array      = { version = "0.14.7", default-features = false }

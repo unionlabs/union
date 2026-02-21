@@ -1,0 +1,428 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "Ack",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "success"
+      ],
+      "properties": {
+        "success": {
+          "$ref": "#/definitions/RootAck"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "failure"
+      ],
+      "properties": {
+        "failure": {
+          "$ref": "#/definitions/Bytes<HexPrefixed>"
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "BatchAck": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "@version",
+            "acknowledgements"
+          ],
+          "properties": {
+            "@version": {
+              "type": "string",
+              "enum": [
+                "v0"
+              ]
+            },
+            "acknowledgements": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/BatchInstructionV0Ack"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "BatchInstructionV0Ack": {
+      "oneOf": [
+        {
+          "type": "object",
+          "oneOf": [
+            {
+              "deprecated": true,
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "protocol"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "market_maker"
+                  ],
+                  "properties": {
+                    "market_maker": {
+                      "type": "object",
+                      "required": [
+                        "market_maker"
+                      ],
+                      "properties": {
+                        "market_maker": {
+                          "$ref": "#/definitions/Bytes<HexPrefixed>"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "required": [
+                "@version"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v1"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "protocol"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "market_maker"
+                  ],
+                  "properties": {
+                    "market_maker": {
+                      "type": "object",
+                      "required": [
+                        "market_maker"
+                      ],
+                      "properties": {
+                        "market_maker": {
+                          "$ref": "#/definitions/Bytes<HexPrefixed>"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "required": [
+                "@version"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v2"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "@opcode"
+          ],
+          "properties": {
+            "@opcode": {
+              "type": "string",
+              "enum": [
+                "token_order"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "non_eureka"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "eureka"
+                  ],
+                  "properties": {
+                    "eureka": {
+                      "$ref": "#/definitions/Bytes<HexPrefixed>"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "required": [
+                "@version"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v0"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "@opcode"
+          ],
+          "properties": {
+            "@opcode": {
+              "type": "string",
+              "enum": [
+                "call"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Bytes<HexPrefixed>": {
+      "description": "A string representation of bytes, encoded via HexPrefixed",
+      "type": "string"
+    },
+    "CallAck": {
+      "oneOf": [
+        {
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "non_eureka"
+              ]
+            },
+            {
+              "type": "object",
+              "required": [
+                "eureka"
+              ],
+              "properties": {
+                "eureka": {
+                  "$ref": "#/definitions/Bytes<HexPrefixed>"
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "@version"
+          ],
+          "properties": {
+            "@version": {
+              "type": "string",
+              "enum": [
+                "v0"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ForwardAck": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "v0"
+          ],
+          "properties": {
+            "v0": {
+              "$ref": "#/definitions/ForwardV0Ack"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ForwardV0Ack": {
+      "type": "object",
+      "additionalProperties": false
+    },
+    "RootAck": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "batch"
+          ],
+          "properties": {
+            "batch": {
+              "$ref": "#/definitions/BatchAck"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "token_order"
+          ],
+          "properties": {
+            "token_order": {
+              "$ref": "#/definitions/TokenOrderAck"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "call"
+          ],
+          "properties": {
+            "call": {
+              "$ref": "#/definitions/CallAck"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "forward"
+          ],
+          "properties": {
+            "forward": {
+              "$ref": "#/definitions/ForwardAck"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "TokenOrderAck": {
+      "oneOf": [
+        {
+          "deprecated": true,
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "protocol"
+              ]
+            },
+            {
+              "type": "object",
+              "required": [
+                "market_maker"
+              ],
+              "properties": {
+                "market_maker": {
+                  "type": "object",
+                  "required": [
+                    "market_maker"
+                  ],
+                  "properties": {
+                    "market_maker": {
+                      "$ref": "#/definitions/Bytes<HexPrefixed>"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "@version"
+          ],
+          "properties": {
+            "@version": {
+              "type": "string",
+              "enum": [
+                "v1"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "protocol"
+              ]
+            },
+            {
+              "type": "object",
+              "required": [
+                "market_maker"
+              ],
+              "properties": {
+                "market_maker": {
+                  "type": "object",
+                  "required": [
+                    "market_maker"
+                  ],
+                  "properties": {
+                    "market_maker": {
+                      "$ref": "#/definitions/Bytes<HexPrefixed>"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "@version"
+          ],
+          "properties": {
+            "@version": {
+              "type": "string",
+              "enum": [
+                "v2"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

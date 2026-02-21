@@ -4,8 +4,10 @@ import { GasPriceMap } from "$lib/gasprice"
 import { GraphQL } from "$lib/graphql/service"
 import * as Tracing from "$lib/logging/tracing"
 import * as SvelteConfigProvider from "$lib/services/SvelteConfigProvider.js"
+import zkgmWasmUrl from "$unionlabs/sdk/internal/wasm/ucs03_zkgm_packet_bg.wasm?url"
 import { PriceOracle } from "@unionlabs/sdk"
 import { Indexer } from "@unionlabs/sdk/Indexer"
+import * as ZkgmWasm from "@unionlabs/sdk/ZkgmWasm"
 import { Layer, Logger, LogLevel, Match } from "effect"
 
 const minimumLogLevel = Logger.minimumLogLevel(
@@ -29,6 +31,7 @@ export default Layer.mergeAll(
   SupabaseClient.Default({ auth: { autoRefreshToken: true } }),
   IndexerLive,
   Tracing.TracingLive,
+  ZkgmWasm.layerBrowser(zkgmWasmUrl),
   Logger.replace(
     Logger.defaultLogger,
     Logger.prettyLogger({

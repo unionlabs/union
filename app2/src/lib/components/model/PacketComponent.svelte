@@ -1,11 +1,8 @@
 <script lang="ts">
-import BlockHashComponent from "$lib/components/model/BlockHashComponent.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import HeightComponent from "$lib/components/model/HeightComponent.svelte"
 import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
-import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
-import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
@@ -14,11 +11,11 @@ import { chains } from "$lib/stores/chains.svelte"
 import { packetDetails } from "$lib/stores/packets.svelte"
 import { getChain } from "@unionlabs/sdk/schema"
 import * as Ucs03 from "@unionlabs/sdk/Ucs03"
-import { Effect, Option } from "effect"
+import * as Ucs03Ng from "@unionlabs/sdk/Ucs03Ng"
+import { Effect, Option, String, Struct } from "effect"
 import { pipe } from "effect/Function"
-import { getOrUndefined } from "effect/Option"
 import * as S from "effect/Schema"
-import { fromHex } from "viem"
+import { fromHex, hexToBytes } from "viem"
 import A from "../ui/A.svelte"
 
 const sourceChain = $derived(
@@ -222,10 +219,53 @@ const destinationChain = $derived(
       <LongMonoWord class="mt-2">{packetDetails.data.value.data}</LongMonoWord>
     </div>
 
+    <div class="p-4">
+      <Label>Raw Packet Data [<code class="lowercase">@unionlabs/sdk</code>]</Label>
+      {#await AppRuntime.runPromise(pipe(
+        packetDetails.data,
+        Effect.flatMap((x) => S.decode(Ucs03Ng.ZkgmPacketFromHex)(x.data.substring(2))),
+      ))
+      }
+        <pre class="text-zinc-500 mt-2">Decoding...</pre>
+      {:then decoded}
+        <pre class="overflow-auto text-sm mt-2">{JSON.stringify(decoded, null, 2)}</pre>
+      {:catch error}
+        <div class="text-zinc-500 mt-2">No data decoding available for this packet.</div>
+        <pre class="text-red-700 mt-2 overflow-auto">{error}</pre>
+      {/await}
+    </div>
+
     {#if Option.isSome(packetDetails.data.value.acknowledgement)}
       <div class="p-4">
         <Label>Acknowledgement</Label>
         <LongMonoWord class="mt-2">{packetDetails.data.value.acknowledgement.value}</LongMonoWord>
+      </div>
+    {/if}
+    {#if Option.isSome(packetDetails.data)
+      && Option.isSome(packetDetails.data.value.acknowledgement)}
+      {@const packetData = String.substring(2)(packetDetails.data.value.data)}
+      {@const ack = String.substring(2)(packetDetails.data.value.acknowledgement.value)}
+      <div class="p-4">
+        <Label>Acknowledgement Data [<code class="lowercase">@unionlabs/sdk</code>]</Label>
+        {#await AppRuntime.runPromise(pipe(
+        packetData,
+        S.decode(Ucs03Ng.ZkgmPacketFromHex),
+        Effect.map(Struct.get("instruction")),
+        Effect.andThen((instruction) =>
+          pipe(
+            ack,
+            S.decode(Ucs03Ng.AckFromHexWithInstruction(instruction)),
+          )
+        ),
+      ))
+        }
+          <pre class="text-zinc-500 mt-2">Decoding...</pre>
+        {:then decoded}
+          <pre class="overflow-auto text-sm mt-2">{JSON.stringify(decoded, null, 2)}</pre>
+        {:catch error}
+          <div class="text-zinc-500 mt-2">No data decoding available for this packet.</div>
+          <pre class="text-red-700 mt-2 overflow-auto">{error}</pre>
+        {/await}
       </div>
     {/if}
     <PacketTracesComponent packetTraces={packetDetails.data.value.traces} />

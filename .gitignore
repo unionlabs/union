@@ -44,7 +44,7 @@ dump
 
 fuzzing-code-coverage
 
-*.wasm
+./*.wasm
 stats
 !uniond/vendor/**/*.wasm
 _

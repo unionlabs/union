@@ -1,32 +1,29 @@
+use alloc::{format, vec::Vec};
+
 use alloy_sol_types::SolValue;
-use enumorph::Enumorph;
-use ucs03_zkgm::com::{INSTR_VERSION_0, OP_BATCH, OP_CALL, OP_TOKEN_ORDER};
 use unionlabs_primitives::Bytes;
 
 use crate::{
     Instruction, Result,
     call::{Call, CallAck, CallShape},
+    com::{INSTR_VERSION_0, OP_BATCH, OP_CALL, OP_TOKEN_ORDER},
     token_order::{TokenOrder, TokenOrderAck, TokenOrderShape},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-pub enum Batch {
-    V0(BatchV0),
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum Batch {
+        V0(BatchV0) = INSTR_VERSION_0,
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-pub enum BatchShape {
-    V0(BatchV0Shape),
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum BatchShape {
+        V0(BatchV0Shape) = INSTR_VERSION_0,
+    }
 }
 
 impl Batch {
@@ -52,22 +49,20 @@ impl Batch {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-pub enum BatchAck {
-    V0(BatchV0Ack),
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum BatchAck {
+        V0(BatchV0Ack) = INSTR_VERSION_0,
+    }
 }
 
 impl BatchAck {
     pub(crate) fn decode(shape: BatchShape, ack: impl AsRef<[u8]>) -> Result<Self> {
         match shape {
             BatchShape::V0(BatchV0Shape { instructions }) => {
-                let ucs03_zkgm::com::BatchAck { acknowledgements } =
-                    ucs03_zkgm::com::BatchAck::abi_decode_params_validate(ack.as_ref())?;
+                let crate::com::BatchAck { acknowledgements } =
+                    crate::com::BatchAck::abi_decode_params_validate(ack.as_ref())?;
 
                 if instructions.len() != acknowledgements.len() {
                     Err(format!(
@@ -93,7 +88,7 @@ impl BatchAck {
 
     pub(crate) fn encode(&self) -> Bytes {
         match self {
-            BatchAck::V0(ack) => ucs03_zkgm::com::BatchAck {
+            BatchAck::V0(ack) => crate::com::BatchAck {
                 acknowledgements: ack
                     .acknowledgements
                     .iter()
@@ -107,42 +102,30 @@ impl BatchAck {
 }
 
 // TODO: Non-empty
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-pub struct BatchV0 {
-    pub instructions: Vec<BatchInstructionV0>,
+attrs! {
+    pub struct BatchV0 {
+        pub instructions: Vec<BatchInstructionV0>,
+    }
 }
 
 // TODO: Non-empty
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-pub struct BatchV0Ack {
-    pub acknowledgements: Vec<BatchInstructionV0Ack>,
+attrs! {
+    pub struct BatchV0Ack {
+        pub acknowledgements: Vec<BatchInstructionV0Ack>,
+    }
 }
 
 // TODO: Non-empty
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-pub struct BatchV0Shape {
-    pub instructions: Vec<BatchInstructionV0Shape>,
+attrs! {
+    pub struct BatchV0Shape {
+        pub instructions: Vec<BatchInstructionV0Shape>,
+    }
 }
 
 impl BatchV0 {
     pub(crate) fn decode(operand: impl AsRef<[u8]>) -> Result<Self> {
-        let ucs03_zkgm::com::Batch { instructions } =
-            ucs03_zkgm::com::Batch::abi_decode_params_validate(operand.as_ref())?;
+        let crate::com::Batch { instructions } =
+            crate::com::Batch::abi_decode_params_validate(operand.as_ref())?;
         Ok(Self {
             instructions: instructions
                 .into_iter()
@@ -155,7 +138,7 @@ impl BatchV0 {
         Instruction::new(
             OP_BATCH,
             INSTR_VERSION_0,
-            ucs03_zkgm::com::Batch {
+            crate::com::Batch {
                 instructions: self
                     .instructions
                     .into_iter()
@@ -166,26 +149,22 @@ impl BatchV0 {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@opcode")
-)]
-pub enum BatchInstructionV0 {
-    TokenOrder(TokenOrder),
-    Call(Call),
+attrs! {
+    #[tag("@opcode")]
+    #[enumorph]
+    pub enum BatchInstructionV0 {
+        TokenOrder(TokenOrder),
+        Call(Call),
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@opcode")
-)]
-pub enum BatchInstructionV0Ack {
-    TokenOrder(TokenOrderAck),
-    Call(CallAck),
+attrs! {
+    #[tag("@opcode")]
+    #[enumorph]
+    pub enum BatchInstructionV0Ack {
+        TokenOrder(TokenOrderAck),
+        Call(CallAck),
+    }
 }
 
 impl BatchInstructionV0Ack {
@@ -211,25 +190,23 @@ impl BatchInstructionV0Ack {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@opcode")
-)]
-pub enum BatchInstructionV0Shape {
-    TokenOrder(TokenOrderShape),
-    Call(CallShape),
+attrs! {
+    #[tag("@opcode")]
+    #[enumorph]
+    pub enum BatchInstructionV0Shape {
+        TokenOrder(TokenOrderShape),
+        Call(CallShape),
+    }
 }
 
 impl BatchInstructionV0 {
     pub fn decode(bz: &[u8]) -> Result<Self> {
-        let instruction = ucs03_zkgm::com::Instruction::abi_decode_params_validate(bz)?;
+        let instruction = crate::com::Instruction::abi_decode_params_validate(bz)?;
 
         Self::from_raw(instruction)
     }
 
-    fn from_raw(instruction: ucs03_zkgm::com::Instruction) -> Result<BatchInstructionV0> {
+    fn from_raw(instruction: crate::com::Instruction) -> Result<BatchInstructionV0> {
         match instruction.opcode {
             OP_TOKEN_ORDER => {
                 TokenOrder::decode(instruction.version, instruction.operand).map(Into::into)

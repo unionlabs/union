@@ -1,6 +1,6 @@
 import * as S from "effect/Schema"
 
-const MAX_UINT128 = 2n ** 128n
+const MAX_UINT128 = (2n ** 128n) - 1n
 
 export class Uint128FromSelf extends S.BigIntFromSelf.pipe(
   S.betweenBigInt(0n, MAX_UINT128, {
