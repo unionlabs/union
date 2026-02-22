@@ -6,11 +6,13 @@
 import { flow, identity, Inspectable, Match, pipe } from "effect"
 import { NonEmptyReadonlyArray } from "effect/Array"
 import * as A from "effect/Array"
+import type * as Effect from "effect/Effect"
 import * as O from "effect/Option"
 import { Pipeable, pipeArguments } from "effect/Pipeable"
 import { ZkgmInstruction } from "./index.js"
 import * as internal from "./internal/batch.js"
 import * as TokenOrder from "./TokenOrder.js"
+import type * as Ucs03Ng from "./Ucs03Ng.js"
 
 /**
  * @category type ids
@@ -103,3 +105,5 @@ export const optimize = (self: Batch) =>
     // ),
     // Match.orElse((instructions: ZkgmInstruction.ZkgmInstruction[]) => make(instructions))
   )
+
+export const encodeNg: (self: Batch) => Effect.Effect<Ucs03Ng.Batch, any, any> = internal.encodeNg

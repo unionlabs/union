@@ -28,6 +28,10 @@ export function decode_ack(shape: any, ack: Uint8Array): any;
  * ack -> bytes
  */
 export function encode_ack(ack: any): any;
+/**
+ * (metadata kind, bytes) -> metadata
+ */
+export function decode_metadata(kind: number, metadata: Uint8Array): any;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
@@ -35,6 +39,7 @@ export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly decode_ack: (a: number, b: number, c: number, d: number) => void;
   readonly decode_instruction: (a: number, b: number, c: number) => void;
+  readonly decode_metadata: (a: number, b: number, c: number, d: number) => void;
   readonly decode_packet: (a: number, b: number, c: number) => void;
   readonly encode_ack: (a: number, b: number) => void;
   readonly encode_instruction: (a: number, b: number) => void;

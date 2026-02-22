@@ -16,7 +16,9 @@ import { Hex } from "./schema/hex.js"
 import * as Token from "./Token.js"
 import { TokenRegistry } from "./TokenRegistry.js"
 import * as Ucs03 from "./Ucs03.js"
+import * as Ucs03Ng from "./Ucs03Ng.js"
 import * as Ucs05 from "./Ucs05.js"
+import * as ZkgmWasm from "./ZkgmWasm.js"
 
 /**
  * @since 2.0.0
@@ -248,3 +250,8 @@ export const encodeV1: (self: TokenOrder) => (meta: {
  */
 export const encodeV2: (self: TokenOrder) => Effect.Effect<Ucs03.TokenOrderV2, ParseError, never> =
   internal.encodeV2
+
+export const encodeNg: (
+  self: TokenOrder,
+) => Effect.Effect<Ucs03Ng.TokenOrder, ParseError | ZkgmWasm.WasmError, ZkgmWasm.ZkgmWasm> =
+  internal.encodeNg

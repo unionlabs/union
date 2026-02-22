@@ -1,15 +1,17 @@
 import * as NodeContext from "@effect/platform-node/NodeContext"
 import { assert, describe, it } from "@effect/vitest"
+import * as Constants from "@unionlabs/sdk/Constants"
+import * as Ucs03Ng from "@unionlabs/sdk/Ucs03Ng"
+import * as ZkgmWasm from "@unionlabs/sdk/ZkgmWasm"
+import * as Arbitrary from "effect/Arbitrary"
 import * as Effect from "effect/Effect"
 import * as fc from "effect/FastCheck"
 import { pipe } from "effect/Function"
 import * as Layer from "effect/Layer"
 import * as Match from "effect/Match"
 import * as Schema from "effect/Schema"
-
-import * as Ucs03Ng from "@unionlabs/sdk/Ucs03Ng"
-import * as ZkgmWasm from "@unionlabs/sdk/ZkgmWasm"
-import * as Arbitrary from "effect/Arbitrary"
+import * as String from "effect/String"
+import { ChannelId } from "../src/schema/channel.js"
 
 const ZkgmWasmTest = pipe(
   ZkgmWasm.layerPlatform,
@@ -162,6 +164,7 @@ describe("WasmTest", () => {
           assert.deepStrictEqual(decoded, ack)
         }),
     )
+
     it.effect.prop(
       "InstructionFromUint8Array roundtrip",
       { instruction: Ucs03Ng.Root },
@@ -171,6 +174,84 @@ describe("WasmTest", () => {
           const decoded = yield* Schema.decode(Ucs03Ng.InstructionFromUint8Array)(encoded)
           assert.deepStrictEqual(decoded, instruction)
         }),
+    )
+
+    it.effect.each(
+      [
+        [Constants.EU_SOLVER_ON_ETH_METADATA, {
+          "@kind": "solve",
+          "solver_address": "0xe5cf13c84c0fea3236c101bd7d743d30366e5cf1",
+          "metadata": "0x",
+        }],
+        [Constants.EU_SOLVER_ON_UNION_METADATA, {
+          "@kind": "solve",
+          "solver_address":
+            "0x756e696f6e31657565756575657539766172347968647275797a6b6a6373683734787a65756736636b797936306873307663716e7a716c326871306c78633266",
+          "metadata": "0x",
+        }],
+        [Constants.SUI_SOLVER_ON_COSMOS_METADATA, {
+          "@kind": "solve",
+          "solver_address":
+            "0x756e696f6e316675666174676b79643233716d716c7a74346176776a33366b6668766a757572323070716a66387865776e78326d6e6873736573366473706d66",
+          "metadata": "0x",
+        }],
+        [Constants.SUI_SOLVER_ON_SUI_METADATA, {
+          "@kind": "solve",
+          "solver_address": "0x75637330332d7a6b676d2d657363726f772d7661756c74",
+          "metadata":
+            "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000017",
+        }],
+        [Constants.U_SOLVER_ON_ETH_METADATA, {
+          "@kind": "solve",
+          "solver_address": "0xba5ed44733953d79717f6269357c77718c8ba5ed",
+          "metadata": "0x",
+        }],
+        [Constants.U_SOLVER_ON_SUI_METADATA, {
+          "@kind": "solve",
+          "solver_address": "0x75637330332d7a6b676d2d6f776e65642d7661756c74",
+          "metadata": "0x",
+        }],
+        [Constants.U_SOLVER_ON_UNION_METADATA, {
+          "@kind": "solve",
+          "solver_address":
+            "0x756e696f6e3175757575757575757539756e3271706b73616d37726c747470786338646337366d63706868736d70333970786a6e737672746371767976353772",
+          "metadata": "0x",
+        }],
+      ] as const,
+    )(
+      "decode solver metadata $0",
+      Effect.fn(function*([metadata, expected]) {
+        const wasm = yield* ZkgmWasm.ZkgmWasm
+        const metadataBytes = yield* pipe(
+          metadata,
+          String.substring(2),
+          (hex) => Schema.decode(Schema.Uint8ArrayFromHex)(hex),
+        )
+        const decoded = yield* wasm.decodeMetadata(metadataBytes, 3)
+        assert.deepStrictEqual(decoded, expected)
+      }),
+    )
+
+    it.effect(
+      "can produce zkgm packet hash",
+      Effect.fn(function*() {
+        const packetBytes =
+          `6df6551135308aa284b6632011afa1f4f6c31a75e692c590c6448bfd38c2df840000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000002d79883d2000000000000000000000000000000000000000000000000000000000000000001e00000000000000000000000000000000000000000000000000002d79883d2000000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000002c756e696f6e31357a666133376879667a39776667663676633864666e66367378656863763038756c646c3863000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000148e22a7bdb25eb28c7dfb10664d8ed521abbb494a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000261750000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014ba5ed44733953d79717f6269357c77718c8ba5ed00000000000000000000000000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014ba5ed44733953d79717f6269357c77718c8ba5ed0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000`
+
+        const packet = yield* Schema.decode(Ucs03Ng.ZkgmPacketFromHex)(packetBytes)
+
+        const result = yield* Ucs03Ng.zkgmPacketToHash({
+          destinationChannelId: ChannelId.make(1),
+          sourceChannelId: ChannelId.make(3),
+          packet,
+          timeoutTimestamp: 1771933527062000000n,
+        })
+
+        assert.deepStrictEqual(
+          result,
+          "0x47209a2b3ae3d5c05c3acc33934e8eb7743209b8498fa59ea9d22e42b3bad321",
+        )
+      }),
     )
   })
 })

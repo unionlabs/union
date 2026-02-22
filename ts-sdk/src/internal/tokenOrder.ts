@@ -2,15 +2,19 @@ import { Effect, Inspectable, Match, Predicate, Schema } from "effect"
 import * as B from "effect/Boolean"
 import { dual, pipe } from "effect/Function"
 import { ParseError } from "effect/ParseResult"
+import * as ParseResult from "effect/ParseResult"
 import { pipeArguments } from "effect/Pipeable"
 import * as S from "effect/Schema"
+import * as String from "effect/String"
 import { Chain } from "../schema/chain.js"
 import { Hex } from "../schema/hex.js"
 import * as Token from "../Token.js"
 import * as TokenOrder from "../TokenOrder.js"
 import * as Ucs03 from "../Ucs03.js"
+import * as Ucs03Ng from "../Ucs03Ng.js"
 import * as Ucs05 from "../Ucs05.js"
 import * as Utils from "../Utils.js"
+import * as ZkgmWasm from "../ZkgmWasm.js"
 
 /** @internal */
 export const TypeId: TokenOrder.TypeId = Symbol.for(
@@ -479,3 +483,54 @@ export const encodeV2 = (
       ],
     })
   })
+
+export const encodeNg = Effect.fn("TokenOrder.encodeNg")(function*(self: TokenOrder.TokenOrder) {
+  const wasm = yield* ZkgmWasm.ZkgmWasm
+  const decodeMetadata = pipe(
+    Match.value(self.kind),
+    Match.when("initialize", () => 0),
+    Match.when("escrow", () => 1),
+    Match.when("unescrow", () => 2),
+    Match.when("solve", () => 3),
+    Match.exhaustive,
+    (kind) => wasm.decodeMetadata(kind),
+  )
+  const sender = yield* Ucs05.anyDisplayToZkgm(self.sender)
+  const receiver = yield* Ucs05.anyDisplayToZkgm(self.receiver)
+  return yield* pipe(
+    Match.value(self),
+    Match.when({ version: 1 }, () => Effect.die("Token Order (v1) encoding is unspported.")),
+    Match.when({ version: 2 }, (self) =>
+      pipe(
+        Effect.Do,
+        Effect.bind("metadata", () =>
+          pipe(
+            self.metadata,
+            Effect.fromNullable,
+            Effect.map(String.substring(2)),
+            Effect.flatMap(S.decode(S.Uint8ArrayFromHex)),
+            Effect.flatMap(decodeMetadata),
+            Effect.flatMap(S.validate(Ucs03Ng.TokenOrderV2Metadata)),
+            Effect.catchTag("NoSuchElementException", () =>
+              S.decodeUnknown(Ucs03Ng.TokenOrderV2Metadata)({
+                "@kind": self.kind,
+                "data": "0x",
+              })),
+          )),
+        Effect.flatMap(({ metadata }) =>
+          S.decode(S.typeSchema(Ucs03Ng.TokenOrderV2))({
+            "@opcode": "token_order",
+            "@version": "v2",
+            "base_amount": self.baseAmount,
+            "base_token": Utils.ensureHex(self.baseToken.address), // XXX: match properly
+            "quote_amount": self.quoteAmount,
+            "quote_token": Utils.ensureHex(self.quoteToken.address), // XXX: match properly
+            receiver,
+            sender,
+            metadata,
+          })
+        ),
+      )),
+    Match.exhaustive,
+  )
+})

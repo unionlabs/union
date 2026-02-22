@@ -18,6 +18,13 @@
 export * as Ucs03 from "./Ucs03.js"
 
 /**
+ * This module handles interaction with the [UCS03](https://docs.union.build/ucs/03/) protocol.
+ *
+ * @since 2.0.0
+ */
+export * as Ucs03Ng from "./Ucs03Ng.js"
+
+/**
  * This module handles interaction with the [UCS05](https://docs.union.build/ucs/05/) standard.
  *
  * @since 2.0.0

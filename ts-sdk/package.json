@@ -42,7 +42,8 @@
   "peerDependencies": {
     "@effect/experimental": "catalog:peer",
     "@effect/platform": "catalog:peer",
-    "effect": "catalog:peer",
+    "@effect/platform-node": "catalog:peer",
+    "effect": "catalog:peer^",
     "viem": "catalog:peer"
   },
   "devDependencies": {

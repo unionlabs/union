@@ -1,7 +1,11 @@
+import * as A from "effect/Array"
 import * as Effect from "effect/Effect"
 import { pipe } from "effect/Function"
 import * as ParseResult from "effect/ParseResult"
 import * as Schema from "effect/Schema"
+import * as Viem from "viem"
+import { keccak256 } from "viem"
+import { ChannelId } from "./schema/channel.js"
 import * as Uint256 from "./schema/uint256.js"
 import * as Uint64 from "./schema/uint64.js"
 import * as ZkgmWasm from "./ZkgmWasm.js"
@@ -470,3 +474,44 @@ export const InstructionFromUint8Array = Schema.transformOrFail(
       ),
   },
 )
+
+export const zkgmPacketToHash = (options: {
+  packet: ZkgmPacket
+  sourceChannelId: ChannelId
+  destinationChannelId: ChannelId
+  timeoutTimestamp: bigint
+}) =>
+  Effect.gen(function*() {
+    const abi = Viem.parseAbiParameters(
+      "(uint32 sourceChannelId, uint32 destinationChannelId, bytes packet, uint64 timeoutHeight, uint64 timeoutTimestamp)[]",
+    )
+
+    const encodeKeccak256 = (value: `0x${string}` | Uint8Array<ArrayBufferLike>) =>
+      Effect.try({
+        try: () => keccak256(value, "hex"),
+        catch: (cause) => cause as Error,
+      })
+
+    return yield* pipe(
+      options.packet,
+      Schema.encode(ZkgmPacketFromHex),
+      Effect.map((x) => `0x${x}` as const),
+      Effect.map((bytes) =>
+        Viem.encodeAbiParameters(
+          abi,
+          [
+            [
+              {
+                sourceChannelId: options.sourceChannelId,
+                destinationChannelId: options.destinationChannelId,
+                packet: bytes,
+                timeoutHeight: 0n,
+                timeoutTimestamp: options.timeoutTimestamp,
+              },
+            ],
+          ],
+        )
+      ),
+      Effect.flatMap(encodeKeccak256),
+    )
+  })

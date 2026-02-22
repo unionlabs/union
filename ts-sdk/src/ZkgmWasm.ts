@@ -61,6 +61,17 @@ export class ZkgmWasm extends Context.Tag("ZkgmWasm")<
     packetShape: (
       instruction: typeof Ucs03Ng.Root.Encoded,
     ) => Effect.Effect<typeof Ucs03Ng.RootShape.Encoded, WasmError, never>
+    decodeMetadata: {
+      (
+        kind: number,
+      ): (
+        metadata: Uint8Array<ArrayBufferLike>,
+      ) => Effect.Effect<typeof Ucs03Ng.TokenOrderV2Metadata.Encoded, WasmError, never>
+      (
+        metadata: Uint8Array<ArrayBufferLike>,
+        kind: number,
+      ): Effect.Effect<typeof Ucs03Ng.TokenOrderV2Metadata.Encoded, WasmError, never>
+    }
   }
 >() {}
 
@@ -174,6 +185,19 @@ const make = (
         Effect.map(identity<typeof Ucs03Ng.RootShape.Encoded>),
       ),
   ),
+  decodeMetadata: dual(2, (metadata, kind) =>
+    pipe(
+      Effect.try({
+        try: () => mod.decode_metadata(kind, metadata),
+        catch: (cause) =>
+          new WasmError({
+            message: "could not decode metadata",
+            cause,
+          }),
+      }),
+      Effect.map(identity<typeof Ucs03Ng.TokenOrderV2Metadata.Encoded>),
+      Effect.withSpan("decodeMetadata"),
+    )),
 })
 
 export const layerBrowser = (url: URL | string) =>

@@ -64,6 +64,7 @@ catalog:
 catalogMode: strict
 catalogs:
   peer:
+    '@effect/platform-node': ^0.97.0
     '@effect/experimental': '>=0.55'
     '@effect/platform': '>=0.91'
     effect: '>=3.17'

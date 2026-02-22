@@ -3,6 +3,7 @@
 export const memory: WebAssembly.Memory;
 export const decode_ack: (a: number, b: number, c: number, d: number) => void;
 export const decode_instruction: (a: number, b: number, c: number) => void;
+export const decode_metadata: (a: number, b: number, c: number, d: number) => void;
 export const decode_packet: (a: number, b: number, c: number) => void;
 export const encode_ack: (a: number, b: number) => void;
 export const encode_instruction: (a: number, b: number) => void;
