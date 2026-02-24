@@ -7,6 +7,8 @@ import { defineConfig } from "astro/config"
 import { loadEnv } from "vite"
 import { markdownConfiguration } from "./markdown.config.ts"
 
+import cloudflare from "@astrojs/cloudflare";
+
 const SITE_URL = "https://union.build"
 
 const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
@@ -23,9 +25,7 @@ export default defineConfig({
     contentIntellisense: true,
   },
   trailingSlash: "ignore",
-  adapter: vercel({
-    imageService: true,
-  }),
+  adapter: cloudflare(),
   image: {
     domains: [
       "cdn.contentful.com",
