@@ -8,9 +8,10 @@ import (
 	"github.com/unionlabs/union/uniond/app/upgrades"
 	"github.com/unionlabs/union/uniond/app/upgrades/v1_1_0"
 	"github.com/unionlabs/union/uniond/app/upgrades/v1_2_0"
+	"github.com/unionlabs/union/uniond/app/upgrades/v1_3_0"
 )
 
-var Upgrades = []upgrades.Upgrade{v1_1_0.Upgrade, v1_2_0.Upgrade}
+var Upgrades = []upgrades.Upgrade{v1_1_0.Upgrade, v1_2_0.Upgrade, v1_3_0.Upgrade}
 
 // configure store loader that checks if version == upgradeHeight and applies store upgrades
 func (app *App) setupUpgradeStoreLoaders() {
