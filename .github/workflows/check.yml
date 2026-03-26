@@ -25,6 +25,6 @@ jobs:
       - name: Check for LFS files
         run: ./.github/scripts/lfs.sh
       - name: Lint commit messages
-        uses: wagoid/commitlint-github-action@v5
+        uses: wagoid/commitlint-github-action@9763196e10f27aef304c9b8b660d31d97fce0f99 # v5
         with:
           failOnWarnings: false

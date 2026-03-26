@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
-      - uses: cachix/install-nix-action@v31
+      - uses: cachix/install-nix-action@51f3067b56fe8ae331890c77d4e454f6d60615ff # v31
         with:
           extra_nix_config: |
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
@@ -34,7 +34,7 @@ jobs:
           chmod -R u+w ./snapshot-pkg
       - uses: actions/setup-node@v4
         with: {node-version: 22}
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d # v3
         with:
           version: 10
           run_install: false
