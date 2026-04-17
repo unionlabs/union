@@ -25,6 +25,7 @@ _: {
       PUBLIC_LAST_MODIFIED_DATE = lastModifiedDate;
       PUBLIC_LAST_MODIFIED_EPOCH = lastModified;
       PUBLIC_SUPABASE_URL = "https://api.dashboard.union.build";
+      DEPLOYMENTS_JSON = pkgs.lib.escapeShellArg (builtins.readFile ../deployments/deployments.json);
       PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvcnF6cHVyeXJnZm5lY2FkYWpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQzNzM0NDAsImV4cCI6MjA0OTk0OTQ0MH0.4xkWpfMkYgBz4nqUGkZVjQNP7NxLa4filDoJRCI3yWo";
     in
     {
@@ -59,6 +60,7 @@ _: {
             export PUBLIC_LAST_MODIFIED_EPOCH="${PUBLIC_LAST_MODIFIED_EPOCH}"
             export PUBLIC_SUPABASE_URL="${PUBLIC_SUPABASE_URL}"
             export PUBLIC_SUPABASE_ANON_KEY="${PUBLIC_SUPABASE_ANON_KEY}"
+            export PUBLIC_DEPLOYMENTS_JSON=${DEPLOYMENTS_JSON}
             pnpm --filter=app2 --filter=effect-svelte prepare
             pnpm --filter=app2 build
             runHook postBuild
@@ -91,6 +93,7 @@ _: {
               export PUBLIC_LAST_MODIFIED_EPOCH="${PUBLIC_LAST_MODIFIED_EPOCH}"
               export PUBLIC_SUPABASE_URL="${PUBLIC_SUPABASE_URL}"
               export PUBLIC_SUPABASE_ANON_KEY="${PUBLIC_SUPABASE_ANON_KEY}"
+              export PUBLIC_DEPLOYMENTS_JSON=${DEPLOYMENTS_JSON}
               pnpm install
               pnpm run dev --host
             '';
@@ -112,6 +115,7 @@ _: {
               export PUBLIC_LAST_MODIFIED_EPOCH="${PUBLIC_LAST_MODIFIED_EPOCH}"
               export PUBLIC_SUPABASE_URL="${PUBLIC_SUPABASE_URL}"
               export PUBLIC_SUPABASE_ANON_KEY="${PUBLIC_SUPABASE_ANON_KEY}"
+              export PUBLIC_DEPLOYMENTS_JSON=${DEPLOYMENTS_JSON}
               pnpm run check --watch --threshold error
             '';
           };

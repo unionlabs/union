@@ -189,6 +189,14 @@ export const handleCosmosAllowances = (
     )
     const client = Cosmos.Client.Live(rpc)
 
+    const minter_address = yield* Option.fromNullable(sourceChain.minter_address_display).pipe(
+      Effect.mapError(() =>
+        new AllowanceCheckError({
+          message: `Could not determine minter address for chain ${sourceChain.universal_chain_id}`,
+        })
+      ),
+    )
+
     return yield* pipe(
       tokenAddresses,
       // TODO: check token filtering
@@ -196,11 +204,11 @@ export const handleCosmosAllowances = (
       A.map((token) =>
         pipe(
           Cosmos.readCw20Allowance(
-            // XXX: type assertions
-            Ucs05.CosmosDisplay.make({ address: token.address as unknown as any }),
+            // XXX: less-bad-than-before type assertions
+            Ucs05.CosmosDisplay.make({ address: token.address as `${string}1${string}` }),
             sender,
             Ucs05.CosmosDisplay.make({
-              address: sourceChain.minter_address_display as unknown as any,
+              address: minter_address as `${string}1${string}`,
             }),
           ),
           Effect.tap((a) => Effect.log("allowance result", a)),
