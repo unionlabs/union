@@ -78,6 +78,7 @@ mod instantiate_tests;
 mod ownership_tests;
 mod query_tests;
 mod rebase_tests;
+mod receive_batch_tests;
 mod reward_tests;
 mod submit_batch_tests;
 mod test_helper;
