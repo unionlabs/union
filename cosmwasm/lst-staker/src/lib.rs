@@ -125,7 +125,7 @@ pub fn execute(
 
             deps.storage.write_item::<LstHub>(&address);
 
-            Ok(Response::new().add_event(SetLstHubAddress { address }))
+            Ok(Response::new().add_event(SetLstHubAddress { address: &address }))
         }
         ExecuteMsg::SetValidators(validators) => {
             ensure_local_admin_or_self(deps.as_ref(), &env, &info)?;

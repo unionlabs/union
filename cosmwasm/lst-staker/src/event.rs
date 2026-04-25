@@ -63,8 +63,8 @@ use cosmwasm_std::{Addr, Decimal256};
 
 #[derive(Event)]
 #[event("set_lst_hub_address")]
-pub struct SetLstHubAddress {
-    pub address: Addr,
+pub struct SetLstHubAddress<'a> {
+    pub address: &'a Addr,
 }
 
 #[derive(Event)]

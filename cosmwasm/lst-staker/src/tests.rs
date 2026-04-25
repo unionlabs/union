@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use cosmwasm_std::{
-    Addr, Coin, ContractResult, DecCoin, Decimal, DistributionMsg, Event, Order, OwnedDeps,
-    QuerierResult, Response, StakingMsg, Uint128, WasmQuery, from_json,
+    Addr, Coin, ContractResult, DecCoin, Decimal, DistributionMsg, Order, OwnedDeps, QuerierResult,
+    Response, StakingMsg, Uint128, WasmQuery, from_json,
     testing::{MockApi, MockQuerier, MockStorage, message_info, mock_dependencies, mock_env},
     to_json_binary,
 };
@@ -17,7 +17,8 @@ use lst::{
 };
 
 use crate::{
-    ContractError, execute, msg::ExecuteMsg, redisribute_delegations, withdraw_all_rewards,
+    ContractError, event::SetLstHubAddress, execute, msg::ExecuteMsg, redisribute_delegations,
+    withdraw_all_rewards,
 };
 
 const ADMIN: &str = "admin";
