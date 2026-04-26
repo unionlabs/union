@@ -205,6 +205,7 @@
         ./effect-svelte/effect-svelte.nix
         ./typescript-sdk/typescript-sdk.nix
         ./cosmwasm/cosmwasm.nix
+        ./cosmwasm/lst-ocw/lst-ocw.nix
         ./evm/evm.nix
         ./tools/rust-proto.nix
         ./tools/tools.nix

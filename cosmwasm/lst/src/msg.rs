@@ -221,7 +221,7 @@ pub enum QueryMsg {
     },
 
     /// Queries a paginated list of all submitted batches.
-    #[cfg_attr(feature = "schemars", returns(BatchesResponse<IdentifiedBatch<SubmittedBatch>>))]
+    #[cfg_attr(feature = "schemars", returns(BatchesResponse<SubmittedBatch>))]
     SubmittedBatches {
         /// If provided, starts listing batches after this batch ID.
         start_after: Option<BatchId>,
@@ -231,7 +231,7 @@ pub enum QueryMsg {
     },
 
     /// Queries a paginated list of all received batches.
-    #[cfg_attr(feature = "schemars", returns(BatchesResponse<IdentifiedBatch<ReceivedBatch>>))]
+    #[cfg_attr(feature = "schemars", returns(BatchesResponse<ReceivedBatch>))]
     ReceivedBatches {
         /// If provided, starts listing batches after this batch ID.
         start_after: Option<BatchId>,
@@ -241,14 +241,14 @@ pub enum QueryMsg {
     },
 
     /// Queries the batches with the provided list of IDs.
-    #[cfg_attr(feature = "schemars", returns(BatchesResponse<IdentifiedBatch<Batch>>))]
+    #[cfg_attr(feature = "schemars", returns(BatchesResponse<Batch>))]
     BatchesByIds {
         /// List of batch IDs to fetch.
         batch_ids: Vec<BatchId>,
     },
 
     /// Queries the current batch that is pending processing (if any).
-    #[cfg_attr(feature = "schemars", returns(Batch))]
+    #[cfg_attr(feature = "schemars", returns(PendingBatch))]
     PendingBatch {},
 
     /// Queries the unstake requests made by a specific staker.
