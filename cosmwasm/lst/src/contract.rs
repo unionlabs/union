@@ -69,9 +69,9 @@ use crate::{
     error::ContractError,
     event::Init,
     execute::{
-        FEE_RATE_DENOMINATOR, accept_ownership, bond, circuit_breaker, rebase, receive_rewards,
-        receive_unstaked_tokens, resume_contract, revoke_ownership_transfer, slash_batches,
-        submit_batch, transfer_ownership, unbond, update_config, withdraw,
+        FEE_RATE_DENOMINATOR, accept_ownership, bond, circuit_breaker, rebase, receive_batch,
+        receive_rewards, receive_unstaked_tokens, resume_contract, revoke_ownership_transfer,
+        slash_batches, submit_batch, transfer_ownership, unbond, update_config, withdraw,
     },
     msg::{ExecuteMsg, InitMsg, QueryMsg},
     query::{
@@ -208,6 +208,7 @@ pub fn execute(
         ),
         ExecuteMsg::ReceiveRewards {} => receive_rewards(deps, info),
         ExecuteMsg::Rebase {} => rebase(deps, info),
+        ExecuteMsg::ReceiveBatch { batch_id } => receive_batch(deps, env, info, batch_id),
         ExecuteMsg::ReceiveUnstakedTokens { batch_id } => {
             receive_unstaked_tokens(deps, env, info, batch_id)
         }

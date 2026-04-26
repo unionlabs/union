@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use cosmwasm_std::{
-    Addr, Coin, ContractResult, DecCoin, Decimal, DistributionMsg, Event, Order, OwnedDeps,
-    QuerierResult, Response, StakingMsg, Uint128, WasmQuery, from_json,
+    Addr, Coin, ContractResult, DecCoin, Decimal, DistributionMsg, Order, OwnedDeps, QuerierResult,
+    Response, StakingMsg, Uint128, WasmQuery, from_json,
     testing::{MockApi, MockQuerier, MockStorage, message_info, mock_dependencies, mock_env},
     to_json_binary,
 };
@@ -11,10 +11,14 @@ use cw_account::{
     types::{Admin, LocalAdmin},
 };
 use depolama::StorageExt;
-use lst::{msg::ConfigResponse, types::ProtocolFeeConfig};
+use lst::{
+    msg::ConfigResponse,
+    types::{BatchId, ProtocolFeeConfig},
+};
 
 use crate::{
-    ContractError, execute, msg::ExecuteMsg, redisribute_delegations, withdraw_all_rewards,
+    ContractError, event::SetLstHubAddress, execute, msg::ExecuteMsg, redisribute_delegations,
+    withdraw_all_rewards,
 };
 
 const ADMIN: &str = "admin";
@@ -133,8 +137,7 @@ fn lst_ops_require_lst() {
             ExecuteMsg::SetLstHubAddress(lst_hub.clone()),
         )
         .unwrap(),
-        Response::new()
-            .add_event(Event::new("set_lst_hub_address").add_attribute("address", &lst_hub)),
+        Response::new().add_event(SetLstHubAddress { address: &lst_hub }),
     );
 
     assert_eq!(
@@ -156,6 +159,21 @@ fn lst_ops_require_lst() {
             mock_env(),
             message_info(&non_admin, &[]),
             ExecuteMsg::Staker(lst::msg::StakerExecuteMsg::Rebase {}),
+        )
+        .unwrap_err(),
+        ContractError::OnlyLstHub {
+            sender: non_admin.clone(),
+        },
+    );
+
+    assert_eq!(
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&non_admin, &[]),
+            ExecuteMsg::Staker(lst::msg::StakerExecuteMsg::ReceiveUnstakedTokens {
+                batch_id: BatchId::ONE
+            }),
         )
         .unwrap_err(),
         ContractError::OnlyLstHub {

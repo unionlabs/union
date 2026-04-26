@@ -111,8 +111,8 @@ pub enum ExecuteMsg {
         /// The address to mint the LST to.
         mint_to_address: Addr,
 
-        /// Minimum expected amount of LST tokens to be received
-        /// for the operation to be considered valid.
+        /// Minimum expected amount of LST tokens to be received for the operation to be considered
+        /// valid.
         min_mint_amount: Uint128,
     },
 
@@ -134,7 +134,7 @@ pub enum ExecuteMsg {
     SubmitBatch {},
 
     TransferOwnership {
-        /// Address of the new owner on the protocol chain.
+        /// Address of the new owner.
         #[cfg_attr(feature = "schemars", schemars(with = "Addr"))]
         new_owner: String,
     },
@@ -159,11 +159,15 @@ pub enum ExecuteMsg {
         /// Updated unbonding period for this chain.
         unbonding_period_seconds: Option<u64>,
     },
+
     /// Receives rewards from the native chain.
     ReceiveRewards {},
 
     /// Rebase the LST by claiming all current pending rewards and restaking them.
     Rebase {},
+
+    /// Call the staker contract to receive the unstaked tokens for the specified batch.
+    ReceiveBatch { batch_id: BatchId },
 
     /// Receives unstaked tokens from the native chain.
     ReceiveUnstakedTokens {
@@ -185,6 +189,7 @@ pub enum ExecuteMsg {
         /// Updated total protocol rewards.
         total_reward_amount: Uint128,
     },
+
     SlashBatches {
         new_amounts: Vec<BatchExpectedAmount>,
     },
@@ -324,7 +329,7 @@ pub enum Batch {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
-#[serde(deny_unknown_fields, rename_all = "snake_case", tag = "status")]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum StakerExecuteMsg {
     /// Stake the tokens provided along with this call.
     ///
@@ -338,4 +343,8 @@ pub enum StakerExecuteMsg {
     ///
     /// This must only be callable by the LST hub itself.
     Rebase {},
+    /// Receive the unstaked tokens for a completed batch.
+    ///
+    /// This must only be callable by the LST hub itself.
+    ReceiveUnstakedTokens { batch_id: BatchId },
 }
