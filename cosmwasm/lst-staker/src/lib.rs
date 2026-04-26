@@ -523,12 +523,8 @@ fn receive_unstaked_tokens(
                     }],
                 )?))
         }
-        Batch::Pending(_) => {
-            return Err(ContractError::BatchStillPending { batch_id });
-        }
-        Batch::Received(_) => {
-            return Err(ContractError::BatchAlreadyReceived { batch_id });
-        }
+        Batch::Pending(_) => Err(ContractError::BatchStillPending { batch_id }),
+        Batch::Received(_) => Err(ContractError::BatchAlreadyReceived { batch_id }),
     }
 }
 
