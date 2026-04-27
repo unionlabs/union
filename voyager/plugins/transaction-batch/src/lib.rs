@@ -442,15 +442,25 @@ impl Module {
 
                             trace!(%client_id, "batching event");
 
-                            batchers_union.entry(client_id).or_default().push((
-                                idx,
-                                BatchableEvent {
-                                    first_seen_at,
-                                    provable_height: chain_event.provable_height,
-                                    // TODO: Handle this more gracefully
-                                    event: full_ibc_event.try_into().unwrap(),
-                                },
-                            ));
+                            if let ibc_union_spec::event::FullEvent::PacketSend(event) =
+                                &full_ibc_event
+                                && event.packet.timeout_timestamp.as_millis() <= first_seen_at
+                            {
+                                info!(
+                                    packet_hash = %event.packet().hash(),
+                                    "packet timed out, will not attempt to submit it to the destination chain"
+                                );
+                            } else {
+                                batchers_union.entry(client_id).or_default().push((
+                                    idx,
+                                    BatchableEvent {
+                                        first_seen_at,
+                                        provable_height: chain_event.provable_height,
+                                        // TODO: Handle this more gracefully
+                                        event: full_ibc_event.try_into().unwrap(),
+                                    },
+                                ));
+                            }
                         }
                     }
                     Err(msg) => {
