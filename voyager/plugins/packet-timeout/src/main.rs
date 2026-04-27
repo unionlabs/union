@@ -4,7 +4,7 @@ use ibc_union_spec::{
     IbcUnion,
     datagram::{Datagram, MsgPacketTimeout},
     event::FullEvent,
-    path::BatchReceiptsPath,
+    path::{BatchPacketsPath, BatchReceiptsPath, COMMITMENT_MAGIC_ACK},
 };
 use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
@@ -172,6 +172,20 @@ impl PluginServer<ModuleCall, Never> for Module {
                     )
                     .await?;
 
+                let timeout_sent = voyager_client
+                    .query_ibc_state(
+                        chain_id.clone(),
+                        QueryHeight::Latest,
+                        BatchPacketsPath::from_packet(&event.packet()),
+                    )
+                    .await?;
+
+                if timeout_sent == COMMITMENT_MAGIC_ACK {
+                    info!("packet timeout already received");
+
+                    return Ok(noop());
+                }
+
                 let proof_unreceived = voyager_client
                     .query_ibc_proof(
                         counterparty_chain_id.clone(),
@@ -183,6 +197,8 @@ impl PluginServer<ModuleCall, Never> for Module {
 
                 match proof_unreceived.proof_type {
                     ProofType::NonMembership => {
+                        info!("packet not received yet");
+
                         Ok(seq([
                             // wait for the counterparty to finalize the timeout timestamp
                             call(PluginMessage::new(
@@ -221,13 +237,17 @@ impl PluginServer<ModuleCall, Never> for Module {
                 client_id,
                 timestamp,
             }) => {
-                let latest_finalized_timestamp = voyager_client
-                    .query_latest_timestamp(chain_id.clone(), true)
+                let latest_timestamp = voyager_client
+                    .query_latest_timestamp(chain_id.clone(), false)
                     .await?;
 
-                if latest_finalized_timestamp < timestamp {
+                if latest_timestamp < timestamp {
+                    info!(
+                        "timestamp not reached: latest_timestamp ({latest_timestamp}) < timestamp ({timestamp})"
+                    );
+
                     Ok(seq([
-                        // if the latest finalized timestamp isn't high enough yet, wait a bit and try again
+                        // if the latest timestamp isn't high enough yet, wait a bit and try again
                         defer_relative(60),
                         call(PluginMessage::new(
                             self.plugin_name(),
@@ -240,18 +260,26 @@ impl PluginServer<ModuleCall, Never> for Module {
                         )),
                     ]))
                 } else {
-                    let latest_finalized_height = voyager_client
-                        .query_latest_height(counterparty_chain_id.clone(), true)
+                    info!(
+                        "timestamp reached: latest_timestamp ({latest_timestamp}) >= timestamp ({timestamp})"
+                    );
+
+                    let latest_height = voyager_client
+                        .query_latest_height(counterparty_chain_id.clone(), false)
                         .await?;
 
                     let client_info = voyager_client
                         .client_info::<IbcUnion>(chain_id.clone(), client_id)
                         .await?;
 
+                    info!(
+                        "updating client {client_id} on {counterparty_chain_id} to {latest_height}"
+                    );
+
                     let client_meta = voyager_client
                         .client_state_meta::<IbcUnion>(
                             chain_id.clone(),
-                            QueryHeight::Finalized,
+                            QueryHeight::Latest,
                             client_id,
                         )
                         .await?;
@@ -264,7 +292,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                             counterparty_chain_id: chain_id.clone(),
                             client_id: RawClientId::new(client_id),
                             update_from: client_meta.counterparty_height,
-                            update_to: latest_finalized_height,
+                            update_to: latest_height,
                         })],
                         [],
                         AggregateSubmitTxFromOrderedHeaders {
@@ -283,7 +311,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                 let client_meta = voyager_client
                     .client_state_meta::<IbcUnion>(
                         chain_id.clone(),
-                        QueryHeight::Finalized,
+                        QueryHeight::Latest,
                         event.packet.source_channel.connection.client_id,
                     )
                     .await?;
@@ -291,13 +319,18 @@ impl PluginServer<ModuleCall, Never> for Module {
                 let consensus_state_meta = voyager_client
                     .consensus_state_meta::<IbcUnion>(
                         chain_id.clone(),
-                        QueryHeight::Finalized,
+                        QueryHeight::Latest,
                         event.packet.source_channel.connection.client_id,
                         client_meta.counterparty_height,
                     )
                     .await?;
 
                 if consensus_state_meta.timestamp >= event.packet.timeout_timestamp {
+                    info!(
+                        "timestamp reached: consensus_state.timestamp ({}) >= event.timeout_timestamp ({})",
+                        consensus_state_meta.timestamp, event.packet.timeout_timestamp,
+                    );
+
                     let proof_unreceived = voyager_client
                         .query_ibc_proof(
                             counterparty_chain_id,
@@ -345,6 +378,11 @@ impl PluginServer<ModuleCall, Never> for Module {
                         }
                     }
                 } else {
+                    info!(
+                        "timestamp not reached: consensus_state.timestamp ({}) < event.timeout_timestamp ({})",
+                        consensus_state_meta.timestamp, event.packet.timeout_timestamp,
+                    );
+
                     Ok(seq([
                         // if the latest trusted timestamp isn't high enough yet, wait a bit and try again
                         defer_relative(10),

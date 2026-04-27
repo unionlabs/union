@@ -77,6 +77,17 @@ impl Timestamp {
         self.0
     }
 
+    /// Access the inner timestamp value, as ***milliseconds***.
+    ///
+    /// ```rust
+    /// # use consensus_primitives::Timestamp;
+    /// assert_eq!(Timestamp::from_secs(1).as_millis(), 1_000);
+    /// ```
+    #[must_use = "accessing the inner value has no effect"]
+    pub const fn as_millis(&self) -> u64 {
+        self.0 / 1_000_000
+    }
+
     /// Access the inner timestamp value, as ***seconds***.
     ///
     /// ```rust
