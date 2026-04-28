@@ -7,6 +7,7 @@ members = [
   "cosmwasm/multicall",
   "cosmwasm/lst",
   "cosmwasm/lst-staker",
+  "cosmwasm/lst-ocw",
 
   "cosmwasm/core",
   "cosmwasm/core/msg",

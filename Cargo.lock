@@ -8196,6 +8196,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "lst-ocw"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "bip32 0.5.3",
+ "clap",
+ "cometbft-rpc",
+ "cosmos-client",
+ "embed-commit",
+ "futures",
+ "lst",
+ "protos",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unionlabs",
+]
+
+[[package]]
 name = "lst-staker"
 version = "0.0.0"
 dependencies = [
