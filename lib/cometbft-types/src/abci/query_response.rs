@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
-use unionlabs::{
-    bounded::BoundedI64,
-    primitives::{Bytes, encoding::Base64},
-};
+use unionlabs::primitives::{Bytes, encoding::Base64};
 
-use crate::{code::Code, crypto::proof_ops::ProofOps};
+use crate::{CometbftHeight, code::Code, crypto::proof_ops::ProofOps};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -20,8 +17,7 @@ pub struct QueryResponse {
     pub value: Option<Bytes<Base64>>,
     #[serde(rename = "proofOps")]
     pub proof_ops: Option<ProofOps>,
-    #[serde(with = "::serde_utils::string")]
-    pub height: BoundedI64<0, { i64::MAX }>,
+    pub height: CometbftHeight,
     pub codespace: String,
 }
 
@@ -41,7 +37,7 @@ pub mod proto {
                 key: value.key.unwrap_or_default().into_vec(),
                 value: value.value.unwrap_or_default().into_vec(),
                 proof_ops: value.proof_ops.map(Into::into),
-                height: value.height.inner(),
+                height: value.height.into(),
                 codespace: value.codespace,
             }
         }

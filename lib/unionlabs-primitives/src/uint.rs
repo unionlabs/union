@@ -571,7 +571,10 @@ mod u256_tests {
     #[test]
     fn roundtrip() {
         unionlabs::test_utils::assert_json_roundtrip(&U256::from_str("123456").unwrap());
-        unionlabs::test_utils::assert_string_roundtrip(&U256::from_str("123456").unwrap());
+        unionlabs::test_utils::assert_string_roundtrip(
+            "123456",
+            &U256::from_str("123456").unwrap(),
+        );
     }
 
     #[test]

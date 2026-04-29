@@ -1,11 +1,10 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
-    bounded::BoundedI64,
     google::protobuf::timestamp::Timestamp,
     primitives::{H160, H256, encoding::HexUnprefixed},
 };
 
-use crate::{types::block_id::BlockId, version::consensus::Consensus};
+use crate::{CometbftHeight, types::block_id::BlockId, version::consensus::Consensus};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
@@ -13,8 +12,7 @@ pub struct Header {
     /// basic block info
     pub version: Consensus,
     pub chain_id: String,
-    #[serde(with = "::serde_utils::string")]
-    pub height: BoundedI64<0, { i64::MAX }>,
+    pub height: CometbftHeight,
     pub time: Timestamp,
     /// prev block info
     pub last_block_id: BlockId,

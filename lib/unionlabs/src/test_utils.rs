@@ -28,13 +28,15 @@ where
 }
 
 #[track_caller]
-pub fn assert_string_roundtrip<T>(t: &T)
+pub fn assert_string_roundtrip<T>(s: &str, t: &T)
 where
     T: Display + FromStr<Err: Debug> + Debug + PartialEq,
 {
-    let from_str = t.to_string().parse::<T>().unwrap();
+    let display = t.to_string();
 
-    assert_eq!(t, &from_str, "string roundtrip failed");
+    assert_eq!(s, &display, "display is not equal");
+
+    assert_eq!(&display.parse::<T>().unwrap(), t, "parse is not equal");
 }
 
 #[track_caller]

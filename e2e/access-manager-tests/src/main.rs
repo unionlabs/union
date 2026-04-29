@@ -1,4 +1,4 @@
-use std::{fmt::Display, num::NonZero, path::PathBuf};
+use std::{fmt::Display, num::NonZero, ops::Add, path::PathBuf};
 
 use access_manager_types::{
     RoleId, Selector,
@@ -161,7 +161,7 @@ async fn wait_for_finalized_block_with(
                     .signed_header
                     .header
                     .height
-                    .add(&if commit.canonical { 0 } else { -1 })
+                    .add(if commit.canonical { 0 } else { -1 })
                     .inner()
                     .try_into()
                     .unwrap(),

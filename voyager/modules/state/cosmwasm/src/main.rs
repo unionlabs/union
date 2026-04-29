@@ -212,11 +212,7 @@ impl Module {
 
                 let block_results = self
                     .cometbft_client
-                    .block_results(Some(
-                        (block_response.block.header.height.inner() as u64)
-                            .try_into()
-                            .expect("block number is valid"),
-                    ))
+                    .block_results(Some(block_response.block.header.height))
                     .await
                     .map_err(RpcError::retryable(format!(
                         "error querying block {}",
@@ -341,11 +337,7 @@ impl Module {
 
                 let block_results = self
                     .cometbft_client
-                    .block_results(Some(
-                        (block_response.block.header.height.inner() as u64)
-                            .try_into()
-                            .expect("block number is valid"),
-                    ))
+                    .block_results(Some(block_response.block.header.height))
                     .await
                     .map_err(RpcError::retryable(format!(
                         "error querying block {}",

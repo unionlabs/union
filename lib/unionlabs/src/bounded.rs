@@ -8,6 +8,9 @@ macro_rules! bounded_int {
             pub struct $Struct<const MIN: $ty, const MAX: $ty = { <$ty>::MAX }>($ty);
 
             impl<const MIN: $ty, const MAX: $ty> $Struct<MIN, MAX> {
+                pub const MIN: Self = Self(MIN);
+                pub const MAX: Self = Self(MAX);
+
                 #[must_use]
                 pub const fn inner(self) -> $ty {
                     self.0

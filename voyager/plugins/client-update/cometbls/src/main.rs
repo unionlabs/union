@@ -232,6 +232,7 @@ impl Module {
         // 3. compute trusted power
         let mut trusted_power = 0;
         for sig in signed_header.commit.signatures.iter() {
+            let sig = sig.clone().try_into().unwrap();
             if let CommitSig::Commit {
                 validator_address, ..
             } = sig
@@ -436,6 +437,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     // don't find a validator for a given signature as the validator set
                     // may have drifted (trusted validator set).
                     for sig in signed_header.commit.signatures.iter() {
+                        let sig = sig.clone().try_into().unwrap();
                         match sig {
                             CommitSig::Absent => {
                                 debug!("validator did not sign");
