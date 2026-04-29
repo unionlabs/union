@@ -1052,8 +1052,8 @@
         "name": "lst-hub",
         "salt": "0x6c73742f6575",
         "height": 2930850,
-        "commit": "a818f4db1a67592b0c040066dd1a6ad5b598eebe",
-        "code_id": 93
+        "commit": "15fbf11b948c239aad1fd7579d18b0173bf67def",
+        "code_id": 96
       },
       "union1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs4hj904": {
         "name": "lightclients/state-lens/ics23/mpt",
@@ -1135,8 +1135,8 @@
         "name": "lightclients/bob",
         "salt": "0x6c69676874636c69656e74732f626f62",
         "height": 461757,
-        "commit": "3f4f862141d7cc5361bb6aec28c0d84c42683abb",
-        "code_id": 79
+        "commit": "627c3303d52088b64fd2a7032ba23de36b546554",
+        "code_id": 98
       }
     }
   },
