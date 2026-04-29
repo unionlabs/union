@@ -2,8 +2,9 @@ const resendSecret = Deno.env.get("RESEND_SECRET")
 const resendApiKey = Deno.env.get("RESEND_API_KEY")
 
 const handler = async (request: Request): Promise<Response> => {
-  const { secret, email } = await request.json()
-  if (secret !== resendSecret) {
+  const authHeader = request.headers.get("Authorization")
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null
+  if (!token || token !== resendSecret) {
     return new Response(JSON.stringify("too bad"), {
       status: 403,
       headers: {
@@ -11,6 +12,7 @@ const handler = async (request: Request): Promise<Response> => {
       },
     })
   }
+  const { email } = await request.json()
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
