@@ -19,7 +19,7 @@ export const settlementDelays = {
     interval: "12 hours",
   },
   "corn.21000000": {
-    url: "https://etherscan.io/address/0x828C71bc1D7A34F32FfA624240633b6B7272C3D6",
+    url: "https://etherscan.io/address/0x09ed7e66dd7c7129ec3994498a521b502ca7d61b",
     interval: "12 hours",
   },
   "arbitrum.42161": {

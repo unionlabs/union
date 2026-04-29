@@ -1,4 +1,4 @@
-// #![warn(clippy::unwrap_used)]
+#![warn(clippy::unwrap_used)]
 
 use std::collections::VecDeque;
 
@@ -147,7 +147,8 @@ impl Module {
             .map_err(RpcError::retryable("error fetching output proposal proof"))?
             .storage_proof
             .try_into()
-            .unwrap();
+            .expect("incorrect amount of proofs returned, expected only one");
+
         Ok(StorageProof {
             key: U256::from_be_bytes(proof.key.as_b256().0),
             value: U256::from_be_bytes(proof.value.to_be_bytes()),
@@ -230,7 +231,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                                     .client_id
                                     .clone()
                                     .decode_spec::<IbcUnion>()
-                                    .unwrap(),
+                                    .expect("unexpected message in queue"),
                             }),
                         ))
                     })
@@ -614,7 +615,9 @@ impl Module {
                         gas_limit: l2_block.header.gas_limit,
                         gas_used: l2_block.header.gas_used,
                         timestamp: l2_block.header.timestamp,
-                        extra_data: l2_block.header.extra_data.to_vec().try_into().unwrap(),
+                        extra_data: <Bytes>::from(l2_block.header.extra_data.clone())
+                            .try_into()
+                            .map_err(RpcError::fatal("invalid header extra_data"))?,
                         mix_hash: l2_block.header.mix_hash.unwrap_or_default().into(),
                         nonce: l2_block.header.nonce.unwrap_or_default().into(),
                         base_fee_per_gas: l2_block
@@ -622,15 +625,35 @@ impl Module {
                             .base_fee_per_gas
                             .unwrap_or_default()
                             .into(),
-                        withdrawals_root: l2_block.header.withdrawals_root.unwrap().into(),
-                        blob_gas_used: l2_block.header.blob_gas_used.unwrap(),
-                        excess_blob_gas: l2_block.header.excess_blob_gas.unwrap(),
+                        withdrawals_root: l2_block
+                            .header
+                            .withdrawals_root
+                            .ok_or_else(|| {
+                                RpcError::fatal_from_message("missing header withdrawals_root")
+                            })?
+                            .into(),
+                        blob_gas_used: l2_block.header.blob_gas_used.ok_or_else(|| {
+                            RpcError::fatal_from_message("missing header blob_gas_used")
+                        })?,
+                        excess_blob_gas: l2_block.header.excess_blob_gas.ok_or_else(|| {
+                            RpcError::fatal_from_message("missing header excess_bob_gas")
+                        })?,
                         parent_beacon_block_root: l2_block
                             .header
                             .parent_beacon_block_root
-                            .unwrap()
+                            .ok_or_else(|| {
+                                RpcError::fatal_from_message(
+                                    "missing header parent_beacon_block_root",
+                                )
+                            })?
                             .into(),
-                        requests_hash: l2_block.header.requests_hash.unwrap().into(),
+                        requests_hash: l2_block
+                            .header
+                            .requests_hash
+                            .ok_or_else(|| {
+                                RpcError::fatal_from_message("missing header requests_hash")
+                            })?
+                            .into(),
                     },
                     dispute_game_factory_account_proof,
                     output_root_proof,
