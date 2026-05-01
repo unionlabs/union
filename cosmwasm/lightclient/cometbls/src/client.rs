@@ -41,7 +41,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
 
     type ConsensusState = ConsensusState;
 
-    type StorageProof = MerkleProof;
+    type StateProof = MerkleProof;
 
     type Encoding = Bincode;
 
@@ -49,7 +49,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
@@ -76,7 +76,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
     ) -> Result<(), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(height)?;

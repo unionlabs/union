@@ -15,10 +15,8 @@ use ibc_union_spec::Channel;
 
 use super::*;
 use crate::{
-    contract::{
-        events::{ChannelOpenAck, ChannelOpenTry},
-        init,
-    },
+    contract::init,
+    events::{ChannelOpenAck, ChannelOpenTry},
     state::{ChannelOwner, Channels, Connections},
 };
 

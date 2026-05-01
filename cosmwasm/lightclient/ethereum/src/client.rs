@@ -50,7 +50,7 @@ impl IbcClient for EthereumLightClient {
 
     type ConsensusState = ConsensusState;
 
-    type StorageProof = StorageProof;
+    type StateProof = StorageProof;
 
     type Encoding = Bincode;
 
@@ -58,7 +58,7 @@ impl IbcClient for EthereumLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
@@ -74,7 +74,7 @@ impl IbcClient for EthereumLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         Ok(verify_non_membership(
@@ -126,7 +126,8 @@ impl IbcClient for EthereumLightClient {
             return Err(Error::NoInitialSyncCommittee.into());
         };
         let mut client_state = client_state.clone();
-        // We only require this at the creation phase. The client then manages the committees in a separate storage.
+        // We only require this at the creation phase. The client then manages the committees in a
+        // separate storage.
         client_state.initial_sync_committee = None;
 
         let current_sync_period = if client_state.chain_spec == PresetBaseKind::Minimal {
@@ -337,9 +338,9 @@ fn update_state<C: ChainSpec>(
     let trusted_height = header.trusted_height;
     let consensus_update = header.consensus_update.update_data();
 
-    // TODO(aeryz): we should ditch this functionality as it complicates the light client and we don't use it
-    // Some updates can be only for updating the sync committee, therefore the slot number can be
-    // smaller. We don't want to save a new state if this is the case.
+    // TODO(aeryz): we should ditch this functionality as it complicates the light client and we
+    // don't use it Some updates can be only for updating the sync committee, therefore the slot
+    // number can be smaller. We don't want to save a new state if this is the case.
     let updated_height = core::cmp::max(
         trusted_height.height(),
         consensus_update.finalized_header.execution.block_number,
@@ -708,7 +709,8 @@ mod tests {
             FINALITY_UPDATE.finalized_header.execution.block_number
         );
 
-        // No sync committee write because this is within the sync committee period, so no new sync committee to be written
+        // No sync committee write because this is within the sync committee period, so no new sync
+        // committee to be written
         assert!(state_update.storage_writes.is_empty());
     }
 

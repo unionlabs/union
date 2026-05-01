@@ -29,7 +29,7 @@ impl IbcClient for ProofLensLightClient {
 
     type ConsensusState = ConsensusState;
 
-    type StorageProof = RawBytes;
+    type StateProof = RawBytes;
 
     type Encoding = Bincode;
 
@@ -37,7 +37,7 @@ impl IbcClient for ProofLensLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        RawBytes(proof): Self::StorageProof,
+        RawBytes(proof): Self::StateProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
@@ -70,7 +70,7 @@ impl IbcClient for ProofLensLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        RawBytes(proof): Self::StorageProof,
+        RawBytes(proof): Self::StateProof,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         let client_state = ctx.read_self_client_state()?;

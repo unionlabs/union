@@ -130,7 +130,8 @@ impl serde::Serialize for MustBeZero {
 }
 
 impl Packet {
-    /// Calculate the hash of this packet. This is the same as the commitment key for a single packet.
+    /// Calculate the hash of this packet. This is the same as the commitment key for a single
+    /// packet.
     #[cfg(feature = "ethabi")]
     pub fn hash(&self) -> unionlabs::primitives::H256 {
         use alloy_sol_types::SolValue;

@@ -27,13 +27,13 @@ impl IbcClient for BaseLightClient {
 
     type CustomQuery = Empty;
 
-    type StorageProof = StorageProof;
+    type StateProof = StorageProof;
 
     fn verify_membership(
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
@@ -51,7 +51,7 @@ impl IbcClient for BaseLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         ethereum_light_client::client::verify_non_membership(
@@ -76,12 +76,14 @@ impl IbcClient for BaseLightClient {
     }
 
     fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
-        let _ = client_state;
-        let _ = ctx;
-        // FIXME: expose the ctx to this call to allow threading this call to L1
-        // client. generally, we want to thread if a client is an L2 so always
-        // provide the ctx?
-        Status::Active
+        let ClientState::V1(client_state) = client_state;
+
+        if client_state.frozen_height != 0 {
+            Status::Frozen
+        } else {
+            ctx.status(client_state.l1_client_id)
+                .unwrap_or(Status::Frozen)
+        }
     }
 
     fn verify_creation(

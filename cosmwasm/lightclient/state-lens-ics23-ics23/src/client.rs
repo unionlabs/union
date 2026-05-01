@@ -32,7 +32,7 @@ impl IbcClient for StateLensIcs23Ics23LightClient {
 
     type ConsensusState = ConsensusState;
 
-    type StorageProof = MerkleProof;
+    type StateProof = MerkleProof;
 
     type Encoding = Bincode;
 
@@ -40,7 +40,7 @@ impl IbcClient for StateLensIcs23Ics23LightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
@@ -70,7 +70,7 @@ impl IbcClient for StateLensIcs23Ics23LightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         let client_state = ctx.read_self_client_state()?;
@@ -107,30 +107,8 @@ impl IbcClient for StateLensIcs23Ics23LightClient {
     }
 
     fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
-        let _ = ctx;
-        let _ = client_state;
-
-        // FIXME: expose the ctx to this call to allow threading this call to L1
-        // client. generally, we want to thread if a client is an L2 so always
-        // provide the ctx?
-        // let client_state: WasmClientState = read_client_state(deps)?;
-        // let l1_client_state = query_client_state::<WasmL1ClientState>(
-        //     deps,
-        //     env,
-        //     client_state.data.l1_client_id.clone(),
-        // )
-        // .map_err(Error::CustomQuery)?;
-
-        // if l1_client_state.data.frozen_height != Height::default() {
-        //     return Ok(Status::Frozen);
-        // }
-
-        // let Some(_) = read_consensus_state::<Self>(deps, &client_state.latest_height)? else {
-        //     return Ok(Status::Expired);
-        // };
-
-        // Ok(Status::Active)
-        Status::Active
+        ctx.status(client_state.l1_client_id)
+            .unwrap_or(Status::Frozen)
     }
 
     fn verify_creation(

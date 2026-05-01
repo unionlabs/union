@@ -466,7 +466,8 @@ fn verify_new_headers_and_vals(
     max_clock_drift: Duration,
 ) -> Result<(), Error> {
     // SH HEADER VALIDATE BASIC
-    // TODO(aeryz): move these untrusted_header.validate_basic related checks to elsewhere, this function gets too bloated
+    // TODO(aeryz): move these untrusted_header.validate_basic related checks to elsewhere, this
+    // function gets too bloated
     if untrusted_header.commit.height != untrusted_header.header.height {
         return Err(Error::SignedHeaderCommitHeightMismatch {
             sh_height: untrusted_header.header.height.inner(),

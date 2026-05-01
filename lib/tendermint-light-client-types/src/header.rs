@@ -216,7 +216,8 @@ mod tests {
     fn proto_iso() {
         let mut header = mk_header();
 
-        // bls12_381 and bn254 aren't supported by the old tendermint types, which the proto encoding uses
+        // bls12_381 and bn254 aren't supported by the old tendermint types, which the proto
+        // encoding uses
         header.trusted_validators.validators = vec![];
 
         assert_codec_iso::<_, Proto>(&header);

@@ -148,7 +148,8 @@ pub enum UniversalChainIdParseError {
 
 /// The `<chain_id>` portion of a universal chain id.
 ///
-/// This is a thin wrapper around [`str`], and as such will most often be behind some form of indirection (usually either a ref (`&Id`) for borrowed or `Box<Id>` for owned).
+/// This is a thin wrapper around [`str`], and as such will most often be behind some form of
+/// indirection (usually either a ref (`&Id`) for borrowed or `Box<Id>` for owned).
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct Id(str);
@@ -162,7 +163,8 @@ impl Display for Id {
 impl Id {
     /// Construct a new borrowed [`Id`].
     ///
-    /// This function will return None if the passed str is empty or contains the universal chain id separator character `.`.
+    /// This function will return None if the passed str is empty or contains the universal chain id
+    /// separator character `.`.
     #[must_use]
     pub const fn new(s: &str) -> Option<&Self> {
         if !is_valid_id(s) {
@@ -174,7 +176,8 @@ impl Id {
 
     /// Construct a new owned [`Id`].
     ///
-    /// This function will return None if the passed str is empty or contains the universal chain id separator character `.`.
+    /// This function will return None if the passed str is empty or contains the universal chain id
+    /// separator character `.`.
     #[must_use]
     pub fn new_owned(s: String) -> Option<Box<Self>> {
         if !is_valid_id(&s) {

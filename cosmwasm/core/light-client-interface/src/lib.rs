@@ -5,7 +5,8 @@ use std::error::Error;
 
 use access_managed::{EnsureCanCallResult, state::Authority};
 use cosmwasm_std::{
-    Addr, Binary, Deps, DepsMut, Env, MessageInfo, Querier, Response, StdError, to_json_binary,
+    Addr, Binary, CustomQuery, Deps, DepsMut, Env, MessageInfo, Querier, Response, StdError,
+    to_json_binary,
 };
 use depolama::{QuerierExt, StorageExt, Store};
 use frissitheto::UpgradeError;
@@ -105,15 +106,19 @@ macro_rules! default_execute {
 pub mod version {
     use std::num::NonZeroU32;
 
-    /// Initial state of the contract. Access management is handled internally in this contract for specific endpoints.
+    /// Initial state of the contract. Access management is handled internally in this contract for
+    /// specific endpoints.
     pub const INIT: NonZeroU32 = NonZeroU32::new(1).unwrap();
 
-    /// Same as [`INIT`], except that access management is handled externally via [`access_managed`]. All storage in this contract relating to internally handled access management has been removed, and additional storages for [`access_managed`] have been added.
+    /// Same as [`INIT`], except that access management is handled externally via
+    /// [`access_managed`]. All storage in this contract relating to internally handled access
+    /// management has been removed, and additional storages for [`access_managed`] have been added.
     ///
     /// This is the current latest state version of this contract.
     pub const MANAGED: NonZeroU32 = NonZeroU32::new(2).unwrap();
 
-    /// The latest state version of this contract. Any new deployments will be init'd with this version and the corresponding state.
+    /// The latest state version of this contract. Any new deployments will be init'd with this
+    /// version and the corresponding state.
     pub const LATEST: NonZeroU32 = MANAGED;
 }
 
@@ -229,7 +234,7 @@ pub enum DecodeError<T: IbcClient> {
         error: DecodeErrorOf<EthAbi, T::ConsensusState>,
     },
     #[error("unable to decode storage proof")]
-    StorageProof(#[source] DecodeErrorOf<T::Encoding, T::StorageProof>),
+    StorageProof(#[source] DecodeErrorOf<T::Encoding, T::StateProof>),
     #[error("unable to decode raw storage ({0})")]
     RawStorage(Bytes),
 }
@@ -300,7 +305,7 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
         client_id: ClientId,
         height: u64,
         path: Bytes,
-        storage_proof: Client::StorageProof,
+        storage_proof: Client::StateProof,
         value: Bytes,
     ) -> Result<(), IbcClientError<Client>> {
         let client_impl = client_impl(&*self.deps.querier, &self.ibc_host, client_id)?;
@@ -319,10 +324,7 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
         Ok(())
     }
 
-    pub fn status<Client: IbcClient>(
-        &self,
-        client_id: ClientId,
-    ) -> Result<Status, IbcClientError<Client>> {
+    pub fn status(&self, client_id: ClientId) -> Result<Status, StdError> {
         let client_impl = client_impl(&*self.deps.querier, &self.ibc_host, client_id)?;
 
         let status = self
@@ -380,15 +382,16 @@ impl<T: IbcClient> StateUpdate<T> {
     }
 }
 
-/// Client creation output type
+/// The result of [`IbcClient::verify_creation`].
 pub struct ClientCreationResult<T: IbcClient> {
     /// The client state that is going to be stored by IBC. If set to `None`, IBC will store the
-    /// client state given by the creator as is
+    /// client state given by the creator as is. This allows for removing data only needed at
+    /// creation time, such as initial state checkpoints or validator committees.
     pub client_state: Option<T::ClientState>,
-    /// Custom events that will be emitted by IBC.
+    /// Custom events that will be emitted by the IBC core contract.
     pub events: Vec<VerifyCreationResponseEvent>,
-    /// Arbitrary storage saves to the client's corresponding storage. These are accessible to the
-    /// client at any time.
+    /// Arbitrary data to save to the client's corresponding storage, that can then be read at any
+    /// time using [`IbcClientCtx::read_self_storage`].
     pub storage_writes: StorageWrites,
 }
 
@@ -425,52 +428,79 @@ impl<T: IbcClient> Default for ClientCreationResult<T> {
 }
 
 pub trait IbcClient: Sized + 'static {
-    type Error: core::error::Error + Into<IbcClientError<Self>>;
-    type CustomQuery: cosmwasm_std::CustomQuery;
+    type Error: Error + Into<IbcClientError<Self>>;
+    type CustomQuery: CustomQuery;
+
+    /// The header type used in [`verify_header`][IbcClient::verify_header].
     type Header: Decode<Self::Encoding, Error: Error + 'static> + Debug + 'static;
+
+    /// The misbehaviour type used in [`verify_misbehaviour`][IbcClient::misbehaviour].
     type Misbehaviour: Decode<Self::Encoding, Error: Error + 'static> + Debug + 'static;
+
+    /// The client state type for this light client.
     type ClientState: Decode<Self::Encoding, Error: Error + 'static>
         + Encode<Self::Encoding>
         + Debug
         + 'static;
-    /// Note that this type only requires `Encode/Decode<Ethabi>`, cause `ConsensusState` must have
-    /// a common encoding scheme for state lenses. When doing state lenses, client X will read the
-    /// consensus state of client Y by assuming it's state is ethabi-encoded.
+
+    /// The consensus state type for this light client.
+    ///
+    /// Note that this type specifically requires `Encode/Decode<EthAbi>`. This is not a hard
+    /// requirement at the protocol level, however in practice we always use EthAbi as the codec for
+    /// consensus states in all implementations. This comes in especially handy when dealing with
+    /// lens clients, where having a consistent encoding scheme makes reading values out of an
+    /// ethabi-encoded structure is very cheap and trivial (typically just a byte offset). This
+    /// requirement may be relaxed in the future if there is a need to do so, with the introduction
+    /// of a new `ConsensusStateEncoding` associated type.
     type ConsensusState: Decode<EthAbi, Error: Error + 'static> + Encode<EthAbi> + Debug + 'static;
-    type StorageProof: Encode<Self::Encoding>
+
+    /// The state proof used by this light client. This is used in both
+    /// [`verify_membership`][IbcClient::verify_membership] and
+    /// [`verify_non_membership`][IbcClient::verify_non_membership].
+    ///
+    /// This is typically some form of storage proof against a state root, however the actual
+    /// implementation is left up to the light client.
+    type StateProof: Encode<Self::Encoding>
         + Decode<Self::Encoding, Error: Error + 'static>
         + Debug
         + 'static;
+
+    /// The encoding to use for the [`Header`][IbcClient::Header],
+    /// [`Misbehaviour`][IbcClient::Misbehaviour], [`ClientState`][IbcClient::ClientState], and
+    /// [`StateProof`][IbcClient::StateProof].
     type Encoding: Encoding;
 
+    /// Verify that `value` is stored under `key` at `height`.
     fn verify_membership(
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        state_proof: Self::StateProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>>;
 
+    /// Verify that there is no value stored under `key` at `height`.
     fn verify_non_membership(
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        state_proof: Self::StateProof,
     ) -> Result<(), IbcClientError<Self>>;
 
-    /// Get the timestamp
+    /// Get the timestamp of the given consensus state.
     fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp;
 
-    /// Get the height
+    /// Get the height of the given client state.
     fn get_latest_height(client_state: &Self::ClientState) -> u64;
 
-    /// Get the tracked (counterparty) chain id.
+    /// Get the tracked (counterparty) chain id of the given client state.
     fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String;
 
     /// Get the status of the client
     fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status;
 
-    /// Verify the initial state of the client
+    /// Verify the initial state of the client after creation. See [`ClientCreationResult`] for more
+    /// information on the return data.
     fn verify_creation(
         caller: Addr,
         client_state: &Self::ClientState,
@@ -478,8 +508,9 @@ pub trait IbcClient: Sized + 'static {
         relayer: Addr,
     ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>>;
 
-    /// Verify `header` against the trusted state (`client_state` and `consensus_state`)
-    /// and return `(updated height, updated client state, updated consensus state)`
+    /// Verify `header` against the trusted state (`client_state` and `consensus_state`) and return
+    /// the height that was updated to, the new client state, the new consensus state, and any state
+    /// writes to save under the client's storage.
     fn verify_header(
         ctx: IbcClientCtx<Self>,
         caller: Addr,
@@ -487,6 +518,8 @@ pub trait IbcClient: Sized + 'static {
         relayer: Addr,
     ) -> Result<StateUpdate<Self>, IbcClientError<Self>>;
 
+    /// Verify `misbehaviour` against the trusted state (`client_state` and `consensus_state`) and
+    /// return the new (frozen) client state if the misbehaviour is valid.
     fn misbehaviour(
         ctx: IbcClientCtx<Self>,
         caller: Addr,
@@ -501,7 +534,8 @@ pub fn init<T: IbcClient>(
 ) -> Result<Response, IbcClientError<T>> {
     access_managed::init(deps.branch().into_empty(), msg.access_managed_init_msg)?;
 
-    // cosmwasm doesn't understand newtypes. the addr type in the message is not validated, so make sure we check it ourselves
+    // cosmwasm doesn't understand newtypes. the addr type in the message is not validated, so make
+    // sure we check it ourselves
     let ibc_host = deps.api.addr_validate(msg.ibc_host.as_ref())?;
 
     deps.storage.write_item::<IbcHost>(&ibc_host);
@@ -632,7 +666,7 @@ pub fn query<T: IbcClient>(
             }) => {
                 let ibc_host = deps.storage.read_item::<IbcHost>()?;
 
-                let storage_proof = T::StorageProof::decode_as::<T::Encoding>(&proof)
+                let storage_proof = T::StateProof::decode_as::<T::Encoding>(&proof)
                     .map_err(DecodeError::StorageProof)?;
 
                 T::verify_membership(
@@ -653,7 +687,7 @@ pub fn query<T: IbcClient>(
             }) => {
                 let ibc_host = deps.storage.read_item::<IbcHost>()?;
 
-                let storage_proof = T::StorageProof::decode_as::<T::Encoding>(&proof)
+                let storage_proof = T::StateProof::decode_as::<T::Encoding>(&proof)
                     .map_err(DecodeError::StorageProof)?;
 
                 T::verify_non_membership(
@@ -700,10 +734,11 @@ pub fn query<T: IbcClient>(
             VerificationQueryMsg::Misbehaviour(MisbehaviourQuery {
                 caller,
                 client_id,
-                message,
                 relayer,
             }) => {
                 let ibc_host = deps.storage.read_item::<IbcHost>()?;
+
+                let message = deps.querier.read_item::<QueryStore>(&ibc_host)?;
 
                 let misbehaviour = T::Misbehaviour::decode_as::<T::Encoding>(&message)
                     .map_err(DecodeError::Misbehaviour)?;
@@ -716,7 +751,7 @@ pub fn query<T: IbcClient>(
                 )?;
 
                 to_json_binary(&MisbehaviourResponse {
-                    client_state: client_state.encode_as::<T::Encoding>().into(),
+                    client_state_bytes: client_state.encode_as::<T::Encoding>().into(),
                 })
                 .map_err(Into::into)
             }
@@ -820,7 +855,7 @@ mod tests {
 
             type ConsensusState = ConsensusState;
 
-            type StorageProof = ();
+            type StateProof = ();
 
             type Encoding = encoding::Json;
 
@@ -828,7 +863,7 @@ mod tests {
                 _ctx: IbcClientCtx<Self>,
                 _height: u64,
                 _key: Vec<u8>,
-                _storage_proof: Self::StorageProof,
+                _storage_proof: Self::StateProof,
                 _value: Vec<u8>,
             ) -> Result<(), IbcClientError<Self>> {
                 unreachable!()
@@ -838,7 +873,7 @@ mod tests {
                 _ctx: IbcClientCtx<Self>,
                 _height: u64,
                 _key: Vec<u8>,
-                _storage_proof: Self::StorageProof,
+                _storage_proof: Self::StateProof,
             ) -> Result<(), IbcClientError<Self>> {
                 unreachable!()
             }

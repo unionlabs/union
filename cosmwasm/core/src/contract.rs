@@ -13,9 +13,9 @@ use depolama::{RawStore, StorageExt};
 use frissitheto::{UpgradeError, UpgradeMsg};
 use ibc_union_msg::{
     lightclient::{
-        QueryMsg as LightClientQuery, UpdateStateQuery, UpdateStateResponse, VerifyCreationQuery,
-        VerifyCreationResponse, VerifyCreationResponseEvent, VerifyMembershipQuery,
-        VerifyNonMembershipQuery,
+        MisbehaviourQuery, MisbehaviourResponse, QueryMsg as LightClientQuery, UpdateStateQuery,
+        UpdateStateResponse, VerifyCreationQuery, VerifyCreationResponse,
+        VerifyCreationResponseEvent, VerifyMembershipQuery, VerifyNonMembershipQuery,
     },
     module::{ExecuteMsg as ModuleMsg, IbcUnionMsg},
     msg::{
@@ -24,9 +24,9 @@ use ibc_union_msg::{
         MsgChannelOpenTry, MsgCommitMembershipProof, MsgCommitNonMembershipProof,
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
         MsgConnectionOpenTry, MsgCreateClient, MsgForceUpdateClient, MsgIntentPacketRecv,
-        MsgMigrateState, MsgPacketAcknowledgement, MsgPacketRecv, MsgPacketTimeout,
-        MsgRegisterClient, MsgSendPacket, MsgUpdateClient, MsgWriteAcknowledgement,
-        RestrictedExecuteMsg,
+        MsgMigrateState, MsgMisbehaviour, MsgPacketAcknowledgement, MsgPacketRecv,
+        MsgPacketTimeout, MsgRegisterClient, MsgSendPacket, MsgUpdateClient,
+        MsgWriteAcknowledgement, RestrictedExecuteMsg,
     },
     query::QueryMsg,
 };
@@ -47,12 +47,12 @@ use unionlabs::{
 
 use crate::{
     ContractError,
-    contract::events::{
+    events::{
         BatchAcks, BatchSend, ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck,
         ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, CommitMembershipProof,
         CommitNonMembershipProof, ConnectionOpenAck, ConnectionOpenInit, ConnectionOpenTry,
-        CreateClient, CreateLensClient, ForceUpdateClient, IntentPacketRecv, PacketAck, PacketRecv,
-        PacketSend, RegisterClient, TimeoutPacket, UpdateClient, WriteAck,
+        CreateClient, CreateLensClient, ForceUpdateClient, IntentPacketRecv, Misbehaviour,
+        PacketAck, PacketRecv, PacketSend, RegisterClient, TimeoutPacket, UpdateClient, WriteAck,
     },
     state::{
         ChannelOwner, Channels, ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates,
@@ -62,234 +62,6 @@ use crate::{
 };
 
 type ContractResult = Result<Response, ContractError>;
-
-pub mod events {
-    use cosmwasm_event::Event;
-    use cosmwasm_std::Addr;
-    use depolama::Bytes;
-    use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
-    use unionlabs::primitives::{H256, encoding::HexUnprefixed};
-
-    #[derive(Event)]
-    #[event("register_client")]
-    pub struct RegisterClient {
-        pub client_type: String,
-        pub client_address: Addr,
-    }
-
-    #[derive(Event)]
-    #[event("create_client")]
-    pub struct CreateClient {
-        pub client_id: ClientId,
-        pub client_type: String,
-        pub counterparty_chain_id: String,
-    }
-
-    #[derive(Event)]
-    #[event("update_client")]
-    pub struct UpdateClient {
-        pub client_id: ClientId,
-        pub counterparty_height: u64,
-    }
-
-    #[derive(Event)]
-    #[event("force_update_client")]
-    pub struct ForceUpdateClient {
-        pub client_id: ClientId,
-        pub counterparty_height: u64,
-    }
-
-    #[derive(Event)]
-    #[event("connection_open_init")]
-    pub struct ConnectionOpenInit {
-        pub connection_id: ConnectionId,
-        pub client_id: ClientId,
-        pub counterparty_client_id: ClientId,
-    }
-
-    #[derive(Event)]
-    #[event("connection_open_try")]
-    pub struct ConnectionOpenTry {
-        pub connection_id: ConnectionId,
-        pub client_id: ClientId,
-        pub counterparty_client_id: ClientId,
-        pub counterparty_connection_id: ConnectionId,
-    }
-
-    #[derive(Event)]
-    #[event("connection_open_ack")]
-    pub struct ConnectionOpenAck {
-        pub connection_id: ConnectionId,
-        pub client_id: ClientId,
-        pub counterparty_client_id: ClientId,
-        pub counterparty_connection_id: ConnectionId,
-    }
-
-    #[derive(Event)]
-    #[event("connection_open_confirm")]
-    pub struct ConnectionOpenConfirm {
-        pub connection_id: ConnectionId,
-        pub client_id: ClientId,
-        pub counterparty_client_id: ClientId,
-        pub counterparty_connection_id: ConnectionId,
-    }
-
-    #[derive(Event)]
-    #[event("channel_open_init")]
-    pub struct ChannelOpenInit<'a> {
-        pub port_id: &'a Addr,
-        pub channel_id: ChannelId,
-        pub counterparty_port_id: &'a Bytes<HexUnprefixed>,
-        pub connection_id: ConnectionId,
-        pub version: &'a str,
-    }
-
-    #[derive(Event)]
-    #[event("channel_open_try")]
-    pub struct ChannelOpenTry<'a> {
-        pub port_id: &'a Addr,
-        pub channel_id: ChannelId,
-        pub counterparty_port_id: &'a Bytes<HexUnprefixed>,
-        pub counterparty_channel_id: ChannelId,
-        pub connection_id: ConnectionId,
-        pub counterparty_version: &'a str,
-    }
-
-    #[derive(Event)]
-    #[event("channel_open_ack")]
-    pub struct ChannelOpenAck<'a> {
-        pub port_id: &'a Addr,
-        pub channel_id: ChannelId,
-        pub counterparty_port_id: &'a Bytes<HexUnprefixed>,
-        pub counterparty_channel_id: ChannelId,
-        pub connection_id: ConnectionId,
-    }
-
-    #[derive(Event)]
-    #[event("channel_open_confirm")]
-    pub struct ChannelOpenConfirm<'a> {
-        pub port_id: &'a Addr,
-        pub channel_id: ChannelId,
-        pub counterparty_port_id: &'a Bytes<HexUnprefixed>,
-        pub counterparty_channel_id: ChannelId,
-        pub connection_id: ConnectionId,
-    }
-
-    #[derive(Event)]
-    #[event("channel_close_init")]
-    pub struct ChannelCloseInit<'a> {
-        pub port_id: &'a Addr,
-        pub channel_id: ChannelId,
-        pub counterparty_port_id: &'a Bytes<HexUnprefixed>,
-        pub counterparty_channel_id: ChannelId,
-    }
-
-    #[derive(Event)]
-    #[event("channel_close_confirm")]
-    pub struct ChannelCloseConfirm<'a> {
-        pub port_id: &'a Addr,
-        pub channel_id: ChannelId,
-        pub counterparty_port_id: &'a Bytes<HexUnprefixed>,
-        pub counterparty_channel_id: ChannelId,
-    }
-
-    #[derive(Event)]
-    #[event("packet_send")]
-    pub struct PacketSend {
-        pub packet_source_channel_id: ChannelId,
-        pub packet_destination_channel_id: ChannelId,
-        pub packet_data: Bytes,
-        pub packet_timeout_height: u64,
-        pub packet_timeout_timestamp: Timestamp,
-        pub channel_id: ChannelId,
-        pub packet_hash: H256,
-    }
-
-    #[derive(Event)]
-    #[event("batch_send")]
-    pub struct BatchSend {
-        pub channel_id: ChannelId,
-        pub packet_hash: H256,
-        pub batch_hash: H256,
-    }
-
-    #[derive(Event)]
-    #[event("batch_acks")]
-    pub struct BatchAcks {
-        pub channel_id: ChannelId,
-        pub packet_hash: H256,
-        pub batch_hash: H256,
-    }
-
-    #[derive(Event)]
-    #[event("packet_recv")]
-    pub struct PacketRecv<'a> {
-        pub channel_id: ChannelId,
-        pub packet_hash: H256,
-        pub maker: &'a Addr,
-        pub maker_msg: &'a Bytes<HexUnprefixed>,
-    }
-
-    #[derive(Event)]
-    #[event("intent_packet_recv")]
-    pub struct IntentPacketRecv<'a> {
-        pub channel_id: ChannelId,
-        pub packet_hash: H256,
-        pub maker: &'a Addr,
-        pub maker_msg: &'a Bytes<HexUnprefixed>,
-    }
-
-    #[derive(Event)]
-    #[event("packet_ack")]
-    pub struct PacketAck<'a> {
-        pub channel_id: ChannelId,
-        pub packet_hash: H256,
-        pub acknowledgement: &'a Bytes<HexUnprefixed>,
-        pub maker: &'a Addr,
-    }
-
-    #[derive(Event)]
-    #[event("write_ack")]
-    pub struct WriteAck<'a> {
-        pub channel_id: ChannelId,
-        pub packet_hash: H256,
-        pub acknowledgement: &'a Bytes<HexUnprefixed>,
-    }
-
-    #[derive(Event)]
-    #[event("timeout_packet")]
-    pub struct TimeoutPacket<'a> {
-        pub channel_id: ChannelId,
-        pub packet_hash: H256,
-        pub maker: &'a Addr,
-    }
-
-    #[derive(Event)]
-    #[event("commit_membership_proof")]
-    pub struct CommitMembershipProof<'a> {
-        pub client_id: ClientId,
-        pub proof_height: u64,
-        pub path: &'a Bytes<HexUnprefixed>,
-        pub value: &'a Bytes<HexUnprefixed>,
-    }
-
-    #[derive(Event)]
-    #[event("commit_non_membership_proof")]
-    pub struct CommitNonMembershipProof<'a> {
-        pub client_id: ClientId,
-        pub proof_height: u64,
-        pub path: &'a Bytes<HexUnprefixed>,
-    }
-
-    #[derive(Event)]
-    #[event("create_lens_client")]
-    pub struct CreateLensClient<'a> {
-        pub client_id: ClientId,
-        pub l1_client_id: ClientId,
-        pub l2_client_id: ClientId,
-        pub l2_chain_id: &'a str,
-    }
-}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
@@ -391,6 +163,14 @@ pub fn execute(
                         client_id,
                         counterparty_height: height,
                     }))
+                }
+                RestrictedExecuteMsg::Misbehaviour(MsgMisbehaviour {
+                    client_id,
+                    client_message,
+                    relayer,
+                }) => {
+                    let relayer = deps.api.addr_validate(&relayer)?;
+                    misbehaviour(deps, info, client_id, client_message.to_vec(), relayer)
                 }
                 RestrictedExecuteMsg::ConnectionOpenInit(MsgConnectionOpenInit {
                     client_id,
@@ -779,15 +559,19 @@ pub struct MigrateMsg {}
 pub mod version {
     use std::num::NonZeroU32;
 
-    /// Initial state of the contract. Access management is handled internally in this contract for specific endpoints.
+    /// Initial state of the contract. Access management is handled internally in this contract for
+    /// specific endpoints.
     pub const INIT: NonZeroU32 = NonZeroU32::new(1).unwrap();
 
-    /// Same as [`INIT`], except that access management is handled externally via [`access_managed`]. All storage in this contract relating to internally handled access management has been removed, and additional storages for [`access_managed`] have been added.
+    /// Same as [`INIT`], except that access management is handled externally via
+    /// [`access_managed`]. All storage in this contract relating to internally handled access
+    /// management has been removed, and additional storages for [`access_managed`] have been added.
     ///
     /// This is the current latest state version of this contract.
     pub const MANAGED: NonZeroU32 = NonZeroU32::new(2).unwrap();
 
-    /// The latest state version of this contract. Any new deployments will be init'd with this version and the corresponding state.
+    /// The latest state version of this contract. Any new deployments will be init'd with this
+    /// version and the corresponding state.
     pub const LATEST: NonZeroU32 = MANAGED;
 }
 
@@ -811,7 +595,8 @@ pub(crate) fn init(
 ) -> Result<(Response, Option<NonZeroU32>), ContractError> {
     access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
 
-    // init all id storages to 1 (ids are non-zero, and for simplicity in the rest of the contract we assume the storages exist)
+    // init all id storages to 1 (ids are non-zero, and for simplicity in the rest of the contract
+    // we assume the storages exist)
     deps.storage.write_item::<NextChannelId>(&ChannelId!(1));
     deps.storage
         .write_item::<NextConnectionId>(&ConnectionId!(1));
@@ -1126,14 +911,13 @@ fn init_client(
     client_impl: Addr,
     client_id: ClientId,
 ) -> Result<(VerifyCreationResponse, u64), ContractError> {
-    // Ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
-    // See https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47
-
-    // 1. write these states first, so they can be read by the light client contract during VerifyCreation
+    // 1. write these states first, so they can be read by the light client contract during
+    //    VerifyCreation
     deps.storage
         .write::<ClientStates>(&client_id, &(&client_state_bytes).into());
 
-    // 2. once the client state is saved, query the light client impl for the height of that client state (the state we just saved is the latest height)
+    // 2. once the client state is saved, query the light client impl for the height of that client
+    //    state (the state we just saved is the latest height)
     let latest_height = query_light_client::<u64>(
         deps.as_ref(),
         client_impl.clone(),
@@ -1158,7 +942,7 @@ fn init_client(
     )?;
 
     if let Some(client_state_bytes) = verify_creation_response.client_state_bytes.as_ref() {
-        // if VerifyCreation returns a new client state to save, overwrite the state we just wrote.
+        // if VerifyCreation returns a new client state to save, overwrite the state we just wrote
         deps.storage
             .write::<ClientStates>(&client_id, client_state_bytes);
     }
@@ -1206,8 +990,6 @@ fn update_client(
             return Err(ContractError::ClientNotActive { client_id, status });
         }
 
-        // Ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
-        // See https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47
         deps.storage
             .write_item::<QueryStore>(&client_message.into());
 
@@ -1260,6 +1042,53 @@ fn update_client(
         client_id,
         counterparty_height: update.height,
     }))
+}
+
+fn misbehaviour(
+    mut deps: DepsMut,
+    info: MessageInfo,
+    client_id: ClientId,
+    client_message: Vec<u8>,
+    relayer: Addr,
+) -> Result<Response, ContractError> {
+    let client_impl = client_impl(deps.as_ref(), client_id)?;
+
+    let status = query_light_client::<Status>(
+        deps.as_ref(),
+        client_impl.clone(),
+        LightClientQuery::GetStatus { client_id },
+    )?;
+
+    if !matches!(status, Status::Active) {
+        return Err(ContractError::ClientNotActive { client_id, status });
+    }
+
+    deps.storage
+        .write_item::<QueryStore>(&client_message.into());
+
+    let MisbehaviourResponse {
+        client_state_bytes: client_state,
+    } = query_light_client(
+        deps.as_ref(),
+        client_impl,
+        MisbehaviourQuery {
+            caller: info.sender.into(),
+            client_id,
+            relayer: relayer.into(),
+        },
+    )?;
+
+    deps.storage.delete_item::<QueryStore>();
+
+    store_commit(
+        deps.branch(),
+        &ClientStatePath { client_id }.key(),
+        &commit(&client_state),
+    );
+    deps.storage
+        .write::<ClientStates>(&client_id, &client_state);
+
+    Ok(Response::new().add_event(Misbehaviour { client_id }))
 }
 
 fn connection_open_init(

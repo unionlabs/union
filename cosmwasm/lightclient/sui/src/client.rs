@@ -29,7 +29,7 @@ impl IbcClient for SuiLightClient {
 
     type ConsensusState = ConsensusState;
 
-    type StorageProof = StorageProof;
+    type StateProof = StorageProof;
 
     type Encoding = Bincode;
 
@@ -37,7 +37,7 @@ impl IbcClient for SuiLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let ClientState::V1(client_state) = ctx.read_self_client_state()?;
@@ -63,7 +63,7 @@ impl IbcClient for SuiLightClient {
         _ctx: IbcClientCtx<Self>,
         _height: u64,
         _key: Vec<u8>,
-        _storage_proof: Self::StorageProof,
+        _storage_proof: Self::StateProof,
     ) -> Result<(), IbcClientError<Self>> {
         unimplemented!()
     }

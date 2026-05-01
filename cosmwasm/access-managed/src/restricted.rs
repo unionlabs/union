@@ -23,19 +23,13 @@ impl<T: Serialize + DeserializeOwned + PartialEq> PartialEq for Restricted<T> {
     }
 }
 
-impl<T: DeserializeOwned + Serialize> Restricted<T> {
-    /// Construct a [`Restricted<T>`] from the inner `T` value by serializing the value to JSON, and then deserializing the JSON string.
-    ///
-    /// # Panics
-    ///
-    /// This function will panic if the serialization of `t` fails, or if the deserialization of the serialized value fails.
-    #[expect(
-        clippy::needless_pass_by_value,
-        reason = "intentionally taking ownership"
-    )]
+impl<T: Serialize + DeserializeOwned> Restricted<T> {
+    /// Construct a [`Restricted<T>`] from the inner `T` value.
     pub fn wrap(t: T) -> Self {
-        serde_json_wasm::from_str(&serde_json_wasm::to_string(&t).expect("infallible"))
-            .expect("should round trip")
+        Self {
+            selector: Selector::extract_from_serialize(&t),
+            value: t,
+        }
     }
 }
 

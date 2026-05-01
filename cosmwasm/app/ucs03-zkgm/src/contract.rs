@@ -64,7 +64,10 @@ pub const ZKGM_CW_ACCOUNT_LABEL: &str = "zkgm-cw-account";
 
 /// Instantiate `ucs03-zkgm`.
 ///
-/// This will instantiate the minter contract with the provided [`TokenMinterInitMsg`][ucs03_zkgm_token_minter_api::TokenMinterInitMsg]. The admin of the minter contract is set to `ucs03-zkgm`. All migrations for the minter will be threaded through the `ucs03-zkgm` migrate entrypoint.
+/// This will instantiate the minter contract with the provided
+/// [`TokenMinterInitMsg`][ucs03_zkgm_token_minter_api::TokenMinterInitMsg]. The admin of the minter
+/// contract is set to `ucs03-zkgm`. All migrations for the minter will be threaded through the
+/// `ucs03-zkgm` migrate entrypoint.
 pub fn init(mut deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractError> {
     access_managed::init(deps.branch(), msg.access_managed_init_msg)?;
 
@@ -1530,9 +1533,25 @@ fn execute_call(
     //   Call(proxy) (1)
     // ]
     //
-    // When handling (0), we first check if the proxy account exists yet, which will return with an error if it does not, and then queue the necessary sub messages to set up the proxy account (instantiate2, migrate, update admin). These messages are not executed right away, but rather appended to a queue of messages that *will* be executed after all messages in the batch have been processed. This means that when (1) is handled, it will do the same check for the proxy account, and queue the *same* sub messages. In this case, the instantiation will return with ErrDuplicate (codespace wasm, code 15), and the migration and admin update sub messages will also fail. To prevent this, we also store the created proxy information when the sub messages are queued, and then also check if that item exists before appending the aforementioned sub messages.
+    // When handling (0), we first check if the proxy account exists yet, which will return with an
+    // error if it does not, and then queue the necessary sub messages to set up the proxy account
+    // (instantiate2, migrate, update admin). These messages are not executed right away, but rather
+    // appended to a queue of messages that *will* be executed after all messages in the batch have
+    // been processed. This means that when (1) is handled, it will do the same check for the proxy
+    // account, and queue the *same* sub messages. In this case, the instantiation will return with
+    // ErrDuplicate (codespace wasm, code 15), and the migration and admin update sub messages will
+    // also fail. To prevent this, we also store the created proxy information when the sub messages
+    // are queued, and then also check if that item exists before appending the aforementioned sub
+    // messages.
     //
-    // Alternatively, we could handle the reply of the sub messages (likely only the final admin update call) and emit the event there, however this still requires us to store the value in a storage item to thread the CallProxySalt through to the reply (we could use the sub message payload, however that is a CosmWasm 2.0+ feature, and we don't want to lock ourselves out of chains that may be running an older version of CosmWasm). Also, storing one item in storage (that will be deleted at the end of the transaction) is a bit more elegant than ignoring failing sub messages, and has less room for CosmWasm upgrades to change behaviour that we may accidentally rely on when doing so.
+    // Alternatively, we could handle the reply of the sub messages (likely only the final admin
+    // update call) and emit the event there, however this still requires us to store the value in a
+    // storage item to thread the CallProxySalt through to the reply (we could use the sub message
+    // payload, however that is a CosmWasm 2.0+ feature, and we don't want to lock ourselves out of
+    // chains that may be running an older version of CosmWasm). Also, storing one item in storage
+    // (that will be deleted at the end of the transaction) is a bit more elegant than ignoring
+    // failing sub messages, and has less room for CosmWasm upgrades to change behaviour that we may
+    // accidentally rely on when doing so.
     //
     // if the predicted proxy is the address to be called...
     if predicted_address == contract_address
@@ -1551,8 +1570,11 @@ fn execute_call(
             ..
         } = CONFIG.load(deps.storage)?;
 
-        // save the newly created proxy account information so that it can be read while handling the reply of the sub messages below
-        // this also acts as a marker that this proxy account has already been created in this batch (if this is executing in a batch)
+        // save the newly created proxy account information so that it can be read while handling
+        // the reply of the sub messages below
+        //
+        // this also acts as a marker that this proxy account has already been created in this batchc
+        // (if this is executing in a batch)
         CREATED_PROXY_ACCOUNT.save(deps.storage, &call_proxy_salt)?;
 
         response = response
@@ -3052,12 +3074,15 @@ pub mod version {
     /// Initial state of the contract. Access management is handled internally in this contract for specific endpoints.
     pub const INIT: NonZeroU32 = NonZeroU32::new(1).unwrap();
 
-    /// Same as [`INIT`], except that access management is handled externally via [`access_managed`]. All storage in this contract relating to internally handled access management has been removed, and additional storages for [`access_managed`] have been added.
+    /// Same as [`INIT`], except that access management is handled externally via
+    /// [`access_managed`]. All storage in this contract relating to internally handled access
+    /// management has been removed, and additional storages for [`access_managed`] have been added.
     ///
     /// This is the current latest state version of this contract.
     pub const MANAGED: NonZeroU32 = NonZeroU32::new(2).unwrap();
 
-    /// The latest state version of this contract. Any new deployments will be init'd with this version and the corresponding state.
+    /// The latest state version of this contract. Any new deployments will be init'd with this
+    /// version and the corresponding state.
     pub const LATEST: NonZeroU32 = MANAGED;
 }
 
@@ -3111,7 +3136,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
                 token,
             )?;
             Ok(to_json_binary(&PredictWrappedTokenResponse {
-                // HACK(benluelo): This previously returned hex bytes, but was accidentally changed. This is a hotfix until we decide on a format.
+                // HACK(benluelo): This previously returned hex bytes, but was accidentally changed.
+                // This is a hotfix until we decide on a format.
                 wrapped_token: <Bytes>::from(token.into_bytes()).to_string(),
             })?)
         }

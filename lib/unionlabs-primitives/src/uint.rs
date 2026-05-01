@@ -15,7 +15,8 @@ use core::{
 
 pub use ::uint::FromDecStrErr;
 
-/// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but displays as decimal.
+/// [`primitive_types::U256`] can't roundtrip through string conversion since it parses from hex but
+/// displays as decimal.
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
 #[repr(transparent)]
 pub struct U256(pub primitive_types::U256);

@@ -13,7 +13,10 @@ use tendermint_verifier::types::{HostFns, SignatureVerifier};
 use unionlabs::{
     bounded::BoundedI64,
     encoding::Bincode,
-    google::protobuf::{duration::Duration, timestamp::Timestamp},
+    google::protobuf::{
+        duration::Duration,
+        timestamp::{MAX_TIMESTAMP, Timestamp},
+    },
     ibc::core::{
         client::height::Height,
         commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
@@ -45,7 +48,7 @@ impl IbcClient for TendermintLightClient {
 
     type ConsensusState = ConsensusState;
 
-    type StorageProof = MerkleProof;
+    type StateProof = MerkleProof;
 
     type Encoding = Bincode;
 
@@ -53,7 +56,7 @@ impl IbcClient for TendermintLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
@@ -74,7 +77,7 @@ impl IbcClient for TendermintLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
     ) -> Result<(), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(height)?;
@@ -127,21 +130,20 @@ impl IbcClient for TendermintLightClient {
     }
 
     fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
-        let _ = ctx;
+        let Ok(consensus_state) =
+            ctx.read_self_consensus_state(client_state.latest_height.height())
+        else {
+            return Status::Frozen;
+        };
 
-        // FIXME: read latest consensus to verify if client expired
-        // if is_client_expired(
-        //     &consensus_state.timestamp,
-        //     client_state.trusting_period,
-        //     env.block
-        //         .time
-        //         .try_into()
-        //         .map_err(|_| Error::from(InvalidHostTimestamp(env.block.time)))?,
-        // ) {
-        //     return Ok(Status::Expired);
-        // }
         if client_state.frozen_height.unwrap_or_default().height() != 0 {
             Status::Frozen
+        } else if is_client_expired(
+            &consensus_state.timestamp,
+            client_state.trusting_period,
+            ctx.env.block.time.try_into().unwrap_or(MAX_TIMESTAMP),
+        ) {
+            Status::Expired
         } else {
             Status::Active
         }
@@ -209,17 +211,7 @@ pub fn verify_header<V: HostFns>(
         .into());
     }
 
-    // FIXME: unionlabs is tied to cosmwasm <2, the TryFrom impl can't be used
-    let block_timestamp_proto = unionlabs::google::protobuf::timestamp::Timestamp {
-        seconds: i64::try_from(block_timestamp.seconds())
-            .expect("impossible")
-            .try_into()
-            .expect("impossible"),
-        nanos: i32::try_from(block_timestamp.subsec_nanos())
-            .expect("impossible")
-            .try_into()
-            .expect("impossible"),
-    };
+    let block_timestamp_proto = Timestamp::try_from(block_timestamp).expect("impossible");
 
     tendermint_verifier::verify::verify(
         &construct_partial_header(
@@ -233,7 +225,7 @@ pub fn verify_header<V: HostFns>(
                 .try_into()
                 .expect(
                     "value is converted from u64, which is positive, \
-                        and the expected bounded type is >= 0; qed;",
+                    and the expected bounded type is >= 0; qed;",
                 ),
             consensus_state.timestamp,
             consensus_state.next_validators_hash,
@@ -616,3 +608,118 @@ pub fn verify_non_membership(
 //         );
 //     }
 // }
+
+#[cfg(test)]
+mod tests {
+    use std::{cell::RefCell, num::NonZero};
+
+    use cosmwasm_std::{
+        ContractResult, SystemResult,
+        testing::{mock_dependencies, mock_env},
+    };
+    use ibc_union_spec::ClientId;
+    use tendermint_light_client_types::Fraction;
+    use unionlabs::{
+        encoding::{EncodeAs, EthAbi},
+        google::protobuf,
+    };
+
+    use super::*;
+
+    #[test]
+    fn status() {
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+
+        let mut client_state = ClientState {
+            chain_id: "osmosis-1".to_owned(),
+            contract_address: [0; 32].into(),
+            frozen_height: None,
+            latest_height: Height::new_with_revision(1, 60157944),
+            max_clock_drift: protobuf::duration::Duration::new(600, 0).unwrap(),
+            proof_specs: vec![],
+            trust_level: Fraction {
+                numerator: 1,
+                denominator: NonZero::new(3).unwrap(),
+            },
+            trusting_period: protobuf::duration::Duration::new(1028160, 0).unwrap(),
+            unbonding_period: protobuf::duration::Duration::new(1209600, 0).unwrap(),
+            upgrade_path: vec![],
+        };
+
+        macro_rules! assert_status {
+            ($Status:ident) => {
+                assert_eq!(
+                    TendermintLightClient::status(
+                        IbcClientCtx::new(
+                            ClientId!(1),
+                            Addr::unchecked("ibc_host"),
+                            deps.as_ref(),
+                            env.clone(),
+                        ),
+                        &client_state
+                    ),
+                    Status::$Status,
+                );
+            };
+        }
+
+        // 2026-05-01T17:42:59+00:00
+        env.block.time = cosmwasm_std::Timestamp::from_seconds(1_777_657_379);
+
+        let ts = RefCell::new(
+            "2026-04-24T22:40:50.903065719Z"
+                .parse::<Timestamp>()
+                .unwrap(),
+        );
+
+        // frozen if the consensus state can't be read
+        assert_status!(Frozen);
+
+        deps.querier.update_wasm({
+            let ts = ts.clone();
+            move |wq| match wq {
+                cosmwasm_std::WasmQuery::Raw { contract_addr, key }
+                    if contract_addr == "ibc_host" =>
+                {
+                    SystemResult::Ok(ContractResult::Ok(cosmwasm_std::Binary::new(
+                        ConsensusState {
+                            timestamp: *ts.borrow(),
+                            root: MerkleRoot {
+                                hash: Default::default(),
+                            },
+                            next_validators_hash: Default::default(),
+                        }
+                        .encode_as::<EthAbi>(),
+                    )))
+                }
+                _ => todo!(),
+            }
+        });
+
+        // active within the trusting period
+        assert_status!(Active);
+
+        // frozen check works correctly
+        client_state.frozen_height = Some(Height::new_with_revision(1, 1));
+        assert_status!(Frozen);
+        client_state.frozen_height = None;
+
+        // not expired right at the trusting period
+        env.block.time = cosmwasm_std::Timestamp::from_nanos(
+            ts.borrow()
+                .checked_add(client_state.trusting_period)
+                .unwrap()
+                .as_unix_nanos(),
+        );
+        assert_status!(Active);
+
+        // expires right after the trusting period
+        env.block.time = env.block.time.plus_nanos(1);
+        assert_status!(Expired);
+
+        // frozen takes priority over expired
+        client_state.frozen_height = Some(Height::new_with_revision(1, 1));
+        assert_status!(Frozen);
+    }
+}
