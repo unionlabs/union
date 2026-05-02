@@ -143,12 +143,15 @@ The Union IBC protocol defines several commitment namespaces used in various par
 
 Three constant values are defined for use in comments:
 
+```
 COMMITMENT_MAGIC = uint256(1 << 248) # 0x0100000000000000000000000000000000000000000000000000000000000000
 COMMITMENT_MAGIC_ACK = uint256(1 << 249) # 0x0200000000000000000000000000000000000000000000000000000000000000
 NON_MEMBERSHIP_COMMITMENT_VALUE = uint256(1) = 0x0000000000000000000000000000000000000000000000000000000000000001
+```
 
 The defined namespaces are:
 
+```
 const CLIENT_STATE = uint256(0)
 const CONSENSUS_STATE = uint256(1)
 const CONNECTIONS = uint256(2)
@@ -158,48 +161,61 @@ const PACKET_ACKS = uint256(5)
 const MEMBERSHIP_PROOF = uint256(6)
 const NON_MEMBERSHIP_PROOF = uint256(7)
 const PACKET_TIMEOUTS = uint256(8)
+```
 
 ### ClientState
 
 Stores the hash of the client state of the specified client.
 
-Key: client_id: ClientId -> keccak(ethabi(CLIENT_STATE, uint256(client_id)))
-Stored value = keccak(client state bytes)
+```
+key: client_id: ClientId -> keccak(ethabi(CLIENT_STATE, uint256(client_id)))
+stored value = keccak(client state bytes)
+```
 
 ### ClientConsensusState
 
 Stores the hash of the consensus state ("checkpoint") of the specified client at the specified height.
 
+```
 key = client_id: ClientId -> height: Height -> keccak(ethabi(CONSENSUS_STATE, uint256(client_id), uint256(timestamp)))
 value = keccak(consensus state bytes)
+```
 
 ### Connection
 
 Stores the hash of the connection identified by the given connection_id.
 
+```
 key = connection_id: ConnectionId -> keccak(ethabi(CONNECTIONS, uint256(connection_id)))
 value = keccak(canonical_encoding(Connection))
+```
 
 ### Channel
 
 Stores the hash of the channel identified by the given channel_id.
 
+```
 key = channel_id: ChannelId -> keccak(ethabi(CHANNELS, uint256(channel_id)))
 value = keccak(canonical_encoding(Channel))
+```
 
 ### BatchPackets
 
 Stores the commitment of a set of packets. TODO: Explain when the magic values are used
 
+```
 key = batch_hash: BatchHash -> keccak(ethabi(PACKETS, batch_hash))
 value = bytes32
+```
 
 ### BatchReceipts
 
 Stores the commitment of a set of packet acknowledgements. TODO: Explain when the magic values are used
 
+```
 key = batch_hash: BatchHash -> keccak(ethabi(PACKET_ACKS, batch_hash))
 value = bytes32
+```
 
 TODO: Add membership/nonmemership stores (for proof lens clients) and packet timeout store (for timeout commitments)
 
