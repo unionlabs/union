@@ -33,9 +33,11 @@ The Union IBC protocol uses a subset of ethabi for encoding and decoding all typ
 
 All IDs are non-zero unsigned 32 bit integers.
 
-- Client ID
-- Connection ID
-- Channel ID
+```hs
+newtype ClientId = ClientId NonZero Int32
+newtype ConnectionId = ConnectionId NonZero Int32
+newtype ChannelId = ChannelId NonZero Int32
+```
 
 All of these IDs must be globally unique per-chain. Typically this is implemented with an auto-incrementing value, although this is not strictly required.
 
@@ -45,11 +47,19 @@ Canonical encoding: `ethabi(uint32)`
 
 Timestamps are a unix timestamp with nanosecond precision, represented by non-zero unsigned 64 bit integer.
 
+```hs
+newtype Timestamp = Timestamp NonZero Int64
+```
+
 Canonical encoding: `ethabi(uint64)`
 
 ### BatchHash
 
 The batch hash is the unique identifier not only for a batch of packets, but also for an individual packet (the packet hash for a single packet is the hash of a batch of that single packet).
+
+```hs
+newtype BatchHash = BatchHash FixedBytes 32
+```
 
 A batch hash is a 32 byte value, produced by keccak hashing the ethabi encoded list of the single packet:
 
@@ -229,63 +239,130 @@ TODO: Define all the datagrams here and link to them in the various implementati
 
 ### MsgCreateClient
 
-create a new client of the specified type, with the provided TOFU client & consensus state.
+```hs
+data MsgCreateClient = MsgCreateClient
+    { client_type :: ClientType
+    , client_state_bytes :: Bytes
+    , consensus_state_bytes :: Bytes
+    }
+```
 
-MUST emit CreateClient.
+Create a new client of the specified type, with the provided TOFU client & consensus state.
+
+This MUST call into the specified client type's [`createClient`](#createclient) hook.
+
+The initial client state commitment MUST be saved under the [`ClientState`](#clientstate) path, under the ID of the newly created client.
+
+The initial consensus state commitment MUST be saved under the [`ClientConsensusState`](#clientconsensusstate) path, under the ID of the newly created client and the initial trusted height.
+
+The client state and consensus states must also be saved on chain (either by the light client directly or the core module).
+
+MUST emit `CreateClient`.
 
 ### MsgUpdateClient
 
-update the specified client with the provided clientmessage.
+```hs
+data MsgUpdateClient = MsgUpdateClient
+    { client_id :: ClientId
+    , client_message :: Bytes
+    }
+```
 
-MUST emit UpdateClient.
+Update the specified client with the provided clientmessage.
+
+The client being updated MUST be active (see [`getStatus`](#getstatus)).
+
+This MUST call into the specified client type's [`updateClient`](#updateclient) hook.
+
+The updated client state commitment MUST be saved under the [`ClientState`](#clientstate) path, under the client that was updated.
+
+The new consensus state commitment MUST be saved under the [`ClientConsensusState`](#clientconsensusstate) path, under the ID of the client that was updated and the new trusted height.
+
+The client state and consensus states must also be saved on chain (either by the light client directly or the core module).
+
+MUST emit `UpdateClient`.
 
 ### MsgConnectionOpenInit
 
-start the connection handshake on this chain, connecting the specified client on this chain to the specified client on the counterparty chain.
+```hs
+data MsgConnectionOpenInit = MsgConnectionOpenInit
+    { client_id :: ClientId
+    , counterparty_client_id :: ClientId
+    }
+```
 
-MUST emit ConnectionOpenInit.
+Start the connection handshake on this chain, connecting the specified client on this chain to the specified client on the counterparty chain.
+
+MUST emit `ConnectionOpenInit`.
 
 ### MsgConnectionOpenTry
 
+```hs
+data MsgConnectionOpenTry = MsgConnectionOpenTry
+    { client_id :: ClientId
+    , counterparty_client_id :: ClientId
+    , counterparty_connection_id :: ConnectionId
+    , proof_init :: Bytes
+    , proof_height :: u64
+    }
+```
+
 after the connection open init on the counterparty chain, init the connection on this chain.
 
-MUST emit ConnectionOpenTry.
+MUST emit `ConnectionOpenTry`.
 
 ### MsgConnectionOpenAck
 
-after the connection open try on the counterparty chain, acknowledge the connection opening back on this chain.
+```hs
+data MsgConnectionOpenAck = MsgConnectionOpenAck
+    { connection_id :: ConnectionId
+    , counterparty_connection_id :: ConnectionId
+    , proof_try :: Bytes
+    , proof_height :: u64
+    }
+```
 
-MUST emit ChannelOpenInit.
+After the connection open try on the counterparty chain, acknowledge the connection opening back on this chain.
+
+MUST emit `ConnectionOpenAck`.
 
 ### MsgConnectionOpenConfirm
 
+```hs
+data MsgConnectionOpenConfirm = MsgConnectionOpenConfirm
+    { connection_id :: ConnectionId
+    , proof_try :: Bytes
+    , proof_height :: u64
+    }
+```
+
 after the connection open ack on the counterparty chain, confirm the connection opening back on this chain.
 
-MUST emit ChannelOpenInit.
+MUST emit `ConnectionOpenConfirm`.
 
 ### MsgChannelOpenInit
 
 start the channel handshake on this chain, over the specified connection id. this also calls "onChannelOpenInit" on the contract identified by the port id.
 
-MUST emit ChannelOpenInit
+MUST emit `ChannelOpenInit`.
 
 ### MsgChannelOpenTry
 
 after the channel open init on the counterparty chain, init the channel on this chain. this also calls "onChannelOpenTry" on the contract identified by the port id.
 
-MUST emit ChannelOpenTry
+MUST emit `ChannelOpenTry`.
 
 ### MsgChannelOpenAck
 
 after the channel open try on the counterparty chain, acknowledge the channel opening back on this chain. this also calls "onChannelOpenAck" on the contract identified by the stored port id.
 
-MUST emit ChannelOpenAck
+MUST emit `ChannelOpenAck`.
 
 ### MsgChannelOpenConfirm
 
 after the channel open ack on the counterparty chain, confirm the channel opening back on this chain. this also calls "onChannelOpenConfirm" on the contract identified by the stored port id.
 
-MUST emit ChannelOpenConfirm
+MUST emit `ChannelOpenConfirm`.
 
 ### MsgPacketRecv
 
@@ -321,29 +398,73 @@ TODO: Define all the events here and link to them in the various implementations
 
 ## Light Client Interface
 
-Depending on the host implementation, the exact logic for core<->client communcation may differ, however light clients MUST provide the following basic functionality:
+Depending on the host implementation, the exact logic for core<->client communcation may differ, however light clients MUST provide the following basic functionality in some form:
 
-### Create Client
+### createClient
+
+```hs
+updateClient :: (ClientId, ClientState, ConsensusState) -> (ClientState, ConsensusState, Height, ChainId)
+```
 
 Given a tofu state, create a new client with said state.
 
-### Update Client
+### updateClient
+
+```hs
+updateClient :: (ClientId, ClientMessage) -> (ClientState, ConsensusState, Height)
+```
 
 Update a client with the given client message.
 
-### Misbehaviour
+### misbehaviour
+
+```hs
+misbehaviour :: (ClientId, ClientMessage) -> ()
+```
 
 Verify a proof of misbehaviour on the counterparty chain, and freeze the client if the misbehaviour is valid. 
 
-### Verify Membership
+### verifyMembership
+
+```hs
+verifyMembership :: (ClientId, Height, Proof, Path, Value) -> Bool
+```
 
 Given a membership proof, a height, a key, and a value, verify the key and value against the stored client state an consensus state at that height.
 
-### Verify Non-Membership
+### verifyNonMembership
+
+```hs
+verifyNonMembership :: (ClientId, Height, Proof, Path) -> Bool
+```
 
 This functions the same as verify membership, except for verifying that a key contains no value (or a zero value) rather than a specific expected value.
 
 Note that not all chains support this functionality, and as such this is an optional feature. If the counterparty chain does not support any kind of non-membership or exclusion proof, then timeouts must be handled via a non-membership proof commitment on the counterparty chain, which is then verified via a membership proof back on the tracking chain.
+
+### getStatus
+
+```hs
+getStatus :: ClientId -> Status
+```
+
+Return the status of the client.
+
+### getLatestHeight
+
+```hs
+getLatestHeight :: ClientId -> Timestamp
+```
+
+Return the latest trusted height of the client.
+
+### getTimestamp
+
+```hs
+getTimestamp :: (ClientId, Height) -> Timestamp
+```
+
+Return the timestamp of a saved consensus state at a height.
 
 ## App Interface
 
