@@ -87,12 +87,16 @@ Canonical encoding: Not yet defined, there has not yet been a need for this type
 
 The connection record contains information pertaining to the connection between two clients.
 
-- state: ConnectionState
-- client_id: ClientId
-- counterparty_client_id: ClientId
-- counterparty_connection_id: Option<ClientId>
+```hs
+data Connection = Connection
+  { state :: ConnectionState 
+  , client_id :: ClientId
+  , counterparty_client_id :: ClientId
+  , counterparty_connection_id :: Maybe ClientId
+  }
+```
 
-Note that the counterparty_connection_id will be None (i.e. 0) iff state is ConnectionState::Init.
+Note that the counterparty_connection_id will be None (i.e. 0) iff state is `Init`.
 
 Canonical encoding: ethabi((uint8, uint32, uint32, uint32))
 
@@ -111,13 +115,17 @@ Canonical encoding: ethabi(uint8)
 
 The channel record contains information pertaining to a channel.
 
-- state: ChannelState
-- connection_id: ConnectionId
-- counterparty_channel_id: Option<ChannelId>
-- counterparty_port_id: Bytes
-- version: String
+```hs
+data Connection = Connection
+  { state :: ChannelState
+  , connection_id :: ConnectionId
+  , counterparty_channel_id :: Maybe ChannelId
+  , counterparty_port_id :: Bytes
+  , version :: String
+  }
+```
 
-Note that the counterparty_channel_id will be None (i.e. 0) iff state is ChannelState::Init.
+Note that the counterparty_channel_id will be None (i.e. 0) iff state is `Init`.
 
 Canonical encoding: ethabi((uint8,uint32,uint32,bytes,string))
 
@@ -137,11 +145,15 @@ Canonical encoding: ethabi(uint8)
 
 The packet record contains the opaque protocol-encoded data and relevant metadata for a packet sent over a channel.
 
-- source_channel_id: ChannelId
-- destination_channel_id: ChannelId
-- data: Bytes
-- timeout_height: ZERO # see note below
-- timeout_timestamp: Timestamp
+```hs
+data Connection = Connection
+  { source_channel_id :: ChannelId
+  , destination_channel_id :: ChannelId
+  , data :: Bytes
+  , timeout_height :: 0 -- see note below
+  , timeout_timestamp :: Timestamp
+  }
+```
 
 Canonical encoding: ethabi((uint32,uint32,bytes,uint64,uint64))
 
@@ -172,6 +184,8 @@ const MEMBERSHIP_PROOF = uint256(6)
 const NON_MEMBERSHIP_PROOF = uint256(7)
 const PACKET_TIMEOUTS = uint256(8)
 ```
+
+TODO: Add membership/nonmemership stores (for proof lens clients) and packet timeout store (for timeout commitments)
 
 ### ClientState
 
@@ -226,8 +240,6 @@ Stores the commitment of a set of packet acknowledgements. TODO: Explain when th
 key = batch_hash: BatchHash -> keccak(ethabi(PACKET_ACKS, batch_hash))
 value = bytes32
 ```
-
-TODO: Add membership/nonmemership stores (for proof lens clients) and packet timeout store (for timeout commitments)
 
 ## Datagrams
 
