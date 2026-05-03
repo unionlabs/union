@@ -314,6 +314,23 @@
         "type": "github"
       }
     },
+    "gno": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1777558792,
+        "narHash": "sha256-wsoWC1gicrbK3yeaJLvia8UqtUopu5U7SPUGVLkGqxk=",
+        "owner": "gnolang",
+        "repo": "gno",
+        "rev": "e16676eec5f75ab563d4ade83e17d4a96ea04aee",
+        "type": "github"
+      },
+      "original": {
+        "owner": "gnolang",
+        "ref": "master",
+        "repo": "gno",
+        "type": "github"
+      }
+    },
     "gogoproto": {
       "flake": false,
       "locked": {
@@ -626,6 +643,7 @@
         "flake-parts": "flake-parts_2",
         "foundry": "foundry",
         "get-flake": "get-flake",
+        "gno": "gno",
         "gogoproto": "gogoproto",
         "googleapis": "googleapis",
         "ibc-go": "ibc-go",

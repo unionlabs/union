@@ -117,6 +117,14 @@
       flake = false;
     };
 
+    gno = {
+      type = "github";
+      owner = "gnolang";
+      repo = "gno";
+      ref = "master";
+      flake = false;
+    };
+
     ethereum-consensus-specs = {
       url = "https://github.com/ethereum/consensus-spec-tests/releases/download/v1.4.0/general.tar.gz";
       flake = false;
@@ -210,6 +218,7 @@
         ./tools/rust-proto.nix
         ./tools/tools.nix
         ./tools/scarb.nix
+        ./tools/gno.nix
         ./tools/wasm-light-client.nix
         ./tools/libwasmvm/libwasmvm.nix
         ./tools/libblst/libblst.nix
