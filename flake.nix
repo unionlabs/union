@@ -612,6 +612,11 @@
                     self'.packages.cairo-language-server
                     self'.packages.cairo-format
                     self'.packages.universal-sierra-compiler
+
+                    self'.packages.gno
+                    self'.packages.gnokey
+                    self'.packages.gnodev
+                    self'.packages.gnopls
                   ]
                 else
                   [ ]
@@ -636,6 +641,7 @@
             PROTOC = "${pkgs.protobuf}/bin/protoc";
             FOUNDRY_LIBS = ''["${self'.packages.evm-libs}"]'';
             FOUNDRY_DISABLE_NIGHTLY_WARNING = "1";
+            GNOROOT = "${inputs.gno}";
           };
           # https://flake.parts/options/treefmt-nix#opt-perSystem.treefmt
           treefmt = import ./treefmt.nix {

@@ -1,3 +1,6 @@
+[language-server.gnopls]
+command = "gnopls"
+
 [language-server.nixd]
 command = "nixd"
 
@@ -132,6 +135,17 @@ scope            = "source.nix"
 shebangs         = []
 
 [[language]]
+comment-token    = "//"
+file-types       = ["gno"]
+indent           = { tab-width = 4, unit = "  " }
+injection-regex  = "gno"
+language-servers = ["gnopls"]
+name             = "gno"
+roots            = ["gnomod.toml"]
+scope            = "source.gno"
+shebangs         = []
+
+[[language]]
 formatter = { command = "deno", args = ["fmt", "-", "--ext", "md"] }
 name      = "markdown"
 # auto-format = true
@@ -139,6 +153,10 @@ name      = "markdown"
 [[grammar]]
 name   = "astro"
 source = { git = "https://github.com/virchau13/tree-sitter-astro", rev = "4be180759ec13651f72bacee65fa477c64222a1a" }
+
+[[grammar]]
+name   = "gno"
+source = { git = "https://github.com/tree-sitter/tree-sitter-go", rev = "2346a3ab1bb3857b48b29d779a1ef9799a248cd7" }
 
 # [[grammar]]
 # name   = "sql"
