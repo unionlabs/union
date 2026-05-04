@@ -58,7 +58,11 @@ func CreateClient(_ realm, clientType string, clientStateBytes, consensusStateBy
 
 	impl.CreateClient(clientId, clientStateBytes, consensusStateBytes)
 
-	chain.Emit(CreateClientEvent, "client_type", clientType, "client_id", clientId.String())
+	chain.Emit(
+		CreateClientEvent,
+		"client_type", clientType,
+		"client_id", clientId.String(),
+	)
 
 	return clientId
 }
