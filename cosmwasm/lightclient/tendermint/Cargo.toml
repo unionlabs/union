@@ -29,7 +29,7 @@ sha2                          = { workspace = true }
 tendermint-light-client-types = { workspace = true, features = ["ethabi", "bincode"] }
 tendermint-verifier           = { workspace = true }
 thiserror                     = { workspace = true }
-unionlabs                     = { workspace = true }
+unionlabs                     = { workspace = true, features = ["cosmwasm"] }
 
 [dev-dependencies]
 base64      = { workspace = true }

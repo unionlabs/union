@@ -28,7 +28,7 @@ impl IbcClient for AttestedLightClient {
 
     type ConsensusState = ConsensusState;
 
-    type StorageProof = StorageProof;
+    type StateProof = StorageProof;
 
     type Encoding = Bincode;
 
@@ -36,7 +36,7 @@ impl IbcClient for AttestedLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        StorageProof {}: Self::StorageProof,
+        StorageProof {}: Self::StateProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let ClientState::V1(client_state) = ctx.read_self_client_state()?;
@@ -55,7 +55,7 @@ impl IbcClient for AttestedLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        StorageProof {}: Self::StorageProof,
+        StorageProof {}: Self::StateProof,
     ) -> Result<(), IbcClientError<Self>> {
         let ClientState::V1(client_state) = ctx.read_self_client_state()?;
 

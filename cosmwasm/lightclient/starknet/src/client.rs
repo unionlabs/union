@@ -28,13 +28,13 @@ impl IbcClient for StarknetLightClient {
 
     type CustomQuery = Empty;
 
-    type StorageProof = StorageProof;
+    type StateProof = StorageProof;
 
     fn verify_membership(
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
@@ -63,7 +63,7 @@ impl IbcClient for StarknetLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
 

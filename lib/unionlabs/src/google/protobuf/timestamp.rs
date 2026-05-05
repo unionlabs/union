@@ -52,6 +52,15 @@ pub const MIN_TIMESTAMP: Timestamp = Timestamp {
     nanos: result_unwrap!(BoundedI32::<0, NANOS_MAX>::new_const(0)),
 };
 
+pub const MAX_TIMESTAMP: Timestamp = Timestamp {
+    seconds: result_unwrap!(
+        BoundedI64::<TIMESTAMP_SECONDS_MIN, TIMESTAMP_SECONDS_MAX>::new_const(
+            TIMESTAMP_SECONDS_MAX
+        )
+    ),
+    nanos: result_unwrap!(BoundedI32::<0, NANOS_MAX>::new_const(999_999_999)),
+};
+
 impl Ord for Timestamp {
     fn cmp(&self, other: &Self) -> Ordering {
         self.seconds

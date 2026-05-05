@@ -730,7 +730,8 @@ pub mod bitvec_string {
     }
 }
 
-// This is used for the very strange representation of nil protobuf timestamps in cometbft json responses
+// This is used for the very strange representation of nil protobuf timestamps in cometbft json
+// responses
 #[allow(non_snake_case)]
 pub mod parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none {
     use alloc::{format, string::String};

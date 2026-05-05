@@ -32,7 +32,7 @@ impl IbcClient for EthermintLightClient {
 
     type ConsensusState = ConsensusState;
 
-    type StorageProof = MerkleProof;
+    type StateProof = MerkleProof;
 
     type Encoding = Bincode;
 
@@ -40,7 +40,7 @@ impl IbcClient for EthermintLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
@@ -74,7 +74,7 @@ impl IbcClient for EthermintLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
     ) -> Result<(), IbcClientError<Self>> {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(height)?;

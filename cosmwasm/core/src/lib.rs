@@ -1,18 +1,19 @@
 #![cfg_attr(not(test), warn(clippy::unwrap_used))]
 
+use cosmwasm_std::{Addr, StdError};
+use frissitheto::UpgradeError;
+use ibc_union_spec::{ChannelId, ChannelState, ClientId, ConnectionState, Status, Timestamp};
+use thiserror::Error;
+use unionlabs::primitives::Bytes;
+
 pub mod contract;
+pub mod events;
 #[cfg(feature = "cw-orch-interface")]
 pub mod interface;
 pub mod state;
 
 #[cfg(test)]
 mod tests;
-
-use cosmwasm_std::{Addr, StdError};
-use frissitheto::UpgradeError;
-use ibc_union_spec::{ChannelId, ChannelState, ClientId, ConnectionState, Status, Timestamp};
-use thiserror::Error;
-use unionlabs::primitives::Bytes;
 
 #[derive(Error, Debug, PartialEq, strum::EnumDiscriminants)]
 #[strum_discriminants(

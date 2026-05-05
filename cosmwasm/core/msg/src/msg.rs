@@ -41,6 +41,7 @@ pub enum RestrictedExecuteMsg {
     CreateClient(MsgCreateClient),
     UpdateClient(MsgUpdateClient),
     ForceUpdateClient(MsgForceUpdateClient),
+    Misbehaviour(MsgMisbehaviour),
 
     ConnectionOpenInit(MsgConnectionOpenInit),
     ConnectionOpenTry(MsgConnectionOpenTry),
@@ -106,6 +107,14 @@ pub struct MsgForceUpdateClient {
     pub client_id: ClientId,
     pub client_state_bytes: Bytes,
     pub consensus_state_bytes: Bytes,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MsgMisbehaviour {
+    pub client_id: ClientId,
+    pub client_message: Bytes,
+    pub relayer: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

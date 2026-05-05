@@ -144,6 +144,12 @@ impl<E: Encoding, const N: usize> PartialEq<[u8; N]> for Bytes<E> {
     }
 }
 
+impl<E: Encoding, const N: usize> PartialEq<&[u8; N]> for Bytes<E> {
+    fn eq(&self, other: &&[u8; N]) -> bool {
+        (**self).eq(*other)
+    }
+}
+
 impl<E: Encoding> Eq for Bytes<E> {}
 
 impl<E: Encoding, RhsE: Encoding> PartialOrd<Bytes<RhsE>> for Bytes<E> {

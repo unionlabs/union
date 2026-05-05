@@ -72,6 +72,9 @@ macro_rules! addr_value {
     };
 }
 
+/// An ugly hack to allow for >64K messages (not configurable) to be threaded for the query.
+///
+/// See <https://github.com/CosmWasm/cosmwasm/blob/e17ecc44cdebc84de1caae648c7a4f4b56846f8f/packages/vm/src/imports.rs#L47>
 pub enum QueryStore {}
 impl Store for QueryStore {
     const PREFIX: Prefix = Prefix::new(b"query_store");

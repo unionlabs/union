@@ -101,7 +101,8 @@ impl Timestamp {
 
     /// Check if the timestamp is zero.
     ///
-    /// Note that this checks against the ***nanos***. If the value is sub-second, this will return *false*, whereas [`Timestamp::as_secs()`] will return 0:
+    /// Note that this checks against the ***nanos***. If the value is sub-second, this will return
+    /// *false*, whereas [`Timestamp::as_secs()`] will return 0:
     ///
     /// ```rust
     /// # use consensus_primitives::Timestamp;
@@ -150,16 +151,17 @@ impl fmt::Display for Timestamp {
 
 /// Represents a duration, normalized to nanoseconds.
 ///
-/// A duration is a period between two [`Timestamp`]s. In order to reduce confusion when dealing with many different consensus mechanisms that all
-/// store timestamps differently, this type only exposes explicit constructors and accessors (for
-/// both seconds and nanoseconds).
+/// A duration is a period between two [`Timestamp`]s. In order to reduce confusion when dealing
+/// with many different consensus mechanisms that all store timestamps differently, this type only
+/// exposes explicit constructors and accessors (for both seconds and nanoseconds).
 ///
 /// ```rust
 /// # use consensus_primitives::Duration;
 /// assert_eq!(Duration::from_nanos(1_000_000_000), Duration::from_secs(1));
 /// ```
 ///
-/// This type can represent durations with a maximum range of about 529 years. If a longer duration is required, good luck.
+/// This type can represent durations with a maximum range of about 529 years. If a longer duration
+/// is required, good luck.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
 #[cfg_attr(
     feature = "serde",
@@ -220,7 +222,8 @@ impl Duration {
 
     /// Check if the timestamp is zero.
     ///
-    /// Note that this checks against the ***nanos***. If the value is sub-second, this will return *false*, whereas [`Duration::as_secs()`] will return 0:
+    /// Note that this checks against the ***nanos***. If the value is sub-second, this will return
+    /// *false*, whereas [`Duration::as_secs()`] will return 0:
     ///
     /// ```rust
     /// # use consensus_primitives::Duration;

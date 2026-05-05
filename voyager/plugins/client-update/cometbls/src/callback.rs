@@ -104,8 +104,8 @@ impl Module {
 }
 
 /// This is required since we are using [garaga](https://github.com/keep-starknet-strange/garaga) to optimize
-/// the on-chain verification. Via `garaga`, we are computing some hints for the pairing checks to reduce the
-/// amount of on-chain compute we do.
+/// the on-chain verification. Via `garaga`, we are computing some hints for the pairing checks to
+/// reduce the amount of on-chain compute we do.
 fn prepare_zkp_for_cairo(
     chain_id: &str,
     trusted_validators_hash: H256,

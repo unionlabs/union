@@ -30,7 +30,7 @@ impl IbcClient for TrustedMptLightClient {
 
     type ConsensusState = ConsensusState;
 
-    type StorageProof = StorageProof;
+    type StateProof = StorageProof;
 
     type Encoding = Bincode;
 
@@ -38,7 +38,7 @@ impl IbcClient for TrustedMptLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
@@ -55,7 +55,7 @@ impl IbcClient for TrustedMptLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         Ok(verify_non_membership(

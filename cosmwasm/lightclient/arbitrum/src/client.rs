@@ -25,7 +25,7 @@ impl IbcClient for ArbitrumLightClient {
 
     type ConsensusState = ConsensusState;
 
-    type StorageProof = StorageProof;
+    type StateProof = StorageProof;
 
     type Encoding = Bincode;
 
@@ -33,7 +33,7 @@ impl IbcClient for ArbitrumLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
         value: Vec<u8>,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
@@ -51,7 +51,7 @@ impl IbcClient for ArbitrumLightClient {
         ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        storage_proof: Self::StateProof,
     ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
 
@@ -159,17 +159,15 @@ impl IbcClient for ArbitrumLightClient {
     }
 
     fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
-        let _ = ctx;
-
-        let frozen_height = match client_state {
-            ClientState::V1(client_state) => client_state.frozen_height,
-            ClientState::V2(client_state) => client_state.frozen_height,
+        let (frozen_height, l1_client_id) = match client_state {
+            ClientState::V1(v1) => (v1.frozen_height, v1.l1_client_id),
+            ClientState::V2(v2) => (v2.frozen_height, v2.l1_client_id),
         };
 
         if frozen_height.height() != 0 {
             Status::Frozen
         } else {
-            Status::Active
+            ctx.status(l1_client_id).unwrap_or(Status::Frozen)
         }
     }
 
