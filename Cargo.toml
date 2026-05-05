@@ -495,7 +495,7 @@ ed25519-dalek      = { version = "2.1.1", default-features = false }
 either             = { version = "1.15.0", default-features = false }
 enumorph           = { version = "0.1.2", default-features = false }
 ethabi             = { version = "18.0.0", default-features = false }
-fastcrypto         = { git = "https://github.com/MystenLabs/fastcrypto", rev = "4db0e90c732bbf7420ca20de808b698883148d9c", default-features = false }
+fastcrypto         = { git = "https://github.com/mystenlabs/fastcrypto", rev = "0eea35ee442a798fb1f1e7c2f39dc021bd21dbc3", default-features = false }
 futures            = { version = "0.3.31", default-features = false }
 generic-array      = { version = "0.14.7", default-features = false }
 hex                = { version = "0.4.3", default-features = false }
