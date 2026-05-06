@@ -346,6 +346,36 @@ mod tests {
     }
 
     #[test]
+    fn test_ok_mainnet() {
+        assert_eq!(
+            verify_zkp(
+                &ChainId::from_string("union-1").unwrap(),
+                hex!("103f0759949f056637dbf789170a945bd7e35aa1ac8afe302eed97d21491d685").into(),
+                &LightHeader {
+                    height: 6433728.try_into().unwrap(),
+                    time: "2026-05-06T15:14:03.986205568Z".parse().unwrap(),
+                    validators_hash: hex!(
+                        "140379043aff431abf326b351ad625c9d817e3f589606b260867f56a9dd52cbc"
+                    )
+                    .into(),
+                    next_validators_hash: hex!(
+                        "140379043aff431abf326b351ad625c9d817e3f589606b260867f56a9dd52cbc"
+                    )
+                    .into(),
+                    app_hash: hex!(
+                        "c75dfe45e0e98d0451c816ced153935ee304b4172272f91222f31fd937f56483"
+                    )
+                    .into(),
+                },
+                hex!(
+                    "2601de608d0eda2df23aa38cc62ca4493fb27239239556f1c620e2546e4c39520acb72499ac759d62de65f7ad5f569170e90c174cd72d278f2179c8128608165247a570ae502781ae9b0949ce35935a110c2ac56b95a867387ee5b15776f3f8c1fd17830c99a8a9b30405e177dbf959eb9d6908036139729424985d402321fbe1d195096e4e2431550d183de6e2366a52116cd56d7327f7af1a7794627e0ea8522aaceed54aca8ae9fc823febb9144832d402e733606b6db7b2816abfb31d4c0140e16838f1cd00e9ef9777a55db3332cff0e0c43a4118229df65f3c2de114f825eb1a5f40a8c758d6ebc2f6aaf88b6a5f28a1b01524f282793be91aeb8d21fa22031e667c3efa1c1f961d364a4c066eb0613ccbb3930b129c9084afea33313106bf693e0172a02653593ac3fd7c711e800d2c0566235856d4abeaf765e3b96f0a7e3a64fbb778fbb27dbba85a4821a6af61f5815d8e84848b15003a4b3878e0229506a72f4a739b23b0ce49fe6d26604807b99aa8d1a13375c0795920b13108"
+                )
+            ),
+            Ok(())
+        );
+    }
+
+    #[test]
     fn test_decode() {
         ZKP::try_from(hex!("1c9bc15a0c4541aff1d12780d6cf4ae2bdc6e3afafceae9d4fa36209fa323b68002e9c77c223d830e5df6a80cdd683f0986353933ee3179970fccc5d893219d30726f3b8c0dbe630b815b01b5557228a0dfeb0e0435bb0d15d1ccff7f6133fc110937d9fceee2f9052468c198fafeca89d524142a0efa9dc4df445853ce617302059018fef03dc34456ad201d2a5420a7d1c8fac57cb48cbe6709ac4da27d1eb250f73eab007d26cbff41ceb4564ab1cdfa83e9ee88be4f816dc841bbf2e90c80186ad9437fce7655c71b54addae1ccea429da3edba3232d073cb7e89ff2d27218556f1af0c446962ace932f637279dd0ad3ef1501fb6da39d5f68282f54bcf6094999672f3d8cbbf0409aef1048175ffff50b03a5154016d307a2ef425ffee509cd447b22ce6331c7a3473b2c6da1f9d550e8c3ab19bde65e699e07f4f2886c03ec4ff2faa0e342de7ac5daf32025acd6070c19ed8b007c121db0d955472c7d2e38d5a943d15bc902613029e4baa8c26034ff280e3a4d5468fcd6745afe53b5").as_slice()).unwrap();
     }
