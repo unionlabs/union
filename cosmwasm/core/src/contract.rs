@@ -50,9 +50,10 @@ use crate::{
     events::{
         BatchAcks, BatchSend, ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck,
         ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, CommitMembershipProof,
-        CommitNonMembershipProof, ConnectionOpenAck, ConnectionOpenInit, ConnectionOpenTry,
-        CreateClient, CreateLensClient, ForceUpdateClient, IntentPacketRecv, Misbehaviour,
-        PacketAck, PacketRecv, PacketSend, RegisterClient, TimeoutPacket, UpdateClient, WriteAck,
+        CommitNonMembershipProof, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
+        ConnectionOpenTry, CreateClient, CreateLensClient, ForceUpdateClient, IntentPacketRecv,
+        Misbehaviour, PacketAck, PacketRecv, PacketSend, RegisterClient, TimeoutPacket,
+        UpdateClient, WriteAck,
     },
     state::{
         ChannelOwner, Channels, ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates,
@@ -1274,7 +1275,7 @@ fn connection_open_confirm(
 
     save_connection(deps.branch(), connection_id, &connection)?;
 
-    Ok(Response::new().add_event(ConnectionOpenAck {
+    Ok(Response::new().add_event(ConnectionOpenConfirm {
         connection_id,
         client_id: connection.client_id,
         counterparty_client_id: connection.counterparty_client_id,
