@@ -24,6 +24,8 @@ members = [
   "lib/cometbft-rpc",
   "lib/cosmos-client",
   "lib/cometbft-types",
+  "lib/gno-rpc",
+  "lib/gno-types",
 
   "lib/concurrent-keyring",
   "lib/gnark-key-parser",
@@ -386,6 +388,8 @@ frissitheto                               = { path = "lib/frissitheto", default-
 galois-rpc                                = { path = "lib/galois-rpc", default-features = false }
 gnark-key-parser                          = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                                = { path = "lib/gnark-mimc", default-features = false }
+gno-rpc                                   = { path = "lib/gno-rpc", default-features = false }
+gno-types                                 = { path = "lib/gno-types", default-features = false }
 ibc-classic-spec                          = { path = "lib/ibc-classic-spec", default-features = false }
 ibc-solidity                              = { path = "lib/ibc-solidity", default-features = false }
 ibc-union                                 = { path = "cosmwasm/core", default-features = false }

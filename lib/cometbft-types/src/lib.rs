@@ -29,10 +29,10 @@ pub mod utils {
 pub mod serde {
     pub mod maybe_empty_h256 {
         use serde::{Deserialize, Deserializer, Serializer, de};
-        use unionlabs::primitives::{H256, encoding::HexUnprefixed};
+        use unionlabs::primitives::{H256, encoding::Encoding};
 
-        pub fn serialize<S>(
-            data: &Option<H256<HexUnprefixed>>,
+        pub fn serialize<S, E: Encoding>(
+            data: &Option<H256<E>>,
             serializer: S,
         ) -> Result<S::Ok, S::Error>
         where
@@ -44,7 +44,9 @@ pub mod serde {
             }
         }
 
-        pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<H256<HexUnprefixed>>, D::Error>
+        pub fn deserialize<'de, D, E: Encoding>(
+            deserializer: D,
+        ) -> Result<Option<H256<E>>, D::Error>
         where
             D: Deserializer<'de>,
         {

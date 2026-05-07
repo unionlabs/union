@@ -6355,6 +6355,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "gno-rpc"
+version = "0.0.0"
+dependencies = [
+ "base64 0.22.1",
+ "gno-types",
+ "hex",
+ "hex-literal 1.1.0",
+ "jsonrpsee 0.26.0",
+ "macros",
+ "reconnecting-jsonrpc-ws-client",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "serde_path_to_error",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "unionlabs",
+]
+
+[[package]]
+name = "gno-types"
+version = "0.0.0"
+dependencies = [
+ "bincode 2.0.1",
+ "cometbft-types",
+ "gno-types",
+ "hex-literal 1.1.0",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.17",
+ "unionlabs",
+]
+
+[[package]]
 name = "governor"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15177,6 +15216,7 @@ dependencies = [
  "embed-commit",
  "ethereum-light-client-types",
  "ethermint-light-client-types",
+ "gno-rpc",
  "hex",
  "ibc-classic-spec",
  "ibc-union-spec",

@@ -20,6 +20,7 @@ pub mod arbitrum;
 pub mod codec;
 pub mod cometbft;
 pub mod deployments;
+pub mod gno;
 pub mod packet;
 pub mod parlia;
 pub mod path;
@@ -70,6 +71,8 @@ pub enum Cmd {
     Codec(codec::Cmd),
     #[command(visible_aliases(["comet", "cmt"]), subcommand)]
     Cometbft(cometbft::Cmd),
+    #[command(visible_alias = "tm2", subcommand)]
+    Gno(gno::Cmd),
     #[command(visible_aliases(["z", "ucs03"]), subcommand)]
     Zkgm(zkgm::Cmd),
     #[command(visible_alias = "d", subcommand)]
@@ -124,6 +127,7 @@ async fn main() -> Result<()> {
         Cmd::Parlia(cmd) => cmd.run().await,
         Cmd::Codec(cmd) => cmd.run(),
         Cmd::Cometbft(cmd) => cmd.run().await,
+        Cmd::Gno(cmd) => cmd.run().await,
         Cmd::Zkgm(cmd) => cmd.run().await,
         Cmd::Deployments(cmd) => cmd.run(),
         Cmd::Path(cmd) => cmd.run(),

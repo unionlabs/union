@@ -28,6 +28,7 @@ create3            = { workspace = true }
 deployments        = { workspace = true }
 derive_more        = { workspace = true }
 embed-commit       = { workspace = true }
+gno-rpc            = { workspace = true }
 hex                = { workspace = true }
 ibc-classic-spec   = { workspace = true }
 ibc-union-spec     = { workspace = true, features = ["serde"] }
