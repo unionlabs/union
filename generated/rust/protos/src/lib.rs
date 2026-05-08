@@ -3,6 +3,42 @@
 pub mod amino {
     include!("amino.rs");
 }
+pub mod atomone {
+    pub mod coredaos {
+        #[cfg(feature = "atomone+coredaos+v1")]
+        pub mod v1 {
+            include!("atomone.coredaos.v1.rs");
+        }
+        pub mod module {
+            #[cfg(feature = "atomone+coredaos+module+v1")]
+            pub mod v1 {
+                include!("atomone.coredaos.module.v1.rs");
+            }
+        }
+    }
+    pub mod gov {
+        #[cfg(feature = "atomone+gov+v1")]
+        pub mod v1 {
+            include!("atomone.gov.v1.rs");
+        }
+        #[cfg(feature = "atomone+gov+v1beta1")]
+        pub mod v1beta1 {
+            include!("atomone.gov.v1beta1.rs");
+        }
+        pub mod module {
+            #[cfg(feature = "atomone+gov+module+v1")]
+            pub mod v1 {
+                include!("atomone.gov.module.v1.rs");
+            }
+        }
+    }
+    pub mod photon {
+        #[cfg(feature = "atomone+photon+v1")]
+        pub mod v1 {
+            include!("atomone.photon.v1.rs");
+        }
+    }
+}
 pub mod babylon {
     #[cfg(feature = "babylon+incentive")]
     pub mod incentive {
@@ -751,6 +787,12 @@ pub mod ibc {
         }
     }
     pub mod lightclients {
+        pub mod gno {
+            #[cfg(feature = "ibc+lightclients+gno+v1")]
+            pub mod v1 {
+                include!("ibc.lightclients.gno.v1.rs");
+            }
+        }
         pub mod localhost {
             #[cfg(feature = "ibc+lightclients+localhost+v2")]
             pub mod v2 {
@@ -1070,16 +1112,16 @@ pub mod union {
             }
         }
     }
-    pub mod ics23 {
-        #[cfg(feature = "union+ics23+v1")]
-        pub mod v1 {
-            include!("union.ics23.v1.rs");
-        }
-    }
     pub mod staking {
         #[cfg(feature = "union+staking+v1")]
         pub mod v1 {
             include!("union.staking.v1.rs");
+        }
+        pub mod module {
+            #[cfg(feature = "union+staking+module+v1")]
+            pub mod v1 {
+                include!("union.staking.module.v1.rs");
+            }
         }
     }
 }

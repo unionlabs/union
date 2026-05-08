@@ -72,7 +72,7 @@
       flake = false;
     };
     atomone = {
-      url = "github:atomone-hub/atomone/v3.0.3";
+      url = "github:atomone-hub/atomone/main";
       flake = false;
     };
     xion = {
@@ -482,10 +482,13 @@
                   ;
                 uniond = ./uniond/proto;
                 galoisd = ./galoisd/proto;
-                inherit (inputs) cometbls;
+                inherit (inputs)
+                  cometbls
+                  cosmossdk
+                  interchain-security
+                  atomone
+                  ;
                 cometbls-lc = ./11-cometbls/proto;
-                inherit (inputs) cosmossdk;
-                inherit (inputs) interchain-security;
               };
 
               openapi = {

@@ -210,6 +210,16 @@
             src
           ];
         };
+        gno = rec {
+          src = "${proto.atomone}/proto";
+          proto-deps = [
+            src
+            "${proto.gogoproto}/protobuf"
+            google.src
+            "${proto.cosmosproto}/proto"
+            ibc-proto.src
+          ];
+        };
       };
 
       fold-opts =

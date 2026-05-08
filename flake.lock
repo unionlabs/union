@@ -24,16 +24,16 @@
     "atomone": {
       "flake": false,
       "locked": {
-        "lastModified": 1760962414,
-        "narHash": "sha256-/ebr1h73kylyceVZSA+0pcONxeU5bTmpxfO9CwPqFRM=",
+        "lastModified": 1778171396,
+        "narHash": "sha256-RO9b6cGIm5zxvPejQqnqKlOPN70eDVHv3B4+rpWwNpU=",
         "owner": "atomone-hub",
         "repo": "atomone",
-        "rev": "a948052ffbe9b594070abe601b39f91ac1a8498c",
+        "rev": "5e3a5d733d818c1fd3d8b08aac9baf329737d27d",
         "type": "github"
       },
       "original": {
         "owner": "atomone-hub",
-        "ref": "v3.0.3",
+        "ref": "main",
         "repo": "atomone",
         "type": "github"
       }

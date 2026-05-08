@@ -44,11 +44,6 @@ pub struct Module {
     /// no preparecheckstate function will be registered.
     #[prost(string, repeated, tag = "9")]
     pub prepare_check_staters: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-    /// pre_blockers specifies the module names of pre blockers
-    /// to call in the order in which they should be called. If this is left empty
-    /// no pre blocker will be registered.
-    #[prost(string, repeated, tag = "10")]
-    pub pre_blockers: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 /// StoreKeyConfig may be supplied to override the default module store key, which
 /// is the module name.
