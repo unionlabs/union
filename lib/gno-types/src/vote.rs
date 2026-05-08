@@ -23,3 +23,9 @@ pub struct Vote {
     pub validator_index: i32,
     pub signature: Bytes<Base64>,
 }
+
+impl Vote {
+    fn SignBytes(&self, chainID: string) -> Bytes {
+        amino.MarshalSized(CanonicalizeVote(chainID, vote))
+    }
+}

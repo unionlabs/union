@@ -62,6 +62,7 @@ members = [
   "lib/evm-storage-verifier",
   "lib/parlia-verifier",
   "lib/tendermint-verifier",
+  "lib/gno-verifier",
 
   "lib/base-light-client-types",
   "lib/bob-light-client-types",
@@ -71,6 +72,7 @@ members = [
   "lib/tendermint-light-client-types",
   "lib/ethereum-light-client-types",
   "lib/ethermint-light-client-types",
+  "lib/gno-light-client-types",
   "lib/movement-light-client-types",
   "lib/parlia-light-client-types",
   "lib/trusted-mpt-light-client-types",
@@ -435,7 +437,9 @@ sui-utils                                 = { path = "lib/sui-utils", default-fe
 sui-verifier                              = { path = "lib/sui-verifier", default-features = false }
 tendermint-light-client                   = { path = "cosmwasm/lightclient/tendermint", default-features = false }
 tendermint-light-client-types             = { path = "lib/tendermint-light-client-types", default-features = false }
+gno-light-client-types             = { path = "lib/gno-light-client-types", default-features = false }
 tendermint-verifier                       = { path = "lib/tendermint-verifier", default-features = false }
+gno-verifier                       = { path = "lib/gno-verifier", default-features = false }
 token-factory-api                         = { path = "cosmwasm/token-factory-api", default-features = false }
 trusted-mpt-light-client-types            = { path = "lib/trusted-mpt-light-client-types", default-features = false }
 ucs03-solvable                            = { path = "lib/ucs03-solvable", default-features = false }

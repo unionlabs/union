@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::errors::UnknownEnumVariant;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "i32", into = "i32")]
 pub enum SignedMsgType {
     Prevote = 1,

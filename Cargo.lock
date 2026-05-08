@@ -6355,6 +6355,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "gno-light-client-types"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bincode 2.0.1",
+ "cometbft-types",
+ "gno-light-client-types",
+ "hex-literal 1.1.0",
+ "ics23",
+ "protos",
+ "serde",
+ "thiserror 2.0.17",
+ "unionlabs",
+]
+
+[[package]]
 name = "gno-rpc"
 version = "0.0.0"
 dependencies = [
@@ -6386,6 +6402,23 @@ dependencies = [
  "prost 0.12.6",
  "protos",
  "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.17",
+ "unionlabs",
+]
+
+[[package]]
+name = "gno-verifier"
+version = "0.0.0"
+dependencies = [
+ "ed25519-dalek",
+ "gno-light-client-types",
+ "gno-types",
+ "hex-literal 1.1.0",
+ "prost 0.12.6",
+ "protos",
  "serde-utils",
  "serde_json",
  "sha2 0.10.9",
