@@ -1,9 +1,8 @@
-use cometbft_types::types::block_id::BlockId;
-use gno_types::{BlockId, commit::CommitValidateBasicError};
+use gno_types::{BlockId, Vote, commit::CommitValidateBasicError};
 use unionlabs::{
-    errors::InvalidLength,
+    bounded::BoundedI64,
     google::protobuf::{duration::Duration, timestamp::Timestamp},
-    primitives::{H160, H256, encoding::HexUnprefixed},
+    primitives::{H256, encoding::HexUnprefixed},
 };
 
 /// Source: <https://github.com/atomone-hub/atomone/blob/5e3a5d733d818c1fd3d8b08aac9baf329737d27d/modules/10-gno/errors.go>
@@ -38,20 +37,35 @@ pub enum Error {
 
     #[error(
         "{ERR_OLD_HEADER_EXPIRED}: trusted header expired at {} (now: {header_timestamp})",
-        header_timestamp.checked_add(trusting_period).expect("valid")
+        header_timestamp.checked_add(*trusting_period).expect("valid")
     )]
     HeaderExpired {
         trusting_period: Duration,
         header_timestamp: Timestamp,
     },
 
-    #[error("{ERR_INVALID_HEADER}: failed to verify new header and vals")]
-    VerifyNewHeaderAndVals(#[source] VerifyNewHeaderAndValsError),
+    #[error("headers must be non adjacent in height")]
+    HeadersMustBeNonAdjacent,
 
-    #[error(transparent)]
-    CommitValidateBasic(CommitValidateBasicError),
-    // #[error("Invalid commit -- wrong set size: {expected} vs {actual}")]
-    // InvalidCommitPrecommits { expected: usize, actual: usize },
+    #[error("headers must be adjacent in height")]
+    HeadersMustBeAdjacent,
+
+    #[error("{ERR_INVALID_HEADER}: failed to verify new header and vals")]
+    VerifyNewHeaderAndVals(#[from] VerifyNewHeaderAndValsError),
+
+    #[error("{ERR_NEW_VAL_SET_CANT_BE_TRUSTED}: trusted validators failed to verify commit")]
+    VerifyLightCommitError(#[from] VerifyLightCommitError),
+
+    #[error("{ERR_INVALID_HEADER}: failed to verify commit")]
+    TrustedValidatorsVerifyCommitError(#[from] TrustedValidatorsVerifyCommitError),
+
+    #[error(
+        "expected old header next validators ({next_validators_hash}) to match those from new header ({validators_hash})"
+    )]
+    NextValidatorsHashMismatch {
+        next_validators_hash: H256<HexUnprefixed>,
+        validators_hash: H256<HexUnprefixed>,
+    },
     // #[error(
     //     "untrusted ({untrusted_header_chain_id}) and trusted header ({trusted_header_chain_id}) chain id mismatch"
     // )]
@@ -128,11 +142,8 @@ pub enum Error {
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum VerifyNewHeaderAndValsError {
-    #[error("headers must be non adjacent in height")]
-    HeadersMustBeNonAdjacent,
-
     #[error(
-        "expected new header height {new_header_height} to be greater than one of old header {old_header_height}"
+        "expected new header height {untrusted_header_height} to be greater than one of old header {trusted_header_height}"
     )]
     NewHeaderHeightMustBeGreater {
         untrusted_header_height: BoundedI64<0>,
@@ -140,7 +151,7 @@ pub enum VerifyNewHeaderAndValsError {
     },
 
     #[error(
-        "expected new header time {new_header_time} to be after old header time {old_header_time}"
+        "expected new header time {untrusted_header_time} to be after old header time {trusted_header_time}"
     )]
     NewHeaderTimeMustBeGreater {
         untrusted_header_time: Timestamp,
@@ -148,7 +159,7 @@ pub enum VerifyNewHeaderAndValsError {
     },
 
     #[error(
-        "new header has a time from the future {new_header_time} (now: {now}; max clock drift: {max_clock_drift})"
+        "new header has a time from the future {untrusted_header_time} (now: {now}; max clock drift: {max_clock_drift})"
     )]
     NewHeaderFromFuture {
         untrusted_header_time: Timestamp,
@@ -157,17 +168,20 @@ pub enum VerifyNewHeaderAndValsError {
     },
 
     #[error(
-        "expected new header validators ({expected}) to match those that were supplied ({found}) at height {new_header_height}"
+        "expected new header validators ({untrusted_header_validators_hash}) to match those that were supplied ({untrusted_validators_hash}) at height {untrusted_header_height}"
     )]
     UntrustedValidatorSetMismatch {
         untrusted_header_validators_hash: H256,
         untrusted_validators_hash: H256,
-        untrusted_header_height: i64,
+        untrusted_header_height: BoundedI64<0>,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum VerifyLightCommitError {
+    #[error(transparent)]
+    CommitValidateBasic(#[from] CommitValidateBasicError),
+
     #[error(
         "{ERR_NEW_VAL_SET_CANT_BE_TRUSTED}: Invalid commit -- wrong height: {expected} vs {actual}"
     )]
@@ -178,4 +192,41 @@ pub enum VerifyLightCommitError {
 
     #[error("invalid commit -- wrong block id: want {want} got {got}")]
     InvalidBlockId { want: BlockId, got: BlockId },
+
+    #[error("trusted validators failed to verify commit: {vote}")]
+    InvalidSignature { vote: Vote },
+
+    #[error(
+        "{ERR_NEW_VAL_SET_CANT_BE_TRUSTED}: Invalid commit -- insufficient old voting power: got {got}, needed more than {min}"
+    )]
+    InsufficientTrustedVotingPower { got: i64, min: i64 },
+
+    #[error(
+        "{ERR_NEW_VAL_SET_CANT_BE_TRUSTED}: int64 overflow while calculating voting power needed. please provide smaller trustLevel numerator"
+    )]
+    VotingPowerOverflow,
+}
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+pub enum TrustedValidatorsVerifyCommitError {
+    #[error(transparent)]
+    CommitValidateBasic(#[from] CommitValidateBasicError),
+
+    #[error("Invalid commit -- wrong height: {expected} vs {actual}")]
+    InvalidCommitHeightError {
+        expected: BoundedI64<0>,
+        actual: BoundedI64<0>,
+    },
+
+    #[error("Invalid commit -- wrong set size: {expected} vs {actual}")]
+    InvalidCommitPrecommitsError { expected: usize, actual: usize },
+
+    #[error("invalid commit -- invalid signature: {vote}")]
+    InvalidSignature { vote: Vote },
+
+    #[error("Invalid commit -- insufficient old voting power: got {got}, needed {needed}")]
+    TooMuchChangeError { got: i64, needed: i64 },
+
+    #[error("invalid commit -- wrong block id: want {expected} got {actual}")]
+    InvalidCommitWrongBlockId { expected: BlockId, actual: BlockId },
 }

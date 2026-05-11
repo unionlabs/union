@@ -3,6 +3,7 @@ use unionlabs::errors::UnknownEnumVariant;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "i32", into = "i32")]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum SignedMsgType {
     Prevote = 1,
     Precommit = 2,

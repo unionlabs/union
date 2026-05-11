@@ -1,4 +1,4 @@
-use cometbft_types::types::{signed_header::SignedHeader, validator_set::ValidatorSet};
+use gno_types::{SignedHeader, ValidatorSet};
 use unionlabs::ibc::core::client::height::Height;
 
 #[derive(Debug, Clone, PartialEq)]

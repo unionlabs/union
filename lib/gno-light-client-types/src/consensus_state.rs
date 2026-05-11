@@ -1,7 +1,7 @@
 use unionlabs::{
     google::protobuf::timestamp::Timestamp,
     ibc::core::commitment::merkle_root::MerkleRoot,
-    primitives::{H256, encoding::HexUnprefixed},
+    primitives::{H256, encoding::Base64},
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -14,7 +14,7 @@ use unionlabs::{
 pub struct ConsensusState {
     pub timestamp: Timestamp,
     pub root: MerkleRoot,
-    pub next_validators_hash: H256<HexUnprefixed>,
+    pub next_validators_hash: H256<Base64>,
 }
 
 #[cfg(feature = "ethabi")]

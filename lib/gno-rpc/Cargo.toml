@@ -20,6 +20,7 @@ gno-types                      = { workspace = true }
 hex                            = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 macros                         = { workspace = true }
+protos                         = { workspace = true, features = ["ibc+core+commitment+v1"] }
 reconnecting-jsonrpc-ws-client = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde-utils                    = { workspace = true }

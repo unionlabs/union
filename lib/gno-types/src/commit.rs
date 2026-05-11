@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::{BoundedI32, BoundedI64},
+    primitives::Bytes,
     result_unwrap,
 };
 
@@ -80,18 +81,21 @@ impl Commit {
     /// The round is memoized in the original Go implementation: <https://github.com/gnolang/gno/blob/db1e3ec26c613fd5d119c4466b32c2c0806b2e5c/tm2/pkg/bft/types/block.go#L487>
     ///
     /// The value returned from this function is only sound after this commit has been validated by [`Self::valiate_basic`].
-    pub fn round(&self) -> BoundedI32<0> {
+    pub fn round(&self) -> BoundedI32<-1> {
         self.precommits
             .first()
             .and_then(|v| v.as_ref().map(|v| v.round))
-            .unwrap_or(const { result_unwrap!(<BoundedI32<0>>::new_const(0)) })
+            .unwrap_or(const { result_unwrap!(<BoundedI32<-1>>::new_const(0)) })
     }
 
     /// VoteSignBytes constructs the SignBytes for the given CommitSig.
     /// The only unique part of the SignBytes is the Timestamp - all other fields
     /// signed over are otherwise the same for all validators.
     /// Panics if valIdx >= commit.Size().
-    pub fn vote_sign_bytes(&self) -> Bytes {}
+    pub fn vote_sign_bytes(&self, chain_id: String, val_idx: usize) -> Bytes {
+        self.get_vote(val_idx)
+            .map_or(Bytes::default(), |vote| dbg!(vote).sign_bytes(chain_id))
+    }
 
     // GetVote converts the CommitSig for the given valIdx to a Vote.
     // Returns nil if the precommit at valIdx is nil.
@@ -132,7 +136,7 @@ pub enum CommitValidateBasicError {
     },
     #[error("invalid commit precommit round. Expected {expected}, got {got}")]
     InvalidPrecommitRound {
-        expected: BoundedI32<0>,
-        got: BoundedI32<0>,
+        expected: BoundedI32<-1>,
+        got: BoundedI32<-1>,
     },
 }

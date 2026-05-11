@@ -1,12 +1,14 @@
-use core::{cmp::min, fmt};
+use core::fmt;
 
 use serde::{Deserialize, Serialize};
 use unionlabs::primitives::{
-    FixedBytes, H256,
+    Bytes, H256,
     encoding::{Base64, HexUnprefixed},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+use crate::Amino;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct PartSetHeader {
     #[serde(with = "::serde_utils::string")]
@@ -34,28 +36,25 @@ impl fmt::Display for PartSetHeader {
     }
 }
 
-/// Source: <https://github.com/gnolang/gno/blob/db1e3ec26c613fd5d119c4466b32c2c0806b2e5c/tm2/pkg/bft/types/fingerprint.go#L6>
-fn fingerprint(slice: impl AsRef<[u8]>) -> FixedBytes<6> {
-    let mut fingerprint = FixedBytes::default();
-    let end = min(6, slice.as_ref().len());
-    fingerprint[0..end].copy_from_slice(slice.as_ref());
-    return fingerprint;
+#[derive(Clone, PartialEq, prost::Message)]
+pub struct CanonicalPartSetHeader {
+    #[prost(bytes, tag = "1")]
+    pub hash: Vec<u8>,
+    #[prost(sint32, tag = "2")]
+    pub total: i32,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+impl Amino for CanonicalPartSetHeader {
+    fn marshal_sized(&self) -> Bytes {
+        let mut out = vec![];
+        prost::Message::encode(self, &mut out).expect("infallible");
+        out.into()
+    }
+}
 
-    #[test]
-    fn fingerprint_works() {
-        for (i, o) in [
-            (hex!(""), hex!("000000000000")),
-            (hex!("0102"), hex!("010200000000")),
-            (hex!("010203010203"), hex!("010203010203")),
-            (hex!("010203010203AA"), hex!("010203010203AA")),
-            (hex!("010203010203AAAAAA"), hex!("010203010203AAAAAA")),
-        ] {
-            assert_eq!(fingerprint(i), o);
-        }
+pub fn canonicalize_part_set_header(parts_header: &PartSetHeader) -> CanonicalPartSetHeader {
+    CanonicalPartSetHeader {
+        hash: parts_header.hash.map_or(Vec::new(), |hash| hash.into()),
+        total: parts_header.total as i32,
     }
 }

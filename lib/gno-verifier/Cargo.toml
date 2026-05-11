@@ -15,16 +15,17 @@ workspace = true
 test-include = ["lib/tendermint-verifier/src/test/"]
 
 [dependencies]
-gno-types                = { workspace = true, features = ["proto", "hash"] }
-hex-literal                   = { workspace = true }
-prost                         = { workspace = true }
-protos                        = { workspace = true }
-serde-utils                   = { workspace = true }
-sha2                          = { workspace = true }
-gno-light-client-types = { workspace = true, features = ["proto", "serde"] }
-thiserror                     = { workspace = true }
-unionlabs                     = { workspace = true }
+gno-light-client-types = { workspace = true, features = ["serde"] }
+gno-types              = { workspace = true }                                # features = ["proto", "hash"]
+hex-literal            = { workspace = true }
+prost                  = { workspace = true }
+protos                 = { workspace = true }
+serde-utils            = { workspace = true }
+sha2                   = { workspace = true }
+thiserror              = { workspace = true }
+unionlabs              = { workspace = true }
 
 [dev-dependencies]
 ed25519-dalek = { workspace = true, features = ["default", "batch"] }
+k256 = { version = "0.13.4", features = ["ecdsa"] }
 serde_json    = { workspace = true }

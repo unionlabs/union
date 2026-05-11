@@ -1,3 +1,5 @@
+use core::cmp::min;
+
 pub mod block;
 pub mod block_id;
 pub mod block_meta;
@@ -41,7 +43,49 @@ pub use query_response::QueryResponse;
 pub use response_base::ResponseBase;
 pub use signed_header::SignedHeader;
 pub use signed_msg_type::SignedMsgType;
+use unionlabs::primitives::{Bytes, FixedBytes, encoding::HexUnprefixed};
 pub use validator::Validator;
 pub use validator_set::ValidatorSet;
 pub use version_info::VersionInfo;
 pub use vote::Vote;
+
+pub trait Amino {
+    fn marshal_sized(&self) -> Bytes;
+}
+
+/// Source: <https://github.com/gnolang/gno/blob/db1e3ec26c613fd5d119c4466b32c2c0806b2e5c/tm2/pkg/bft/types/fingerprint.go#L6>
+fn fingerprint(slice: impl AsRef<[u8]>) -> FixedBytes<6, HexUnprefixed> {
+    let mut fingerprint = FixedBytes::default();
+    let end = min(6, slice.as_ref().len());
+    fingerprint[0..end].copy_from_slice(&slice.as_ref()[0..end]);
+    fingerprint
+}
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+
+    use super::*;
+
+    #[test]
+    fn fingerprint_works() {
+        for (i, o) in [
+            (hex!("").as_slice(), hex!("000000000000").as_slice()),
+            (hex!("0102").as_slice(), hex!("010200000000").as_slice()),
+            (
+                hex!("010203010203").as_slice(),
+                hex!("010203010203").as_slice(),
+            ),
+            (
+                hex!("010203010203AA").as_slice(),
+                hex!("010203010203").as_slice(),
+            ),
+            (
+                hex!("010203010203AAAAAA").as_slice(),
+                hex!("010203010203").as_slice(),
+            ),
+        ] {
+            assert_eq!(fingerprint(i).get(), o);
+        }
+    }
+}

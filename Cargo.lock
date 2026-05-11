@@ -3226,6 +3226,7 @@ dependencies = [
  "hex-literal 1.1.0",
  "jsonrpsee 0.26.0",
  "macros",
+ "protos",
  "reconnecting-jsonrpc-ws-client",
  "serde",
  "serde-utils",
@@ -6355,13 +6356,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "gno-light-client"
+version = "0.0.0"
+dependencies = [
+ "base64 0.22.1",
+ "cosmwasm-std",
+ "embed-commit",
+ "frissitheto",
+ "gno-light-client-types",
+ "gno-types",
+ "gno-verifier",
+ "hex-literal 1.1.0",
+ "ibc-union-light-client",
+ "ibc-union-spec",
+ "ics23",
+ "lazy_static",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.17",
+ "unionlabs",
+]
+
+[[package]]
 name = "gno-light-client-types"
 version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.1",
- "cometbft-types",
  "gno-light-client-types",
+ "gno-types",
  "hex-literal 1.1.0",
  "ics23",
  "protos",
@@ -6380,6 +6403,7 @@ dependencies = [
  "hex-literal 1.1.0",
  "jsonrpsee 0.26.0",
  "macros",
+ "protos",
  "reconnecting-jsonrpc-ws-client",
  "serde",
  "serde-utils",
@@ -6396,7 +6420,6 @@ name = "gno-types"
 version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",
- "cometbft-types",
  "gno-types",
  "hex-literal 1.1.0",
  "prost 0.12.6",
@@ -6417,6 +6440,7 @@ dependencies = [
  "gno-light-client-types",
  "gno-types",
  "hex-literal 1.1.0",
+ "k256 0.13.4",
  "prost 0.12.6",
  "protos",
  "serde-utils",
@@ -15249,6 +15273,7 @@ dependencies = [
  "embed-commit",
  "ethereum-light-client-types",
  "ethermint-light-client-types",
+ "gno-light-client-types",
  "gno-rpc",
  "hex",
  "ibc-classic-spec",

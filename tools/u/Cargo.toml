@@ -58,6 +58,7 @@ bob-light-client-types                    = { workspace = true, features = ["ser
 cometbls-light-client-types               = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 ethereum-light-client-types               = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 ethermint-light-client-types              = { workspace = true, features = ["serde", "bincode"] }
+gno-light-client-types                    = { workspace = true, features = ["serde", "bincode"] }
 movement-light-client-types               = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 parlia-light-client-types                 = { workspace = true, features = ["bincode", "serde", "ethabi"] }
 state-lens-ics23-ics23-light-client-types = { workspace = true, features = ["serde", "ethabi"] }

@@ -93,6 +93,7 @@ members = [
   "cosmwasm/lightclient/cometbls",
   "cosmwasm/lightclient/ethereum",
   "cosmwasm/lightclient/ethermint",
+  "cosmwasm/lightclient/gno",
   "cosmwasm/lightclient/tendermint",
   # "cosmwasm/lightclient/movement",
   "cosmwasm/lightclient/parlia",

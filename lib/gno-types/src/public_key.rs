@@ -22,7 +22,7 @@ mod tests {
     fn roundtrip() {
         let json = r#"
             {
-              "type": "/tm.PubKeySecp256k1",
+              "@type": "/tm.PubKeySecp256k1",
               "value": "Auh5XsGBWLOxumt62xmwjc0atN4TKdUMyJMJ8UN0yvgW"
             }
         "#;
