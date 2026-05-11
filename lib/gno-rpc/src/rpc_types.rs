@@ -7,9 +7,10 @@ use gno_types::{
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::BoundedI64,
-    google::protobuf::timestamp::Timestamp,
+    google::protobuf::{any::RawAny, timestamp::Timestamp},
     ibc::core::commitment::merkle_proof::MerkleProof,
-    primitives::{Bech32, Bytes, H160, H256, encoding::Base64},
+    primitives::{Bech32, Bech32DecodeError, Bytes, FixedBytesError, H160, H256, encoding::Base64},
+    prost::{self, Message},
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -76,6 +77,8 @@ pub struct StatusResponse {
     pub node_info: NodeInfo,
     pub sync_info: SyncInfo,
     pub validator_info: ValidatorInfo,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub build_version: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -106,19 +109,6 @@ pub struct ValidatorsResponse {
     pub block_height: NonZeroU64,
     pub validators: Vec<Validator>,
 }
-
-// #[derive(Debug, Clone, PartialEq)]
-// pub struct AllValidatorsResponse {
-//     pub block_height: NonZeroU64,
-//     pub validators: Vec<Validator>,
-// }
-
-// #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-// pub struct ValidatorsPagination {
-//     pub page: NonZeroU64,
-//     // :]
-//     pub per_page: Option<BoundedU8<1, 100>>,
-// }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -160,43 +150,6 @@ pub enum DecodeMerkleProofError {
 pub struct AbciInfoResponse {
     pub response: InfoResponse,
 }
-
-// #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-// #[serde(deny_unknown_fields)]
-// pub struct GrpcAbciQueryResponse<T> {
-//     pub code: Code,
-//     /// nondeterministic
-//     pub log: String,
-//     /// nondeterministic
-//     pub info: String,
-//     pub index: i64,
-//     pub key: Option<Bytes<Base64>>,
-//     pub value: Option<T>,
-//     pub proof_ops: Option<ProofOps>,
-//     pub height: BoundedI64<0, { i64::MAX }>,
-//     pub codespace: String,
-// }
-
-// impl<R> GrpcAbciQueryResponse<R> {
-//     pub fn into_result(self) -> Result<Option<R>, GrpcAbciQueryError> {
-//         match self.code {
-//             Code::Err(error_code) => Err(GrpcAbciQueryError {
-//                 error_code,
-//                 codespace: self.codespace,
-//                 log: self.log,
-//             }),
-//             Code::Ok => Ok(self.value),
-//         }
-//     }
-// }
-
-// #[derive(Debug, Clone, thiserror::Error)]
-// #[error("grpc abci query error: {error_code}, {codespace}: {log}")]
-// pub struct GrpcAbciQueryError {
-//     pub error_code: NonZeroU32,
-//     pub codespace: String,
-//     pub log: String,
-// }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -253,7 +206,19 @@ pub struct DeliverTxResponse {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
+pub struct TxResponse {
+    pub hash: H256<Base64>,
+    #[serde(with = "::serde_utils::string")]
+    pub height: BoundedI64<0>,
+    pub index: usize, // TODO: What should this actually be?
+    pub tx_result: DeliverTxResponse,
+    pub tx: Bytes<Base64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct EndBlockResponse {
+    #[serde(rename = "ResponseBase")]
     pub response_base: ResponseBase,
     #[serde(rename = "ValidatorUpdates")]
     pub validator_updates: Option<Vec<ValidatorUpdate>>,
@@ -312,4 +277,240 @@ pub struct BlockParams {
 pub struct ValidatorParams {
     #[serde(rename = "PubKeyTypeURLs")]
     pub pub_key_type_urls: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BroadcastTxCommitResult {
+    pub check_tx: DeliverTxResponse,
+    pub deliver_tx: DeliverTxResponse,
+    pub hash: H256<Base64>,
+    pub height: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AbciAccount {
+    #[serde(rename = "BaseAccount")]
+    pub base_account: BaseAccount,
+    #[serde(with = "::serde_utils::string")]
+    pub attributes: u64,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct BaseAccount {
+    pub address: String,
+    pub coins: String,
+    pub public_key: Option<PublicKey>,
+    #[serde(with = "::serde_utils::string")]
+    pub account_number: u64,
+    #[serde(with = "::serde_utils::string")]
+    pub sequence: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TxSignature {
+    pub pub_key: PublicKey,
+    pub signature: Bytes<Base64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Tx {
+    pub messages: Vec<Msg>,
+    pub fee: TxFee,
+    pub signatures: Vec<TxSignature>,
+    pub memo: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TxFee {
+    #[serde(with = "::serde_utils::string")]
+    pub gas_wanted: i64,
+    pub gas_fee: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MsgRun {
+    pub caller: String,
+    pub send: String,
+    pub max_deposit: String,
+    pub package: MemPackage,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemPackage {
+    pub name: String,
+    pub path: String,
+    pub files: Vec<MemFile>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub r#type: Option<RawAny>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub info: Option<RawAny>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemFile {
+    pub name: String,
+    pub body: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MsgCall {
+    /// the bech32 address of the caller
+    pub caller: Bech32<H160>,
+    /// the amount of funds to be deposited to the package, if any ("<amount><denomination>")
+    // TODO: Coin
+    pub send: String,
+    /// the amount of funds to lock for the storage, if any ("<amount><denomination>")
+    // TODO: Coin
+    pub max_deposit: String,
+    /// the gno package path
+    pub pkg_path: String,
+    /// the function name being invoked
+    pub func: String,
+    /// the function arguments
+    ///
+    /// null | string\[\]
+    // TODO: null is empty vec
+    pub args: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MsgSend {
+    /// the bech32 address of the fund sender
+    pub from_address: Bech32<H160>,
+    /// the bech32 address of the fund receiver
+    pub to_address: Bech32<H160>,
+    /// the denomination and amount of fund sent ("<amount><denomination>")
+    // TODO: Coin
+    pub amount: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "@type")]
+pub enum Msg {
+    #[serde(rename = "/vm.m_run")]
+    Run(MsgRun),
+    #[serde(rename = "/vm.m_call")]
+    Call(MsgCall),
+    // #[serde(rename = "/vm.m_addpkg")]
+    // AddPkg(MsgAddPkg),
+    #[serde(rename = "/bank.MsgSend")]
+    Send(MsgSend),
+}
+
+impl Msg {
+    pub fn into_any(self) -> protos::google::protobuf::Any {
+        use unionlabs::prost::Message;
+
+        match self {
+            Msg::Run(msg) => protos::google::protobuf::Any {
+                type_url: "/vm.m_run".to_owned(),
+                value: protos::gno::vm::MsgRun {
+                    caller: msg.caller,
+                    send: msg.send,
+                    max_deposit: msg.max_deposit,
+                    package: Some(protos::gno::vm::MemPackage {
+                        name: msg.package.name,
+                        path: msg.package.path,
+                        files: msg
+                            .package
+                            .files
+                            .into_iter()
+                            .map(|file| protos::gno::vm::MemFile {
+                                name: file.name,
+                                body: file.body,
+                            })
+                            .collect(),
+                        r#type: msg.package.r#type.map(Into::into),
+                        info: msg.package.info.map(Into::into),
+                    }),
+                }
+                .encode_to_vec(),
+            },
+            Msg::Call(msg) => protos::google::protobuf::Any {
+                type_url: "/vm.m_run".to_owned(),
+                value: protos::gno::vm::MsgCall {
+                    caller: msg.caller.to_string(),
+                    send: msg.send,
+                    max_deposit: msg.max_deposit,
+                    pkg_path: msg.pkg_path,
+                    func: msg.func,
+                    args: msg.args.unwrap_or_default(),
+                }
+                .encode_to_vec(),
+            },
+            Msg::Send(msg) => protos::google::protobuf::Any {
+                type_url: "/bank.MsgSend".to_owned(),
+                value: protos::gno::bank::MsgSend {
+                    from_address: msg.from_address.to_string(),
+                    to_address: msg.to_address.to_string(),
+                    amount: msg.amount,
+                }
+                .encode_to_vec(),
+            },
+        }
+    }
+
+    pub fn try_from_any(any: &protos::google::protobuf::Any) -> Result<Self, MsgTryFromAnyError> {
+        match &*any.type_url {
+            "/vm.m_run" => {
+                let msg = protos::gno::vm::MsgRun::decode(&*any.value)?;
+
+                let package = msg.package.ok_or(MsgTryFromAnyError::NoPackage)?;
+                Ok(Msg::Run(MsgRun {
+                    caller: msg.caller,
+                    send: msg.send,
+                    max_deposit: msg.max_deposit,
+                    package: MemPackage {
+                        name: package.name,
+                        path: package.path,
+                        files: package
+                            .files
+                            .into_iter()
+                            .map(|file| MemFile {
+                                name: file.name,
+                                body: file.body,
+                            })
+                            .collect(),
+                        r#type: package.r#type.map(Into::into),
+                        info: package.info.map(Into::into),
+                    },
+                }))
+            }
+            "/vm.m_call" => {
+                let msg = protos::gno::vm::MsgCall::decode(&*any.value)?;
+
+                Ok(Msg::Call(MsgCall {
+                    caller: msg.caller.parse()?,
+                    send: msg.send,
+                    max_deposit: msg.max_deposit,
+                    pkg_path: msg.pkg_path,
+                    func: msg.func,
+                    args: Some(msg.args),
+                }))
+            }
+            "/bank.MsgSend" => {
+                let msg = protos::gno::bank::MsgSend::decode(&*any.value)?;
+
+                Ok(Msg::Send(MsgSend {
+                    from_address: msg.from_address.parse()?,
+                    to_address: msg.to_address.parse()?,
+                    amount: msg.amount,
+                }))
+            }
+            ty => Err(MsgTryFromAnyError::UnknownMsgType(ty.to_owned())),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+pub enum MsgTryFromAnyError {
+    #[error(transparent)]
+    Prost(#[from] prost::DecodeError),
+    #[error("no package")]
+    NoPackage,
+    #[error("unknown msg type: {0}")]
+    UnknownMsgType(String),
+    #[error("invalid address")]
+    InvalidAddress(#[from] Bech32DecodeError<FixedBytesError>),
 }

@@ -6356,6 +6356,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "gno-client"
+version = "0.0.0"
+dependencies = [
+ "bip32 0.5.3",
+ "gno-rpc",
+ "hex-literal 1.1.0",
+ "k256 0.13.4",
+ "num-rational",
+ "num-traits",
+ "prost 0.12.6",
+ "protos",
+ "ripemd",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unionlabs",
+]
+
+[[package]]
 name = "gno-light-client"
 version = "0.0.0"
 dependencies = [
@@ -15984,6 +16008,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-gno"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "gno-light-client-types",
+ "gno-rpc",
+ "ics23",
+ "jsonrpsee 0.26.0",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-parlia"
 version = "0.0.0"
 dependencies = [
@@ -16232,6 +16274,22 @@ dependencies = [
  "serde",
  "serde_json",
  "tendermint-light-client-types",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-client-module-gno"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "gno-light-client-types",
+ "jsonrpsee 0.26.0",
+ "macros",
+ "serde",
+ "serde_json",
  "tokio",
  "tracing",
  "unionlabs",
@@ -16545,6 +16603,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-update-plugin-gno"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "enumorph",
+ "gno-light-client-types",
+ "gno-rpc",
+ "gno-types",
+ "jsonrpsee 0.26.0",
+ "macros",
+ "serde",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-client-update-plugin-parlia"
 version = "0.0.0"
 dependencies = [
@@ -16737,6 +16814,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-event-source-plugin-gno"
+version = "0.0.0"
+dependencies = [
+ "bincode 2.0.1",
+ "clap",
+ "embed-commit",
+ "enumorph",
+ "gno-rpc",
+ "ibc-union-spec",
+ "jsonrpsee 0.26.0",
+ "macros",
+ "serde",
+ "serde-utils",
+ "sha2 0.10.9",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-event-source-plugin-starknet"
 version = "0.0.0"
 dependencies = [
@@ -16881,6 +16980,21 @@ dependencies = [
  "jsonrpsee 0.26.0",
  "moka",
  "serde",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-finality-module-gno"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "gno-rpc",
+ "jsonrpsee 0.26.0",
+ "serde",
+ "thiserror 2.0.17",
  "tokio",
  "tracing",
  "unionlabs",
@@ -17286,6 +17400,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-proof-module-gno"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "embed-commit",
+ "gno-rpc",
+ "ibc-union-spec",
+ "jsonrpsee 0.26.0",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-proof-module-parlia"
 version = "0.0.0"
 dependencies = [
@@ -17402,6 +17534,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-state-module-gno"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "embed-commit",
+ "futures",
+ "gno-rpc",
+ "ibc-union-spec",
+ "jsonrpsee 0.26.0",
+ "protos",
+ "reqwest 0.11.27",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-event-source-plugin-gno",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-state-module-sui"
 version = "0.0.0"
 dependencies = [
@@ -17486,6 +17640,30 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-transaction-plugin-gno"
+version = "0.0.0"
+dependencies = [
+ "concurrent-keyring",
+ "embed-commit",
+ "enumorph",
+ "gno-client",
+ "gno-rpc",
+ "ibc-union",
+ "ibc-union-spec",
+ "jsonrpsee 0.26.0",
+ "macros",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde-utils",
+ "serde_json",
  "tokio",
  "tracing",
  "unionlabs",

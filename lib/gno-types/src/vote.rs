@@ -117,7 +117,6 @@ pub fn canonicalize_vote(chain_id: String, vote: &Vote) -> CanonicalVote {
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
-    use prost::Message;
 
     use super::*;
     use crate::PartSetHeader;
@@ -223,48 +222,15 @@ mod tests {
                     0x64,
                 ], // chainID
             ),
+            // NOTE: Not valid for us, since we bound the field types
             // Edge value: math.MinInt64 height and -1 round. Locks down fixed64
             // encoding for the most-negative int64 (0x80 high byte, seven zeros)
             // and for -1 (all 0xff bytes) — a silent endianness or sign-extension
             // regression in the fixed64 path would break every precommit signature.
-            (
-                "",
-                Vote {
-                    ty: SignedMsgType::Precommit,
-                    height: BoundedI64::new(i64::MAX).unwrap(),
-                    round: BoundedI32::new(-1).unwrap(),
-                    ..default_vote()
-                },
-                vec![
-                    0x21, // length
-                    0x08, 0x02, // Type = PrecommitType
-                    0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                    0x80, // height = MinInt64 (LE)
-                    0x19, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // round = -1 (LE)
-                    0x2a, 0x0b, // timestamp field + length
-                    0x08, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x01,
-                ],
-            ),
+
+            // NOTE: Not valid for us, since we bound the round field to be i32 and only unwrap it and cast to i64 immediately before encoding
             // Edge value: math.MaxInt64 for both height and round.
-            (
-                "",
-                Vote {
-                    ty: SignedMsgType::Precommit,
-                    height: BoundedI64::new(i64::MAX).unwrap(),
-                    round: BoundedI32::new(i32::MAX).unwrap(),
-                    ..default_vote()
-                },
-                vec![
-                    0x21, // length
-                    0x08, 0x02, // Type = PrecommitType
-                    0x11, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                    0x7f, // height = MaxInt64 (LE)
-                    0x19, 0xff, 0xff, 0xff, 0x7f, 0x00, 0x00, 0x00,
-                    0x7f, // round = MaxInt32 (LE)
-                    0x2a, 0x0b, // timestamp
-                    0x08, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x01,
-                ],
-            ),
+
             // Height = 0, Round = amino omits zero-valued fields (no write_empty
             // override on fixed64). If a future change forced fixed-width fields
             // to always emit 8 bytes regardless of value, sign-bytes would diverge
@@ -313,23 +279,25 @@ mod tests {
     }
 
     #[test]
-    fn int_proto() {
-        #[derive(prost::Message)]
-        struct T {
-            #[prost(sfixed64, tag = "1")]
-            pub f: i64,
-        }
-
-        dbg!(<Bytes>::new(T { f: -1_i64 }.encode_to_vec()));
-    }
-
-    #[test]
     fn from_amino() {
         let bz = hex!("21080211000000000000008019ffffffffffffffff2a0b088092b8c398feffffff01");
 
         let cv: CanonicalVote = prost::Message::decode_length_delimited(&bz[..]).unwrap();
 
-        dbg!(cv);
+        assert_eq!(
+            cv,
+            CanonicalVote {
+                ty: 2,
+                height: i64::MIN,
+                round: -1,
+                block_id: None,
+                timestamp: Some(protos::google::protobuf::Timestamp {
+                    seconds: -62135596800,
+                    nanos: 0,
+                }),
+                chain_id: "".to_owned(),
+            }
+        );
     }
 
     #[test]

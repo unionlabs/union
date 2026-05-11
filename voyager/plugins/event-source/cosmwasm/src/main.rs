@@ -29,7 +29,8 @@ use unionlabs::{
     primitives::{Bech32, H256},
 };
 use voyager_sdk::{
-    ExtensionsExt, VoyagerClient, anyhow,
+    ExtensionsExt, VoyagerClient,
+    anyhow::{self, bail},
     hook::simple_take_filter,
     into_value,
     message::{
@@ -121,6 +122,14 @@ impl Plugin for Module {
         let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network;
+
+        if chain_id != config.chain_id.as_str() {
+            bail!(
+                "incorrect chain id: expected `{}`, but found `{}`",
+                config.chain_id,
+                chain_id
+            );
+        }
 
         let chain_revision = chain_id
             .split('-')

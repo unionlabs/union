@@ -448,6 +448,7 @@ impl Module {
                             {
                                 info!(
                                     packet_hash = %event.packet().hash(),
+                                    timeout_timestamp = %event.packet.timeout_timestamp,
                                     "packet timed out, will not attempt to submit it to the destination chain"
                                 );
                             } else {

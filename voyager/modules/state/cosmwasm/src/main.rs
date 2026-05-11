@@ -492,11 +492,11 @@ impl Module {
         height: Height,
         connection_id: ConnectionId,
     ) -> RpcResult<Option<Connection>> {
-        let client_state = self
+        let connection = self
             .query_smart::<_, Connection>(&QueryMsg::GetConnection { connection_id }, Some(height))
             .await?;
 
-        Ok(client_state)
+        Ok(connection)
     }
 
     #[instrument(

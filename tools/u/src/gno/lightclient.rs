@@ -1,5 +1,3 @@
-use std::num::NonZeroU64;
-
 use anyhow::{Result, bail};
 use clap::{Args, Subcommand};
 use gno_rpc::types::ValidatorSet;
@@ -23,8 +21,8 @@ pub struct Cmd {
 pub enum SubCmd {
     /// Fetch the light client update header for the specified heights.
     FetchHeader {
-        from: BoundedI64<1>,
-        to: BoundedI64<1>,
+        from: BoundedI64<0>,
+        to: BoundedI64<0>,
     },
     /// Fetch the light client update header for the specified heights.
     FetchProof {
@@ -44,23 +42,13 @@ impl Cmd {
                     bail!("from must be < to")
                 }
 
-                let trusted_commit = client
-                    .commit((from.inner() as u64).try_into().unwrap())
-                    .await?;
+                let trusted_commit = client.commit(from).await?;
 
-                let untrusted_commit = client
-                    .commit((to.inner() as u64).try_into().unwrap())
-                    .await?;
+                let untrusted_commit = client.commit(to).await?;
 
-                let trusted_validators = client
-                    .validators((from.inner() as u64).try_into().unwrap())
-                    .await?
-                    .validators;
+                let trusted_validators = client.validators(from).await?.validators;
 
-                let untrusted_validators = client
-                    .validators((to.inner() as u64).try_into().unwrap())
-                    .await?
-                    .validators;
+                let untrusted_validators = client.validators(to).await?.validators;
 
                 let header = gno_light_client_types::Header {
                     validator_set: ValidatorSet {

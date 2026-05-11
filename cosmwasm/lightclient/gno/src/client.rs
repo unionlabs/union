@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)] // don't feel like boxing everything
+
 use cosmwasm_std::{Addr, Empty};
 use gno_light_client_types::{ClientState, ConsensusState, Header};
 use gno_types::{Commit, SignedHeader};
@@ -5,8 +7,6 @@ use gno_verifier::types::SignatureVerifier;
 use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate, spec::Status,
 };
-use ibc_union_spec::path::IBC_UNION_COSMWASM_COMMITMENT_PREFIX;
-use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
     bounded::BoundedI64,
     cosmos::ics23::proof_spec::ProofSpec,
@@ -56,14 +56,14 @@ impl IbcClient for GnoLightClient {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(height)?;
 
-        // verify_membership(
-        //     client_state.proof_specs,
-        //     &client_state.contract_address,
-        //     &consensus_state.root,
-        //     key,
-        //     storage_proof,
-        //     value,
-        // )?;
+        verify_membership(
+            &client_state.realm,
+            &client_state.proof_specs,
+            &consensus_state.root,
+            key,
+            storage_proof,
+            value,
+        )?;
 
         Ok(())
     }
@@ -77,12 +77,13 @@ impl IbcClient for GnoLightClient {
         let client_state = ctx.read_self_client_state()?;
         let consensus_state = ctx.read_self_consensus_state(height)?;
 
-        // verify_non_membership(
-        //     &client_state.contract_address,
-        //     &consensus_state.root,
-        //     key,
-        //     storage_proof,
-        // )?;
+        verify_non_membership(
+            &client_state.realm,
+            &client_state.proof_specs,
+            &consensus_state.root,
+            key,
+            storage_proof,
+        )?;
 
         Ok(())
     }
@@ -161,7 +162,7 @@ impl IbcClient for GnoLightClient {
 pub fn verify_header<V: SignatureVerifier>(
     mut client_state: ClientState,
     consensus_state: ConsensusState,
-    mut header: Header,
+    header: Header,
     block_timestamp: cosmwasm_std::Timestamp,
     signature_verifier: &V,
 ) -> Result<StateUpdate<GnoLightClient>, Error> {
@@ -274,7 +275,7 @@ pub fn verify_membership(
 ) -> Result<(), Error> {
     ics23::ibc_api::verify_membership(
         &storage_proof,
-        &proof_specs,
+        proof_specs,
         root,
         &[b"main".to_vec(), gnovm_store_key(realm, key)],
         value,
@@ -291,7 +292,7 @@ pub fn verify_non_membership(
 ) -> Result<(), Error> {
     ics23::ibc_api::verify_non_membership(
         &storage_proof,
-        &SDK_SPECS,
+        proof_specs,
         root,
         &[b"main".to_vec(), gnovm_store_key(realm, key)],
     )
@@ -299,7 +300,7 @@ pub fn verify_non_membership(
 }
 
 fn gnovm_store_key(realm: &str, key: Vec<u8>) -> Vec<u8> {
-    format!("params/vm:{realm}:{}", <Bytes<HexUnprefixed>>::new(key)).into_bytes()
+    format!("/pv/vm:{realm}:{}", <Bytes<HexUnprefixed>>::new(key)).into_bytes()
 }
 
 // #[cfg(test)]
@@ -515,7 +516,9 @@ mod tests {
         testing::{mock_dependencies, mock_env},
     };
     use gno_light_client_types::Fraction;
+    use hex_literal::hex;
     use ibc_union_spec::ClientId;
+    use ics23::ibc_api::SDK_SPECS;
     use unionlabs::{
         encoding::{EncodeAs, EthAbi},
         google::protobuf,
@@ -531,7 +534,6 @@ mod tests {
 
         let mut client_state = ClientState {
             chain_id: "osmosis-1".to_owned(),
-            contract_address: [0; 32].into(),
             frozen_height: None,
             latest_height: Height::new_with_revision(1, 60157944),
             max_clock_drift: protobuf::duration::Duration::new(600, 0).unwrap(),
@@ -543,6 +545,7 @@ mod tests {
             trusting_period: protobuf::duration::Duration::new(1028160, 0).unwrap(),
             unbonding_period: protobuf::duration::Duration::new(1209600, 0).unwrap(),
             upgrade_path: vec![],
+            realm: "".to_owned(),
         };
 
         macro_rules! assert_status {
@@ -623,21 +626,21 @@ mod tests {
 
     #[test]
     fn verify_proof() {
+        // TODO: This is from a dev deployment, update this test with values from an actual testnet or mainnet deployment once there's one live
+
+        let proof = r#"{"proofs":[{"@type":"exist","@value":{"key":"0x2f70762f766d3a676e6f2e6c616e642f722f636f72652f6962632f76312f636f72653a61366565663765333561626537303236373239363431313437663739313535373363376539376234376566613534366635663665333233303236336263623439","value":"0xfef470406bf3ca4daf4865ed047f1a4b9a49307e5724c21e508a8782f415889d","leaf":{"hash":"sha256","prehash_key":"no_hash","prehash_value":"sha256","length":"var_proto","prefix":"0x000206"},"path":[{"hash":"sha256","prefix":"0x020406206d81723c787f48cdb0fe48017bfeb8c7777c18d2ce768ff3bef8be989d732af920","suffix":"0x0"},{"hash":"sha256","prefix":"0x04060620424eb03f08942ba873f0ad61a3e532dd49f9ebe341c15820b91b2d6f59adb16520","suffix":"0x0"},{"hash":"sha256","prefix":"0x060a06207a6060551a75bb698b17d3eb5b11ef4b6c583d4dd65f074109c5d8ff352d874820","suffix":"0x0"},{"hash":"sha256","prefix":"0x08120620","suffix":"0x20aafb8c883b219159457c342081a41717e117622362092df6aecd69b2e823049b"},{"hash":"sha256","prefix":"0x0a2206207e05a6db10f558103a216d64fb77b010c74e9134995a502d303d1205cbe5ec2220","suffix":"0x0"},{"hash":"sha256","prefix":"0x0c420620f318b74164e6e7317df2eb259a7d3e6d0a81e9b7fc2b2b83d5407b37427a702e20","suffix":"0x0"},{"hash":"sha256","prefix":"0x0e86010620","suffix":"0x20508c3a794d8e22e86e7fa9ea4b1cf59fb581e726c4bec1a7bda9a238c830bb10"},{"hash":"sha256","prefix":"0x1086020620","suffix":"0x2028da987f98245d9cf15ae22917f42e5a2100d86cd7de7243a6a3a02519f2788a"},{"hash":"sha256","prefix":"0x1286040620","suffix":"0x2072afbfb3032a69b75dd4630d95f5916f34d5dd8ed017121f6f96a1e81d680011"},{"hash":"sha256","prefix":"0x14ca090620","suffix":"0x2042fe18a32b874de8f5c4cb122d9539e6b81b1453d991bf6013053975fe0bb975"}]}},{"@type":"exist","@value":{"key":"0x6d61696e","value":"0xf7e8b054c2e090fe8fb5ea96e815e62eb7b6ab710d211b9c9c1769f56d83a888","leaf":{"hash":"sha256","prehash_key":"no_hash","prehash_value":"sha256","length":"var_proto","prefix":"0x00"},"path":[{"hash":"sha256","prefix":"0x01ccb581a002a493db462c72bc97aac085192a8ffb6a45fa5ee3cf22ee89eb1574","suffix":"0x0"}]}}]}"#;
+
         verify_membership(
             "gno.land/r/core/ibc/v1/core",
             &SDK_SPECS,
             &MerkleRoot {
-                hash: "CkPGkCNPVqIdpMtGz0+1k9XxN+r/3EuKG91hprSK2Uk="
+                hash: "UwihADwTPJO2lMK0aRr41qXcRJO6itbLR/zAKEN4bBo="
                     .parse()
                     .unwrap(),
             },
-            hex_literal::hex!("a6eef7e35abe7026729641147f7915573c7e97b47efa546f5f6e3230263bcb49")
-                .to_vec(),
-            serde_json::from_slice(
-                &std::fs::read("/home/ben/projects/unionlabs/union/proof.json").unwrap(),
-            )
-            .unwrap(),
-            vec![],
+            hex!("a6eef7e35abe7026729641147f7915573c7e97b47efa546f5f6e3230263bcb49").to_vec(),
+            serde_json::from_str(proof).unwrap(),
+            hex!("fef470406bf3ca4daf4865ed047f1a4b9a49307e5724c21e508a8782f415889d").into(),
         )
         .unwrap();
     }

@@ -6,6 +6,7 @@
       pkgs,
       proto,
       crane,
+      dbg,
       config,
       ensureAtRepositoryRoot,
       mkCi,
@@ -28,6 +29,25 @@
         rev = "v1.1.1";
         sha256 = "sha256-MDrwJhzDKcPXbExViwYgoKeVhNB2CXkqj+iq8kUb2i8=";
       };
+
+      gno-types-repo =
+        (pkgs.fetchFromGitHub {
+          owner = "gnolang";
+          repo = "gno-types";
+          rev = "main";
+          sha256 = "sha256-EALo/GwOxpwu9x0H2Vq0kLyH4fd9DBx44pFA2FvdumY=";
+        }).overrideAttrs
+          (old: {
+            postFetch =
+              old.postFetch
+              + ''
+                ls $out
+                # this is already brought in by gogoproto
+                rm $out/protos/gogoproto/gogo.proto
+                # this is already brought in by something (idk what)
+                rm $out/protos/google -r
+              '';
+          });
 
       cargo_toml =
         { name }:
@@ -219,6 +239,15 @@
             google.src
             "${proto.cosmosproto}/proto"
             ibc-proto.src
+          ];
+        };
+        gno-types = rec {
+          src = dbg "${gno-types-repo}";
+          proto-deps = [
+            src
+            # "${proto.gogoproto}/protobuf"
+            # google.src
+            # "${proto.cosmosproto}/proto"
           ];
         };
       };
@@ -431,6 +460,8 @@
           '';
         }
       );
+
+      packages.gno-types-repo = gno-types-repo;
 
       checks = {
         rust-proto-check = mkCi false (

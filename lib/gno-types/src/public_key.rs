@@ -10,6 +10,8 @@ pub enum PublicKey {
     Ed25519(Bytes<Base64>),
     #[serde(rename = "/tm.PubKeySecp256k1")]
     Secp256k1(Bytes<Base64>),
+    #[serde(rename = "/tm.PubKeyMultisig")]
+    Multisig { k: u64, pub_keys: Vec<PublicKey> },
 }
 
 #[cfg(test)]

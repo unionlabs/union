@@ -114,7 +114,8 @@ _: {
             };
           };
           lightclients = [
-            "trusted-mpt"
+            "gno"
+            "ethereum"
             # "sui"
           ];
         }
@@ -122,7 +123,7 @@ _: {
           ucs04-chain-id = "union.union-testnet-10";
           name = "union-testnet-10";
           multisig-admin = "union10vj0jkkuxqjpf3qrwt37l8z8hpw3qfytreztaw";
-          rpc-url = "https://rpc.rpc-node.union-testnet-10.union.build";
+          rpc-url = "https://rpc.archive.union-testnet-10.union.build";
           # rpc-url = "https://union-testnet-rpc.polkachu.com";
           deployer-key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           ops-key = ''"$(op item get operation --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
@@ -136,17 +137,18 @@ _: {
           };
           bech32-prefix = "union";
           lightclients = [
-            "arbitrum"
-            "base"
-            "bob"
-            "berachain"
-            "ethereum"
-            "trusted-mpt"
-            "ethermint"
-            "tendermint-bls"
-            "parlia"
-            "sui"
-            "state-lens-ics23-mpt"
+            # "arbitrum"
+            # "base"
+            # "bob"
+            # "berachain"
+            # "ethereum"
+            # "trusted-mpt"
+            # "ethermint"
+            # "tendermint-bls"
+            # "parlia"
+            # "sui"
+            # "state-lens-ics23-mpt"
+            "gno"
           ];
           u = "union1uuuuuuuuu9un2qpksam7rlttpxc8dc76mcphhsmp39pxjnsvrtcqvyv57r";
           eu = "union1eueueueu9var4yhdruyzkjcsh74xzeug6ckyy60hs0vcqnzql2hq0lxc2f";
@@ -408,6 +410,10 @@ _: {
         tendermint = {
           dir = "tendermint";
           client-type = "tendermint";
+        };
+        gno = {
+          dir = "gno";
+          client-type = "gno";
         };
         tendermint-bls = {
           dir = "tendermint";

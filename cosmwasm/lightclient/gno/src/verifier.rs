@@ -26,6 +26,7 @@ impl SignatureVerifier for CwVerifier<'_> {
                 .api
                 .secp256k1_verify(msg, sig, key)
                 .unwrap_or_default(),
+            PublicKey::Multisig { .. } => false,
         }
     }
 }

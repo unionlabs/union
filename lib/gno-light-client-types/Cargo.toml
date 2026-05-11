@@ -12,23 +12,23 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy          = { workspace = true, features = ["sol-types"], optional = true }
-bincode        = { workspace = true, features = ["alloc", "derive"], optional = true }
+alloy     = { workspace = true, features = ["sol-types"], optional = true }
+bincode   = { workspace = true, features = ["alloc", "derive"], optional = true }
 gno-types = { workspace = true }
-protos         = { workspace = true, features = ["ibc+lightclients+gno+v1"], optional = true }
-serde          = { workspace = true, features = ["derive"], optional = true }
-thiserror      = { workspace = true }
-unionlabs      = { workspace = true }
+protos    = { workspace = true, features = ["ibc+lightclients+gno+v1"], optional = true }
+serde     = { workspace = true, features = ["derive"], optional = true }
+thiserror = { workspace = true }
+unionlabs = { workspace = true }
 
 [features]
 bincode = ["dep:bincode", "unionlabs/bincode", "gno-types/bincode"]
 # default = ["proto"]
-ethabi  = ["unionlabs/ethabi", "dep:alloy"]
+ethabi = ["unionlabs/ethabi", "dep:alloy"]
 # proto   = ["unionlabs/proto", "gno-types/proto", "dep:protos"]
-serde   = ["dep:serde"]
+serde = ["dep:serde"]
 
 [dev-dependencies]
-hex-literal                   = { workspace = true }
-ics23                         = { workspace = true }
 gno-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde"] }
-unionlabs                     = { workspace = true, features = ["test-utils"] }
+hex-literal            = { workspace = true }
+ics23                  = { workspace = true }
+unionlabs              = { workspace = true, features = ["test-utils"] }

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::{fmt::Debug, path::Path};
 
 use serde::{Deserialize, Serialize, de::DeserializeOwned};

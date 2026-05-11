@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use unionlabs::{
     bounded::{BoundedI32, BoundedI64},
     primitives::Bytes,
@@ -11,7 +11,17 @@ use crate::{BlockId, SignedMsgType, Vote};
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Commit {
     pub block_id: BlockId,
+    #[serde(deserialize_with = "null_to_default")]
     pub precommits: Vec<Option<Vote>>,
+}
+
+fn null_to_default<'de, D, T>(de: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Default + Deserialize<'de>,
+{
+    let key = Option::<T>::deserialize(de)?;
+    Ok(key.unwrap_or_default())
 }
 
 impl Commit {
@@ -94,7 +104,7 @@ impl Commit {
     /// Panics if valIdx >= commit.Size().
     pub fn vote_sign_bytes(&self, chain_id: String, val_idx: usize) -> Bytes {
         self.get_vote(val_idx)
-            .map_or(Bytes::default(), |vote| dbg!(vote).sign_bytes(chain_id))
+            .map_or(Bytes::default(), |vote| vote.sign_bytes(chain_id))
     }
 
     // GetVote converts the CommitSig for the given valIdx to a Vote.

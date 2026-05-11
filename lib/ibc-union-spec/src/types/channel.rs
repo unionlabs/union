@@ -213,12 +213,24 @@ pub mod ethabi {
     }
 
     impl_ethabi_via_try_from_into!(Channel => Channel);
+
+    impl Channel {
+        pub fn ethabi_decode_prefixed(bz: &[u8]) -> Result<Self, alloy_sol_types::Error> {
+            <Self as SolType>::abi_decode(bz)
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use alloy_sol_types::SolValue;
     use hex_literal::hex;
-    use unionlabs::{encoding::EthAbi, test_utils::assert_codec_iso_bytes};
+    use unionlabs::{
+        encoding::{DecodeAs, EthAbi},
+        ethereum::keccak256,
+        primitives::H256,
+        test_utils::assert_codec_iso_bytes,
+    };
 
     use super::*;
 
@@ -261,5 +273,39 @@ mod tests {
                 "76657273696f6e00000000000000000000000000000000000000000000000000" // version
             ),
         );
+    }
+
+    #[test]
+    fn channel_commitment() {
+        let channel = Channel {
+            state: ChannelState::Init,
+            connection_id: ConnectionId::new(3.try_into().unwrap()),
+            counterparty_channel_id: None,
+            counterparty_port_id: hex!("5fbe74a283f7954f10aa04c2edf55578811aeb03").into(),
+            version: "ucs03-zkgm-0".into(),
+        };
+
+        let commitment = keccak256(channel.abi_encode());
+
+        assert_eq!(
+            commitment.get(),
+            &hex!("00781657f014fd25772f10edb002612aa3839e958adf1aa1d2c0f7a44758da26")
+        )
+    }
+
+    #[test]
+    fn gno() {
+        let channel = Channel::decode_as::<EthAbi>(&hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000145fbe74a283f7954f10aa04c2edf55578811aeb03000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c75637330332d7a6b676d2d300000000000000000000000000000000000000000")).unwrap();
+
+        dbg!(&channel);
+
+        let commitment = keccak256(channel.abi_encode());
+
+        assert_eq!(
+            commitment,
+            <H256>::new(hex!(
+                "72a68782cd532c0ed13d16aaa7f64d3a55d391dcea2780e6ff9a1deda898c574"
+            )),
+        )
     }
 }

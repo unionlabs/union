@@ -3,6 +3,10 @@
 pub mod amino {
     include!("amino.rs");
 }
+#[cfg(feature = "tm")]
+pub mod tm {
+    include!("tm.rs");
+}
 pub mod atomone {
     pub mod coredaos {
         #[cfg(feature = "atomone+coredaos+v1")]
@@ -701,6 +705,16 @@ pub mod feemarket {
         }
     }
 }
+pub mod gno {
+    #[cfg(feature = "gno+bank")]
+    pub mod bank {
+        include!("gno.bank.rs");
+    }
+    #[cfg(feature = "gno+vm")]
+    pub mod vm {
+        include!("gno.vm.rs");
+    }
+}
 pub mod google {
     #[cfg(feature = "google+protobuf")]
     pub mod protobuf {
@@ -1091,6 +1105,16 @@ pub mod tendermint {
                 include!("tendermint.services.version.v1.rs");
             }
         }
+    }
+}
+pub mod tm2 {
+    #[cfg(feature = "tm2+abci")]
+    pub mod abci {
+        include!("tm2.abci.rs");
+    }
+    #[cfg(feature = "tm2+tx")]
+    pub mod tx {
+        include!("tm2.tx.rs");
     }
 }
 pub mod union {

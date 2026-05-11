@@ -55,61 +55,10 @@ pub mod ethabi {
     }
 }
 
-#[cfg(feature = "proto")]
-pub mod proto {
-    use unionlabs::{
-        errors::MissingField, google::protobuf::timestamp::TryFromTimestampError,
-        ibc::core::commitment::merkle_root::TryFromMerkleRootError, impl_proto_via_try_from_into,
-        primitives::FixedBytesError, required,
-    };
-
-    use crate::ConsensusState;
-
-    impl_proto_via_try_from_into!(ConsensusState => protos::ibc::lightclients::gno::v1::ConsensusState);
-
-    impl TryFrom<protos::ibc::lightclients::gno::v1::ConsensusState> for ConsensusState {
-        type Error = Error;
-
-        fn try_from(
-            value: protos::ibc::lightclients::gno::v1::ConsensusState,
-        ) -> Result<Self, Self::Error> {
-            Ok(Self {
-                timestamp: required!(value.timestamp)?.try_into()?,
-                root: required!(value.root)?.try_into()?,
-                next_validators_hash: value.next_validators_hash.try_into()?,
-                // TODO: Ensure that lc_type is "gno"
-            })
-        }
-    }
-
-    #[derive(Debug, PartialEq, Clone, thiserror::Error)]
-    pub enum Error {
-        #[error(transparent)]
-        MissingField(#[from] MissingField),
-        #[error("invalid root")]
-        Root(#[from] TryFromMerkleRootError),
-        #[error("invalid next validators hash")]
-        NextValidatorsHash(#[from] FixedBytesError),
-        #[error("invalid timestamp")]
-        Timestamp(#[from] TryFromTimestampError),
-    }
-
-    impl From<ConsensusState> for protos::ibc::lightclients::gno::v1::ConsensusState {
-        fn from(value: ConsensusState) -> Self {
-            Self {
-                timestamp: Some(value.timestamp.into()),
-                root: Some(value.root.into()),
-                next_validators_hash: value.next_validators_hash.into(),
-                lc_type: "gno".to_owned(),
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use unionlabs::{
-        encoding::{Bincode, EthAbi, Json, Proto},
+        encoding::{Bincode, EthAbi, Json},
         test_utils::assert_codec_iso,
     };
 
@@ -141,10 +90,5 @@ mod tests {
     #[test]
     fn json_iso() {
         assert_codec_iso::<_, Json>(&mk_consensus_state());
-    }
-
-    #[test]
-    fn proto_iso() {
-        assert_codec_iso::<_, Proto>(&mk_consensus_state());
     }
 }

@@ -1,7 +1,7 @@
 [dependencies]
 [dependencies.prost]
-workspace = true
 features  = ["derive"]
+workspace = true
 [dependencies.serde]
 features  = ["derive"]
 optional  = true
@@ -210,6 +210,8 @@ workspace = true
 "cosmwasm+wasm+v1" = ["cosmos+base+query+v1beta1", "cosmos+base+v1beta1", "google+protobuf"]
 "feemarket+feemarket+module+v1" = []
 "feemarket+feemarket+v1" = ["cosmos+base+v1beta1"]
+"gno+bank" = []
+"gno+vm" = ["google+protobuf"]
 "google+protobuf" = []
 "google+protobuf+compiler" = ["google+protobuf"]
 "ibc+applications+fee+v1" = [
@@ -468,6 +470,8 @@ proto_full = [
   "cosmwasm+wasm+v1",
   "feemarket+feemarket+module+v1",
   "feemarket+feemarket+v1",
+  "gno+bank",
+  "gno+vm",
   "google+protobuf",
   "google+protobuf+compiler",
   "ibc+applications+fee+v1",
@@ -538,6 +542,9 @@ proto_full = [
   "tendermint+store",
   "tendermint+types",
   "tendermint+version",
+  "tm",
+  "tm2+abci",
+  "tm2+tx",
   "union+galois+api+v3",
   "union+ibc+lightclients+cometbls+v1",
   "union+staking+module+v1",
@@ -565,6 +572,9 @@ proto_full = [
 "tendermint+store" = []
 "tendermint+types" = ["google+protobuf", "tendermint+crypto", "tendermint+version"]
 "tendermint+version" = []
+"tm" = ["google+protobuf"]
+"tm2+abci" = ["google+protobuf"]
+"tm2+tx" = ["google+protobuf"]
 "union+galois+api+v3" = ["cometbft+types+v1", "google+protobuf"]
 "union+ibc+lightclients+cometbls+v1" = [
   "google+protobuf",

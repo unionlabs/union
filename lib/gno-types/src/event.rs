@@ -9,6 +9,8 @@ pub enum Event {
     TmEvent(TmEvent),
     #[serde(rename = "/tm.StorageDepositEvent")]
     TmStorageDepositEvent(TmStorageDepositEvent),
+    #[serde(rename = "/tm.StorageUnlockEvent")]
+    TmStorageUnlockEvent(TmStorageUnlockEvent),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -26,4 +28,13 @@ pub struct TmStorageDepositEvent {
     pub bytes_delta: String,
     pub fee_delta: String,
     pub pkg_path: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TmStorageUnlockEvent {
+    pub bytes_delta: String,
+    pub fee_refund: String,
+    pub pkg_path: String,
+    pub refund_witheld: bool,
 }

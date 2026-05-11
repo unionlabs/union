@@ -1,5 +1,8 @@
 use core::fmt;
-use std::{fmt::Debug, num::NonZeroU64, time::Duration};
+use std::{
+    fmt::{Debug, Display},
+    time::Duration,
+};
 
 use ::serde::de::DeserializeOwned;
 use base64::{Engine, prelude::BASE64_STANDARD};
@@ -14,18 +17,21 @@ use jsonrpsee::{
     ws_client::{PingConfig, WsClientBuilder},
 };
 use tracing::{Instrument, debug, debug_span, instrument, trace};
-use unionlabs::bounded::BoundedI64;
+use unionlabs::{
+    ErrorReporter,
+    bounded::BoundedI64,
+    primitives::{Bech32, Bytes, H160, H256, encoding::Base64},
+};
 
 use crate::rpc_types::{
-    AbciInfoResponse, AbciQueryResponse, BlockResponse, BlockResultsResponse, CommitResponse,
-    StatusResponse, ValidatorsResponse,
+    AbciAccount, AbciInfoResponse, AbciQueryResponse, BlockResponse, BlockResultsResponse,
+    BroadcastTxCommitResult, CommitResponse, StatusResponse, TxResponse, ValidatorsResponse,
 };
 
 #[cfg(test)]
 mod tests;
 
 pub mod rpc_types;
-pub mod serde;
 pub use gno_types as types;
 
 pub type JsonRpcError = jsonrpsee::core::client::Error;
@@ -78,11 +84,14 @@ impl Client {
     // TODO: This should be bounded correctly
     // NOTE: For some reason, the jsonrpc doesn't work the same as the rest api
     //       height is required when using jsonrpc, but if omitted when using the rest api, the latest commit is returned
-    pub async fn commit(&self, height: NonZeroU64) -> Result<CommitResponse, JsonRpcError> {
+    pub async fn commit(&self, height: BoundedI64<0>) -> Result<CommitResponse, JsonRpcError> {
         self.inner.request("commit", (height.to_string(),)).await
     }
 
-    pub async fn validators(&self, height: NonZeroU64) -> Result<ValidatorsResponse, JsonRpcError> {
+    pub async fn validators(
+        &self,
+        height: BoundedI64<0>,
+    ) -> Result<ValidatorsResponse, JsonRpcError> {
         self.inner
             .request("validators", (height.to_string(),))
             .await
@@ -111,6 +120,7 @@ impl Client {
         skip_all,
         fields(
             path = %path.as_ref(),
+            data = %String::from_utf8_lossy(data.as_ref()),
             height = %height.map(|x| x.to_string()).as_deref().unwrap_or(""),
             %prove,
         )
@@ -145,6 +155,7 @@ impl Client {
             key = ?&res.response.key,
             has_value = res.response.value.is_some(),
             height = %res.response.height,
+            error = ?res.response.response_base.error,
             "fetched abci query"
         );
         trace!(value = ?&res.response.value, "value");
@@ -152,53 +163,72 @@ impl Client {
         Ok(res)
     }
 
-    // // would be cool to somehow have this be generic and do decoding automatically
-    // #[instrument(
-    //     skip_all,
-    //     fields(
-    //         path = %path.as_ref(),
-    //         // ?data,
-    //         height = %height.map(|x| x.to_string()).as_deref().unwrap_or(""),
-    //         %prove,
-    //     )
-    // )]
-    // pub async fn grpc_abci_query<
-    //     Q: unionlabs::prost::Message,
-    //     R: unionlabs::prost::Message + Default,
-    // >(
-    //     &self,
-    //     path: impl AsRef<str>,
-    //     data: &Q,
-    //     height: Option<BoundedI64<1>>,
-    //     prove: bool,
-    // ) -> Result<GrpcAbciQueryResponse<R>, JsonRpcError> {
-    //     debug!("fetching grpc abci query");
+    #[instrument(
+        skip_all,
+        fields(
+            realm = %realm.as_ref(),
+            %query,
+            height = %height.map(|x| x.to_string()).as_deref().unwrap_or(""),
+        )
+    )]
+    pub async fn render_query(
+        &self,
+        realm: impl AsRef<str>,
+        query: impl Display,
+        height: Option<BoundedI64<1>>,
+    ) -> Result<Option<Bytes<Base64>>, JsonRpcError> {
+        debug!("fetching render query");
 
-    //     let res = self
-    //         .abci_query(path, data.encode_to_vec(), height, prove)
-    //         .await?
-    //         .response;
+        let res = self
+            .abci_query(
+                "vm/qrender",
+                format!("{}:{query}", realm.as_ref()),
+                height,
+                false,
+            )
+            .await?
+            .response;
 
-    //     Ok(GrpcAbciQueryResponse {
-    //         code: res.code,
-    //         log: res.log,
-    //         info: res.info,
-    //         index: res.index,
-    //         key: res.key,
-    //         value: res
-    //             .value
-    //             .map(|value| R::decode(&*value))
-    //             .transpose()
-    //             .map_err(|e| JsonRpcError::Custom(ErrorReporter(e).to_string()))?,
-    //         proof_ops: res.proof_ops,
-    //         height: res.height,
-    //         codespace: res.codespace,
-    //     })
-    // }
+        Ok(res.value)
+    }
+
+    #[instrument(
+        skip_all,
+        fields(
+            realm = %realm.as_ref(),
+            %query,
+            height = %height.map(|x| x.to_string()).as_deref().unwrap_or(""),
+        )
+    )]
+    pub async fn eval_query(
+        &self,
+        realm: impl AsRef<str>,
+        query: impl Display,
+        height: Option<BoundedI64<1>>,
+    ) -> Result<Option<Bytes<Base64>>, JsonRpcError> {
+        debug!("fetching eval query");
+
+        let res = self
+            .abci_query(
+                "vm/qeval",
+                format!("{}.{query}", realm.as_ref()),
+                height,
+                false,
+            )
+            .await?
+            .response;
+
+        if let Some(error) = res.response_base.error {
+            // TODO: Don't reuse the jsonrpc error type here
+            return Err(JsonRpcError::Custom(ErrorReporter(error).to_string()));
+        }
+
+        Ok(res.response_base.data)
+    }
 
     pub async fn status(
         &self,
-        height_gte: Option<NonZeroU64>,
+        height_gte: Option<BoundedI64<0>>,
     ) -> Result<StatusResponse, JsonRpcError> {
         self.inner
             .request("status", (height_gte.map(|x| x.to_string()),))
@@ -222,25 +252,27 @@ impl Client {
     //         .await
     // }
 
-    // // TODO: support order_by
-    // pub async fn tx(&self, hash: H256, prove: bool) -> Result<TxResponse, JsonRpcError> {
-    //     use base64::prelude::*;
+    pub async fn tx(&self, hash: H256<Base64>) -> Result<TxResponse, JsonRpcError> {
+        use base64::prelude::*;
 
-    //     self.inner
-    //         .request("tx", rpc_params![BASE64_STANDARD.encode(hash), prove])
-    //         .await
-    // }
+        self.inner
+            .request("tx", rpc_params![BASE64_STANDARD.encode(hash)])
+            .await
+    }
 
-    // pub async fn broadcast_tx_sync(
-    //     &self,
-    //     tx: &[u8],
-    // ) -> Result<BroadcastTxSyncResponse, JsonRpcError> {
-    //     use base64::prelude::*;
+    pub async fn broadcast_tx_commit(
+        &self,
+        tx: &[u8],
+    ) -> Result<BroadcastTxCommitResult, JsonRpcError> {
+        use base64::prelude::*;
 
-    //     self.inner
-    //         .request("broadcast_tx_sync", rpc_params![BASE64_STANDARD.encode(tx)])
-    //         .await
-    // }
+        self.inner
+            .request(
+                "broadcast_tx_commit",
+                rpc_params![BASE64_STANDARD.encode(tx)],
+            )
+            .await
+    }
 
     pub async fn block_results(
         &self,
@@ -249,6 +281,29 @@ impl Client {
         self.inner
             .request("block_results", (height.to_string(),))
             .await
+    }
+
+    pub async fn account_info(
+        &self,
+        account: &Bech32<H160>,
+    ) -> Result<Option<AbciAccount>, JsonRpcError> {
+        debug!(%account, "fetching account");
+
+        let Some(data) = self
+            .abci_query(format!("auth/accounts/{account}"), &[], None, false)
+            .await?
+            .response
+            .response_base
+            .data
+        else {
+            return Ok(None);
+        };
+
+        let account = serde_json::from_slice::<AbciAccount>(&data)?;
+
+        debug!(?account, "fetched account");
+
+        Ok(Some(account))
     }
 }
 

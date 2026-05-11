@@ -33,7 +33,7 @@ unionlabs              = { workspace = true, features = ["cosmwasm"] }
 
 [dev-dependencies]
 base64      = { workspace = true }
-hex-literal.workspace = true
+hex-literal = { workspace = true }
 lazy_static = "1.5.0"
 serde_json  = { workspace = true }
 

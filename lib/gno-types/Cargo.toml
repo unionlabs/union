@@ -12,14 +12,14 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-bincode        = { workspace = true, features = ["alloc", "derive"], optional = true }
-prost          = { workspace = true } # TODO: Feature gate proto?
-protos         = { workspace = true, features = ["google+protobuf"] }
-serde          = { workspace = true }
-serde-utils    = { workspace = true }
-sha2           = { workspace = true } # NOTE: Feature gate this if/when proto is feature gated
-thiserror      = { workspace = true }
-unionlabs      = { workspace = true }
+bincode     = { workspace = true, features = ["alloc", "derive"], optional = true }
+prost       = { workspace = true }                                                  # TODO: Feature gate proto?
+protos      = { workspace = true, features = ["google+protobuf"] }
+serde       = { workspace = true }
+serde-utils = { workspace = true }
+sha2        = { workspace = true }                                                  # NOTE: Feature gate this if/when proto is feature gated
+thiserror   = { workspace = true }
+unionlabs   = { workspace = true }
 
 [dev-dependencies]
 gno-types   = { workspace = true, default-features = true }   # enable all features for tests

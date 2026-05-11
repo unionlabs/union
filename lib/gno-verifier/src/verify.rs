@@ -1,5 +1,3 @@
-#![allow(clippy::type_complexity)] // we use some funky functions in this file
-
 use std::collections::HashMap;
 
 use gno_light_client_types::Fraction;
@@ -70,9 +68,9 @@ pub fn verify<V: SignatureVerifier>(
 /// a) trustedHeader can still be trusted (if not, ErrOldHeaderExpired is returned)
 /// b) untrustedHeader is valid (if not, ErrInvalidHeader is returned)
 /// c) trustLevel ([1/3, 1]) of trustedHeaderVals (or trustedHeaderNextVals)
-///	 signed correctly (if not, ErrNewValSetCantBeTrusted is returned)
+///    signed correctly (if not, ErrNewValSetCantBeTrusted is returned)
 /// d) more than 2/3 of untrustedVals have signed h2
-///	   (otherwise, ErrInvalidHeader is returned)
+///    (otherwise, ErrInvalidHeader is returned)
 /// e) headers are non-adjacent.
 ///
 /// maxClockDrift defines how much untrustedHeader.Time can drift into the
@@ -129,7 +127,7 @@ pub fn verify_non_adjacent<V: SignatureVerifier>(
     )?;
 
     validator_set_verify_commit(
-        &untrusted_vals,
+        untrusted_vals,
         &trusted_header.header.chain_id,
         &untrusted_header.commit.block_id,
         untrusted_header.header.height,
@@ -212,7 +210,7 @@ fn validator_set_verify_commit<V: SignatureVerifier>(
 
     let needed_voting_power = untrusted_vals.total_voting_power() * 2 / 3;
     if tallied_voting_power > needed_voting_power {
-        return Ok(());
+        Ok(())
     } else {
         Err(TooMuchChangeError {
             got: tallied_voting_power,
@@ -298,11 +296,13 @@ pub fn verify_light_commit<V: SignatureVerifier>(
     trust_level: &Fraction,
     signature_verifier: &V,
 ) -> Result<(), VerifyLightCommitError> {
+    use VerifyLightCommitError::*;
+
     commit.validate_basic()?;
 
     ensure(
         height == commit.height(),
-        VerifyLightCommitError::InvalidCommitHeight {
+        InvalidCommitHeight {
             expected: height,
             actual: commit.height(),
         },
@@ -310,7 +310,7 @@ pub fn verify_light_commit<V: SignatureVerifier>(
 
     ensure(
         block_id == &commit.block_id,
-        VerifyLightCommitError::InvalidBlockId {
+        InvalidBlockId {
             want: *block_id,
             got: commit.block_id,
         },
@@ -341,7 +341,7 @@ pub fn verify_light_commit<V: SignatureVerifier>(
             &precommit_sign_bytes,
             &precommit.signature,
         ) {
-            return Err(VerifyLightCommitError::InvalidSignature {
+            return Err(InvalidSignature {
                 vote: precommit.clone(),
             });
         }
@@ -360,19 +360,19 @@ pub fn verify_light_commit<V: SignatureVerifier>(
         .total_voting_power()
         .checked_mul(trust_level.numerator as i64)
     else {
-        return Err(VerifyLightCommitError::VotingPowerOverflow);
+        return Err(VotingPowerOverflow);
     };
 
     let voting_power_needed =
         total_voting_power_mul_by_numerator / (trust_level.denominator.get() as i64);
 
     if tallied_voting_power > voting_power_needed {
-        return Ok(());
+        Ok(())
     } else {
-        return Err(VerifyLightCommitError::InsufficientTrustedVotingPower {
+        Err(InsufficientTrustedVotingPower {
             got: tallied_voting_power,
             min: voting_power_needed,
-        });
+        })
     }
 }
 
@@ -463,6 +463,9 @@ mod tests {
                     let signature = Signature::from_slice(sig).unwrap();
                     key.verify(msg, &signature).is_ok()
                 }
+                PublicKey::Multisig { .. } => {
+                    panic!("well this doesn't make much sense now does it")
+                }
             }
         }
     }
@@ -494,11 +497,8 @@ mod tests {
             &SigVerifier,
         );
 
-        match res {
-            Ok(()) => {}
-            Err(err) => {
-                panic!("{}", ErrorReporter(err))
-            }
+        if let Err(err) = res {
+            panic!("{}", ErrorReporter(err))
         }
     }
 }

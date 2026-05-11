@@ -93,6 +93,7 @@ pub mod ethabi {
     use std::borrow::Cow;
 
     use alloy_sol_types::{SolStruct, SolType, SolValue, sol_data::Uint};
+    use unionlabs::impl_ethabi_via_try_from_into;
 
     use super::*;
 
@@ -210,6 +211,8 @@ pub mod ethabi {
             .concat()
         }
     }
+
+    impl_ethabi_via_try_from_into!(Connection => Connection);
 }
 
 #[cfg(test)]

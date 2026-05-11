@@ -6,6 +6,7 @@ import
     "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 import "solidity-bytes-utils/BytesLib.sol";
+import "solady/utils/LibString.sol";
 
 import "../core/02-client/ILightClient.sol";
 import "../core/24-host/IBCStore.sol";
@@ -43,6 +44,11 @@ struct ExtraV1 {
 }
 
 struct ExtraV2 {
+    bytes storeKey;
+    bytes keyPrefixStorage;
+}
+
+struct ExtraV3 {
     bytes storeKey;
     bytes keyPrefixStorage;
 }
@@ -100,6 +106,12 @@ library StateLensIcs23Ics23Lib {
         return abi.encode(extraV2.storeKey, extraV2.keyPrefixStorage);
     }
 
+    function encode(
+        ExtraV3 memory extraV3
+    ) internal pure returns (bytes memory) {
+        return abi.encode(extraV3.storeKey, extraV3.keyPrefixStorage);
+    }
+
     function commit(
         ConsensusState memory consensusState
     ) internal pure returns (bytes32) {
@@ -122,6 +134,7 @@ contract StateLensIcs23Ics23Client is
     Versioned
 {
     using StateLensIcs23Ics23Lib for *;
+    using LibString for bytes;
 
     address public immutable IBC_HANDLER;
 
@@ -172,7 +185,12 @@ contract StateLensIcs23Ics23Client is
         if (clientState.l2LatestHeight == 0 || consensusState.timestamp == 0) {
             revert StateLensIcs23Ics23Lib.ErrInvalidInitialConsensusState();
         }
-        if (!(clientState.version == 1 || clientState.version == 2)) {
+        if (
+            !(
+                clientState.version == 1 || clientState.version == 2
+                    || clientState.version == 3
+            )
+        ) {
             revert StateLensIcs23Ics23Lib.ErrUnknownClientStateVersion(
                 clientState.version
             );
@@ -307,6 +325,13 @@ contract StateLensIcs23Ics23Client is
             );
 
             key = abi.encodePacked(keyPrefixStorage, slot);
+        } else if (clientState.version == 3) {
+            bytes memory keyPrefixStorage;
+
+            (storeKey, keyPrefixStorage) =
+                abi.decode(clientState.state, (bytes, bytes));
+
+            key = abi.encodePacked(keyPrefixStorage, path.toHexStringNoPrefix());
         } else {
             revert StateLensIcs23Ics23Lib.ErrUnknownClientStateVersion(
                 clientState.version
@@ -352,6 +377,13 @@ contract StateLensIcs23Ics23Client is
             );
 
             key = abi.encodePacked(keyPrefixStorage, slot);
+        } else if (clientState.version == 3) {
+            bytes memory keyPrefixStorage;
+
+            (storeKey, keyPrefixStorage) =
+                abi.decode(clientState.state, (bytes, bytes));
+
+            key = abi.encodePacked(keyPrefixStorage, path.toHexString());
         } else {
             revert StateLensIcs23Ics23Lib.ErrUnknownClientStateVersion(
                 clientState.version
