@@ -6,7 +6,7 @@ import (
 	"github.com/unionlabs/union/uniond/app/upgrades"
 )
 
-const UpgradeName = "v1.2.0"
+const UpgradeName = "v1.3.0"
 
 var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,

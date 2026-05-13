@@ -101,7 +101,7 @@
 
       union-v1 = mkCosmosDevnet {
         node = (get-flake inputs.v1_0_0).packages.${system}.uniond;
-        chainId = "union-v1-1";
+        chainId = "union-minimal-devnet-1";
         chainName = "union-v1";
         denom = "muno";
         keyType = "bn254";
@@ -109,6 +109,9 @@
         portIncrease = 0;
         genesisOverwrites = {
           app_state = {
+            staking.params = {
+              epoch_length = "1";
+            };
             gov.params = {
               max_deposit_period = "12s";
               voting_period = "30s";
@@ -150,7 +153,7 @@
             --api.rpc-max-body-bytes 100000000 \
             --grpc.address 0.0.0.0:9090 \
             --log_level rpc-server:warn,x/wasm:debug,*:info \
-            --minimum-gas-prices     "0muno,0au" \
+            --minimum-gas-prices     "0muno" \
             --rpc.laddr tcp://0.0.0.0:26657 \
             --rpc.pprof_laddr        0.0.0.0:6060 \
             --rpc.unsafe 
