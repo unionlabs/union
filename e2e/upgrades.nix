@@ -77,6 +77,7 @@ in
       time.sleep(6)
       
       ${upgradeTo "v1.3.0" 30 "au" "1"}
+      print(union.succeed("docker exec union-v1-union-v1-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query staking validators"))
     '';
 
     nodes = {
