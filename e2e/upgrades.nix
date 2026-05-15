@@ -39,7 +39,9 @@ let
   '';
 
   upgradeTo = version: height: denom: gasPrice: ''
-    union.succeed('docker cp ${mkUpgradeProposal version height denom}/proposal-${version}.json union-v1-union-v1-0-1:/proposal-${version}.json')
+    union.succeed('docker cp ${
+      mkUpgradeProposal version height denom
+    }/proposal-${version}.json union-v1-union-v1-0-1:/proposal-${version}.json')
 
     print(union.succeed('docker exec union-v1-union-v1-0-1 ${unionvisorBin} --root ./.unionvisor call --bundle ${bundle} -- tx gov submit-proposal proposal-${version}.json --from alice --keyring-backend test -y --gas auto --gas-adjustment 1.4 --gas-prices ${gasPrice}${denom}'))
     time.sleep(1)
@@ -75,7 +77,7 @@ in
 
       print(union.succeed('docker exec union-v1-union-v1-0-1 ${unionvisorBin} --root ./.unionvisor call --bundle ${bundle} -- tx bank multi-send alice union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m union1d348dktd9nz0y6afzh3az5j39qahc93cmwkdjf union1asxs295fuy7jph8p8eqtc2r8zxggdc204s7unx union1fktal7292h36h7glff5edq59vpdfn7504duw5m 15000000000000au --keyring-backend test -y --gas auto --gas-adjustment 1.4 --gas-prices 1au'))
       time.sleep(6)
-      
+
       ${upgradeTo "v1.3.0" 30 "au" "1"}
       print(union.succeed("docker exec union-v1-union-v1-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query staking validators"))
     '';
