@@ -130,7 +130,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			burnToken(ctx, *keepers, "ugas") // union-1 gas token
 		}
 
-		// Update max comission values
+		// Update max `commission` values
 		valHexes := valsToUpdateByHex[sdkCtx.ChainID()]
 		for _, valHex := range valHexes {
 			valAddr, err := sdk.ValAddressFromHex(valHex)
