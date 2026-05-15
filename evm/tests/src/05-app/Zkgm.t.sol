@@ -8,7 +8,8 @@ import "solady/utils/LibString.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
+import
+    "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
 
 import "../../../contracts/core/Types.sol";
 import "../../../contracts/core/25-handler/IBCHandler.sol";
@@ -127,10 +128,7 @@ contract TestIBCHandler is IIBCModulePacket {
     mapping(uint32 => uint32) public channels;
     mapping(bytes32 => bytes) public acks;
 
-    function setChannel(
-        uint32 src,
-        uint32 dst
-    ) public {
+    function setChannel(uint32 src, uint32 dst) public {
         channels[src] = dst;
     }
 
@@ -183,17 +181,11 @@ contract TestERC20 is ERC20 {
         return _decimals;
     }
 
-    function mint(
-        address to,
-        uint256 amount
-    ) public {
+    function mint(address to, uint256 amount) public {
         _mint(to, amount);
     }
 
-    function burn(
-        address from,
-        uint256 amount
-    ) public {
+    function burn(address from, uint256 amount) public {
         _burn(from, amount);
     }
 }
@@ -214,13 +206,7 @@ contract TestWETH is IWETH, TestERC20 {
         assembly {
             if iszero(
                 call(
-                    gas(),
-                    caller(),
-                    amount,
-                    codesize(),
-                    0x00,
-                    codesize(),
-                    0x00
+                    gas(), caller(), amount, codesize(), 0x00, codesize(), 0x00
                 )
             ) {
                 mstore(0x00, 0xb12d13eb) // `ETHTransferFailed()`.
@@ -479,10 +465,7 @@ contract ZkgmTests is Test {
         );
     }
 
-    function test_reverseChannelPath_2_ok(
-        uint32 a,
-        uint32 b
-    ) public {
+    function test_reverseChannelPath_2_ok(uint32 a, uint32 b) public {
         // channel ids are non-zero
         vm.assume(a > 0);
         vm.assume(b > 0);
@@ -1157,9 +1140,7 @@ contract ZkgmTests is Test {
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_0,
                 opcode: ZkgmLib.OP_BATCH,
-                operand: ZkgmLib.encodeBatch(
-                    Batch({instructions: instructions})
-                )
+                operand: ZkgmLib.encodeBatch(Batch({instructions: instructions}))
             })
         );
     }
@@ -1182,9 +1163,7 @@ contract ZkgmTests is Test {
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_0,
                 opcode: ZkgmLib.OP_BATCH,
-                operand: ZkgmLib.encodeBatch(
-                    Batch({instructions: instructions})
-                )
+                operand: ZkgmLib.encodeBatch(Batch({instructions: instructions}))
             })
         );
     }
@@ -1821,7 +1800,8 @@ contract ZkgmTests is Test {
         handler.setChannel(nextSourceChannelId, nextDestinationChannelId);
         // We expect the protocol to re-emit a packet with the updated path and the sub-instruction
         vm.expectEmit();
-        emit TestIBCHandler.OnSendPacket(IBCPacket({
+        emit TestIBCHandler.OnSendPacket(
+            IBCPacket({
                 sourceChannelId: nextSourceChannelId,
                 destinationChannelId: nextDestinationChannelId,
                 data: ZkgmLib.encode(
@@ -1838,7 +1818,8 @@ contract ZkgmTests is Test {
                 ),
                 timeoutHeight: type(uint64).max,
                 timeoutTimestamp: 0
-            }));
+            })
+        );
         bytes memory ack = zkgm.doExecuteForward(
             IBCPacket({
                 sourceChannelId: previousSourceChannelId,
@@ -1887,7 +1868,8 @@ contract ZkgmTests is Test {
         handler.setChannel(nextSourceChannelId, nextDestinationChannelId);
         // We expect the protocol to re-emit a forward
         vm.expectEmit();
-        emit TestIBCHandler.OnSendPacket(IBCPacket({
+        emit TestIBCHandler.OnSendPacket(
+            IBCPacket({
                 sourceChannelId: nextSourceChannelId,
                 destinationChannelId: nextDestinationChannelId,
                 data: ZkgmLib.encode(
@@ -1920,7 +1902,8 @@ contract ZkgmTests is Test {
                 ),
                 timeoutHeight: type(uint64).max,
                 timeoutTimestamp: 0
-            }));
+            })
+        );
         bytes memory ack = zkgm.doExecuteForward(
             IBCPacket({
                 sourceChannelId: previousSourceChannelId,
@@ -2225,9 +2208,7 @@ contract ZkgmTests is Test {
                                 Call({
                                     sender: sender,
                                     eureka: false,
-                                    contractAddress: abi.encodePacked(
-                                        address(0)
-                                    ),
+                                    contractAddress: abi.encodePacked(address(0)),
                                     contractCalldata: contractCalldata
                                 })
                             )
@@ -2357,7 +2338,8 @@ contract ZkgmTests is Test {
             relayerMsg,
             order,
             TokenOrderAck({
-                fillType: ZkgmLib.FILL_TYPE_MARKETMAKER, marketMaker: relayerMsg
+                fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
+                marketMaker: relayerMsg
             }),
             false
         );
@@ -2383,7 +2365,8 @@ contract ZkgmTests is Test {
             relayerMsg,
             order,
             TokenOrderAck({
-                fillType: ZkgmLib.FILL_TYPE_MARKETMAKER, marketMaker: relayerMsg
+                fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
+                marketMaker: relayerMsg
             }),
             true
         );
@@ -3460,9 +3443,7 @@ contract ZkgmTests is Test {
                 baseTokenName: baseTokenName,
                 baseTokenDecimals: baseTokenDecimals,
                 baseAmount: baseAmount,
-                quoteToken: abi.encodePacked(
-                    ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS
-                ),
+                quoteToken: abi.encodePacked(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS),
                 quoteAmount: quoteAmount
             });
             expectOnRecvOrderMarketMakerFillSuccess(
@@ -3524,9 +3505,7 @@ contract ZkgmTests is Test {
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
                 metadata: hex"",
-                quoteToken: abi.encodePacked(
-                    ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS
-                ),
+                quoteToken: abi.encodePacked(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS),
                 quoteAmount: quoteAmount
             });
             expectOnRecvTransferSuccessCustomAckV2(
@@ -4264,9 +4243,7 @@ contract ZkgmTests is Test {
             TokenOrderV2({
                 sender: sender,
                 receiver: abi.encodePacked(address(this)),
-                baseToken: abi.encodePacked(
-                    ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS
-                ),
+                baseToken: abi.encodePacked(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS),
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
                 metadata: hex"",
@@ -4451,9 +4428,7 @@ contract ZkgmTests is Test {
             TokenOrderV2 memory order = TokenOrderV2({
                 sender: abi.encodePacked(sender),
                 receiver: receiver,
-                baseToken: abi.encodePacked(
-                    ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS
-                ),
+                baseToken: abi.encodePacked(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS),
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
                 metadata: hex"",
@@ -4700,9 +4675,7 @@ contract ZkgmTests is Test {
                 baseAmount: baseAmount,
                 kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
                 metadata: ZkgmLib.encodeTokenMetadata(metadata),
-                quoteToken: abi.encodePacked(
-                    ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS
-                ),
+                quoteToken: abi.encodePacked(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS),
                 quoteAmount: quoteAmount
             });
             expectOnRecvTransferSuccessCustomAckV2(
@@ -4769,9 +4742,7 @@ contract ZkgmTests is Test {
                                     baseToken: baseToken,
                                     baseAmount: baseAmount,
                                     kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
-                                    metadata: ZkgmLib.encodeTokenMetadata(
-                                        metadata
-                                    ),
+                                    metadata: ZkgmLib.encodeTokenMetadata(metadata),
                                     quoteToken: abi.encodePacked(quoteToken),
                                     quoteAmount: quoteAmount
                                 })
@@ -4896,9 +4867,7 @@ contract ZkgmTests is Test {
 
     function test_create_tokenOrder() public {
         TokenOrderV1 memory tokenOrder = TokenOrderV1({
-            sender: abi.encodePacked(
-                "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-            ),
+            sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
             receiver: abi.encodePacked(
                 address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
             ),
@@ -4921,15 +4890,11 @@ contract ZkgmTests is Test {
 
     function test_create_tokenOrder_v2_evm_to_evm_u() public {
         TokenOrderV2 memory tokenOrder = TokenOrderV2({
-            sender: abi.encodePacked(
-                0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD
-            ),
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             receiver: abi.encodePacked(
                 address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
             ),
-            baseToken: abi.encodePacked(
-                0xba5eD44733953d79717F6269357C77718C8Ba5ed
-            ),
+            baseToken: abi.encodePacked(0xba5eD44733953d79717F6269357C77718C8Ba5ed),
             kind: ZkgmLib.TOKEN_ORDER_KIND_ESCROW,
             metadata: hex"",
             baseAmount: 0,
@@ -4949,9 +4914,7 @@ contract ZkgmTests is Test {
 
     function test_create_tokenOrder_v2_cosmos_to_evm_u() public {
         TokenOrderV2 memory tokenOrder = TokenOrderV2({
-            sender: abi.encodePacked(
-                "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a"
-            ),
+            sender: abi.encodePacked("union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a"),
             receiver: abi.encodePacked(
                 address(0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2)
             ),
@@ -5028,15 +4991,11 @@ contract ZkgmTests is Test {
             )
         });
         TokenOrderV2 memory tokenOrder = TokenOrderV2({
-            sender: abi.encodePacked(
-                0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD
-            ),
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             receiver: abi.encodePacked(
                 address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
             ),
-            baseToken: abi.encodePacked(
-                0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
-            ),
+            baseToken: abi.encodePacked(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE),
             kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
             metadata: ZkgmLib.encodeTokenMetadata(metadata),
             baseAmount: 100,
@@ -5071,15 +5030,11 @@ contract ZkgmTests is Test {
             )
         });
         TokenOrderV2 memory tokenOrder = TokenOrderV2({
-            sender: abi.encodePacked(
-                0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD
-            ),
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             receiver: abi.encodePacked(
                 "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a"
             ),
-            baseToken: abi.encodePacked(
-                0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
-            ),
+            baseToken: abi.encodePacked(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE),
             kind: ZkgmLib.TOKEN_ORDER_KIND_INITIALIZE,
             metadata: ZkgmLib.encodeTokenMetadata(metadata),
             baseAmount: 100,
@@ -5123,9 +5078,7 @@ contract ZkgmTests is Test {
             )
         });
         TokenOrderV2 memory tokenOrder = TokenOrderV2({
-            sender: abi.encodePacked(
-                "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-            ),
+            sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
             receiver: abi.encodePacked(
                 address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
             ),
@@ -5167,9 +5120,7 @@ contract ZkgmTests is Test {
             )
         });
         TokenOrderV2 memory tokenOrder = TokenOrderV2({
-            sender: abi.encodePacked(
-                "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a"
-            ),
+            sender: abi.encodePacked("union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a"),
             receiver: abi.encodePacked(
                 address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
             ),
@@ -5207,9 +5158,7 @@ contract ZkgmTests is Test {
             initializer: bytes(initMsg)
         });
         TokenOrderV2 memory tokenOrder = TokenOrderV2({
-            sender: abi.encodePacked(
-                0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD
-            ),
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             receiver: abi.encodePacked(
                 "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
             ),
@@ -5253,9 +5202,7 @@ contract ZkgmTests is Test {
         console.log("Image:");
         console.logBytes32(image);
         TokenOrderV2 memory tokenOrder = TokenOrderV2({
-            sender: abi.encodePacked(
-                0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD
-            ),
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             receiver: abi.encodePacked(
                 "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
             ),
@@ -5366,9 +5313,7 @@ contract ZkgmTests is Test {
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_0,
                 opcode: ZkgmLib.OP_BATCH,
-                operand: ZkgmLib.encodeBatch(
-                    Batch({instructions: instructions})
-                )
+                operand: ZkgmLib.encodeBatch(Batch({instructions: instructions}))
             })
         );
 
