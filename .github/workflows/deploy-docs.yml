@@ -83,6 +83,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
+      - name: Use node v24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
       - uses: cachix/install-nix-action@v31
         with:
           extra_nix_config: |
@@ -107,6 +111,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
+      - name: Use node v24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
       - uses: cachix/install-nix-action@v31
         with:
           extra_nix_config: |
