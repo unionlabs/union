@@ -828,7 +828,7 @@
       "flake": false,
       "locked": {
         "lastModified": 1779123517,
-        "narHash": "sha256-altm24Hgr1r8LZZqOome0GCY1V0AfTBEO5YlPf6fz3k=",
+        "narHash": "sha256-EfRq8OjwWXKY4aS/m+PhpBBDm/6Q9eAlq8ilI3e4m44=",
         "owner": "unionlabs",
         "repo": "union",
         "rev": "c0e616f4a2bc5bc63d7b10fa315c89a2e11a438e",
