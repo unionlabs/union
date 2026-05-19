@@ -4462,6 +4462,63 @@ contract ZkgmTests is Test {
         zkgm.onTimeoutPacket(caller, packet, relayer);
     }
 
+    function test_onTimeoutPacket_call_usesSenderNotContractAddress(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        uint256 path,
+        bytes32 salt,
+        bytes memory contractCalldata
+    ) public {
+        vm.assume(sourceChannelId != 0);
+        vm.assume(destinationChannelId != 0);
+
+        // MockTimeoutModule records packet.data in onTimeoutPacket
+        MockTimeoutModule mockModule = new MockTimeoutModule();
+
+        // sender = mockModule address (_timeoutCall calls onTimeoutPacket on call.sender)
+        bytes memory sender = abi.encodePacked(address(mockModule));
+        // contractAddress is different to distinguish the bug
+        bytes memory contractAddress = abi.encodePacked(address(0xdead));
+
+        vm.prank(address(handler));
+        zkgm.onTimeoutPacket(
+            caller,
+            IBCPacket({
+                sourceChannelId: sourceChannelId,
+                destinationChannelId: destinationChannelId,
+                data: ZkgmLib.encode(
+                    ZkgmPacket({
+                        salt: salt,
+                        path: path,
+                        instruction: Instruction({
+                            version: ZkgmLib.INSTR_VERSION_0,
+                            opcode: ZkgmLib.OP_CALL,
+                            operand: ZkgmLib.encodeCall(
+                                Call({
+                                    sender: sender,
+                                    eureka: true,
+                                    contractAddress: contractAddress,
+                                    contractCalldata: contractCalldata
+                                })
+                            )
+                        })
+                    })
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            }),
+            relayer
+        );
+
+        // Verify: packet data uses call.sender, NOT call.contractAddress
+        assertEq(
+            mockModule.receivedData,
+            ZkgmLib.encodeCallCalldataMemory(path, sender, contractCalldata)
+        );
+    }
+
     function test_onRecvIntentPacket_onlyIBC(
         address caller,
         IBCPacket memory packet,
