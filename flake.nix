@@ -568,6 +568,11 @@
                 perl
                 strace
               ])
+              ++ [
+                pkgsUnstable.wasm-bindgen-cli_0_2_100
+                pkgs.twiggy
+                pkgs.wasm-pack
+              ]
               ++ (with pkgsUnstable; [
                 bun
                 pnpm_10
@@ -585,6 +590,7 @@
                 nodePackages_latest."@tailwindcss/language-server"
                 nodePackages_latest.typescript-language-server
                 nodePackages_latest.vscode-langservers-extracted
+                binaryen
               ])
               ++ (with pkgs; [
                 wasm-tools

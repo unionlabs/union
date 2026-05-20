@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "RootShape",
+  "oneOf": [
+    {
+      "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "@version",
+            "instructions"
+          ],
+          "properties": {
+            "@version": {
+              "type": "string",
+              "enum": [
+                "v0"
+              ]
+            },
+            "instructions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/BatchInstructionV0Shape"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "required": [
+        "@opcode"
+      ],
+      "properties": {
+        "@opcode": {
+          "type": "string",
+          "enum": [
+            "batch"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "oneOf": [
+        {
+          "deprecated": true,
+          "type": "object",
+          "required": [
+            "@version"
+          ],
+          "properties": {
+            "@version": {
+              "type": "string",
+              "enum": [
+                "v1"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "@version"
+          ],
+          "properties": {
+            "@version": {
+              "type": "string",
+              "enum": [
+                "v2"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "required": [
+        "@opcode"
+      ],
+      "properties": {
+        "@opcode": {
+          "type": "string",
+          "enum": [
+            "token_order"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "@version",
+            "eureka"
+          ],
+          "properties": {
+            "@version": {
+              "type": "string",
+              "enum": [
+                "v0"
+              ]
+            },
+            "eureka": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "required": [
+        "@opcode"
+      ],
+      "properties": {
+        "@opcode": {
+          "type": "string",
+          "enum": [
+            "call"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": [
+        "object",
+        "string"
+      ],
+      "enum": [
+        "v0"
+      ],
+      "required": [
+        "@opcode"
+      ],
+      "properties": {
+        "@opcode": {
+          "type": "string",
+          "enum": [
+            "forward"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  ],
+  "definitions": {
+    "BatchInstructionV0Shape": {
+      "oneOf": [
+        {
+          "type": "object",
+          "oneOf": [
+            {
+              "deprecated": true,
+              "type": "object",
+              "required": [
+                "@version"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v1"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "@version"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v2"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "@opcode"
+          ],
+          "properties": {
+            "@opcode": {
+              "type": "string",
+              "enum": [
+                "token_order"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "@version",
+                "eureka"
+              ],
+              "properties": {
+                "@version": {
+                  "type": "string",
+                  "enum": [
+                    "v0"
+                  ]
+                },
+                "eureka": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "@opcode"
+          ],
+          "properties": {
+            "@opcode": {
+              "type": "string",
+              "enum": [
+                "call"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

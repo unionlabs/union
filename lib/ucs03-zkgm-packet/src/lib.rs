@@ -1,9 +1,20 @@
-use std::error::Error;
+// #![cfg_attr(not(test), no_std)]
+#![warn(
+    clippy::std_instead_of_core,
+    clippy::std_instead_of_alloc,
+    clippy::alloc_instead_of_core
+)]
+
+extern crate alloc;
+extern crate core;
+
+use alloc::format;
+use core::error::Error;
 
 use alloy_sol_types::{SolValue, abi::TokenSeq};
-use ucs03_zkgm::com::{TAG_ACK_FAILURE, TAG_ACK_SUCCESS};
 use unionlabs_primitives::{Bytes, H256, U256};
 
+use crate::com::{TAG_ACK_FAILURE, TAG_ACK_SUCCESS};
 pub use crate::{
     batch::{Batch, BatchAck, BatchShape},
     call::{Call, CallAck, CallShape},
@@ -12,33 +23,90 @@ pub use crate::{
     token_order::{TokenOrder, TokenOrderAck, TokenOrderShape},
 };
 
+#[global_allocator]
+static GLOBAL: dlmalloc::GlobalDlmalloc = dlmalloc::GlobalDlmalloc;
+
+// #[panic_handler]
+// fn panic_handler(_: &core::panic::PanicInfo) -> ! {
+//     loop {}
+// }
+
+macro_rules! attrs {
+    (
+        $(#[tag($tag:literal)])?
+        $(#[deprecated($($deprecated:meta),*)])?
+        #[enumorph]
+        pub enum $T:ident $tt:tt
+    ) => {
+        #[derive(Debug, Clone, PartialEq, Eq, ::enumorph::Enumorph)]
+        #[repr(u8)]
+        #[cfg_attr(
+            feature = "serde",
+            derive(serde::Serialize, serde::Deserialize),
+            serde(deny_unknown_fields, rename_all = "snake_case", $(tag = $tag)?)
+        )]
+        #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+        $(#[deprecated($($deprecated),*)])?
+        pub enum $T $tt
+    };
+    // same as above, but no enumorph
+    (
+        $(#[tag($tag:literal)])?
+        $(#[deprecated($($deprecated:meta),*)])?
+        pub enum $T:ident $tt:tt
+    ) => {
+        #[derive(Debug, Clone, PartialEq, Eq)]
+        #[repr(u8)]
+        #[cfg_attr(
+            feature = "serde",
+            derive(serde::Serialize, serde::Deserialize),
+            serde(deny_unknown_fields, rename_all = "snake_case", $(tag = $tag)?)
+        )]
+        #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+        $(#[deprecated($($deprecated),*)])?
+        pub enum $T $tt
+    };
+    (
+        $(#[deprecated($($deprecated:meta),*)])?
+        pub struct $T:ident $tt:tt
+    ) => {
+        #[derive(Debug, Clone, PartialEq, Eq)]
+        #[cfg_attr(
+            feature = "serde",
+            derive(serde::Serialize, serde::Deserialize),
+            serde(deny_unknown_fields, rename_all = "snake_case")
+        )]
+        #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+        $(#[deprecated($($deprecated),*)])?
+        pub struct $T $tt
+    };
+}
+
+mod com;
+
 pub mod batch;
 pub mod call;
 pub mod forward;
 pub mod root;
 pub mod token_order;
 
-pub type Result<T> = std::result::Result<T, Box<dyn Error + Send + Sync + 'static>>;
+pub type Result<T> = core::result::Result<T, alloc::boxed::Box<dyn Error + Send + Sync + 'static>>;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-pub struct ZkgmPacket {
-    pub salt: H256,
-    pub path: U256,
-    pub instruction: Root,
+attrs! {
+    pub struct ZkgmPacket {
+        pub salt: H256,
+        pub path: U256,
+        pub instruction: Root,
+    }
 }
 
 impl ZkgmPacket {
     pub fn decode(bz: impl AsRef<[u8]>) -> Result<Self> {
-        let ucs03_zkgm::com::ZkgmPacket {
+        let crate::com::ZkgmPacket {
             salt,
             path,
             instruction,
-        } = ucs03_zkgm::com::ZkgmPacket::abi_decode_params_validate(bz.as_ref())?;
+        } = crate::com::ZkgmPacket::abi_decode_params_validate(bz.as_ref())?;
 
         Ok(Self {
             salt: salt.into(),
@@ -48,7 +116,7 @@ impl ZkgmPacket {
     }
 
     pub fn encode(self) -> Bytes {
-        ucs03_zkgm::com::ZkgmPacket::abi_encode_params(&ucs03_zkgm::com::ZkgmPacket {
+        crate::com::ZkgmPacket::abi_encode_params(&crate::com::ZkgmPacket {
             salt: self.salt.into(),
             path: self.path.into(),
             instruction: self.instruction.into_instruction().into_raw(),
@@ -57,23 +125,19 @@ impl ZkgmPacket {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-pub enum Ack {
-    Success(RootAck),
-    Failure(Bytes),
+attrs! {
+    pub enum Ack {
+        Success(RootAck),
+        Failure(Bytes),
+    }
 }
 
 impl Ack {
     pub fn decode(shape: RootShape, bz: impl AsRef<[u8]>) -> Result<Self> {
-        let ucs03_zkgm::com::Ack { tag, inner_ack } =
-            ucs03_zkgm::com::Ack::abi_decode_params_validate(bz.as_ref())?;
+        let crate::com::Ack { tag, inner_ack } =
+            crate::com::Ack::abi_decode_params_validate(bz.as_ref())?;
 
-        match tag {
+        match U256::from(tag) {
             TAG_ACK_SUCCESS => RootAck::decode(shape, &inner_ack).map(Ack::Success),
             TAG_ACK_FAILURE => Ok(Ack::Failure(inner_ack.into())),
             invalid => Err(format!("invalid ack tag {invalid}"))?,
@@ -82,14 +146,14 @@ impl Ack {
 
     pub fn encode(&self) -> Bytes {
         match self {
-            Ack::Success(inner_ack) => ucs03_zkgm::com::Ack {
-                tag: TAG_ACK_SUCCESS,
+            Ack::Success(inner_ack) => crate::com::Ack {
+                tag: TAG_ACK_SUCCESS.into(),
                 inner_ack: inner_ack.encode().into(),
             }
             .abi_encode_params()
             .into(),
-            Ack::Failure(inner_ack) => ucs03_zkgm::com::Ack {
-                tag: TAG_ACK_FAILURE,
+            Ack::Failure(inner_ack) => crate::com::Ack {
+                tag: TAG_ACK_FAILURE.into(),
                 inner_ack: inner_ack.clone().into(),
             }
             .abi_encode_params()
@@ -98,16 +162,12 @@ impl Ack {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-pub struct Instruction {
-    opcode: u8,
-    version: u8,
-    operand: Bytes,
+attrs! {
+    pub struct Instruction {
+        opcode: u8,
+        version: u8,
+        operand: Bytes,
+    }
 }
 
 impl Instruction {
@@ -125,12 +185,95 @@ impl Instruction {
         }
     }
 
-    pub(crate) fn into_raw(self) -> ucs03_zkgm::com::Instruction {
-        ucs03_zkgm::com::Instruction {
+    pub(crate) fn into_raw(self) -> crate::com::Instruction {
+        crate::com::Instruction {
             version: self.version,
             opcode: self.opcode,
             operand: self.operand.into(),
         }
+    }
+}
+
+#[cfg(feature = "wasm-bindgen")]
+mod wasm_bindgen_exports {
+    use alloc::{string::ToString, vec::Vec};
+
+    use serde::Serialize;
+    use serde_wasm_bindgen::Serializer;
+    use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+
+    use crate::{Ack, Root, RootShape, ZkgmPacket, token_order::TokenOrderV2Metadata};
+
+    const S: Serializer = Serializer::new()
+        .serialize_large_number_types_as_bigints(true)
+        .serialize_maps_as_objects(true);
+
+    /// bytes -> packet
+    #[wasm_bindgen]
+    pub fn decode_packet(packet: Vec<u8>) -> Result<JsValue, JsValue> {
+        let packet =
+            ZkgmPacket::decode(packet).map_err(|err| JsValue::from_str(&err.to_string()))?;
+
+        Ok(packet.serialize(&S)?)
+    }
+
+    /// packet -> bytes
+    #[wasm_bindgen]
+    pub fn encode_packet(packet: JsValue) -> Result<JsValue, JsValue> {
+        let packet = serde_wasm_bindgen::from_value::<ZkgmPacket>(packet)?;
+
+        Ok(packet.encode().serialize(&S)?)
+    }
+
+    /// bytes -> instruction
+    #[wasm_bindgen]
+    pub fn decode_instruction(instruction: Vec<u8>) -> Result<JsValue, JsValue> {
+        let instruction =
+            Root::decode(&instruction).map_err(|err| JsValue::from_str(&err.to_string()))?;
+
+        Ok(instruction.serialize(&S)?)
+    }
+
+    /// instruction -> bytes
+    #[wasm_bindgen]
+    pub fn encode_instruction(instruction: JsValue) -> Result<JsValue, JsValue> {
+        let instruction = serde_wasm_bindgen::from_value::<Root>(instruction)?;
+
+        Ok(instruction.encode().serialize(&S)?)
+    }
+
+    /// instruction -> shape
+    #[wasm_bindgen]
+    pub fn packet_shape(instruction: JsValue) -> Result<JsValue, JsValue> {
+        let instruction = serde_wasm_bindgen::from_value::<Root>(instruction)?;
+
+        Ok(instruction.shape().serialize(&S)?)
+    }
+
+    /// (shape, bytes) -> ack
+    #[wasm_bindgen]
+    pub fn decode_ack(shape: JsValue, ack: Vec<u8>) -> Result<JsValue, JsValue> {
+        let shape = serde_wasm_bindgen::from_value::<RootShape>(shape)?;
+        let ack = Ack::decode(shape, ack).map_err(|err| JsValue::from_str(&err.to_string()))?;
+
+        Ok(ack.serialize(&S)?)
+    }
+
+    /// ack -> bytes
+    #[wasm_bindgen]
+    pub fn encode_ack(ack: JsValue) -> Result<JsValue, JsValue> {
+        let ack = serde_wasm_bindgen::from_value::<Ack>(ack)?;
+
+        Ok(ack.encode().serialize(&S)?)
+    }
+
+    /// (metadata kind, bytes) -> metadata
+    #[wasm_bindgen]
+    pub fn decode_metadata(kind: u8, metadata: Vec<u8>) -> Result<JsValue, JsValue> {
+        let metadata = TokenOrderV2Metadata::decode(kind, metadata)
+            .map_err(|err| JsValue::from_str(&err.to_string()))?;
+
+        Ok(metadata.serialize(&S)?)
     }
 }
 
@@ -243,5 +386,43 @@ mod tests {
         println!("{}", serde_json::to_string_pretty(&decoded_packet).unwrap());
         println!("{}", serde_json::to_string_pretty(&shape).unwrap());
         println!("{}", serde_json::to_string_pretty(&ack).unwrap());
+    }
+
+    #[test]
+    fn v2_escrow() {
+        let packet = hex!(
+            "f7ff5d92d4ee7e833d26219cceeb620016a1c4da97189f075cc72bf1064f27140000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001c0000000000000000000000000000000000000000000000000000000000043203f0000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000043203f000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000002c0000000000000000000000000000000000000000000000000000000000000002a62626e317a3634616d6e7367736c7533617174717338613337783065377174327475633334663339657700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002b6f736d6f317a3634616d6e7367736c7533617174717338613337783065377174327475633332766e797339000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e62626e3173376a7a7a37637975716d793578707230377965706b61356e676b7465787366657275326372347865777738393766746a37377376333066357300000000000000000000000000000000000000000000000000000000000000000074666163746f72792f6f736d6f313272337963373675396c7865333379656d737461746e773836303263756c646a7a727472386c6d6e7079636d64337a3764346a73787836306b632f46774e68466157337a4c786f4c5567584364576a71427a6376474e506142374232585a716d327867724239330000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        );
+
+        let decoded_packet = ZkgmPacket::decode(packet).unwrap();
+
+        println!("{}", serde_json::to_string_pretty(&decoded_packet).unwrap());
+    }
+
+    #[test]
+    #[ignore = "only run to generate schemas"]
+    #[cfg(feature = "schemars")]
+    fn schemars() {
+        use schemars::{JsonSchema, SchemaGenerator, r#gen::SchemaSettings};
+
+        fn generate_schema<T: JsonSchema>(path: &str) {
+            std::fs::write(
+                format!("{}/{path}", env!("SCHEMAS_OUT_DIR")),
+                serde_json::to_string_pretty(
+                    &SchemaGenerator::new(SchemaSettings::draft2019_09().with(|s| {
+                        s.option_nullable = true;
+                        s.option_add_null_type = false;
+                    }))
+                    .into_root_schema_for::<T>(),
+                )
+                .expect("schema serialization is infallible; qed;"),
+            )
+            .expect("unable to write file")
+        }
+
+        generate_schema::<ZkgmPacket>("ucs03.packet.schema.json");
+        generate_schema::<RootShape>("ucs03.shape.schema.json");
+        generate_schema::<Ack>("ucs03.ack.schema.json");
+        generate_schema::<BatchInstructionV0>("ucs03.batch-instruction-v0.schema.json");
     }
 }

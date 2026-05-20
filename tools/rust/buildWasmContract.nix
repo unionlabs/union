@@ -3,10 +3,6 @@
   crateCargoToml,
   pkgs,
   lib,
-  craneLib,
-  rust,
-  dbg,
-  gitRev,
 }:
 let
   CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
@@ -37,7 +33,6 @@ let
 
   cargoBuildInstallPhase =
     {
-      features,
       contractFileNameWithoutExt,
       checks,
       maxSize,
@@ -90,7 +85,6 @@ let
 
     cargoBuildInstallPhase = cargoBuildInstallPhase {
       inherit
-        features
         checks
         maxSize
         ;

@@ -1,0 +1,257 @@
+import * as NodeContext from "@effect/platform-node/NodeContext"
+import { assert, describe, it } from "@effect/vitest"
+import * as Constants from "@unionlabs/sdk/Constants"
+import * as Ucs03Ng from "@unionlabs/sdk/Ucs03Ng"
+import * as ZkgmWasm from "@unionlabs/sdk/ZkgmWasm"
+import * as Arbitrary from "effect/Arbitrary"
+import * as Effect from "effect/Effect"
+import * as fc from "effect/FastCheck"
+import { pipe } from "effect/Function"
+import * as Layer from "effect/Layer"
+import * as Match from "effect/Match"
+import * as Schema from "effect/Schema"
+import * as String from "effect/String"
+import { ChannelId } from "../src/schema/channel.js"
+
+const ZkgmWasmTest = pipe(
+  ZkgmWasm.layerPlatform,
+  Layer.provideMerge(NodeContext.layer),
+)
+
+const PACKET_HEX =
+  `79176e1d5f2779e14b2f5f885bfe7b35e78802643522ce0dad5cac4e4a44271f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000066000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000003a000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000140000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000001e00000000000000000000000000000000000000000000000000000000000002710000000000000000000000000000000000000000000000000000000000000022000000000000000000000000000000000000000000000000000000000000002600000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000002a00000000000000000000000000000000000000000000000000000000000002710000000000000000000000000000000000000000000000000000000000000001415ee7c367f4232241028c36e720803100757c6e9000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b356700000000000000000000000000000000000000000000000000000000000000000014e53dcec07d16d88e386ae0710e86d9a400f83c31000000000000000000000000000000000000000000000000000000000000000000000000000000000000000442414259000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007426162796c6f6e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000047562626e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000001415ee7c367f4232241028c36e720803100757c6e9000000000000000000000000000000000000000000000000000000000000000000000000000000000000003e62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b3567000000000000000000000000000000000000000000000000000000000000000000b27b22626f6e64223a7b22616d6f756e74223a223130303030222c2273616c74223a22307833313333303831396135613232336439376163373134663239616535653361646265396565663833383233373830663761393063636536363461626138366565222c226578706563746564223a2239373237222c22726563697069656e74223a2262626e3168637533306461647770686638397533783375366a327a35387233376339616b687866637330227d7d0000000000000000000000000000`
+
+const PACKET_BYTES = Uint8Array.from(Buffer.from(PACKET_HEX, "hex"))
+
+const PACKET_DECODED = Ucs03Ng.ZkgmPacket.make({
+  salt: "0x79176e1d5f2779e14b2f5f885bfe7b35e78802643522ce0dad5cac4e4a44271f",
+  path: 0n,
+  instruction: Ucs03Ng.BatchV0.make({
+    instructions: [
+      Ucs03Ng.TokenOrderV1.make({
+        sender: "0x15ee7c367f4232241028c36e720803100757c6e9",
+        receiver:
+          "0x62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b3567",
+        base_token: "0xe53dcec07d16d88e386ae0710e86d9a400f83c31",
+        base_amount: 10000n,
+        base_token_symbol: "BABY",
+        base_token_name: "Babylon",
+        base_token_decimals: 6,
+        base_token_path: 1n,
+        quote_token: "0x7562626e",
+        quote_amount: 10000n,
+      }),
+      Ucs03Ng.CallV0.make({
+        sender: "0x15ee7c367f4232241028c36e720803100757c6e9",
+        eureka: false,
+        contract_address:
+          "0x62626e316d377a72356a77346b397a32327239616a676766347563616c7779377578767539676b7736746e736d7634326c766a706b7761736167656b3567",
+        contract_calldata:
+          "0x7b22626f6e64223a7b22616d6f756e74223a223130303030222c2273616c74223a22307833313333303831396135613232336439376163373134663239616535653361646265396565663833383233373830663761393063636536363461626138366565222c226578706563746564223a2239373237222c22726563697069656e74223a2262626e3168637533306461647770686638397533783375366a327a35387233376339616b687866637330227d7d",
+      }),
+    ],
+  }),
+})
+
+const arbTokenOrderAck = (version: "v1" | "v2") =>
+  Arbitrary.make(Ucs03Ng.TokenOrderAck).filter(ack => ack["@version"] === version)
+
+const arbCallAck = (eureka: boolean) =>
+  Arbitrary.make(Ucs03Ng.CallAck).filter(ack => eureka ? "eureka" in ack : "non_eureka" in ack)
+
+const arbBatchInstructionAck = (instr: Ucs03Ng.BatchInstructionV0) =>
+  Arbitrary.make(Ucs03Ng.BatchInstructionV0Ack).filter(ack =>
+    pipe(
+      Match.value(instr),
+      Match.discriminator("@opcode")(
+        "token_order",
+        (i) => ack["@opcode"] === "token_order" && ack["@version"] === i["@version"],
+      ),
+      Match.discriminator("@opcode")(
+        "call",
+        (i) => ack["@opcode"] === "call" && (i.eureka ? "eureka" in ack : "non_eureka" in ack),
+      ),
+      Match.exhaustive,
+    )
+  )
+
+const arbRootAck = (root: Ucs03Ng.Root) =>
+  pipe(
+    Match.value(root),
+    Match.discriminator("@opcode")(
+      "batch",
+      (r) =>
+        (r.instructions.length === 0
+          ? fc.constant([] as Array<Ucs03Ng.BatchInstructionV0Ack>)
+          : fc.tuple(...r.instructions.map(arbBatchInstructionAck))).map(acks => ({
+            "@opcode": "batch" as const,
+            "@version": "v0" as const,
+            "acknowledgements": acks,
+          })),
+    ),
+    Match.discriminator("@opcode")(
+      "token_order",
+      (r) => arbTokenOrderAck(r["@version"]),
+    ),
+    Match.discriminator("@opcode")(
+      "call",
+      (r) => arbCallAck(r.eureka),
+    ),
+    Match.discriminator("@opcode")(
+      "forward",
+      () => fc.constant({ "@opcode": "forward" as const, "@version": "v0" as const }),
+    ),
+    Match.exhaustive,
+  )
+
+const arbAckForInstruction = (instruction: Ucs03Ng.Root) =>
+  fc.oneof(
+    arbRootAck(instruction).map(success => ({ success })),
+    Arbitrary.make(Ucs03Ng.BytesHexPrefixed).map(failure => ({ failure })),
+  )
+
+describe("WasmTest", () => {
+  it.layer(ZkgmWasmTest)((it) => {
+    it.effect("example packet iso (wasm)", () =>
+      Effect.gen(function*() {
+        const wasm = yield* ZkgmWasm.ZkgmWasm
+        const decoded = yield* wasm.decodePacket(PACKET_BYTES)
+        const encoded = yield* wasm.encodePacket(decoded)
+        assert.deepStrictEqual(encoded, PACKET_BYTES)
+        const expected = yield* Schema.encode(Ucs03Ng.ZkgmPacket)(PACKET_DECODED)
+        assert.deepStrictEqual(decoded, expected)
+      }))
+
+    it.effect("example packet iso (schema)", () =>
+      Effect.gen(function*() {
+        const decoded = yield* Schema.decode(Ucs03Ng.ZkgmPacketFromUint8Array)(PACKET_BYTES)
+        const encoded = yield* Schema.encode(Ucs03Ng.ZkgmPacketFromUint8Array)(decoded)
+        assert.deepStrictEqual(decoded, PACKET_DECODED)
+        assert.deepStrictEqual(encoded, PACKET_BYTES)
+      }))
+
+    it.effect.prop(
+      "ZkgmPacketFromUint8Array roundtrip",
+      { packet: Ucs03Ng.ZkgmPacket },
+      ({ packet }) =>
+        Effect.gen(function*() {
+          const encoded = yield* Schema.encode(Ucs03Ng.ZkgmPacketFromUint8Array)(packet)
+          const decoded = yield* Schema.decode(Ucs03Ng.ZkgmPacketFromUint8Array)(encoded)
+          assert.deepStrictEqual(decoded, packet)
+        }),
+    )
+
+    it.effect.prop(
+      "ZkgmPacketFromHex roundtrip",
+      { packet: Ucs03Ng.ZkgmPacket },
+      ({ packet }) =>
+        Effect.gen(function*() {
+          const encoded = yield* Schema.encode(Ucs03Ng.ZkgmPacketFromHex)(packet)
+          const decoded = yield* Schema.decode(Ucs03Ng.ZkgmPacketFromHex)(encoded)
+          assert.deepStrictEqual(decoded, packet)
+        }),
+    )
+
+    it.effect.prop(
+      "AckFromUint8ArrayWithInstruction roundtrip",
+      { packet: Ucs03Ng.ZkgmPacket },
+      ({ packet }) =>
+        Effect.gen(function*() {
+          const [ack] = fc.sample(arbAckForInstruction(packet.instruction), 1)
+          const schema = Ucs03Ng.AckFromUint8ArrayWithInstruction(packet.instruction)
+          const bytes = yield* Schema.encode(schema)(ack)
+          const decoded = yield* Schema.decode(schema)(bytes)
+          assert.deepStrictEqual(decoded, ack)
+        }),
+    )
+
+    it.effect.prop(
+      "InstructionFromUint8Array roundtrip",
+      { instruction: Ucs03Ng.Root },
+      ({ instruction }) =>
+        Effect.gen(function*() {
+          const encoded = yield* Schema.encode(Ucs03Ng.InstructionFromUint8Array)(instruction)
+          const decoded = yield* Schema.decode(Ucs03Ng.InstructionFromUint8Array)(encoded)
+          assert.deepStrictEqual(decoded, instruction)
+        }),
+    )
+
+    it.effect.each(
+      [
+        [Constants.EU_SOLVER_ON_ETH_METADATA, {
+          "@kind": "solve",
+          "solver_address": "0xe5cf13c84c0fea3236c101bd7d743d30366e5cf1",
+          "metadata": "0x",
+        }],
+        [Constants.EU_SOLVER_ON_UNION_METADATA, {
+          "@kind": "solve",
+          "solver_address":
+            "0x756e696f6e31657565756575657539766172347968647275797a6b6a6373683734787a65756736636b797936306873307663716e7a716c326871306c78633266",
+          "metadata": "0x",
+        }],
+        [Constants.SUI_SOLVER_ON_COSMOS_METADATA, {
+          "@kind": "solve",
+          "solver_address":
+            "0x756e696f6e316675666174676b79643233716d716c7a74346176776a33366b6668766a757572323070716a66387865776e78326d6e6873736573366473706d66",
+          "metadata": "0x",
+        }],
+        [Constants.SUI_SOLVER_ON_SUI_METADATA, {
+          "@kind": "solve",
+          "solver_address": "0x75637330332d7a6b676d2d657363726f772d7661756c74",
+          "metadata":
+            "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000017",
+        }],
+        [Constants.U_SOLVER_ON_ETH_METADATA, {
+          "@kind": "solve",
+          "solver_address": "0xba5ed44733953d79717f6269357c77718c8ba5ed",
+          "metadata": "0x",
+        }],
+        [Constants.U_SOLVER_ON_SUI_METADATA, {
+          "@kind": "solve",
+          "solver_address": "0x75637330332d7a6b676d2d6f776e65642d7661756c74",
+          "metadata": "0x",
+        }],
+        [Constants.U_SOLVER_ON_UNION_METADATA, {
+          "@kind": "solve",
+          "solver_address":
+            "0x756e696f6e3175757575757575757539756e3271706b73616d37726c747470786338646337366d63706868736d70333970786a6e737672746371767976353772",
+          "metadata": "0x",
+        }],
+      ] as const,
+    )(
+      "decode solver metadata $0",
+      Effect.fn(function*([metadata, expected]) {
+        const wasm = yield* ZkgmWasm.ZkgmWasm
+        const metadataBytes = yield* pipe(
+          metadata,
+          String.substring(2),
+          (hex) => Schema.decode(Schema.Uint8ArrayFromHex)(hex),
+        )
+        const decoded = yield* wasm.decodeMetadata(metadataBytes, 3)
+        assert.deepStrictEqual(decoded, expected)
+      }),
+    )
+
+    it.effect(
+      "can produce zkgm packet hash",
+      Effect.fn(function*() {
+        const packetBytes =
+          `6df6551135308aa284b6632011afa1f4f6c31a75e692c590c6448bfd38c2df840000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002e00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000002d79883d2000000000000000000000000000000000000000000000000000000000000000001e00000000000000000000000000000000000000000000000000002d79883d2000000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000002c756e696f6e31357a666133376879667a39776667663676633864666e66367378656863763038756c646c3863000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000148e22a7bdb25eb28c7dfb10664d8ed521abbb494a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000261750000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014ba5ed44733953d79717f6269357c77718c8ba5ed00000000000000000000000000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000014ba5ed44733953d79717f6269357c77718c8ba5ed0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000`
+
+        const packet = yield* Schema.decode(Ucs03Ng.ZkgmPacketFromHex)(packetBytes)
+
+        const result = yield* Ucs03Ng.zkgmPacketToHash({
+          destinationChannelId: ChannelId.make(1),
+          sourceChannelId: ChannelId.make(3),
+          packet,
+          timeoutTimestamp: 1771933527062000000n,
+        })
+
+        assert.deepStrictEqual(
+          result,
+          "0x47209a2b3ae3d5c05c3acc33934e8eb7743209b8498fa59ea9d22e42b3bad321",
+        )
+      }),
+    )
+  })
+})

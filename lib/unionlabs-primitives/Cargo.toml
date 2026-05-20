@@ -23,7 +23,7 @@ primitive-types  = { workspace = true }
 rlp              = { workspace = true, optional = true }
 schemars         = { workspace = true, optional = true }
 serde            = { workspace = true, features = ["derive", "alloc"], optional = true }
-serde_bytes      = { version = "0.11.17", optional = true, default-features = false }
+serde_bytes      = { version = "0.11.17", optional = true, default-features = false, features = ["alloc"] }
 subtle-encoding  = { workspace = true, features = ["bech32-preview"] }
 thiserror        = { workspace = true }
 typenum          = { workspace = true, optional = true }

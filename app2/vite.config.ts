@@ -1,6 +1,7 @@
 import { sveltekit } from "@sveltejs/kit/vite"
 import tailwindcss from "@tailwindcss/vite"
 import { svelteTesting } from "@testing-library/svelte/vite"
+import * as Path from "node:path"
 import { defineConfig } from "vite"
 
 export default defineConfig({
@@ -10,6 +11,20 @@ export default defineConfig({
   },
   plugins: [sveltekit(), tailwindcss()],
   build: { sourcemap: true },
+  assetsInclude: ["**/*.wasm"],
+  resolve: {
+    alias: {
+      /**
+       * XXX: Needed probably (hopefully?) only for us given monorepo context
+       * with source-based project references and Vite + SvelteKit + tsc
+       * shadowing issues.
+       */
+      "$unionlabs/sdk/internal/wasm": Path.resolve(
+        __dirname,
+        "../ts-sdk/src/internal/wasm",
+      ),
+    },
+  },
   server: {
     allowedHosts: true,
   },

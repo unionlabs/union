@@ -1,28 +1,27 @@
+use alloc::{boxed::Box, format};
+
 use alloy_sol_types::SolType;
-use enumorph::Enumorph;
-use ucs03_zkgm::com::{INSTR_VERSION_0, OP_FORWARD};
 use unionlabs_primitives::{Bytes, U256};
 
-use crate::{Instruction, Result, root::Root};
+use crate::{
+    Instruction, Result,
+    com::{INSTR_VERSION_0, OP_FORWARD},
+    root::Root,
+};
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case", tag = "@version")
-)]
-pub enum Forward {
-    V0(ForwardV0),
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum Forward {
+        V0(ForwardV0) = INSTR_VERSION_0,
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-pub enum ForwardShape {
-    V0,
+attrs! {
+    #[tag("@version")]
+    pub enum ForwardShape {
+        V0 = INSTR_VERSION_0,
+    }
 }
 
 impl Forward {
@@ -46,28 +45,28 @@ impl Forward {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-pub struct ForwardV0 {
-    path: U256,
-    // TODO: Forward v2 to remove this field
-    timeout_height: u64,
-    timeout_timestamp: u64,
-    instruction: Box<Root>,
+attrs! {
+    pub struct ForwardV0 {
+        path: U256,
+        // TODO: Forward v2 to remove this field
+        #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
+        #[cfg_attr(feature = "schemars", schemars(with = "String"))]
+        timeout_height: u64,
+        #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
+        #[cfg_attr(feature = "schemars", schemars(with = "String"))]
+        timeout_timestamp: u64,
+        instruction: Box<Root>,
+    }
 }
 
 impl ForwardV0 {
     pub(crate) fn decode(operand: impl AsRef<[u8]>) -> Result<Self> {
-        let ucs03_zkgm::com::Forward {
+        let crate::com::Forward {
             path,
             timeout_height,
             timeout_timestamp,
             instruction,
-        } = ucs03_zkgm::com::Forward::abi_decode_params_validate(operand.as_ref())?;
+        } = crate::com::Forward::abi_decode_params_validate(operand.as_ref())?;
         Ok(Self {
             path: path.into(),
             timeout_height,
@@ -80,7 +79,7 @@ impl ForwardV0 {
         Instruction::new(
             OP_FORWARD,
             INSTR_VERSION_0,
-            ucs03_zkgm::com::Forward {
+            crate::com::Forward {
                 path: self.path.into(),
                 timeout_height: self.timeout_height,
                 timeout_timestamp: self.timeout_timestamp,
@@ -90,14 +89,12 @@ impl ForwardV0 {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Enumorph)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-pub enum ForwardAck {
-    V0(ForwardV0Ack),
+attrs! {
+    #[tag("@version")]
+    #[enumorph]
+    pub enum ForwardAck {
+        V0(ForwardV0Ack) = INSTR_VERSION_0,
+    }
 }
 
 impl ForwardAck {
@@ -114,20 +111,16 @@ impl ForwardAck {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(deny_unknown_fields, rename_all = "snake_case")
-)]
-pub struct ForwardV0Ack {}
+attrs! {
+    pub struct ForwardV0Ack {}
+}
 
 impl ForwardV0Ack {
     fn decode(bz: impl AsRef<[u8]>) -> Result<Self> {
         if bz.as_ref().is_empty() {
             Ok(Self {})
         } else {
-            Err("Forward v0 ack must be empty".into())
+            Err("forward v0 ack must be empty".into())
         }
     }
 

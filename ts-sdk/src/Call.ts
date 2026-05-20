@@ -4,13 +4,16 @@
  * @since 2.0.0
  */
 import { Effect, Inspectable } from "effect"
+import { ParseError } from "effect/ParseResult"
 import { Pipeable, pipeArguments } from "effect/Pipeable"
 import * as S from "effect/Schema"
 import { ZkgmInstruction } from "./index.js"
 import * as internal from "./internal/call.js"
 import { Hex } from "./schema/hex.js"
 import * as Ucs03 from "./Ucs03.js"
+import type * as Ucs03Ng from "./Ucs03Ng.js"
 import * as Ucs05 from "./Ucs05.js"
+import type * as ZkgmWasm from "./ZkgmWasm.js"
 
 /**
  * @category type ids
@@ -107,3 +110,8 @@ export const encode = (self: Call) =>
       ],
     })
   })
+
+export const encodeNg: (
+  self: Call,
+) => Effect.Effect<Ucs03Ng.TokenOrder, ParseError | ZkgmWasm.WasmError, ZkgmWasm.ZkgmWasm> =
+  internal.encodeNg
