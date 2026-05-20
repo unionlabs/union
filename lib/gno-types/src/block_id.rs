@@ -31,7 +31,7 @@ impl BlockId {
 impl fmt::Display for BlockId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(hash) = self.hash {
-            // NOTE: The orginal Go implementation uses upper case hex (%X)
+            // NOTE: The original Go implementation uses upper case hex (%X)
             write!(f, "{}", hash.as_encoding::<HexUnprefixed>())?;
         }
 

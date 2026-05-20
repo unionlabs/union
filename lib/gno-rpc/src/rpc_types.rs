@@ -357,10 +357,10 @@ pub struct MemFile {
 pub struct MsgCall {
     /// the bech32 address of the caller
     pub caller: Bech32<H160>,
-    /// the amount of funds to be deposited to the package, if any ("<amount><denomination>")
+    /// the amount of funds to be deposited to the package, if any `("<amount><denomination>")`
     // TODO: Coin
     pub send: String,
-    /// the amount of funds to lock for the storage, if any ("<amount><denomination>")
+    /// the amount of funds to lock for the storage, if any `("<amount><denomination>")`
     // TODO: Coin
     pub max_deposit: String,
     /// the gno package path
@@ -380,7 +380,7 @@ pub struct MsgSend {
     pub from_address: Bech32<H160>,
     /// the bech32 address of the fund receiver
     pub to_address: Bech32<H160>,
-    /// the denomination and amount of fund sent ("<amount><denomination>")
+    /// the denomination and amount of fund sent `("<amount><denomination>")`
     // TODO: Coin
     pub amount: String,
 }

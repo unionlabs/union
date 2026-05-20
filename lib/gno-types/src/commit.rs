@@ -78,7 +78,7 @@ impl Commit {
     ///
     /// The height is memoized in the original Go implementation: <https://github.com/gnolang/gno/blob/db1e3ec26c613fd5d119c4466b32c2c0806b2e5c/tm2/pkg/bft/types/block.go#L487>
     ///
-    /// The value returned from this function is only sound after this commit has been validated by [`Self::valiate_basic`].
+    /// The value returned from this function is only sound after this commit has been validated by [`Self::validate_basic`].
     pub fn height(&self) -> BoundedI64<0> {
         self.precommits
             .first()
@@ -90,7 +90,7 @@ impl Commit {
     ///
     /// The round is memoized in the original Go implementation: <https://github.com/gnolang/gno/blob/db1e3ec26c613fd5d119c4466b32c2c0806b2e5c/tm2/pkg/bft/types/block.go#L487>
     ///
-    /// The value returned from this function is only sound after this commit has been validated by [`Self::valiate_basic`].
+    /// The value returned from this function is only sound after this commit has been validated by [`Self::validate_basic`].
     pub fn round(&self) -> BoundedI32<-1> {
         self.precommits
             .first()

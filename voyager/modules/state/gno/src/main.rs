@@ -372,7 +372,7 @@ impl Module {
                 "query": query.to_string(),
             }))?
             .ok_or(RpcError::fatal_from_message(
-                "no value returned from a sucessful qeval query",
+                "no value returned from a successful qeval query",
             ))?;
 
         let response = String::from_utf8(value.into())

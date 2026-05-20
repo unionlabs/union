@@ -24,7 +24,7 @@ protos                         = { workspace = true, features = ["ibc+core+commi
 reconnecting-jsonrpc-ws-client = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde-utils                    = { workspace = true }
-serde_json                     = "1.0.140"
+serde_json                     = { workspace = true }
 thiserror                      = { workspace = true }
 tracing                        = { workspace = true }
 unionlabs                      = { workspace = true }

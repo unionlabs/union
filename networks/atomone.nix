@@ -3,6 +3,7 @@
   perSystem =
     {
       pkgs,
+      pkgsGoUnstable,
       self',
       crane,
       system,
@@ -12,11 +13,11 @@
     }:
     {
       packages = {
-        atomoned = pkgs.pkgsStatic.buildGo123Module (
+        atomoned = pkgsGoUnstable.pkgsStatic.buildGo126Module (
           {
             name = "atomoned";
             src = inputs.atomone;
-            vendorHash = "sha256-m1pH6cCWu88P3fSLzEQxkgCtGVzizyNDcJBu7QnoBYU=";
+            vendorHash = "sha256-twJxXNZWMOQLS+81RWddxou4zn3Lk+WEWMXoCysln54=";
             doCheck = false;
             doInstallCheck = false;
             meta.mainProgram = "atomoned";
@@ -26,8 +27,10 @@
               "netgo"
               # "muslc"
             ];
-            CGO_ENABLED = 0;
-            env.GOWORK = "off";
+            env = {
+              GOWORK = "off";
+              CGO_ENABLED = 0;
+            };
           }
           // (
             if pkgs.stdenv.isLinux then

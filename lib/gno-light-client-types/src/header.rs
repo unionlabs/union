@@ -18,9 +18,8 @@ pub struct Header {
 #[cfg(test)]
 mod tests {
     use gno_types::{BlockId, Commit, PartSetHeader, PublicKey, SignedMsgType, Validator, Vote};
-    use hex_literal::hex;
     use unionlabs::{
-        encoding::{Bincode, DecodeAs, Json},
+        encoding::{Bincode, Json},
         google::protobuf::timestamp::Timestamp,
         primitives::{Bech32, H160, H256},
         test_utils::assert_codec_iso,

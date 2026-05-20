@@ -29,7 +29,7 @@ impl fmt::Display for PartSetHeader {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}:", self.total)?;
         if let Some(hash) = self.hash {
-            // NOTE: The orginal Go implementation uses upper case hex (%X)
+            // NOTE: The original Go implementation uses upper case hex (%X)
             write!(f, "{}", hash.as_encoding::<HexUnprefixed>())?;
         }
         Ok(())
