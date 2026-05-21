@@ -36,5 +36,5 @@ pub struct TmStorageUnlockEvent {
     pub bytes_delta: String,
     pub fee_refund: String,
     pub pkg_path: String,
-    pub refund_witheld: bool,
+    pub refund_withheld: bool,
 }

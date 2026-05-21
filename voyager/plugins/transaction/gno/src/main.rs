@@ -170,10 +170,12 @@ impl TransactionPluginServer for Module {
                     RpcError::retryable_from_message("empty response when fetching account")
                 })?;
 
+            debug!("raw balance: {}", account.base_account.coins);
+
             let balance = account
                 .base_account
                 .coins
-                .strip_prefix("ugnot")
+                .strip_suffix("ugnot")
                 .ok_or_else(|| {
                     RpcError::retryable_from_message("invalid coins when fetching balance")
                 })?;
