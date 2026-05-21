@@ -10,15 +10,16 @@ use ibc_union_spec::{
     event::{
         ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
         ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-        ConnectionOpenTry, CounterpartyChannelMetadata, CreateClient, PacketMetadata, PacketSend,
-        UpdateClient,
+        ConnectionOpenTry, CounterpartyChannelMetadata, CreateClient, PacketMetadata, PacketRecv,
+        PacketSend, UpdateClient, WriteAck,
     },
     path::BatchPacketsPath,
+    query::PacketByHash,
 };
 use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use tracing::{debug, info, instrument, trace, warn};
+use tracing::{debug, error, info, instrument, trace, warn};
 use unionlabs::{ibc::core::client::height::Height, never::Never, primitives::H256};
 use voyager_sdk::{
     ExtensionsExt, VoyagerClient,
@@ -1095,180 +1096,206 @@ impl Module {
             //         event,
             //     )))
             // }
-            // IbcEvent::PacketRecv {
-            //     maker: _,
-            //     maker_msg,
-            //     channel_id,
-            //     packet_hash,
-            // } => {
-            //     let destination_channel = voyager_client
-            //         .query_ibc_state(
-            //             self.chain_id.clone(),
-            //             QueryHeight::Specific(height),
-            //             ibc_union_spec::path::ChannelPath { channel_id },
-            //         )
-            //         .await?;
+            IbcEvent::PacketRecv {
+                packet_hash,
+                packet_data,
+                source_channel_id,
+                source_connection_id,
+                source_connection_client_id,
+                destination_channel_id,
+                destination_channel_version,
+                destination_connection_id,
+                destination_connection_client_id,
+                timeout_timestamp,
+                maker_msg,
+            } => {
+                let destination_channel = voyager_client
+                    .query_ibc_state(
+                        self.chain_id.clone(),
+                        QueryHeight::Specific(height),
+                        ibc_union_spec::path::ChannelPath {
+                            channel_id: destination_channel_id,
+                        },
+                    )
+                    .await?;
 
-            //     let destination_connection = voyager_client
-            //         .query_ibc_state(
-            //             self.chain_id.clone(),
-            //             QueryHeight::Specific(height),
-            //             ibc_union_spec::path::ConnectionPath {
-            //                 connection_id: destination_channel.connection_id,
-            //             },
-            //         )
-            //         .await?;
+                let destination_connection = voyager_client
+                    .query_ibc_state(
+                        self.chain_id.clone(),
+                        QueryHeight::Specific(height),
+                        ibc_union_spec::path::ConnectionPath {
+                            connection_id: destination_channel.connection_id,
+                        },
+                    )
+                    .await?;
 
-            //     let client_info = voyager_client
-            //         .client_info::<IbcUnion>(
-            //             self.chain_id.clone(),
-            //             destination_connection.client_id,
-            //         )
-            //         .await?;
+                let client_info = voyager_client
+                    .client_info::<IbcUnion>(
+                        self.chain_id.clone(),
+                        destination_connection.client_id,
+                    )
+                    .await?;
 
-            //     let client_state_meta = voyager_client
-            //         .client_state_meta::<IbcUnion>(
-            //             self.chain_id.clone(),
-            //             height.into(),
-            //             destination_connection.client_id,
-            //         )
-            //         .await?;
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
+                        self.chain_id.clone(),
+                        height.into(),
+                        destination_connection.client_id,
+                    )
+                    .await?;
 
-            //     let packet = voyager_client
-            //         .query(
-            //             client_state_meta.counterparty_chain_id.clone(),
-            //             PacketByHash {
-            //                 channel_id: destination_channel.counterparty_channel_id.unwrap(),
-            //                 packet_hash,
-            //             },
-            //         )
-            //         .await?
-            //         .packet;
+                let packet = voyager_client
+                    .query(
+                        client_state_meta.counterparty_chain_id.clone(),
+                        PacketByHash {
+                            channel_id: destination_channel
+                                .counterparty_channel_id
+                                .expect("must be set"),
+                            packet_hash,
+                        },
+                    )
+                    .await?
+                    .packet;
 
-            //     let event = PacketRecv {
-            //         packet_data: packet.data,
-            //         packet: PacketMetadata {
-            //             source_channel: CounterpartyChannelMetadata {
-            //                 channel_id: packet.source_channel_id,
-            //                 connection: ConnectionMetadata {
-            //                     client_id: destination_connection.counterparty_client_id,
-            //                     connection_id: destination_connection
-            //                         .counterparty_connection_id
-            //                         .unwrap(),
-            //                 },
-            //             },
-            //             destination_channel: ChannelMetadata {
-            //                 channel_id: packet.destination_channel_id,
-            //                 version: destination_channel.version.clone(),
-            //                 connection: ConnectionMetadata {
-            //                     client_id: destination_connection.client_id,
-            //                     connection_id: destination_channel.connection_id,
-            //                 },
-            //             },
-            //             timeout_timestamp: packet.timeout_timestamp,
-            //         },
-            //         maker_msg: maker_msg.into_encoding(),
-            //     }
-            //     .into();
+                let event = PacketRecv {
+                    packet_data: packet.data,
+                    packet: PacketMetadata {
+                        source_channel: CounterpartyChannelMetadata {
+                            channel_id: packet.source_channel_id,
+                            connection: ConnectionMetadata {
+                                client_id: destination_connection.counterparty_client_id,
+                                connection_id: destination_connection
+                                    .counterparty_connection_id
+                                    .expect("must be set"),
+                            },
+                        },
+                        destination_channel: ChannelMetadata {
+                            channel_id: packet.destination_channel_id,
+                            version: destination_channel.version.clone(),
+                            connection: ConnectionMetadata {
+                                client_id: destination_connection.client_id,
+                                connection_id: destination_channel.connection_id,
+                            },
+                        },
+                        timeout_timestamp: packet.timeout_timestamp,
+                    },
+                    maker_msg: maker_msg.into_encoding(),
+                }
+                .into();
 
-            //     ibc_union_spec::log_event(&event, &self.chain_id);
+                ibc_union_spec::log_event(&event, &self.chain_id);
 
-            //     Ok(data(ChainEvent::new::<IbcUnion>(
-            //         self.chain_id.clone(),
-            //         client_info,
-            //         client_state_meta.counterparty_chain_id,
-            //         tx_hash,
-            //         provable_height,
-            //         event,
-            //     )))
-            // }
-            // IbcEvent::WriteAck {
-            //     acknowledgement,
-            //     channel_id,
-            //     packet_hash,
-            // } => {
-            //     let destination_channel = voyager_client
-            //         .query_ibc_state(
-            //             self.chain_id.clone(),
-            //             QueryHeight::Specific(height),
-            //             ibc_union_spec::path::ChannelPath { channel_id },
-            //         )
-            //         .await?;
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
+                    client_info,
+                    client_state_meta.counterparty_chain_id,
+                    tx_hash,
+                    provable_height,
+                    event,
+                )))
+            }
+            IbcEvent::WriteAck {
+                packet_hash,
+                packet_data,
+                source_channel_id,
+                source_connection_id,
+                source_connection_client_id,
+                destination_channel_id,
+                destination_channel_version,
+                destination_connection_id,
+                destination_connection_client_id,
+                timeout_timestamp,
+                acknowledgement,
+            } => {
+                let destination_channel = voyager_client
+                    .query_ibc_state(
+                        self.chain_id.clone(),
+                        QueryHeight::Specific(height),
+                        ibc_union_spec::path::ChannelPath {
+                            channel_id: destination_channel_id,
+                        },
+                    )
+                    .await?;
 
-            //     let destination_connection = voyager_client
-            //         .query_ibc_state(
-            //             self.chain_id.clone(),
-            //             QueryHeight::Specific(height),
-            //             ibc_union_spec::path::ConnectionPath {
-            //                 connection_id: destination_channel.connection_id,
-            //             },
-            //         )
-            //         .await?;
+                let destination_connection = voyager_client
+                    .query_ibc_state(
+                        self.chain_id.clone(),
+                        QueryHeight::Specific(height),
+                        ibc_union_spec::path::ConnectionPath {
+                            connection_id: destination_channel.connection_id,
+                        },
+                    )
+                    .await?;
 
-            //     let client_info = voyager_client
-            //         .client_info::<IbcUnion>(
-            //             self.chain_id.clone(),
-            //             destination_connection.client_id,
-            //         )
-            //         .await?;
+                let client_info = voyager_client
+                    .client_info::<IbcUnion>(
+                        self.chain_id.clone(),
+                        destination_connection.client_id,
+                    )
+                    .await?;
 
-            //     let client_state_meta = voyager_client
-            //         .client_state_meta::<IbcUnion>(
-            //             self.chain_id.clone(),
-            //             height.into(),
-            //             destination_connection.client_id,
-            //         )
-            //         .await?;
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
+                        self.chain_id.clone(),
+                        height.into(),
+                        destination_connection.client_id,
+                    )
+                    .await?;
 
-            //     let packet = voyager_client
-            //         .query(
-            //             client_state_meta.counterparty_chain_id.clone(),
-            //             PacketByHash {
-            //                 channel_id: destination_channel.counterparty_channel_id.unwrap(),
-            //                 packet_hash,
-            //             },
-            //         )
-            //         .await?
-            //         .packet;
+                let packet = voyager_client
+                    .query(
+                        client_state_meta.counterparty_chain_id.clone(),
+                        PacketByHash {
+                            channel_id: destination_channel
+                                .counterparty_channel_id
+                                .expect("must be set"),
+                            packet_hash,
+                        },
+                    )
+                    .await?
+                    .packet;
 
-            //     let event = WriteAck {
-            //         packet_data: packet.data,
-            //         packet: PacketMetadata {
-            //             source_channel: CounterpartyChannelMetadata {
-            //                 channel_id: packet.source_channel_id,
-            //                 connection: ConnectionMetadata {
-            //                     client_id: destination_connection.counterparty_client_id,
-            //                     connection_id: destination_connection
-            //                         .counterparty_connection_id
-            //                         .unwrap(),
-            //                 },
-            //             },
-            //             destination_channel: ChannelMetadata {
-            //                 channel_id: packet.destination_channel_id,
-            //                 version: destination_channel.version.clone(),
-            //                 connection: ConnectionMetadata {
-            //                     client_id: destination_connection.client_id,
-            //                     connection_id: destination_channel.connection_id,
-            //                 },
-            //             },
-            //             timeout_timestamp: packet.timeout_timestamp,
-            //         },
-            //         acknowledgement: acknowledgement.into_encoding(),
-            //     }
-            //     .into();
+                let event = WriteAck {
+                    packet_data: packet.data,
+                    packet: PacketMetadata {
+                        source_channel: CounterpartyChannelMetadata {
+                            channel_id: packet.source_channel_id,
+                            connection: ConnectionMetadata {
+                                client_id: destination_connection.counterparty_client_id,
+                                connection_id: destination_connection
+                                    .counterparty_connection_id
+                                    .expect("must be set"),
+                            },
+                        },
+                        destination_channel: ChannelMetadata {
+                            channel_id: packet.destination_channel_id,
+                            version: destination_channel.version.clone(),
+                            connection: ConnectionMetadata {
+                                client_id: destination_connection.client_id,
+                                connection_id: destination_channel.connection_id,
+                            },
+                        },
+                        timeout_timestamp: packet.timeout_timestamp,
+                    },
+                    acknowledgement: acknowledgement.into_encoding(),
+                }
+                .into();
 
-            //     ibc_union_spec::log_event(&event, &self.chain_id);
+                ibc_union_spec::log_event(&event, &self.chain_id);
 
-            //     Ok(data(ChainEvent::new::<IbcUnion>(
-            //         self.chain_id.clone(),
-            //         client_info,
-            //         client_state_meta.counterparty_chain_id,
-            //         tx_hash,
-            //         provable_height,
-            //         event,
-            //     )))
-            // }
-            _ => todo!(),
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
+                    client_info,
+                    client_state_meta.counterparty_chain_id,
+                    tx_hash,
+                    provable_height,
+                    event,
+                )))
+            }
+            _ => {
+                error!("unimplemented: {event:?}");
+                Ok(noop())
+            }
         }
     }
 }

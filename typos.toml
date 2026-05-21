@@ -1523,7 +1523,6 @@ files.extend-exclude = [
 "wght"                    = "wght"
 "whistleblower"           = "whistleblower"
 "withdrawability"         = "withdrawability"
-"witheld"                 = "witheld"
 "woestijne"               = "woestijne"
 "workdir"                 = "workdir"
 "wormchain"               = "wormchain"
