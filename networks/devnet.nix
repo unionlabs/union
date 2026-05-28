@@ -49,6 +49,9 @@
             slashing.params = {
               signed_blocks_window = "10";
             };
+            feemarket.params = {
+              distribute_fees = true;
+            };
           };
         };
         portIncrease = 0;
