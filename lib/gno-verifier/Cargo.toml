@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [package.metadata.crane]
-test-include = ["lib/tendermint-verifier/src/test/"]
+test-include = ["lib/gno-verifier/testdata/"]
 
 [dependencies]
 gno-light-client-types = { workspace = true, features = ["serde"] }
