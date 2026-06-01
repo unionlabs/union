@@ -1098,15 +1098,15 @@ impl Module {
             // }
             IbcEvent::PacketRecv {
                 packet_hash,
-                packet_data,
-                source_channel_id,
-                source_connection_id,
-                source_connection_client_id,
+                packet_data: _,
+                source_channel_id: _,
+                source_connection_id: _,
+                source_connection_client_id: _,
                 destination_channel_id,
-                destination_channel_version,
-                destination_connection_id,
-                destination_connection_client_id,
-                timeout_timestamp,
+                destination_channel_version: _,
+                destination_connection_id: _,
+                destination_connection_client_id: _,
+                timeout_timestamp: _,
                 maker_msg,
             } => {
                 let destination_channel = voyager_client
@@ -1196,15 +1196,15 @@ impl Module {
             }
             IbcEvent::WriteAck {
                 packet_hash,
-                packet_data,
-                source_channel_id,
-                source_connection_id,
-                source_connection_client_id,
+                packet_data: _,
+                source_channel_id: _,
+                source_connection_id: _,
+                source_connection_client_id: _,
                 destination_channel_id,
-                destination_channel_version,
-                destination_connection_id,
-                destination_connection_client_id,
-                timeout_timestamp,
+                destination_channel_version: _,
+                destination_connection_id: _,
+                destination_connection_client_id: _,
+                timeout_timestamp: _,
                 acknowledgement,
             } => {
                 let destination_channel = voyager_client
