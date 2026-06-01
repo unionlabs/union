@@ -24,6 +24,9 @@ members = [
   "lib/cometbft-rpc",
   "lib/cosmos-client",
   "lib/cometbft-types",
+  "lib/gno-rpc",
+  "lib/gno-types",
+  "lib/gno-client",
 
   "lib/concurrent-keyring",
   "lib/gnark-key-parser",
@@ -60,6 +63,7 @@ members = [
   "lib/evm-storage-verifier",
   "lib/parlia-verifier",
   "lib/tendermint-verifier",
+  "lib/gno-verifier",
 
   "lib/base-light-client-types",
   "lib/bob-light-client-types",
@@ -69,6 +73,7 @@ members = [
   "lib/tendermint-light-client-types",
   "lib/ethereum-light-client-types",
   "lib/ethermint-light-client-types",
+  "lib/gno-light-client-types",
   "lib/movement-light-client-types",
   "lib/parlia-light-client-types",
   "lib/trusted-mpt-light-client-types",
@@ -89,6 +94,7 @@ members = [
   "cosmwasm/lightclient/cometbls",
   "cosmwasm/lightclient/ethereum",
   "cosmwasm/lightclient/ethermint",
+  "cosmwasm/lightclient/gno",
   "cosmwasm/lightclient/tendermint",
   # "cosmwasm/lightclient/movement",
   "cosmwasm/lightclient/parlia",
@@ -122,12 +128,14 @@ members = [
 
   "voyager/modules/state/cosmwasm",
   "voyager/modules/state/evm",
+  "voyager/modules/state/gno",
   # "voyager/modules/state/movement",
   "voyager/modules/state/sui",
 
   "voyager/modules/proof/attested",
   "voyager/modules/proof/cosmwasm",
   "voyager/modules/proof/ethermint",
+  "voyager/modules/proof/gno",
   "voyager/modules/proof/evm-mpt",
   "voyager/modules/proof/parlia",
   # "voyager/modules/proof/movement",
@@ -138,6 +146,7 @@ members = [
   "voyager/modules/client/arbitrum",
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",
+  "voyager/modules/client/gno",
   # "voyager/modules/client/movement",
   "voyager/modules/client/parlia",
   "voyager/modules/client/tendermint",
@@ -155,6 +164,7 @@ members = [
   "voyager/modules/client-bootstrap/arbitrum",
   "voyager/modules/client-bootstrap/cometbls",
   "voyager/modules/client-bootstrap/ethereum",
+  "voyager/modules/client-bootstrap/gno",
   # "voyager/modules/client-bootstrap/movement",
   "voyager/modules/client-bootstrap/parlia",
   "voyager/modules/client-bootstrap/tendermint",
@@ -173,6 +183,7 @@ members = [
   "voyager/modules/finality/berachain",
   "voyager/modules/finality/cometbls",
   "voyager/modules/finality/ethereum",
+  "voyager/modules/finality/gno",
   # "voyager/modules/finality/movement",
   "voyager/modules/finality/parlia",
   "voyager/modules/finality/tendermint",
@@ -186,6 +197,7 @@ members = [
   "voyager/plugins/client-update/berachain",
   "voyager/plugins/client-update/cometbls",
   "voyager/plugins/client-update/ethereum",
+  "voyager/plugins/client-update/gno",
   # "voyager/plugins/client-update/movement",
   "voyager/plugins/client-update/parlia",
   "voyager/plugins/client-update/tendermint",
@@ -200,11 +212,13 @@ members = [
 
   "voyager/plugins/event-source/cosmwasm",
   "voyager/plugins/event-source/evm",
+  "voyager/plugins/event-source/gno",
   # "voyager/plugins/event-source/movement",
   "voyager/plugins/event-source/sui",
   "voyager/plugins/event-source/starknet",
 
   "voyager/plugins/transaction/cosmos",
+  "voyager/plugins/transaction/gno",
   "voyager/plugins/transaction/evm",
   # "voyager/plugins/transaction/aptos",
   "voyager/plugins/transaction/sui",
@@ -386,6 +400,11 @@ frissitheto                               = { path = "lib/frissitheto", default-
 galois-rpc                                = { path = "lib/galois-rpc", default-features = false }
 gnark-key-parser                          = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                                = { path = "lib/gnark-mimc", default-features = false }
+gno-client                                = { path = "lib/gno-client", default-features = false }
+gno-light-client-types                    = { path = "lib/gno-light-client-types", default-features = false }
+gno-rpc                                   = { path = "lib/gno-rpc", default-features = false }
+gno-types                                 = { path = "lib/gno-types", default-features = false }
+gno-verifier                              = { path = "lib/gno-verifier", default-features = false }
 ibc-classic-spec                          = { path = "lib/ibc-classic-spec", default-features = false }
 ibc-solidity                              = { path = "lib/ibc-solidity", default-features = false }
 ibc-union                                 = { path = "cosmwasm/core", default-features = false }
@@ -446,6 +465,7 @@ unionlabs-primitives                      = { path = "lib/unionlabs-primitives",
 upgradable                                = { path = "cosmwasm/upgradable", default-features = false }
 voyager-client                            = { path = "lib/voyager-client", default-features = false }
 voyager-core                              = { path = "lib/voyager-core", default-features = false }
+voyager-event-source-plugin-gno           = { path = "voyager/plugins/event-source/gno", default-features = false }
 voyager-message                           = { path = "lib/voyager-message", default-features = false }
 voyager-plugin                            = { path = "lib/voyager-plugin", default-features = false }
 voyager-plugin-protocol                   = { path = "lib/voyager-plugin-protocol", default-features = false }

@@ -12,7 +12,7 @@ use unionlabs::{
     encoding::{Bincode, DecodeAs, EthAbi},
     ethereum::{ibc_commitment_key, keccak256},
     ibc::core::commitment::{merkle_proof::MerkleProof, merkle_root::MerkleRoot},
-    primitives::H256,
+    primitives::{Bytes, H256, encoding::HexUnprefixed},
 };
 
 use crate::errors::Error;
@@ -46,10 +46,7 @@ impl IbcClient for StateLensIcs23Ics23LightClient {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         let client_state = ctx.read_self_client_state()?;
 
-        let (store_key, key_prefix_storage, evm_commitment) = match client_state.extra {
-            Extra::V1(extra_v1) => (extra_v1.store_key, extra_v1.key_prefix_storage, false),
-            Extra::V2(extra_v2) => (extra_v2.store_key, extra_v2.key_prefix_storage, true),
-        };
+        let (store_key, key_prefix_storage, preprocess_path) = extract_extra(&client_state.extra);
 
         verify_membership(
             &key,
@@ -58,9 +55,9 @@ impl IbcClient for StateLensIcs23Ics23LightClient {
             },
             &storage_proof,
             &value,
-            &store_key,
-            &key_prefix_storage,
-            evm_commitment,
+            store_key,
+            key_prefix_storage,
+            preprocess_path,
         )?;
 
         Ok(())
@@ -75,10 +72,7 @@ impl IbcClient for StateLensIcs23Ics23LightClient {
         let consensus_state = ctx.read_self_consensus_state(height)?;
         let client_state = ctx.read_self_client_state()?;
 
-        let (store_key, key_prefix_storage, evm_commitment) = match client_state.extra {
-            Extra::V1(extra_v1) => (extra_v1.store_key, extra_v1.key_prefix_storage, false),
-            Extra::V2(extra_v2) => (extra_v2.store_key, extra_v2.key_prefix_storage, true),
-        };
+        let (store_key, key_prefix_storage, preprocess_path) = extract_extra(&client_state.extra);
 
         verify_non_membership(
             &key,
@@ -86,9 +80,9 @@ impl IbcClient for StateLensIcs23Ics23LightClient {
                 hash: consensus_state.app_hash.into_encoding(),
             },
             &storage_proof,
-            &store_key,
-            &key_prefix_storage,
-            evm_commitment,
+            store_key,
+            key_prefix_storage,
+            preprocess_path,
         )?;
 
         Ok(())
@@ -183,6 +177,39 @@ impl IbcClient for StateLensIcs23Ics23LightClient {
     }
 }
 
+#[allow(clippy::type_complexity)]
+fn extract_extra(extra: &Extra) -> (&Bytes, &Bytes, fn(H256) -> Vec<u8>) {
+    match extra {
+        Extra::V1(extra_v1) => (
+            &extra_v1.store_key,
+            &extra_v1.key_prefix_storage,
+            preprocess_path_v1 as fn(_) -> _,
+        ),
+        Extra::V2(extra_v2) => (
+            &extra_v2.store_key,
+            &extra_v2.key_prefix_storage,
+            preprocess_path_v2 as fn(_) -> _,
+        ),
+        Extra::V3(extra_v3) => (
+            &extra_v3.store_key,
+            &extra_v3.key_prefix_storage,
+            preprocess_path_v3 as fn(_) -> _,
+        ),
+    }
+}
+
+fn preprocess_path_v1(key: H256) -> Vec<u8> {
+    key.into()
+}
+
+fn preprocess_path_v2(key: H256) -> Vec<u8> {
+    ibc_commitment_key(key).to_be_bytes().into()
+}
+
+fn preprocess_path_v3(key: H256) -> Vec<u8> {
+    key.as_encoding::<HexUnprefixed>().to_string().into_bytes()
+}
+
 /// Verify a membership proof.
 ///
 /// The proof is verified with the standard [`SDK_SPECS`]. The iavl proof is verified against
@@ -200,18 +227,14 @@ pub fn verify_membership(
     value: &[u8],
     store_key: &[u8],
     key_prefix_storage: &[u8],
-    evm_commitment: bool,
+    preprocess_path: fn(H256) -> Vec<u8>,
 ) -> Result<(), Error> {
     let path = H256::try_from(key).map_err(|_| Error::InvalidCommitmentKeyLength(key.into()))?;
 
     let value =
         <H256>::try_from(value).map_err(|_| Error::InvalidCommitmentValueLength(value.into()))?;
 
-    let key = if evm_commitment {
-        ibc_commitment_key(path).to_be_bytes().into()
-    } else {
-        path
-    };
+    let key = preprocess_path(path);
 
     ics23::ibc_api::verify_membership(
         proof,
@@ -246,15 +269,11 @@ pub fn verify_non_membership(
     proof: &MerkleProof,
     store_key: &[u8],
     key_prefix_storage: &[u8],
-    evm_commitment: bool,
+    preprocess_path: fn(H256) -> Vec<u8>,
 ) -> Result<(), Error> {
     let path = H256::try_from(key).map_err(|_| Error::InvalidCommitmentKeyLength(key.into()))?;
 
-    let key = if evm_commitment {
-        ibc_commitment_key(path).to_be_bytes().into()
-    } else {
-        path
-    };
+    let key = preprocess_path(path);
 
     ics23::ibc_api::verify_non_membership(
         proof,
@@ -298,7 +317,7 @@ mod tests {
             &hex!("9a0d99845a85f92af893fcc4f90db7fb76d262dfc144459c6e90642c0e4bb437"),
             b"evm",
             &hex!("03" "ee4ea8d358473f0fcebf0329feed95d56e8c04d7"),
-            true,
+            preprocess_path_v2,
         )
         .unwrap();
     }
@@ -319,7 +338,7 @@ mod tests {
             &serde_json::from_str(proof_json).unwrap(),
             b"evm",
             &hex!("03" "ee4ea8d358473f0fcebf0329feed95d56e8c04d7"),
-            true,
+            preprocess_path_v2,
         )
         .unwrap();
     }
@@ -341,7 +360,7 @@ mod tests {
             &hex!("39a3a3ca84492f26081c5f63092415bdf673f68317b3a0cb0bc58d5010f901e1"),
             b"wasm",
             &hex!("03" "bcf923a74d8b8914e0235d28c6b59e62b547af5ce366c6aafcb006bce7bb3ba4" "00"),
-            false,
+            preprocess_path_v1,
         )
         .unwrap();
     }
@@ -362,7 +381,7 @@ mod tests {
             &serde_json::from_str(proof_json).unwrap(),
             b"wasm",
             &hex!("03" "bcf923a74d8b8914e0235d28c6b59e62b547af5ce366c6aafcb006bce7bb3ba4" "00"),
-            false,
+            preprocess_path_v1,
         )
         .unwrap();
     }

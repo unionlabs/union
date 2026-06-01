@@ -47,13 +47,12 @@ pub struct Block {
     #[prost(message, optional, tag = "1")]
     pub header: ::core::option::Option<Header>,
     #[prost(message, optional, tag = "2")]
-    pub data: ::core::option::Option<super::super::super::super::cometbft::types::v1::Data>,
+    pub data: ::core::option::Option<super::super::super::super::tendermint::types::Data>,
     #[prost(message, optional, tag = "3")]
     pub evidence:
-        ::core::option::Option<super::super::super::super::cometbft::types::v1::EvidenceList>,
+        ::core::option::Option<super::super::super::super::tendermint::types::EvidenceList>,
     #[prost(message, optional, tag = "4")]
-    pub last_commit:
-        ::core::option::Option<super::super::super::super::cometbft::types::v1::Commit>,
+    pub last_commit: ::core::option::Option<super::super::super::super::tendermint::types::Commit>,
 }
 /// GetBlockByHeightRequest is the request type for the Query/GetBlockByHeight RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -67,10 +66,10 @@ pub struct GetBlockByHeightRequest {
 #[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct GetBlockByHeightResponse {
     #[prost(message, optional, tag = "1")]
-    pub block_id: ::core::option::Option<super::super::super::super::cometbft::types::v1::BlockId>,
+    pub block_id: ::core::option::Option<super::super::super::super::tendermint::types::BlockId>,
     /// Deprecated: please use `sdk_block` instead
     #[prost(message, optional, tag = "2")]
-    pub block: ::core::option::Option<super::super::super::super::cometbft::types::v1::Block>,
+    pub block: ::core::option::Option<super::super::super::super::tendermint::types::Block>,
     /// Since: cosmos-sdk 0.47
     #[prost(message, optional, tag = "3")]
     pub sdk_block: ::core::option::Option<Block>,
@@ -84,10 +83,10 @@ pub struct GetLatestBlockRequest {}
 #[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct GetLatestBlockResponse {
     #[prost(message, optional, tag = "1")]
-    pub block_id: ::core::option::Option<super::super::super::super::cometbft::types::v1::BlockId>,
+    pub block_id: ::core::option::Option<super::super::super::super::tendermint::types::BlockId>,
     /// Deprecated: please use `sdk_block` instead
     #[prost(message, optional, tag = "2")]
-    pub block: ::core::option::Option<super::super::super::super::cometbft::types::v1::Block>,
+    pub block: ::core::option::Option<super::super::super::super::tendermint::types::Block>,
     /// Since: cosmos-sdk 0.47
     #[prost(message, optional, tag = "3")]
     pub sdk_block: ::core::option::Option<Block>,
@@ -122,7 +121,7 @@ pub struct GetNodeInfoRequest {}
 pub struct GetNodeInfoResponse {
     #[prost(message, optional, tag = "1")]
     pub default_node_info:
-        ::core::option::Option<super::super::super::super::cometbft::p2p::v1::DefaultNodeInfo>,
+        ::core::option::Option<super::super::super::super::tendermint::p2p::DefaultNodeInfo>,
     #[prost(message, optional, tag = "2")]
     pub application_version: ::core::option::Option<VersionInfo>,
 }
@@ -165,8 +164,7 @@ pub struct GetValidatorSetByHeightResponse {
 pub struct Header {
     /// basic block info
     #[prost(message, optional, tag = "1")]
-    pub version:
-        ::core::option::Option<super::super::super::super::cometbft::version::v1::Consensus>,
+    pub version: ::core::option::Option<super::super::super::super::tendermint::version::Consensus>,
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(int64, tag = "3")]
@@ -176,7 +174,7 @@ pub struct Header {
     /// prev block info
     #[prost(message, optional, tag = "5")]
     pub last_block_id:
-        ::core::option::Option<super::super::super::super::cometbft::types::v1::BlockId>,
+        ::core::option::Option<super::super::super::super::tendermint::types::BlockId>,
     /// hashes of block data
     ///
     /// commit from validators from the last block

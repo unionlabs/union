@@ -178,7 +178,7 @@ pub struct GenesisState {
 #[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct HistoricalInfo {
     #[prost(message, optional, tag = "1")]
-    pub header: ::core::option::Option<super::super::super::cometbft::types::v1::Header>,
+    pub header: ::core::option::Option<super::super::super::tendermint::types::Header>,
     #[prost(message, repeated, tag = "2")]
     pub valset: ::prost::alloc::vec::Vec<Validator>,
 }
@@ -409,12 +409,6 @@ pub struct Params {
     /// min_commission_rate is the chain-wide minimum commission rate that a validator can charge their delegators
     #[prost(string, tag = "6")]
     pub min_commission_rate: ::prost::alloc::string::String,
-    /// The percentage of validators that can be jailed before forcing a validator set rotation
-    #[prost(uint32, tag = "7")]
-    pub jailed_validator_threshold: u32,
-    /// The number of blocks between regular validator set rotations (between epochs)
-    #[prost(int64, tag = "8")]
-    pub epoch_length: i64,
 }
 /// Pool is used for tracking bonded and not-bonded token supply of the bond
 /// denomination.
@@ -901,7 +895,7 @@ pub struct Validator {
 #[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ValidatorUpdates {
     #[prost(message, repeated, tag = "1")]
-    pub updates: ::prost::alloc::vec::Vec<super::super::super::cometbft::abci::v1::ValidatorUpdate>,
+    pub updates: ::prost::alloc::vec::Vec<super::super::super::tendermint::abci::ValidatorUpdate>,
 }
 impl ::prost::Name for Commission {
     const NAME: &'static str = "Commission";

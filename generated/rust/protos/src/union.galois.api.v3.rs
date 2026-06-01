@@ -8,6 +8,15 @@ pub struct CommitmentStats {
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct ExportVkRequest {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct ExportVkResponse {
+    #[prost(message, optional, tag = "1")]
+    pub vk: ::core::option::Option<super::super::super::super::google::protobuf::Struct>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct FrElement {
     #[prost(bytes = "vec", tag = "1")]
     pub value: ::prost::alloc::vec::Vec<u8>,
@@ -169,6 +178,20 @@ pub mod poll_response {
 }
 impl ::prost::Name for CommitmentStats {
     const NAME: &'static str = "CommitmentStats";
+    const PACKAGE: &'static str = "union.galois.api.v3";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.galois.api.v3.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for ExportVkRequest {
+    const NAME: &'static str = "ExportVkRequest";
+    const PACKAGE: &'static str = "union.galois.api.v3";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.galois.api.v3.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for ExportVkResponse {
+    const NAME: &'static str = "ExportVkResponse";
     const PACKAGE: &'static str = "union.galois.api.v3";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("union.galois.api.v3.{}", Self::NAME)

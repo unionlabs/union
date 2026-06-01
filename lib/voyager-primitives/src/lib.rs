@@ -52,14 +52,17 @@ impl IbcInterface {
     /// Light clients running on Union's cosmwasm IBC implementation.
     pub const IBC_COSMWASM: &'static str = "ibc-cosmwasm";
 
-    /// Light clients running on Union's Aptos Move IBC implementation
+    /// Light clients running on Union's Aptos Move IBC implementation.
     pub const IBC_MOVE_APTOS: &'static str = "ibc-move/aptos";
 
-    /// Light clients running on Union's Sui Move IBC implementation
+    /// Light clients running on Union's Sui Move IBC implementation.
     pub const IBC_MOVE_SUI: &'static str = "ibc-move/sui";
 
-    /// Light clients running on Union's Cairo IBC implementation
+    /// Light clients running on Union's Cairo IBC implementation.
     pub const IBC_CAIRO: &'static str = "ibc-cairo";
+
+    /// Light clients running on the Gno IBC implementation.
+    pub const IBC_GNO: &'static str = "ibc-gno";
 
     // lots more to come - near, fuel - stay tuned
 }
@@ -181,6 +184,13 @@ impl ClientType {
     /// An attested client.
     pub const ATTESTED: &'static str = "attested";
 
+    /// A client tracking [Gno] (Tendermint2) consensus, through the [`10-gno`]
+    /// light client specification.
+    ///
+    /// [Gno]: https://github.com/gnolang/gno/tree/master/tm2
+    /// [`10-gno`]: https://github.com/atomone-hub/atomone/tree/main/modules/10-gno
+    pub const GNO: &'static str = "gno";
+
     // lots more to come - near, linea, polygon - stay tuned
 }
 
@@ -260,6 +270,11 @@ impl ConsensusType {
 
     /// A client tracking a chain via committed proofs on an intermediary chain.
     pub const PROOF_LENS: &'static str = "proof-lens";
+
+    /// [Gno] (Tendermint2) consensus.
+    ///
+    /// [Gno]: https://github.com/gnolang/gno/tree/master/tm2
+    pub const GNO: &'static str = "gno";
 
     // lots more to come - near, linea, polygon - stay tuned
 }

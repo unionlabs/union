@@ -63,10 +63,6 @@ pub struct PositionalArgDescriptor {
     /// field.
     #[prost(bool, tag = "2")]
     pub varargs: bool,
-    /// optional makes the last positional parameter optional.
-    /// Note: It is mutually exclusive with varargs.
-    #[prost(bool, tag = "3")]
-    pub optional: bool,
 }
 /// RpcCommandOptions specifies options for commands generated from protobuf
 /// rpc methods.
@@ -141,14 +137,6 @@ pub struct ServiceCommandDescriptor {
     #[prost(map = "string, message", tag = "3")]
     pub sub_commands:
         ::std::collections::HashMap<::prost::alloc::string::String, ServiceCommandDescriptor>,
-    /// enhance_custom_commands specifies whether to skip the service when generating commands, if a custom command already
-    /// exists, or enhance the existing command. If set to true, the custom command will be enhanced with the services from
-    /// gRPC. otherwise when a custom command exists, no commands will be generated for the service.
-    #[prost(bool, tag = "4")]
-    pub enhance_custom_command: bool,
-    /// short is an optional parameter used to override the short description of the auto generated command.
-    #[prost(string, tag = "5")]
-    pub short: ::prost::alloc::string::String,
 }
 impl ::prost::Name for AppOptionsRequest {
     const NAME: &'static str = "AppOptionsRequest";

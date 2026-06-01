@@ -1,0 +1,34 @@
+[package]
+name    = "gno-light-client-types"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy     = { workspace = true, features = ["sol-types"], optional = true }
+bincode   = { workspace = true, features = ["alloc", "derive"], optional = true }
+gno-types = { workspace = true }
+protos    = { workspace = true, features = ["ibc+lightclients+gno+v1"], optional = true }
+serde     = { workspace = true, features = ["derive"], optional = true }
+thiserror = { workspace = true }
+unionlabs = { workspace = true }
+
+[features]
+bincode = ["dep:bincode", "unionlabs/bincode", "gno-types/bincode"]
+# default = ["proto"]
+ethabi = ["unionlabs/ethabi", "dep:alloy"]
+# proto   = ["unionlabs/proto", "gno-types/proto", "dep:protos"]
+serde = ["dep:serde"]
+
+[dev-dependencies]
+gno-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde"] }
+hex-literal            = { workspace = true }
+ics23                  = { workspace = true }
+unionlabs              = { workspace = true, features = ["test-utils"] }

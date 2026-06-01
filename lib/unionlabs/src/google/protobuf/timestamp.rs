@@ -118,6 +118,13 @@ impl<'de> Deserialize<'de> for Timestamp {
 }
 
 impl Timestamp {
+    pub const ZERO: Self = Self {
+        seconds: result_unwrap!(
+            <BoundedI64<TIMESTAMP_SECONDS_MIN, TIMESTAMP_SECONDS_MAX>>::new_const(0)
+        ),
+        nanos: result_unwrap!(<BoundedI32<0, NANOS_MAX>>::new_const(0)),
+    };
+
     #[must_use]
     pub fn try_from_unix_nanos(nanos: i128) -> Option<Self> {
         Some(Self {
@@ -151,6 +158,7 @@ impl Timestamp {
     #[allow(clippy::missing_panics_doc)] // panics are impossible
     #[must_use]
     pub fn as_unix_nanos(&self) -> u64 {
+        // TODO: Not actually infallible lol
         u64::try_from(self.seconds.inner()).expect("impossible") * 1_000_000_000
             + u64::try_from(self.nanos.inner()).expect("impossible")
     }
@@ -290,7 +298,7 @@ impl FromStr for Timestamp {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum TryFromCosmwasmTimestampError {
     #[error("invalid seconds")]
     Seconds(#[source] BoundedIntError<i64>),

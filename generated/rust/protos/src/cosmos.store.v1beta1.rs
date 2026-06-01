@@ -5,13 +5,14 @@
 pub struct BlockMetadata {
     #[prost(message, optional, tag = "6")]
     pub response_commit:
-        ::core::option::Option<super::super::super::cometbft::abci::v1::CommitResponse>,
+        ::core::option::Option<super::super::super::tendermint::abci::ResponseCommit>,
     #[prost(message, optional, tag = "7")]
     pub request_finalize_block:
-        ::core::option::Option<super::super::super::cometbft::abci::v1::FinalizeBlockRequest>,
+        ::core::option::Option<super::super::super::tendermint::abci::RequestFinalizeBlock>,
+    /// TODO: should we renumber this?
     #[prost(message, optional, tag = "8")]
     pub response_finalize_block:
-        ::core::option::Option<super::super::super::cometbft::abci::v1::FinalizeBlockResponse>,
+        ::core::option::Option<super::super::super::tendermint::abci::ResponseFinalizeBlock>,
 }
 /// CommitID defines the commitment information when a specific store is
 /// committed.

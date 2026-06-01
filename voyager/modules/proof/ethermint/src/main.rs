@@ -1,7 +1,5 @@
 #![warn(clippy::unwrap_used)]
 
-use std::num::ParseIntError;
-
 use ibc_union_spec::{IbcUnion, path::StorePath};
 use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
@@ -71,14 +69,6 @@ impl ProofModule<IbcUnion> for Module {
             key_prefix_storage: config.key_prefix_storage,
         })
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-#[error("unable to parse chain id: expected format `<chain>-<revision-number>`, found `{found}`")]
-pub struct ChainIdParseError {
-    found: String,
-    #[source]
-    source: Option<ParseIntError>,
 }
 
 #[async_trait]

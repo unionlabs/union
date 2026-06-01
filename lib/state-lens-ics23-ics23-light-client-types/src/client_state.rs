@@ -12,6 +12,7 @@ pub type ClientState = state_lens_light_client_types::ClientState<Extra>;
 pub enum Extra {
     V1(ExtraV1),
     V2(ExtraV2),
+    V3(ExtraV3),
 }
 
 #[derive(Debug, Clone, PartialEq, AsTuple)]
@@ -39,6 +40,19 @@ pub struct ExtraV2 {
     pub key_prefix_storage: Bytes,
 }
 
+/// The same structure as [`ExtraV1`], except the commitment key is calculated by lowercase-hex-encoding the key before appending it to the `key_prefix_storage`.
+#[derive(Debug, Clone, PartialEq, AsTuple)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct ExtraV3 {
+    pub store_key: Bytes,
+    pub key_prefix_storage: Bytes,
+}
+
 #[cfg(feature = "ethabi")]
 mod ethabi {
     use alloy::{dyn_abi::abi::token::PackedSeqToken, primitives::U256, sol_types::SolValue};
@@ -49,6 +63,7 @@ mod ethabi {
 
     const V1_VERSION_TAG: U256 = U256::ONE;
     const V2_VERSION_TAG: U256 = V1_VERSION_TAG.checked_add(U256::ONE).unwrap();
+    const V3_VERSION_TAG: U256 = V2_VERSION_TAG.checked_add(U256::ONE).unwrap();
 
     impl DecodeExtra for Extra {
         fn decode_extra(
@@ -83,6 +98,19 @@ mod ethabi {
                         key_prefix_storage: key_prefix_storage.into(),
                     }))
                 }
+                V3_VERSION_TAG => {
+                    let (store_key, key_prefix_storage) = <(
+                        alloy::primitives::Bytes,
+                        alloy::primitives::Bytes,
+                    )>::abi_decode_params_validate(
+                        state.as_slice()
+                    )?;
+
+                    Ok(Extra::V3(ExtraV3 {
+                        store_key: store_key.into(),
+                        key_prefix_storage: key_prefix_storage.into(),
+                    }))
+                }
                 _ => Err(alloy::dyn_abi::Error::custom(format!(
                     "invalid version: {version}"
                 ))),
@@ -107,6 +135,15 @@ mod ethabi {
                     (
                         versioned_extra_v2.store_key,
                         versioned_extra_v2.key_prefix_storage,
+                    )
+                        .abi_encode_params()
+                        .into(),
+                ],
+                Extra::V3(versioned_extra_v3) => vec![
+                    V3_VERSION_TAG.into(),
+                    (
+                        versioned_extra_v3.store_key,
+                        versioned_extra_v3.key_prefix_storage,
                     )
                         .abi_encode_params()
                         .into(),

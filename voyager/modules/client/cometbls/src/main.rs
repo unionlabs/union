@@ -7,7 +7,7 @@ use serde_json::Value;
 use tracing::{debug, instrument};
 use unionlabs::{
     ErrorReporter,
-    encoding::{Bcs, Bincode, DecodeAs, EncodeAs, EthAbi},
+    encoding::{Bcs, Bincode, DecodeAs, EncodeAs, EthAbi, Proto},
     ibc::core::commitment::merkle_proof::MerkleProof,
     primitives::Bytes,
 };
@@ -34,6 +34,7 @@ pub enum SupportedIbcInterface {
     IbcMoveSui,
     IbcCosmwasm,
     IbcCairo,
+    IbcGno,
 }
 
 impl TryFrom<String> for SupportedIbcInterface {
@@ -47,6 +48,7 @@ impl TryFrom<String> for SupportedIbcInterface {
             IbcInterface::IBC_MOVE_SUI => Ok(SupportedIbcInterface::IbcMoveSui),
             IbcInterface::IBC_COSMWASM => Ok(SupportedIbcInterface::IbcCosmwasm),
             IbcInterface::IBC_CAIRO => Ok(SupportedIbcInterface::IbcCairo),
+            IbcInterface::IBC_GNO => Ok(SupportedIbcInterface::IbcGno),
             _ => Err(format!("unsupported IBC interface: `{value}`")),
         }
     }
@@ -61,6 +63,7 @@ impl SupportedIbcInterface {
             // SupportedIbcInterface::IbcGoV8_08Wasm => IbcInterface::IBC_GO_V8_08_WASM,
             SupportedIbcInterface::IbcCosmwasm => IbcInterface::IBC_COSMWASM,
             SupportedIbcInterface::IbcCairo => IbcInterface::IBC_CAIRO,
+            SupportedIbcInterface::IbcGno => IbcInterface::IBC_GNO,
         }
     }
 }
@@ -101,6 +104,7 @@ impl Module {
             | SupportedIbcInterface::IbcMoveAptos
             | SupportedIbcInterface::IbcMoveSui
             | SupportedIbcInterface::IbcCairo
+            | SupportedIbcInterface::IbcGno
             | SupportedIbcInterface::IbcCosmwasm => {
                 ConsensusState::decode_as::<EthAbi>(consensus_state)
                     .map_err(RpcError::fatal("unable to decode consensus state"))
@@ -120,6 +124,8 @@ impl Module {
                 .map_err(RpcError::fatal("unable to decode client state")),
             // TODO(aeryz): cairo serde
             SupportedIbcInterface::IbcCairo => ClientState::decode_as::<Bincode>(client_state)
+                .map_err(RpcError::fatal("unable to decode client state")),
+            SupportedIbcInterface::IbcGno => ClientState::decode_as::<EthAbi>(client_state)
                 .map_err(RpcError::fatal("unable to decode client state")),
         }
     }
@@ -199,6 +205,11 @@ impl ClientModuleServer for Module {
 
                     Ok(cs.encode_as::<Bincode>().into())
                 }
+                SupportedIbcInterface::IbcGno => {
+                    ensure_null(metadata)?;
+
+                    Ok(cs.encode_as::<EthAbi>().into())
+                }
             })
     }
 
@@ -215,6 +226,7 @@ impl ClientModuleServer for Module {
                 | SupportedIbcInterface::IbcMoveAptos
                 | SupportedIbcInterface::IbcMoveSui
                 | SupportedIbcInterface::IbcCairo
+                | SupportedIbcInterface::IbcGno
                 | SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<EthAbi>().into(),
             })
     }
@@ -236,6 +248,7 @@ impl ClientModuleServer for Module {
                     Ok(header.encode_as::<Bcs>().into())
                 }
                 SupportedIbcInterface::IbcCairo => Ok(header.encode_as::<Bincode>().into()),
+                SupportedIbcInterface::IbcGno => Ok(header.encode_as::<EthAbi>().into()),
             })
     }
 
@@ -251,6 +264,8 @@ impl ClientModuleServer for Module {
             SupportedIbcInterface::IbcCosmwasm => Header::decode_as::<Bcs>(&header)
                 .map_err(RpcError::fatal("unable to decode header")),
             SupportedIbcInterface::IbcCairo => Header::decode_as::<Bincode>(&header)
+                .map_err(RpcError::fatal("unable to decode header")),
+            SupportedIbcInterface::IbcGno => Header::decode_as::<EthAbi>(&header)
                 .map_err(RpcError::fatal("unable to decode header")),
         }
         .map(into_value)
@@ -274,6 +289,7 @@ impl ClientModuleServer for Module {
                     )
                 }
                 SupportedIbcInterface::IbcCairo => proof.encode_as::<Bincode>(),
+                SupportedIbcInterface::IbcGno => proof.encode_as::<Proto>(),
             })
             .map(Into::into)
     }
@@ -287,10 +303,13 @@ impl ClientModuleServer for Module {
             }
             SupportedIbcInterface::IbcCosmwasm => MerkleProof::decode_as::<Bincode>(&proof)
                 .map(into_value)
-                .map_err(RpcError::fatal("unable to proof")),
+                .map_err(RpcError::fatal("unable to decode proof")),
             SupportedIbcInterface::IbcCairo => MerkleProof::decode_as::<Bincode>(&proof)
                 .map(into_value)
-                .map_err(RpcError::fatal("unable to proof")),
+                .map_err(RpcError::fatal("unable to decode proof")),
+            SupportedIbcInterface::IbcGno => MerkleProof::decode_as::<Proto>(&proof)
+                .map(into_value)
+                .map_err(RpcError::fatal("unable to decode proof")),
         }
     }
 }

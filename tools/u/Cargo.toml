@@ -28,6 +28,7 @@ create3            = { workspace = true }
 deployments        = { workspace = true }
 derive_more        = { workspace = true }
 embed-commit       = { workspace = true }
+gno-rpc            = { workspace = true }
 hex                = { workspace = true }
 ibc-classic-spec   = { workspace = true }
 ibc-union-spec     = { workspace = true, features = ["serde"] }
@@ -57,6 +58,7 @@ bob-light-client-types                    = { workspace = true, features = ["ser
 cometbls-light-client-types               = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 ethereum-light-client-types               = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 ethermint-light-client-types              = { workspace = true, features = ["serde", "bincode"] }
+gno-light-client-types                    = { workspace = true, features = ["serde", "bincode"] }
 movement-light-client-types               = { workspace = true, features = ["serde", "bincode", "ethabi"] }
 parlia-light-client-types                 = { workspace = true, features = ["bincode", "serde", "ethabi"] }
 state-lens-ics23-ics23-light-client-types = { workspace = true, features = ["serde", "ethabi"] }

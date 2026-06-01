@@ -328,8 +328,8 @@ impl TokenOrderV2 {
 )]
 pub enum TokenOrderV2Metadata {
     Initialize(TokenMetadata),
-    Escrow(Bytes),
-    Unescrow(Bytes),
+    Escrow { metadata: Bytes },
+    Unescrow { metadata: Bytes },
     Solve(SolverMetadata),
 }
 
@@ -371,8 +371,12 @@ impl TokenOrderV2Metadata {
                     },
                 )?,
             ),
-            TOKEN_ORDER_KIND_ESCROW => Ok(Self::Escrow(metadata.as_ref().into())),
-            TOKEN_ORDER_KIND_UNESCROW => Ok(Self::Unescrow(metadata.as_ref().into())),
+            TOKEN_ORDER_KIND_ESCROW => Ok(Self::Escrow {
+                metadata: metadata.as_ref().into(),
+            }),
+            TOKEN_ORDER_KIND_UNESCROW => Ok(Self::Unescrow {
+                metadata: metadata.as_ref().into(),
+            }),
             TOKEN_ORDER_KIND_SOLVE => Ok(
                 ucs03_zkgm::com::SolverMetadata::abi_decode_params_validate(metadata.as_ref())
                     .map(
@@ -406,8 +410,10 @@ impl TokenOrderV2Metadata {
                 )
                 .into(),
             ),
-            TokenOrderV2Metadata::Escrow(bytes) => (TOKEN_ORDER_KIND_ESCROW, bytes),
-            TokenOrderV2Metadata::Unescrow(bytes) => (TOKEN_ORDER_KIND_UNESCROW, bytes),
+            TokenOrderV2Metadata::Escrow { metadata: bytes } => (TOKEN_ORDER_KIND_ESCROW, bytes),
+            TokenOrderV2Metadata::Unescrow { metadata: bytes } => {
+                (TOKEN_ORDER_KIND_UNESCROW, bytes)
+            }
             TokenOrderV2Metadata::Solve(SolverMetadata {
                 solver_address,
                 metadata,

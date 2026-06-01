@@ -160,6 +160,6 @@ impl ClientModuleServer for Module {
     async fn decode_proof(&self, _: &Extensions, proof: Bytes) -> RpcResult<Value> {
         StorageProof::decode_as::<Bincode>(&proof)
             .map(into_value)
-            .map_err(RpcError::fatal("unable to proof"))
+            .map_err(RpcError::fatal("unable to decode proof"))
     }
 }

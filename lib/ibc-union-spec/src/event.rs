@@ -186,6 +186,7 @@ pub struct ChannelOpenInit {
     pub port_id: Bytes,
     pub channel_id: ChannelId,
     pub counterparty_port_id: Bytes,
+    // TODO: This doesn't actually include the connection id
     pub connection: Connection,
     pub version: String,
 }
@@ -202,6 +203,7 @@ pub struct ChannelOpenTry {
     pub channel_id: ChannelId,
     pub counterparty_port_id: Bytes,
     pub counterparty_channel_id: ChannelId,
+    // TODO: This doesn't actually include the connection id
     pub connection: Connection,
     pub version: String,
 }
@@ -218,6 +220,7 @@ pub struct ChannelOpenAck {
     pub channel_id: ChannelId,
     pub counterparty_port_id: Bytes,
     pub counterparty_channel_id: ChannelId,
+    // TODO: This doesn't actually include the connection id
     pub connection: Connection,
     pub version: String,
 }
@@ -234,6 +237,7 @@ pub struct ChannelOpenConfirm {
     pub channel_id: ChannelId,
     pub counterparty_port_id: Bytes,
     pub counterparty_channel_id: ChannelId,
+    // TODO: This doesn't actually include the connection id
     pub connection: Connection,
     pub version: String,
 }

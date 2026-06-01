@@ -31,6 +31,7 @@ async fn main() {
 pub enum SupportedIbcInterface {
     IbcSolidity,
     IbcCosmwasm,
+    IbcGno,
 }
 
 impl TryFrom<String> for SupportedIbcInterface {
@@ -41,6 +42,7 @@ impl TryFrom<String> for SupportedIbcInterface {
         match &*value {
             IbcInterface::IBC_SOLIDITY => Ok(SupportedIbcInterface::IbcSolidity),
             IbcInterface::IBC_COSMWASM => Ok(SupportedIbcInterface::IbcCosmwasm),
+            IbcInterface::IBC_GNO => Ok(SupportedIbcInterface::IbcGno),
             _ => Err(format!("unsupported IBC interface: `{value}`")),
         }
     }
@@ -51,6 +53,7 @@ impl SupportedIbcInterface {
         match self {
             SupportedIbcInterface::IbcSolidity => IbcInterface::IBC_SOLIDITY,
             SupportedIbcInterface::IbcCosmwasm => IbcInterface::IBC_COSMWASM,
+            SupportedIbcInterface::IbcGno => IbcInterface::IBC_GNO,
         }
     }
 }
@@ -95,6 +98,8 @@ impl Module {
             SupportedIbcInterface::IbcSolidity => ClientState::decode_as::<EthAbi>(client_state)
                 .map_err(RpcError::fatal("unable to decode client state")),
             SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Bincode>(client_state)
+                .map_err(RpcError::fatal("unable to decode client state")),
+            SupportedIbcInterface::IbcGno => ClientState::decode_as::<EthAbi>(client_state)
                 .map_err(RpcError::fatal("unable to decode client state")),
         }
     }
@@ -163,6 +168,7 @@ impl ClientModuleServer for Module {
             .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcSolidity => cs.encode_as::<EthAbi>().into(),
                 SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>().into(),
+                SupportedIbcInterface::IbcGno => cs.encode_as::<EthAbi>().into(),
             })
     }
 
@@ -185,6 +191,7 @@ impl ClientModuleServer for Module {
             .map(|header| match self.ibc_interface {
                 SupportedIbcInterface::IbcSolidity => header.encode_as::<EthAbi>(),
                 SupportedIbcInterface::IbcCosmwasm => header.encode_as::<Bincode>(),
+                SupportedIbcInterface::IbcGno => header.encode_as::<EthAbi>(),
             })
             .map(Into::into)
     }
@@ -195,6 +202,8 @@ impl ClientModuleServer for Module {
             SupportedIbcInterface::IbcSolidity => Header::decode_as::<EthAbi>(&header)
                 .map_err(RpcError::fatal("unable to decode header")),
             SupportedIbcInterface::IbcCosmwasm => Header::decode_as::<Bincode>(&header)
+                .map_err(RpcError::fatal("unable to decode header")),
+            SupportedIbcInterface::IbcGno => Header::decode_as::<EthAbi>(&header)
                 .map_err(RpcError::fatal("unable to decode header")),
         }
         .map(into_value)
@@ -209,6 +218,7 @@ impl ClientModuleServer for Module {
             // the solidity MPT verifier expects the proof RLP nodes to be serialized in sequence
             SupportedIbcInterface::IbcSolidity => Ok(proof.proof.into_iter().flatten().collect()),
             SupportedIbcInterface::IbcCosmwasm => Ok(proof.encode_as::<Bincode>().into()),
+            SupportedIbcInterface::IbcGno => Ok(proof.encode_as::<Bincode>().into()),
         }
     }
 
@@ -220,6 +230,9 @@ impl ClientModuleServer for Module {
                 Err(RpcError::fatal_from_message("currently unsupported"))
             }
             SupportedIbcInterface::IbcCosmwasm => StorageProof::decode_as::<Bincode>(&proof)
+                .map(into_value)
+                .map_err(RpcError::fatal("unable to decode proof")),
+            SupportedIbcInterface::IbcGno => StorageProof::decode_as::<Bincode>(&proof)
                 .map(into_value)
                 .map_err(RpcError::fatal("unable to decode proof")),
         }

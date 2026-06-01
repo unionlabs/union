@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::{BoundedI64, BoundedU8},
     google::protobuf::timestamp::Timestamp,
+    ibc::core::commitment::merkle_proof::MerkleProof,
     primitives::{
         Bytes, H160, H256,
         encoding::{Base64, HexUnprefixed},
@@ -152,6 +153,35 @@ pub struct ValidatorsPagination {
 #[serde(deny_unknown_fields)]
 pub struct AbciQueryResponse {
     pub response: QueryResponse,
+}
+
+impl AbciQueryResponse {
+    pub fn decode_merkle_proof(&self) -> Result<MerkleProof, DecodeMerkleProofError> {
+        Ok(MerkleProof::try_from(protos::ibc::core::commitment::v1::MerkleProof {
+            proofs: self
+                .response
+                .proof_ops
+                .as_ref().ok_or(DecodeMerkleProofError::NoProof)?
+                .ops
+                .iter()
+                .map(|op| {
+                    <protos::cosmos::ics23::v1::CommitmentProof as unionlabs::prost::Message>::decode(
+                        &*op.data,
+                    )
+                })
+                .collect::<Result<Vec<_>, _>>()?,
+        })?)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+pub enum DecodeMerkleProofError {
+    #[error("abci query response does not contain a proof")]
+    NoProof,
+    #[error(transparent)]
+    CommitmentProofDecode(#[from] unionlabs::prost::DecodeError),
+    #[error(transparent)]
+    InvalidProof(#[from] unionlabs::ibc::core::commitment::merkle_proof::TryFromMerkleProofError),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

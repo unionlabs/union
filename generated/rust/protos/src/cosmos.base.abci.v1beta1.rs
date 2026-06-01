@@ -59,7 +59,7 @@ pub struct Result {
     /// Events contains a slice of Event objects that were emitted during message
     /// or handler execution.
     #[prost(message, repeated, tag = "3")]
-    pub events: ::prost::alloc::vec::Vec<super::super::super::super::cometbft::abci::v1::Event>,
+    pub events: ::prost::alloc::vec::Vec<super::super::super::super::tendermint::abci::Event>,
     /// msg_responses contains the Msg handler responses type packed in Anys.
     ///
     /// Since: cosmos-sdk 0.46
@@ -87,7 +87,7 @@ pub struct SearchBlocksResult {
     pub limit: i64,
     /// List of blocks in current page
     #[prost(message, repeated, tag = "6")]
-    pub blocks: ::prost::alloc::vec::Vec<super::super::super::super::cometbft::types::v1::Block>,
+    pub blocks: ::prost::alloc::vec::Vec<super::super::super::super::tendermint::types::Block>,
 }
 /// SearchTxsResult defines a structure for querying txs pageable
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -198,7 +198,7 @@ pub struct TxResponse {
     ///
     /// Since: cosmos-sdk 0.42.11, 0.44.5, 0.45
     #[prost(message, repeated, tag = "13")]
-    pub events: ::prost::alloc::vec::Vec<super::super::super::super::cometbft::abci::v1::Event>,
+    pub events: ::prost::alloc::vec::Vec<super::super::super::super::tendermint::abci::Event>,
 }
 impl ::prost::Name for AbciMessageLog {
     const NAME: &'static str = "ABCIMessageLog";

@@ -162,7 +162,7 @@ impl RpcError {
 
     pub fn with_message(self, message: impl fmt::Display) -> Self {
         RpcError {
-            message: format!("{message}: {}", message),
+            message: format!("{message}: {}", self.message),
             ..self
         }
     }
