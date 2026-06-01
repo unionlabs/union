@@ -642,14 +642,12 @@
         "rust-overlay": "rust-overlay",
         "solc": "solc",
         "stargaze": "stargaze",
-        "stride": "stride",
         "treefmt-nix": "treefmt-nix",
         "v1_0_0": "v1_0_0",
         "v1_1_0": "v1_1_0",
         "v1_2_0": "v1_2_0",
         "v1_3_0": "v1_3_0",
-        "wasmd": "wasmd",
-        "xion": "xion"
+        "wasmd": "wasmd"
       }
     },
     "rust-overlay": {
@@ -721,23 +719,6 @@
         "submodules": true,
         "type": "git",
         "url": "https://github.com/public-awesome/stargaze"
-      }
-    },
-    "stride": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1741891612,
-        "narHash": "sha256-Yqroqe7/iJPgWz51KtjzL0W7RfPussB4w0cvB5VmGfg=",
-        "owner": "Stride-Labs",
-        "repo": "stride",
-        "rev": "32341bf0b668ac00c90bc9d4e02ba95a675d9277",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Stride-Labs",
-        "ref": "v26.0.3",
-        "repo": "stride",
-        "type": "github"
       }
     },
     "systems": {
@@ -827,11 +808,11 @@
     "v1_3_0": {
       "flake": false,
       "locked": {
-        "lastModified": 1779123517,
-        "narHash": "sha256-EfRq8OjwWXKY4aS/m+PhpBBDm/6Q9eAlq8ilI3e4m44=",
+        "lastModified": 1779135328,
+        "narHash": "sha256-Ug84ogPBOK4QK0CwWbLzu4x2L1R7CgkQ1efEY/ujLXM=",
         "owner": "unionlabs",
         "repo": "union",
-        "rev": "c0e616f4a2bc5bc63d7b10fa315c89a2e11a438e",
+        "rev": "41b9a4038509d9618a12c3d166d96f543985677f",
         "type": "github"
       },
       "original": {
@@ -855,23 +836,6 @@
         "owner": "unionlabs",
         "repo": "wasmd",
         "rev": "913c24df4e0a7a3d791d27fc95313d559e9428b6",
-        "type": "github"
-      }
-    },
-    "xion": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1755817981,
-        "narHash": "sha256-QdaLYBE7qPwCqoBl7w9VCQMJy+jSw9A9BC6LDWqOLco=",
-        "owner": "burnt-labs",
-        "repo": "xion",
-        "rev": "d7130e5b588e0b6cb64164108aa9e4621fb4e310",
-        "type": "github"
-      },
-      "original": {
-        "owner": "burnt-labs",
-        "ref": "v21.0.0",
-        "repo": "xion",
         "type": "github"
       }
     }

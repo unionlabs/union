@@ -75,16 +75,8 @@
       url = "github:atomone-hub/atomone/main";
       flake = false;
     };
-    xion = {
-      url = "github:burnt-labs/xion/v21.0.0";
-      flake = false;
-    };
     babylon = {
       url = "github:babylonlabs-io/babylon/v1.0.0-rc.7";
-      flake = false;
-    };
-    stride = {
-      url = "github:Stride-Labs/stride/v26.0.3";
       flake = false;
     };
 
@@ -230,9 +222,7 @@
         ./networks/stargaze.nix
         ./networks/osmosis.nix
         ./networks/atomone.nix
-        ./networks/xion.nix
         ./networks/babylon.nix
-        ./networks/stride.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
         ./devnet-compose/devnet-compose.nix
