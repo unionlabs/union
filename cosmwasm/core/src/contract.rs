@@ -62,6 +62,9 @@ use crate::{
     },
 };
 
+#[cfg(not(feature = "library"))]
+::kimlik::set_id!("ibc-union");
+
 type ContractResult = Result<Response, ContractError>;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -578,10 +581,13 @@ pub mod version {
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
-    deps: DepsMut,
+    #[allow(unused_mut, reason = "used in cfg'd code")] mut deps: DepsMut,
     _env: Env,
     msg: UpgradeMsg<InitMsg, MigrateMsg>,
 ) -> Result<Response, ContractError> {
+    #[cfg(not(feature = "library"))]
+    kimlik::check_id(deps.branch())?;
+
     msg.run(deps, init, |_, _, version| match version {
         version::INIT => Err(StdError::generic_err("unsupported version: INIT").into()),
 

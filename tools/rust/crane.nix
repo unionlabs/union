@@ -1,8 +1,9 @@
 # cspell:ignore tomls
-{ inputs, ... }:
+{ inputs, self, ... }:
 {
   perSystem =
     args@{
+      system,
       pkgsUnstable,
       pkgs,
       rust,
@@ -641,10 +642,6 @@
               crateCargoToml
               pkgs
               lib
-              rust
-              craneLib
-              dbg
-              gitRev
               ;
           };
 
