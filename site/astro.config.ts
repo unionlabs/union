@@ -1,11 +1,12 @@
 import sitemap from "@astrojs/sitemap"
 import svelte from "@astrojs/svelte"
 import tailwind from "@astrojs/tailwind"
-import vercel from "@astrojs/vercel/serverless"
 import icon from "astro-icon"
 import { defineConfig } from "astro/config"
 import { loadEnv } from "vite"
 import { markdownConfiguration } from "./markdown.config.ts"
+
+import cloudflare from "@astrojs/cloudflare"
 
 const SITE_URL = "https://union.build"
 
@@ -23,9 +24,7 @@ export default defineConfig({
     contentIntellisense: true,
   },
   trailingSlash: "ignore",
-  adapter: vercel({
-    imageService: true,
-  }),
+  adapter: cloudflare({ imageService: "passthrough" }),
   image: {
     domains: [
       "cdn.contentful.com",

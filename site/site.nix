@@ -17,7 +17,7 @@ _: {
     {
       packages = {
         site = mkCi false (buildPnpmPackage {
-          hash = "sha256-WkDdok2luYp/q1s2cb4Aa7iWzKsifJ7HpRKMnf0pTG4=";
+          hash = "sha256-rjPSx+F3PNCi0tCiis3Lv0KCS8I6ubFzaWsJ+P2hmkw=";
           packageJsonPath = ./package.json;
           extraSrcs = pkgs.lib.fileset.unions [
             ./.
@@ -37,7 +37,8 @@ _: {
           '';
           installPhase = ''
             mkdir -p $out
-            cp -r ./site/.vercel/output/* $out
+            ls -la site
+            cp -r ./site/dist/* $out
           '';
           doDist = false;
         });
