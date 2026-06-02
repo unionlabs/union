@@ -23,5 +23,10 @@
     "label": "Build App",
     "command": "nix build .#app2 -L",
     "use_new_terminal": true
+  },
+  {
+    "label": "App Dev Server",
+    "command": "nix run .#app2-dev-server -L",
+    "use_new_terminal": true
   }
 ]
