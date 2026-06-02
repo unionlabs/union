@@ -63,9 +63,9 @@ module ibc::timeout_packet {
     use ibc::dispatcher;
     use ibc::helpers;
     use ibc::ibc;
+    use ibc::packet;
 
     public entry fun timeout_packet<T: key + store + drop>(
-        port_id: address,
         packet_source_channel: u32,
         packet_destination_channel: u32,
         packet_data: vector<u8>,
@@ -73,22 +73,19 @@ module ibc::timeout_packet {
         packet_timeout_timestamp: u64,
         proof: vector<u8>,
         proof_height: u64,
-        _next_sequence_recv: u64
+        relayer: address
     ) {
         let packet =
-            ibc::timeout_packet<T>(
-                port_id,
+            packet::new(
                 packet_source_channel,
                 packet_destination_channel,
                 packet_data,
                 packet_timeout_height,
-                packet_timeout_timestamp,
-                proof,
-                proof_height,
-                _next_sequence_recv
+                packet_timeout_timestamp
             );
+        ibc::timeout_packet(packet, proof, proof_height, relayer);
 
-        engine::dispatch<T>(helpers::pack_timeout_packet_params(packet, @ibc));
+        engine::dispatch<T>(helpers::pack_timeout_packet_params(packet, relayer));
 
         dispatcher::delete_storage<T>();
 

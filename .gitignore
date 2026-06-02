@@ -80,6 +80,7 @@ db.sqlite3*
 
 *.movement
 aptos/*/build
+aptos/*/\.*
 sui/*/build
 .tsup
 docs/generated
