@@ -220,14 +220,14 @@ _: {
       garaga =
         let
           pname = "garaga";
-          version = "6fb59ac369ab2bc4699e8ff7c09bdeee81cfcaca";
+          version = "34b0b0adb2eb08984c0b98d5a287c895321cdafa";
           # The following garaga fork include the changes to be able to generate proof calldata for cometbls
           src = pkgs.fetchFromGitHub {
             name = pname;
             owner = "aeryz";
             repo = pname;
             rev = version;
-            sha256 = "sha256-24CC53c6A9cozYWbTMpbnB/7wrcRq4Z9jDWzuG8Yf1k=";
+            sha256 = "sha256-LxnKj1NeBn/XQuf+KqASvNeiDbC8lcfZcrfatyCH9f0=";
           };
         in
         pyPkgs.buildPythonApplication {
