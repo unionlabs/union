@@ -281,7 +281,7 @@ const createFeeStore = () => {
     const applyRatioK = (a: BaseGasPrice): Writer.Writer<readonly string[][], BaseGasPrice> => {
       const ratio = BigDecimal.round(
         BigDecimal.unsafeDivide(BigDecimal.make(1n, 0), self.ratio),
-        { scale: 6, mode: "half-even" },
+        { scale: 6, mode: "from-zero" },
       )
       const result = pipe(
         BigDecimal.multiply(a, ratio),
