@@ -144,6 +144,7 @@ var (
 
 	// module account permissions
 	moduleAccPerms = []*authmodulev1.ModuleAccountPermission{
+		{Account: authtypes.FeeCollectorName},
 		{Account: distributiontypes.ModuleName},
 		{Account: minttypes.ModuleName, Permissions: []string{authtypes.Minter}},
 		{Account: stakingtypes.BondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
@@ -158,6 +159,7 @@ var (
 
 	// blocked account addresses
 	blockAccAddrs = []string{
+		authtypes.FeeCollectorName,
 		feemarkettypes.FeeCollectorName,
 		distributiontypes.ModuleName,
 		minttypes.ModuleName,
