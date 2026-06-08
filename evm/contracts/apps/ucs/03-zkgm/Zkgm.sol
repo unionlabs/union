@@ -862,7 +862,7 @@ contract UCS03Zkgm is
                 sourceChannelId: ibcPacket.sourceChannelId,
                 destinationChannelId: ibcPacket.destinationChannelId,
                 data: ZkgmLib.encodeCallCalldata(
-                    path, call.contractAddress, call.contractCalldata
+                    path, call.sender, call.contractCalldata
                 ),
                 timeoutHeight: ibcPacket.timeoutHeight,
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
