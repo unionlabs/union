@@ -116,7 +116,7 @@ _: {
           lightclients = [
             "gno"
             "ethereum"
-            # "sui"
+            "state-lens-ics23-mpt"
           ];
         }
         {

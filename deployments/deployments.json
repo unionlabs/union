@@ -1140,6 +1140,51 @@
       }
     }
   },
+  "union.union-devnet-1": {
+    "ibc_interface": "ibc-cosmwasm",
+    "deployer": "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2",
+    "contracts": {
+      "union1qql0eu4la8mnlpzxtafnvy7m7l5lg02hmkdy03xmfkd4c7rg0wmsxmdr9v": {
+        "name": "lightclients/state-lens/ics23/mpt",
+        "salt": "0x6c69676874636c69656e74732f73746174652d6c656e732f69637332332f6d7074",
+        "height": 66,
+        "code_id": 6
+      },
+      "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c": {
+        "name": "protocols/ucs03",
+        "salt": "0x70726f746f636f6c732f7563733033",
+        "height": 74,
+        "commit": "dirty",
+        "code_id": 10
+      },
+      "union1g8eayx25kmzmywzwq4uw44ftfpqxfz6qplnyutwqdzn92reavtmqltyh3e": {
+        "name": "manager",
+        "salt": "0x7b1f7c3b93ff643023d63bbbe182a179922ad85a2aa0e03ef50170b591a7b752",
+        "height": 9,
+        "commit": "d161d3c2a0ce464a0fc824202542be44ed60dc94",
+        "code_id": 2
+      },
+      "union1s4w3nlmkpy98cp7tqhz08uu3gtv77zj05yvp6nn7xfrepd4tlqjq8gatc8": {
+        "name": "lightclients/ethereum",
+        "salt": "0x6c69676874636c69656e74732f657468657265756d",
+        "height": 55,
+        "code_id": 4
+      },
+      "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t": {
+        "name": "core",
+        "salt": "0x6962632d69732d6261736564",
+        "height": 51,
+        "commit": "dirty",
+        "code_id": 3
+      },
+      "union1ln8z48cxjuly4gkwc2xh38r6qc27zx54cav0lnd2wz3a3cdcgp2sekqx6s": {
+        "name": "lightclients/gno",
+        "salt": "0x6c69676874636c69656e74732f676e6f",
+        "height": 61,
+        "code_id": 5
+      }
+    }
+  },
   "union.union-testnet-10": {
     "ibc_interface": "ibc-cosmwasm",
     "deployer": "union10c4yqddv6w7sphruvhxs5v0es8r9fcj5mpru7a",
