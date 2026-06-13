@@ -29,34 +29,31 @@
           meta,
           nextVersion ? "",
         }:
-        pkgs.linkFarm "union-bundle-${name}" (
-          [
-            {
-              name = "meta.json";
-              path = pkgs.writeText "meta.json" (builtins.toJSON meta);
-            }
-            {
-              name = "genesis.json";
-              path = genesis;
-            }
-            {
-              name = "unionvisor";
-              path = "${unionvisor.unionvisor}/bin/unionvisor";
-            }
-          ]
+        pkgs.runCommand "union-bundle-${name}" { } (
+          ''
+            mkdir "$out"
+
+            cp --no-preserve=mode ${pkgs.writeText "meta.json" (builtins.toJSON meta)} "$out/meta.json"
+            cp --no-preserve=mode ${genesis} "$out/genesis.json"
+            cp --no-preserve=mode ${unionvisor.unionvisor}/bin/unionvisor "$out/unionvisor"
+          ''
           # add all `versions` to the bundle
-          ++ map (version: {
-            name = "${meta.versions_directory}/${version}/${meta.binary_name}";
-            # Dynamically load the flake dependency to avoid having the full tree in the lock file.
-            path =
+          + (pkgs.lib.concatMapStringsSep "\n" (version: ''
+            mkdir -p "$out/${meta.versions_directory}/${version}"
+            cp --no-preserve=mode ${
+              # Dynamically load the flake dependency to avoid having the full tree in the lock file.
               pkgs.lib.getExe
-                (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond-release;
-          }) versions
+                (get-flake "${inputs."${swapDotsWithUnderscores version}"}").packages.${system}.uniond-release
+            } "$out/${meta.versions_directory}/${version}/${meta.binary_name}"
+          '') versions)
           # add `nextVersion` to the bundle if supplied
-          ++ pkgs.lib.lists.optional (nextVersion != "") {
-            name = "${meta.versions_directory}/${nextVersion}/${meta.binary_name}";
-            path = pkgs.lib.getExe self'.packages.uniond-release;
-          }
+          + (pkgs.lib.optionalString (nextVersion != "") ''
+            mkdir -p "$out/${meta.versions_directory}/${nextVersion}"
+            cp --no-preserve=mode ${pkgs.lib.getExe self'.packages.uniond-release} "$out/${meta.versions_directory}/${nextVersion}/${meta.binary_name}"
+          '')
+          + ''
+            chmod +x -R "$out/${meta.versions_directory}"
+          ''
         );
 
       mkUnionvisorImage =
