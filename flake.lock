@@ -808,11 +808,11 @@
     "v1_3_0": {
       "flake": false,
       "locked": {
-        "lastModified": 1779135328,
-        "narHash": "sha256-Ug84ogPBOK4QK0CwWbLzu4x2L1R7CgkQ1efEY/ujLXM=",
+        "lastModified": 1780957758,
+        "narHash": "sha256-r43ctMYbfDkcW2hs8BFsH1UObfdPjBQRU5jak+UuU3E=",
         "owner": "unionlabs",
         "repo": "union",
-        "rev": "41b9a4038509d9618a12c3d166d96f543985677f",
+        "rev": "d6b57d34c997fea4a88ecbfa374e09177faf3e13",
         "type": "github"
       },
       "original": {
