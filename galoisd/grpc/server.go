@@ -305,10 +305,10 @@ func (p *proverServer) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*gr
 	if len(req.UntrustedCommit.Validators) > lightclient.MaxVal {
 		return nil, fmt.Errorf("The circuit can handle a maximum of %d validators", lightclient.MaxVal)
 	}
-	if len(req.TrustedCommit.Signatures) > len(req.TrustedCommit.Signatures) {
+	if len(req.TrustedCommit.Signatures) > len(req.TrustedCommit.Validators) {
 		return nil, fmt.Errorf("More signatures than validators")
 	}
-	if len(req.UntrustedCommit.Signatures) > len(req.UntrustedCommit.Signatures) {
+	if len(req.UntrustedCommit.Signatures) > len(req.UntrustedCommit.Validators) {
 		return nil, fmt.Errorf("More signatures than validators")
 	}
 
