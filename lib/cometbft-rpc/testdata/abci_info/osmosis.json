@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": -1,
+  "result": {
+    "response": {
+      "data": "OsmosisApp",
+      "version": "31.0.2",
+      "last_block_height": "65371487",
+      "last_block_app_hash": "LvzSqfR5wce31ROXxYOF2ECvVczd9GjoUwi58g+EtZI="
+    }
+  }
+}

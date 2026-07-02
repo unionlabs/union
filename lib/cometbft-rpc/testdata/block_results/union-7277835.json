@@ -1,0 +1,2612 @@
+{
+  "jsonrpc": "2.0",
+  "id": -1,
+  "result": {
+    "height": "7277835",
+    "txs_results": [
+      {
+        "code": 0,
+        "data": "Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U=",
+        "log": "",
+        "info": "",
+        "gas_wanted": "378226",
+        "gas_used": "219747",
+        "events": [
+          {
+            "type": "coin_spent",
+            "attributes": [
+              {
+                "key": "spender",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "41604860000000au",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "coin_received",
+            "attributes": [
+              {
+                "key": "receiver",
+                "value": "union17xpfvakm2amg962yls6f84z3kell8c5l6wzg9v",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "41604860000000au",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "transfer",
+            "attributes": [
+              {
+                "key": "recipient",
+                "value": "union17xpfvakm2amg962yls6f84z3kell8c5l6wzg9v",
+                "index": true
+              },
+              {
+                "key": "sender",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "41604860000000au",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "attributes": [
+              {
+                "key": "sender",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "tx",
+            "attributes": [
+              {
+                "key": "fee",
+                "value": "41604860000000au",
+                "index": true
+              },
+              {
+                "key": "fee_payer",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "tx",
+            "attributes": [
+              {
+                "key": "acc_seq",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha/637",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "tx",
+            "attributes": [
+              {
+                "key": "signature",
+                "value": "BKtlL6FuXNOF0MEYGchRzKxJvWpss/lCUTwBIy+x6pAqGHEdwKFh/5YdVdG+MzxdnfigOd/wz5uzIPdlWALRKg==",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "coin_spent",
+            "attributes": [
+              {
+                "key": "spender",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "41604860000000au",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "coin_received",
+            "attributes": [
+              {
+                "key": "receiver",
+                "value": "union13pxn9n3qw79e03844rdadagmg0nshmwf5hd52g",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "41604860000000au",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "transfer",
+            "attributes": [
+              {
+                "key": "recipient",
+                "value": "union13pxn9n3qw79e03844rdadagmg0nshmwf5hd52g",
+                "index": true
+              },
+              {
+                "key": "sender",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "41604860000000au",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "attributes": [
+              {
+                "key": "sender",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "attributes": [
+              {
+                "key": "action",
+                "value": "/cosmos.staking.v1beta1.MsgDelegate",
+                "index": true
+              },
+              {
+                "key": "sender",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+                "index": true
+              },
+              {
+                "key": "module",
+                "value": "staking",
+                "index": true
+              },
+              {
+                "key": "msg_index",
+                "value": "0",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "coin_spent",
+            "attributes": [
+              {
+                "key": "spender",
+                "value": "union1jv65s3grqf6v6jl3dp4t6c9t9rk99cd8dg958w",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "141926566038964082au",
+                "index": true
+              },
+              {
+                "key": "msg_index",
+                "value": "0",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "coin_received",
+            "attributes": [
+              {
+                "key": "receiver",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "141926566038964082au",
+                "index": true
+              },
+              {
+                "key": "msg_index",
+                "value": "0",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "transfer",
+            "attributes": [
+              {
+                "key": "recipient",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+                "index": true
+              },
+              {
+                "key": "sender",
+                "value": "union1jv65s3grqf6v6jl3dp4t6c9t9rk99cd8dg958w",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "141926566038964082au",
+                "index": true
+              },
+              {
+                "key": "msg_index",
+                "value": "0",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "attributes": [
+              {
+                "key": "sender",
+                "value": "union1jv65s3grqf6v6jl3dp4t6c9t9rk99cd8dg958w",
+                "index": true
+              },
+              {
+                "key": "msg_index",
+                "value": "0",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "withdraw_rewards",
+            "attributes": [
+              {
+                "key": "amount",
+                "value": "141926566038964082au",
+                "index": true
+              },
+              {
+                "key": "validator",
+                "value": "unionvaloper10mj598a4lt8gqzdppasjxyg6e2lm29pl36yc46",
+                "index": true
+              },
+              {
+                "key": "delegator",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+                "index": true
+              },
+              {
+                "key": "msg_index",
+                "value": "0",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "coin_spent",
+            "attributes": [
+              {
+                "key": "spender",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "123500000000000000000au",
+                "index": true
+              },
+              {
+                "key": "msg_index",
+                "value": "0",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "coin_received",
+            "attributes": [
+              {
+                "key": "receiver",
+                "value": "union1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3lvg8hx",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "123500000000000000000au",
+                "index": true
+              },
+              {
+                "key": "msg_index",
+                "value": "0",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "delegate",
+            "attributes": [
+              {
+                "key": "validator",
+                "value": "unionvaloper10mj598a4lt8gqzdppasjxyg6e2lm29pl36yc46",
+                "index": true
+              },
+              {
+                "key": "delegator",
+                "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+                "index": true
+              },
+              {
+                "key": "amount",
+                "value": "123500000000000000000au",
+                "index": true
+              },
+              {
+                "key": "new_shares",
+                "value": "123500000000000000000.000000000000000000",
+                "index": true
+              },
+              {
+                "key": "msg_index",
+                "value": "0",
+                "index": true
+              }
+            ]
+          },
+          {
+            "type": "fee_pay",
+            "attributes": [
+              {
+                "key": "fee",
+                "value": "21136900000000au",
+                "index": true
+              }
+            ]
+          }
+        ],
+        "codespace": ""
+      }
+    ],
+    "finalize_block_events": [
+      {
+        "type": "coin_received",
+        "attributes": [
+          {
+            "key": "receiver",
+            "value": "union1m3h30wlvsf8llruxtpukdvsy0km2kum8zxxsf3",
+            "index": true
+          },
+          {
+            "key": "amount",
+            "value": "99010638783544039128au",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "coinbase",
+        "attributes": [
+          {
+            "key": "minter",
+            "value": "union1m3h30wlvsf8llruxtpukdvsy0km2kum8zxxsf3",
+            "index": true
+          },
+          {
+            "key": "amount",
+            "value": "99010638783544039128au",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "coin_spent",
+        "attributes": [
+          {
+            "key": "spender",
+            "value": "union1m3h30wlvsf8llruxtpukdvsy0km2kum8zxxsf3",
+            "index": true
+          },
+          {
+            "key": "amount",
+            "value": "99010638783544039128au",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "coin_received",
+        "attributes": [
+          {
+            "key": "receiver",
+            "value": "union17xpfvakm2amg962yls6f84z3kell8c5l6wzg9v",
+            "index": true
+          },
+          {
+            "key": "amount",
+            "value": "99010638783544039128au",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "transfer",
+        "attributes": [
+          {
+            "key": "recipient",
+            "value": "union17xpfvakm2amg962yls6f84z3kell8c5l6wzg9v",
+            "index": true
+          },
+          {
+            "key": "sender",
+            "value": "union1m3h30wlvsf8llruxtpukdvsy0km2kum8zxxsf3",
+            "index": true
+          },
+          {
+            "key": "amount",
+            "value": "99010638783544039128au",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "message",
+        "attributes": [
+          {
+            "key": "sender",
+            "value": "union1m3h30wlvsf8llruxtpukdvsy0km2kum8zxxsf3",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "mint",
+        "attributes": [
+          {
+            "key": "bonded_ratio",
+            "value": "0.193897061143667255",
+            "index": true
+          },
+          {
+            "key": "inflation",
+            "value": "0.060000000000000000",
+            "index": true
+          },
+          {
+            "key": "annual_provisions",
+            "value": "624907626895113873838189013.160000000000000000",
+            "index": true
+          },
+          {
+            "key": "amount",
+            "value": "99010638783544039128",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "coin_spent",
+        "attributes": [
+          {
+            "key": "spender",
+            "value": "union17xpfvakm2amg962yls6f84z3kell8c5l6wzg9v",
+            "index": true
+          },
+          {
+            "key": "amount",
+            "value": "99010638783544039128au",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "coin_received",
+        "attributes": [
+          {
+            "key": "receiver",
+            "value": "union1jv65s3grqf6v6jl3dp4t6c9t9rk99cd8dg958w",
+            "index": true
+          },
+          {
+            "key": "amount",
+            "value": "99010638783544039128au",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "transfer",
+        "attributes": [
+          {
+            "key": "recipient",
+            "value": "union1jv65s3grqf6v6jl3dp4t6c9t9rk99cd8dg958w",
+            "index": true
+          },
+          {
+            "key": "sender",
+            "value": "union17xpfvakm2amg962yls6f84z3kell8c5l6wzg9v",
+            "index": true
+          },
+          {
+            "key": "amount",
+            "value": "99010638783544039128au",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "message",
+        "attributes": [
+          {
+            "key": "sender",
+            "value": "union17xpfvakm2amg962yls6f84z3kell8c5l6wzg9v",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "773159382729217874.460226568218973761au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper16appturqyamylwha87st4j0nrwmtn450lcqre7",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "15463187654584357489.204531364379475218au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper16appturqyamylwha87st4j0nrwmtn450lcqre7",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1331271622995898577.753501750398258985au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1zef80pxh6yynt5krj20c8rezcv7hsf9cq2ts4e",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "13312716229958985777.535017503982589848au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1zef80pxh6yynt5krj20c8rezcv7hsf9cq2ts4e",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "445386900243294736.741639905293219300au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1dqsjs63kpahlkfj3x5f9kuryk78uekqdv9z72k",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "8907738004865894734.832798105864386000au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1dqsjs63kpahlkfj3x5f9kuryk78uekqdv9z72k",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "392490039926814117.620807769303812873au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper140l6y2gp3gxvay6qtn70re7z2s0gn57zhqqe9e",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "7849800798536282352.416155386076257460au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper140l6y2gp3gxvay6qtn70re7z2s0gn57zhqqe9e",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "392161251263915474.332676651079501344au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1symf474wnypes2d3mecllqk6l26rwz8mhl89nm",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "7843225025278309486.653533021590026879au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1symf474wnypes2d3mecllqk6l26rwz8mhl89nm",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "339178415710517534.868913330640078155au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper15zf3fp5f96ncs8dcmg5t5amxgleyels4jyq0ud",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "6783568314210350697.378266612801563098au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper15zf3fp5f96ncs8dcmg5t5amxgleyels4jyq0ud",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "126281280310221278.920454022069001217au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1maxq9hma5h89ham2uvtfmv9uqujfratjsqqqds",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "2525625606204425578.409080441380024335au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1maxq9hma5h89ham2uvtfmv9uqujfratjsqqqds",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "78766565444488490.800518086686126975au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper19d434y2rcw0swhuzly2evf3srteqz8ll7wyrm5",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1575331308889769816.010361733722539495au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper19d434y2rcw0swhuzly2evf3srteqz8ll7wyrm5",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "75541489324920472.761434671394982382au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper10mj598a4lt8gqzdppasjxyg6e2lm29pl36yc46",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1510829786498409455.228693427899647646au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper10mj598a4lt8gqzdppasjxyg6e2lm29pl36yc46",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "74463078431054236.264495260050370421au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1y9n3x9ep70maanr0qme8hw83rne59q2443prm8",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1489261568621084725.289905201007408414au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1y9n3x9ep70maanr0qme8hw83rne59q2443prm8",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "74296969497197581.040674384928070418au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1emmv9x2lmsrjjva679qylqk76w5prpwdeujjhr",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1485939389943951620.813487698561408363au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1emmv9x2lmsrjjva679qylqk76w5prpwdeujjhr",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73380595204789555.086989615053192634au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper12r4w6hdv6uym7rytc8tuudfxpp90zvjtr4qry8",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1467611904095791101.739792301063852679au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper12r4w6hdv6uym7rytc8tuudfxpp90zvjtr4qry8",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73236709362573276.189444598130870685au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1qzp5dm52yy6w7qfqemc8vr2gvzurqjxzvz6vum",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1464734187251465523.788891962617413700au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1qzp5dm52yy6w7qfqemc8vr2gvzurqjxzvz6vum",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73199648225471590.732753002739489535au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1fltj055lzlx0fdn9yme0q9ed7sszfsap6u6c99",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1463992964509431814.655060054789790698au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1fltj055lzlx0fdn9yme0q9ed7sszfsap6u6c99",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73172146633851113.025158789900938102au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper16cls5txlsv46v03wxdh0af8h329yv88zxf04n3",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1463442932677022260.503175798018762039au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper16cls5txlsv46v03wxdh0af8h329yv88zxf04n3",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73157255196665865.132468171476596994au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1qqr7stf4s72v8740qxd0lusfrdc7jqkrrpw40w",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1463145103933317302.649363429531939876au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1qqr7stf4s72v8740qxd0lusfrdc7jqkrrpw40w",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73105081774793551.394236196080320198au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1y2h7shm52q2qcgqx65zpe7sv2u4mkmgn9w83jm",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1462101635495871027.884723921606403967au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1y2h7shm52q2qcgqx65zpe7sv2u4mkmgn9w83jm",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73053471392919121.736727359823203545au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1an0at6dphzkd579mvpw32cs6d06f9d8vc7rm0n",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1461069427858382434.734547196464070900au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1an0at6dphzkd579mvpw32cs6d06f9d8vc7rm0n",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73051042069480001.172726039647692815au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1hlxrf9ae8yp7x6e8ndn9jdcehkswp4jq65t38d",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1461020841389600023.454520792953856291au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1hlxrf9ae8yp7x6e8ndn9jdcehkswp4jq65t38d",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73050857625342767.086733940452870478au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1nzlyr7cc9v3e0x50gdg9zpwl5fwsqh3w3x2vw8",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1461017152506855341.734678809057409552au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1nzlyr7cc9v3e0x50gdg9zpwl5fwsqh3w3x2vw8",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73050833356377339.485513245386002302au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1dvhpjfh2m0scs7u7rntgnszg6k4yew7qpyq00e",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1461016667127546789.710264907720046040au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1dvhpjfh2m0scs7u7rntgnszg6k4yew7qpyq00e",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73050811514308453.664209295868734957au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1w4an3x28xrazh2k4g0ynuz8waswa3ucc6mn0t7",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1461016230286169073.284185917374699131au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1w4an3x28xrazh2k4g0ynuz8waswa3ucc6mn0t7",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73050801806722286.544542313670331636au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper17c0hydeaqtry2mtrd03sak3g5jdt6hrs9svuwy",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1461016036134445730.890846273406632715au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper17c0hydeaqtry2mtrd03sak3g5jdt6hrs9svuwy",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73050799379825744.764625568120730806au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper147eeul5pvrzcfaxmc4hd32c7tf4fjuqz4f8404",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1461015987596514895.292511362414616111au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper147eeul5pvrzcfaxmc4hd32c7tf4fjuqz4f8404",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73050386807413504.950033470696551441au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper13v2jzm0w8yuw7p30cc4h4p3shv2vd7sqqjel7n",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1461007736148270099.000669413931028817au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper13v2jzm0w8yuw7p30cc4h4p3shv2vd7sqqjel7n",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "145623704000073483.383338399002964489au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1jr8kg3ahcaqcuhe26tsm3e76pz36try8w8n43z",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1456237040000734833.833383990029644889au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1jr8kg3ahcaqcuhe26tsm3e76pz36try8w8n43z",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "145621150904910687.934343477728941987au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1qrgkwa4mv85qqflrn6csq7mgayyeu8r393rp0k",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1456211509049106879.343434777289419869au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1qrgkwa4mv85qqflrn6csq7mgayyeu8r393rp0k",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "72808595104876604.619593558713441891au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1yt0whdf62s5fry5tpavzfazpm4x5fq0n7qnqfj",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1456171902097532092.391871174268837824au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1yt0whdf62s5fry5tpavzfazpm4x5fq0n7qnqfj",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "72808187386257448.364834952388464187au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper108tpqa2hkmn0khjwd8lx96ye9vc90kax339k28",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1456163747725148967.296699047769283737au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper108tpqa2hkmn0khjwd8lx96ye9vc90kax339k28",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "145616263135273935.645286651211850690au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1h9gh6uxmspkuh5e6yu5np8t2w0x2z4u84xmqqj",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1456162631352739356.452866512118506900au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1h9gh6uxmspkuh5e6yu5np8t2w0x2z4u84xmqqj",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "72807692299362763.527940407350706911au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1dhmnjlvyqges6n8qw9lcl28qfyka5ccm8f0r9z",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1456153845987255270.558808147014138225au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1dhmnjlvyqges6n8qw9lcl28qfyka5ccm8f0r9z",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "866207913976420.944168415246099097au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1j2ar32vy77ayqvn837qf7cnvj90vjtmpl7483n",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "17324158279528418.883368304921981937au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1j2ar32vy77ayqvn837qf7cnvj90vjtmpl7483n",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "574662405420160.319830865843820161au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1p6jhdhy8jkfd97agmhnwn98rx2kp09nv9cd34g",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "11493248108403206.396617316876403228au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1p6jhdhy8jkfd97agmhnwn98rx2kp09nv9cd34g",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "715939333853163.226189334709580766au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1qk3g5r2spp9t3a28ek0ken6k62rwyyxay6tl93",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "7159393338531632.261893347095807665au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1qk3g5r2spp9t3a28ek0ken6k62rwyyxay6tl93",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "632478361753955.150505283383683413au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper17wedcjg2quhavt9qq2lgprpgkca5w7f4580mw2",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "6324783617539551.505052833836834129au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper17wedcjg2quhavt9qq2lgprpgkca5w7f4580mw2",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "307114049876890.561024686295028763au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper19v94c3z7ckarwsum76kaagma0wqsqhh5un5k0m",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "6142280997537811.220493725900575254au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper19v94c3z7ckarwsum76kaagma0wqsqhh5un5k0m",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "227320118453517.592091627631750297au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1pv6tkf95cwzxr0dynqv0h52zdk3x0q4ser5shs",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "4546402369070351.841832552635005936au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1pv6tkf95cwzxr0dynqv0h52zdk3x0q4ser5shs",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "219422997103973.099919742738212253au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1pngzkqyqm0j07nmplresdula6fmlewezrgmz2c",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "4388459942079461.998394854764245056au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1pngzkqyqm0j07nmplresdula6fmlewezrgmz2c",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "217314024008475.307514470389469719au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1xzern65ppact6sgh4htllnr8pg9dpnc8cw28gp",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "4346280480169506.150289407789394372au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1xzern65ppact6sgh4htllnr8pg9dpnc8cw28gp",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "56274877029259.777799155644052583au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper19xm3crpq47rr5lxsqtfgk8f55ash4npasw3psq",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "562748770292597.777991556440525828au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper19xm3crpq47rr5lxsqtfgk8f55ash4npasw3psq",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "15796669595630.764260515336676918au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1dk5vkw763ck2cjes4htkg5fe3vcjphvealxhft",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "315933391912615.285210306733538365au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1dk5vkw763ck2cjes4htkg5fe3vcjphvealxhft",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "6392445493145.940101045812599702au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1pp289pfjp9cmqh0jl7xjltcqefqg5x9h9wee4e",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "127848909862918.802020916251994041au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1pp289pfjp9cmqh0jl7xjltcqefqg5x9h9wee4e",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "7304958593149.250394559588308066au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1xx8lp0frlk9ycc56mdr2zhtm4lac9tl000972n",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "73049585931492.503945595883080659au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1xx8lp0frlk9ycc56mdr2zhtm4lac9tl000972n",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "2159937922889.873736788246649779au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper18tq750tjawtq6gppquyl9w4rnuzawpq63j6uwd",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "43198758457797.474735764932995576au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper18tq750tjawtq6gppquyl9w4rnuzawpq63j6uwd",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1820172406927.961780156237645004au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1fxlq3yzphvyr44fmsu60rezgylfyvpavcjcqj8",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "36403448138559.235603124752900083au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1fxlq3yzphvyr44fmsu60rezgylfyvpavcjcqj8",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1674558614377.057535845192725761au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1q5gcuc5v5ypr2ptl2fch9qezeh48nn6tjx6ksn",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "33491172287541.150716903854515217au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1q5gcuc5v5ypr2ptl2fch9qezeh48nn6tjx6ksn",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1575055856129.773762939161082165au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1s6rd5rpfrp9hvkmkjxmtr6dn9zvtt8t06tev84",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "31501117122595.475258783221643299au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper1s6rd5rpfrp9hvkmkjxmtr6dn9zvtt8t06tev84",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "2528826197358.045720986636294453au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper190fjdwg063k6zhptnw8qpfcx65zrhpzhvayw7a",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "25288261973580.457209866362944526au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper190fjdwg063k6zhptnw8qpfcx65zrhpzhvayw7a",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "commission",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "1980347578735.426756884322685153au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper14qr6pam9z3gealqxsjc42c2c9kf422mvchve6r",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      },
+      {
+        "type": "rewards",
+        "attributes": [
+          {
+            "key": "amount",
+            "value": "24754344734192.834461054033564410au",
+            "index": true
+          },
+          {
+            "key": "validator",
+            "value": "unionvaloper14qr6pam9z3gealqxsjc42c2c9kf422mvchve6r",
+            "index": true
+          },
+          {
+            "key": "mode",
+            "value": "BeginBlock",
+            "index": true
+          }
+        ]
+      }
+    ],
+    "validator_updates": [
+      {
+        "power": "31126910",
+        "pub_key_bytes": "j9TDdQLrfsnjcRuyQa6Uu0YoV3AJPRaLrg9AWGB2+sc=",
+        "pub_key_type": "bn254"
+      }
+    ],
+    "consensus_param_updates": {
+      "block": {
+        "max_bytes": "20971520",
+        "max_gas": "400000000"
+      },
+      "evidence": {
+        "max_age_num_blocks": "100000",
+        "max_age_duration": "172800000000000",
+        "max_bytes": "1048576"
+      },
+      "validator": {
+        "pub_key_types": [
+          "bn254"
+        ]
+      },
+      "version": {},
+      "synchrony": {
+        "precision": "500000000",
+        "message_delay": "2000000000"
+      },
+      "feature": {
+        "vote_extensions_enable_height": {},
+        "pbts_enable_height": {
+          "value": "1"
+        }
+      }
+    },
+    "app_hash": "3w6rcJ+oQZ6p5xsk9DHiPgTcjjoFg2KLp9oDOMEMa2E="
+  }
+}

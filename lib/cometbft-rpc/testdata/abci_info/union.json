@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": -1,
+  "result": {
+    "response": {
+      "data": "union",
+      "version": "v1.2.3",
+      "last_block_height": "7277988",
+      "last_block_app_hash": "Y8mcAu1ZdKgl03/Jx/1I85N4k6k1CEdMAhPCJ39q/ac="
+    }
+  }
+}

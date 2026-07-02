@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": -1,
+  "result": {
+    "response": {
+      "data": "BabylonApp",
+      "version": "v4.3.0",
+      "last_block_height": "3860883",
+      "last_block_app_hash": "TEqHEj20s4igqReCFz8VazEphk4EwmhQDwIT29NnmmU="
+    }
+  }
+}

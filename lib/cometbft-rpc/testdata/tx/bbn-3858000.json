@@ -1,0 +1,218 @@
+{
+  "jsonrpc": "2.0",
+  "id": -1,
+  "result": {
+    "hash": "058AF8B780E57F1AEAA7F35A411C57F750BFEEB26B1C0B5DA1DD6B6F5B82EAB8",
+    "height": "3858000",
+    "index": 0,
+    "tx_result": {
+      "code": 0,
+      "data": "EjAKLi9iYWJ5bG9uLmZpbmFsaXR5LnYxLk1zZ0FkZEZpbmFsaXR5U2lnUmVzcG9uc2U=",
+      "log": "",
+      "info": "",
+      "gas_wanted": "126661",
+      "gas_used": "115957",
+      "events": [
+        {
+          "type": "coin_spent",
+          "attributes": [
+            {
+              "key": "spender",
+              "value": "bbn1zt7gkxfsfj3qsjruza8swec7av3e3ckl30ew4e",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "254ubbn",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "coin_received",
+          "attributes": [
+            {
+              "key": "receiver",
+              "value": "bbn17xpfvakm2amg962yls6f84z3kell8c5l88j35y",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "254ubbn",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "transfer",
+          "attributes": [
+            {
+              "key": "recipient",
+              "value": "bbn17xpfvakm2amg962yls6f84z3kell8c5l88j35y",
+              "index": true
+            },
+            {
+              "key": "sender",
+              "value": "bbn1zt7gkxfsfj3qsjruza8swec7av3e3ckl30ew4e",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "254ubbn",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "message",
+          "attributes": [
+            {
+              "key": "sender",
+              "value": "bbn1zt7gkxfsfj3qsjruza8swec7av3e3ckl30ew4e",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "tx",
+          "attributes": [
+            {
+              "key": "fee",
+              "value": "254ubbn",
+              "index": true
+            },
+            {
+              "key": "fee_payer",
+              "value": "bbn1zt7gkxfsfj3qsjruza8swec7av3e3ckl30ew4e",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "tx",
+          "attributes": [
+            {
+              "key": "acc_seq",
+              "value": "bbn1zt7gkxfsfj3qsjruza8swec7av3e3ckl30ew4e/3807907",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "tx",
+          "attributes": [
+            {
+              "key": "signature",
+              "value": "SU3KMP3YTlck6gQ+uIcyg/aHW3iWK2fVTr6bB1PFuk9zPiMUfKe/CRKQNlJ/rJIhDZ7sPUyNnY6QTBfKZjzYCg==",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "message",
+          "attributes": [
+            {
+              "key": "action",
+              "value": "/babylon.finality.v1.MsgAddFinalitySig",
+              "index": true
+            },
+            {
+              "key": "sender",
+              "value": "bbn1zt7gkxfsfj3qsjruza8swec7av3e3ckl30ew4e",
+              "index": true
+            },
+            {
+              "key": "module",
+              "value": "finality",
+              "index": true
+            },
+            {
+              "key": "msg_index",
+              "value": "0",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "coin_spent",
+          "attributes": [
+            {
+              "key": "spender",
+              "value": "bbn17xpfvakm2amg962yls6f84z3kell8c5l88j35y",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "254ubbn",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "coin_received",
+          "attributes": [
+            {
+              "key": "receiver",
+              "value": "bbn1zt7gkxfsfj3qsjruza8swec7av3e3ckl30ew4e",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "254ubbn",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "transfer",
+          "attributes": [
+            {
+              "key": "recipient",
+              "value": "bbn1zt7gkxfsfj3qsjruza8swec7av3e3ckl30ew4e",
+              "index": true
+            },
+            {
+              "key": "sender",
+              "value": "bbn17xpfvakm2amg962yls6f84z3kell8c5l88j35y",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "254ubbn",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "message",
+          "attributes": [
+            {
+              "key": "sender",
+              "value": "bbn17xpfvakm2amg962yls6f84z3kell8c5l88j35y",
+              "index": true
+            }
+          ]
+        }
+      ],
+      "codespace": ""
+    },
+    "tx": "CrQGCrEGCiYvYmFieWxvbi5maW5hbGl0eS52MS5Nc2dBZGRGaW5hbGl0eVNpZxKGBgoqYmJuMXp0N2dreGZzZmozcXNqcnV6YThzd2VjN2F2M2UzY2tsMzBldzRlEiD6dJb2OoV9iUqjk3ZzJb9vhFYOkUH07FRJbFD1RvSL+xjPvOsBIiAQO4JEokXqf/9uSrnaw4a3rB1MWfCAJpPodBMyjyqFVirKBAjQhgMQv+0BGiA7ppi4upa3L3sM4E6BHs0X2OmU05FYK3Cy5suCqpjm3yIg5lzmsksmFsJ3YeURShw551CIqvAhV8sxkFsg4Ju9SsUiILExAVKl/DKbsiEB5YoK03A22Z0vfKSoKIfQU9oHnrG1IiCp8/sQWQhu/c47QKdgHL4T6cQprCClYCQKFbB0GZ8GLiIgJJ4Zy0ubtJP/0yygA1woOF+dodKgAk9zv1vwLXOU5XoiIGAN/dPqfXC9plzAfaNtE0tSuqf9YdEl0OX6Gmwv2w28IiBGmwFbvJJSpnkNfQi0Gv+W1Tfp37MEVApb/JiD9g8hbiIgwHj3uJDgBgIpT1N8LxhxkEXMu1ym7hwKszN28inrFqoiIBkgwCgJGUF7Efg/W7wyYpG9VigMR858WYcSL/5LmqIUIiA2oM8HPbcZOzW7BEGc9BhJoZxWDUQEn35UszOwmSUUASIgFeV7lGxKfRUSx83ZyDza6qwfnopwlIa3oyZY7jNCPyoiIOwAJWkZSx+FjoGrG3FSxYqnr5PROmz68xdSkIA7gCZVIiD70apLL1QyGO1yUV27/vmgmQee9958U3Lq6C9nAw368iIgiR8sNMsiZi1ey3KPTSq5O+swXE9696Bv9/NNfVoju3wiIIf4Nsj79zzuVegHkzSxnb1xNMuHvaNIqBOQrfwThkcAIiDj+pRkhHvtjtBYllgQpGn/yb5sIdTkvv5dd1bL/fuXuiIgnsNNrGornKiSd6PTsD663zUI4chRGnxCrsnpiAZVEbQyIC7mHIHIn7WhBRsrTkSyjZL0Y1BJawsOQ3vOWXWQmluwOiCzNmb7I5Q7a71bt2uU7q24U/NBIhQskf8Laa98CVBkaxJoClMKRgofL2Nvc21vcy5jcnlwdG8uc2VjcDI1NmsxLlB1YktleRIjCiECT7bc8UiZxXjxI1xS5yCnjcfQZg68SAzC2ItXvs8V+2ISBAoCCAEYo7XoARIRCgsKBHViYm4SAzI1NBDF3QcaQElNyjD92E5XJOoEPriHMoP2h1t4litn1U6+mwdTxbpPcz4jFHynvwkSkDZSf6ySIQ2e7D1MjZ2OkEwXymY82Ao=",
+    "proof": {
+      "root_hash": "2390BC6CE29D84DF2B006CA1FE9F41E94EAE92C54B8E7F75FB664EC85B037A4B",
+      "data": "CrQGCrEGCiYvYmFieWxvbi5maW5hbGl0eS52MS5Nc2dBZGRGaW5hbGl0eVNpZxKGBgoqYmJuMXp0N2dreGZzZmozcXNqcnV6YThzd2VjN2F2M2UzY2tsMzBldzRlEiD6dJb2OoV9iUqjk3ZzJb9vhFYOkUH07FRJbFD1RvSL+xjPvOsBIiAQO4JEokXqf/9uSrnaw4a3rB1MWfCAJpPodBMyjyqFVirKBAjQhgMQv+0BGiA7ppi4upa3L3sM4E6BHs0X2OmU05FYK3Cy5suCqpjm3yIg5lzmsksmFsJ3YeURShw551CIqvAhV8sxkFsg4Ju9SsUiILExAVKl/DKbsiEB5YoK03A22Z0vfKSoKIfQU9oHnrG1IiCp8/sQWQhu/c47QKdgHL4T6cQprCClYCQKFbB0GZ8GLiIgJJ4Zy0ubtJP/0yygA1woOF+dodKgAk9zv1vwLXOU5XoiIGAN/dPqfXC9plzAfaNtE0tSuqf9YdEl0OX6Gmwv2w28IiBGmwFbvJJSpnkNfQi0Gv+W1Tfp37MEVApb/JiD9g8hbiIgwHj3uJDgBgIpT1N8LxhxkEXMu1ym7hwKszN28inrFqoiIBkgwCgJGUF7Efg/W7wyYpG9VigMR858WYcSL/5LmqIUIiA2oM8HPbcZOzW7BEGc9BhJoZxWDUQEn35UszOwmSUUASIgFeV7lGxKfRUSx83ZyDza6qwfnopwlIa3oyZY7jNCPyoiIOwAJWkZSx+FjoGrG3FSxYqnr5PROmz68xdSkIA7gCZVIiD70apLL1QyGO1yUV27/vmgmQee9958U3Lq6C9nAw368iIgiR8sNMsiZi1ey3KPTSq5O+swXE9696Bv9/NNfVoju3wiIIf4Nsj79zzuVegHkzSxnb1xNMuHvaNIqBOQrfwThkcAIiDj+pRkhHvtjtBYllgQpGn/yb5sIdTkvv5dd1bL/fuXuiIgnsNNrGornKiSd6PTsD663zUI4chRGnxCrsnpiAZVEbQyIC7mHIHIn7WhBRsrTkSyjZL0Y1BJawsOQ3vOWXWQmluwOiCzNmb7I5Q7a71bt2uU7q24U/NBIhQskf8Laa98CVBkaxJoClMKRgofL2Nvc21vcy5jcnlwdG8uc2VjcDI1NmsxLlB1YktleRIjCiECT7bc8UiZxXjxI1xS5yCnjcfQZg68SAzC2ItXvs8V+2ISBAoCCAEYo7XoARIRCgsKBHViYm4SAzI1NBDF3QcaQElNyjD92E5XJOoEPriHMoP2h1t4litn1U6+mwdTxbpPcz4jFHynvwkSkDZSf6ySIQ2e7D1MjZ2OkEwXymY82Ao=",
+      "proof": {
+        "total": "42",
+        "index": "0",
+        "leaf_hash": "W3wR25VhG9N9NZXHFPiSfGVFTKT25E2EHCwDCOe2+4o=",
+        "aunts": [
+          "UTOz+mU1N+nzu6LOTVZakp+sW+qCgasE14yxiaZ74tE=",
+          "WZJ4rY/Sjt9c5PwPOUSK1UFt+iYMLVHBk/lqxUjoyUo=",
+          "/bSUZadUhhjbwb6ESTPA8NtJ8puQH/DS39ZiXp10Y4A=",
+          "vZakilHxM0OMrB7kj3aiQ++K0/4Hi6JKY6+kukMwRv8=",
+          "f/KiLcxtlGIVeV0DkH8OgHAtWk8Clp64ecJP8hkdnGM=",
+          "b4MqgTPGQLiDCe7Z2YO/nWMcuC5hwQsv+0aefDImXgo="
+        ]
+      }
+    }
+  }
+}

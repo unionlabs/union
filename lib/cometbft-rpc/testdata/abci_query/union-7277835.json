@@ -1,0 +1,30 @@
+{
+  "jsonrpc": "2.0",
+  "id": -1,
+  "result": {
+    "response": {
+      "code": 0,
+      "log": "",
+      "info": "",
+      "index": "0",
+      "key": "AnVvc21v",
+      "value": null,
+      "proofOps": {
+        "ops": [
+          {
+            "type": "ics23:iavl",
+            "key": "AnVvc21v",
+            "data": "EuAICgYCdW9zbW8S0gQKJAIg+cbZj/bwxD1OK3ZaBOAyXPcKymVI2YQFUH1nG44xdFphdRIXMTMwOTI1MzMyNDQ0NDkwNzYzMjQyOTMaDggBGAEgASoGAALezb8EIiwIARIoAgSC1NsEIOoIIHzNvxaeRpwGViprzVoQl/Kx1qgR7McC5NoSUtahICIsCAESKAQI4O/3BiDI33Ny46rH3D4touaPO5lX/6kaLzXrkcQG5n4XR1KW6yAiLggBEgcGDODv9wYgGiEgsLHJB53BWcLBOdCIq+bJKCi1tXWLkdDAwoRhMpCPAfYiLAgBEigIGuDv9wYgpjLUqqal3X5SR5fX19nAeXWkU9PlC1QigBqoyYOEDnYgIiwIARIoCjbg7/cGIPznV5Cfu+KjnAQsozMeBNZuocPHEdTd0SJxgkGeOkytICIsCAESKAxY4O/3BiBd1HWLzqwj/+pJoijGqiGb3k6CpdNdfjPPLNOSDeVvQyAiLQgBEikOlgGWtPgGIBn3z7WUUsTYR9qwk2gbZOIYVudsa5QTXb8+qxh2JNPXICItCAESKRDCApa0+AYgx54VuH6VnPe6j2w5RbyDQKDhaPZqP9ZX2DIVACpu8nIgIi0IARIpEqQElrT4BiAXvjc1sW40wFN/9NfYuUuruR3KSWZEjQcg2krEkiC3sSAiLQgBEikUvgaWtPgGILfOMHrcbvjaryMeD6w3ntzfdKqZcZjuSy69cBkpRvqQICIvCAESCBb0DJa0+AYgGiEgSBLyuzg+JSztIQuW3MaHupgjyc+EThnwS92adL0FO4UagAQKGQNhdQAUAAfoLTWHlMP6rwGa//IJG3HpAsMaDggBGAEgASoGAAL8tagGIi4IARIHAgT8tagGIBohIPVJ0ufbWxJrq5j6zfmJ1L/3Y6QZhsb7LYBnPCo83vUsIiwIARIoBgzg7/cGIJQHYNb7shF8mFLpNOPyr2drC745j6RnS45N1GmuZI+JICIsCAESKAga4O/3BiCmMtSqpqXdflJHl9fX2cB5daRT0+ULVCKAGqjJg4QOdiAiLAgBEigKNuDv9wYg/OdXkJ+74qOcBCyjMx4E1m6hw8cR1N3RInGCQZ46TK0gIiwIARIoDFjg7/cGIF3UdYvOrCP/6kmiKMaqIZveToKl011+M88s05IN5W9DICItCAESKQ6WAZa0+AYgGffPtZRSxNhH2rCTaBtk4hhW52xrlBNdvz6rGHYk09cgIi0IARIpEMIClrT4BiDHnhW4fpWc97qPbDlFvINAoOFo9mo/1lfYMhUAKm7yciAiLQgBEikSpASWtPgGIBe+NzWxbjTAU3/019i5S6u5HcpJZkSNByDaSsSSILexICItCAESKRS+Bpa0+AYgt84wetxu+NqvIx4PrDee3N90qplxmO5LLr1wGSlG+pAgIi8IARIIFvQMlrT4BiAaISBIEvK7OD4lLO0hC5bcxoe6mCPJz4ROGfBL3Zp0vQU7hQ=="
+          },
+          {
+            "type": "ics23:simple",
+            "key": "YmFuaw==",
+            "data": "Cv4BCgRiYW5rEiB9x5lkOzt25qBPOiMoS5q642RrNA+VSrwYnTLRWRd6lRoJCAEYASABKgEAIicIARIBARogL+QThvg5Xt8E1S+U6MBmQXPQzo6gHUfh+C3TB9brjgYiJQgBEiEBuq8Ym48QM0LzlouzQxhGCQ5hROE9g1a1nrf44oxG++0iJwgBEgEBGiCC39V5R4S0C4O5XcILKnySMtL5b9yD8nRUJ3Kgmqof9SInCAESAQEaIJSQshUE8o/gl6V1R7lYFLIcvNEGt9LK8bSWFh5660rzIicIARIBARogsrxVk9wUCLdwgHwYHXtxAD+yClHg4wDg7Xv6sA+XW6g="
+          }
+        ]
+      },
+      "height": "7277835",
+      "codespace": ""
+    }
+  }
+}
