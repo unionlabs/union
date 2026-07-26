@@ -101,7 +101,7 @@ jobs:
     needs: [eval-tag]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - uses: cachix/install-nix-action@v30
@@ -115,7 +115,7 @@ jobs:
         run: |
           nix build .#packages.x86_64-linux."$COMPONENT"-image --accept-flake-config
           cp -Lr result x86_64-linux."$COMPONENT"-image
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: x86_64-linux.${{ needs.eval-tag.outputs.component }}-image
           path: x86_64-linux.${{ needs.eval-tag.outputs.component }}-image
@@ -125,7 +125,7 @@ jobs:
     needs: [eval-tag]
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - uses: cachix/install-nix-action@v30
@@ -139,7 +139,7 @@ jobs:
         run: |
           nix build .#packages.aarch64-linux."$COMPONENT"-image --accept-flake-config
           cp -Lr result aarch64-linux."$COMPONENT"-image
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: aarch64-linux.${{ needs.eval-tag.outputs.component }}-image
           path: aarch64-linux.${{ needs.eval-tag.outputs.component }}-image
@@ -149,7 +149,7 @@ jobs:
     needs: [eval-tag]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - uses: cachix/install-nix-action@v30
@@ -171,7 +171,7 @@ jobs:
           else
             cp result/bin/"$COMPONENT" "$COMPONENT"-x86_64-linux
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ${{ needs.eval-tag.outputs.component }}-x86_64-linux
           path: ${{ needs.eval-tag.outputs.component }}-x86_64-linux
@@ -181,7 +181,7 @@ jobs:
     needs: [eval-tag]
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - uses: cachix/install-nix-action@v30
@@ -203,7 +203,7 @@ jobs:
           else
             cp result/bin/"$COMPONENT" "$COMPONENT"-aarch64-linux
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ${{ needs.eval-tag.outputs.component }}-aarch64-linux
           path: ${{ needs.eval-tag.outputs.component }}-aarch64-linux
@@ -226,12 +226,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Download aarch64-linux.${{ needs.eval-tag.outputs.component }}-image
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: aarch64-linux.${{ needs.eval-tag.outputs.component }}-image
           path: .
       - name: Download x86_64-linux.${{ needs.eval-tag.outputs.component }}-image
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: x86_64-linux.${{ needs.eval-tag.outputs.component }}-image
           path: .
@@ -275,7 +275,7 @@ jobs:
           COMPONENT: ${{ needs.eval-tag.outputs.component }}
           TAG: ${{ needs.eval-tag.outputs.version }}
         run: docker manifest push "localhost:5000/unionlabs/$COMPONENT:$TAG"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           lfs: true
           fetch-depth: 0
@@ -311,7 +311,7 @@ jobs:
     needs: [download-binaries-x86_64, download-binaries-aarch64, eval-tag]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
       - id: prep-artifacts
         env:
           COMPONENT: ${{ needs.eval-tag.outputs.component }}

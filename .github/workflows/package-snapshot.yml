@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - uses: cachix/install-nix-action@v31
@@ -32,9 +32,9 @@ jobs:
           rm -rf ./snapshot-pkg
           rsync -a --copy-links ./result/ ./snapshot-pkg/
           chmod -R u+w ./snapshot-pkg
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with: {node-version: 22}
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
           version: 10
           run_install: false

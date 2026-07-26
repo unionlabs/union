@@ -32,7 +32,7 @@ jobs:
     environment: 'app2-preview'
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - name: Use node v24
@@ -81,7 +81,7 @@ jobs:
       ENVIRONMENT: 'preview'
     if: github.event_name == 'workflow_dispatch'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - name: Use node v24
@@ -113,7 +113,7 @@ jobs:
     environment: 'app2-staging'
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - name: Use node v24
@@ -145,7 +145,7 @@ jobs:
     environment: 'app2-production'
     if: github.event_name == 'push' && github.ref == 'refs/heads/release/app2'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           lfs: true
       - name: Use node v24
