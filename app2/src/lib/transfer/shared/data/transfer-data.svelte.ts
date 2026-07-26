@@ -370,9 +370,6 @@ export class TransferData {
       onTrue: constant(2 as const),
       onFalse: constant(1 as const),
     })),
-    Option.tap((x) => {
-      return Option.some(x)
-    }),
   ))
 
   baseTokenBalance = $derived(
