@@ -3,13 +3,11 @@ _: {
     {
       self',
       pkgs,
-      proto,
       nix-filter,
       ensureAtRepositoryRoot,
       system,
       mkCi,
       gitRev,
-      dbg,
       ...
     }:
     let
@@ -973,8 +971,6 @@ _: {
         {
           chain-id,
           rpc-url,
-          private-key,
-          weth,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",

@@ -3,10 +3,6 @@
   crateCargoToml,
   pkgs,
   lib,
-  craneLib,
-  rust,
-  dbg,
-  gitRev,
 }:
 let
   CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
@@ -32,12 +28,18 @@ let
             echo "File size: $file_size bytes"
           fi
         '')
+        (file_name: ''
+          id=$(${
+            pkgs.lib.getExe (buildWorkspaceMember "lib/kimlik/verifier" { }).kimlik-verifier
+          } extract "${file_name}")
+
+          echo "Contract ID: $id"
+        '')
       ]
     ];
 
   cargoBuildInstallPhase =
     {
-      features,
       contractFileNameWithoutExt,
       checks,
       maxSize,
@@ -89,11 +91,7 @@ let
     rustflags = mkRustflags buildWithOz;
 
     cargoBuildInstallPhase = cargoBuildInstallPhase {
-      inherit
-        features
-        checks
-        maxSize
-        ;
+      inherit checks maxSize;
       contractFileNameWithoutExt = contract-basename;
     };
     extraEnv = {
