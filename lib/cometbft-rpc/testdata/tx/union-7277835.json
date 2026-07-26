@@ -1,0 +1,396 @@
+{
+  "jsonrpc": "2.0",
+  "id": -1,
+  "result": {
+    "hash": "C8879CC8F56F21AE85B304440E5FCE1501E7A7C7D3A6E6F8A1A7EDDBA55EB17A",
+    "height": "7277835",
+    "index": 0,
+    "tx_result": {
+      "code": 0,
+      "data": "Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U=",
+      "log": "",
+      "info": "",
+      "gas_wanted": "378226",
+      "gas_used": "219747",
+      "events": [
+        {
+          "type": "coin_spent",
+          "attributes": [
+            {
+              "key": "spender",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "41604860000000au",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "coin_received",
+          "attributes": [
+            {
+              "key": "receiver",
+              "value": "union17xpfvakm2amg962yls6f84z3kell8c5l6wzg9v",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "41604860000000au",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "transfer",
+          "attributes": [
+            {
+              "key": "recipient",
+              "value": "union17xpfvakm2amg962yls6f84z3kell8c5l6wzg9v",
+              "index": true
+            },
+            {
+              "key": "sender",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "41604860000000au",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "message",
+          "attributes": [
+            {
+              "key": "sender",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "tx",
+          "attributes": [
+            {
+              "key": "fee",
+              "value": "41604860000000au",
+              "index": true
+            },
+            {
+              "key": "fee_payer",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "tx",
+          "attributes": [
+            {
+              "key": "acc_seq",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha/637",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "tx",
+          "attributes": [
+            {
+              "key": "signature",
+              "value": "BKtlL6FuXNOF0MEYGchRzKxJvWpss/lCUTwBIy+x6pAqGHEdwKFh/5YdVdG+MzxdnfigOd/wz5uzIPdlWALRKg==",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "coin_spent",
+          "attributes": [
+            {
+              "key": "spender",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "41604860000000au",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "coin_received",
+          "attributes": [
+            {
+              "key": "receiver",
+              "value": "union13pxn9n3qw79e03844rdadagmg0nshmwf5hd52g",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "41604860000000au",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "transfer",
+          "attributes": [
+            {
+              "key": "recipient",
+              "value": "union13pxn9n3qw79e03844rdadagmg0nshmwf5hd52g",
+              "index": true
+            },
+            {
+              "key": "sender",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "41604860000000au",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "message",
+          "attributes": [
+            {
+              "key": "sender",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "message",
+          "attributes": [
+            {
+              "key": "action",
+              "value": "/cosmos.staking.v1beta1.MsgDelegate",
+              "index": true
+            },
+            {
+              "key": "sender",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+              "index": true
+            },
+            {
+              "key": "module",
+              "value": "staking",
+              "index": true
+            },
+            {
+              "key": "msg_index",
+              "value": "0",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "coin_spent",
+          "attributes": [
+            {
+              "key": "spender",
+              "value": "union1jv65s3grqf6v6jl3dp4t6c9t9rk99cd8dg958w",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "141926566038964082au",
+              "index": true
+            },
+            {
+              "key": "msg_index",
+              "value": "0",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "coin_received",
+          "attributes": [
+            {
+              "key": "receiver",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "141926566038964082au",
+              "index": true
+            },
+            {
+              "key": "msg_index",
+              "value": "0",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "transfer",
+          "attributes": [
+            {
+              "key": "recipient",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+              "index": true
+            },
+            {
+              "key": "sender",
+              "value": "union1jv65s3grqf6v6jl3dp4t6c9t9rk99cd8dg958w",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "141926566038964082au",
+              "index": true
+            },
+            {
+              "key": "msg_index",
+              "value": "0",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "message",
+          "attributes": [
+            {
+              "key": "sender",
+              "value": "union1jv65s3grqf6v6jl3dp4t6c9t9rk99cd8dg958w",
+              "index": true
+            },
+            {
+              "key": "msg_index",
+              "value": "0",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "withdraw_rewards",
+          "attributes": [
+            {
+              "key": "amount",
+              "value": "141926566038964082au",
+              "index": true
+            },
+            {
+              "key": "validator",
+              "value": "unionvaloper10mj598a4lt8gqzdppasjxyg6e2lm29pl36yc46",
+              "index": true
+            },
+            {
+              "key": "delegator",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+              "index": true
+            },
+            {
+              "key": "msg_index",
+              "value": "0",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "coin_spent",
+          "attributes": [
+            {
+              "key": "spender",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "123500000000000000000au",
+              "index": true
+            },
+            {
+              "key": "msg_index",
+              "value": "0",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "coin_received",
+          "attributes": [
+            {
+              "key": "receiver",
+              "value": "union1fl48vsnmsdzcv85q5d2q4z5ajdha8yu3lvg8hx",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "123500000000000000000au",
+              "index": true
+            },
+            {
+              "key": "msg_index",
+              "value": "0",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "delegate",
+          "attributes": [
+            {
+              "key": "validator",
+              "value": "unionvaloper10mj598a4lt8gqzdppasjxyg6e2lm29pl36yc46",
+              "index": true
+            },
+            {
+              "key": "delegator",
+              "value": "union1h8cdwk5c9t5ntejsy5au5x6jkc4nj7fzkq0vha",
+              "index": true
+            },
+            {
+              "key": "amount",
+              "value": "123500000000000000000au",
+              "index": true
+            },
+            {
+              "key": "new_shares",
+              "value": "123500000000000000000.000000000000000000",
+              "index": true
+            },
+            {
+              "key": "msg_index",
+              "value": "0",
+              "index": true
+            }
+          ]
+        },
+        {
+          "type": "fee_pay",
+          "attributes": [
+            {
+              "key": "fee",
+              "value": "21136900000000au",
+              "index": true
+            }
+          ]
+        }
+      ],
+      "codespace": ""
+    },
+    "tx": "CqsBCqgBCiMvY29zbW9zLnN0YWtpbmcudjFiZXRhMS5Nc2dEZWxlZ2F0ZRKAAQosdW5pb24xaDhjZHdrNWM5dDVudGVqc3k1YXU1eDZqa2M0bmo3ZnprcTB2aGESM3VuaW9udmFsb3BlcjEwbWo1OThhNGx0OGdxemRwcGFzanh5ZzZlMmxtMjlwbDM2eWM0NhobCgJhdRIVMTIzNTAwMDAwMDAwMDAwMDAwMDAwEm8KUQpGCh8vY29zbW9zLmNyeXB0by5zZWNwMjU2azEuUHViS2V5EiMKIQPwTIu6Ov8ZNVXaOUFby7x7rDVTGMMRnHSmlxSDk8v8ARIECgIIfxj9BBIaChQKAmF1Eg40MTYwNDg2MDAwMDAwMBDyihcaQASrZS+hblzThdDBGBnIUcysSb1qbLP5QlE8ASMvseqQKhhxHcChYf+WHVXRvjM8XZ34oDnf8M+bsyD3ZVgC0So=",
+    "proof": {
+      "root_hash": "DA57982214ABD48ECBE3F6469EEFF8BB1220A8C14CAFB8D4E02DBCBCB9B8EEBF",
+      "data": "CqsBCqgBCiMvY29zbW9zLnN0YWtpbmcudjFiZXRhMS5Nc2dEZWxlZ2F0ZRKAAQosdW5pb24xaDhjZHdrNWM5dDVudGVqc3k1YXU1eDZqa2M0bmo3ZnprcTB2aGESM3VuaW9udmFsb3BlcjEwbWo1OThhNGx0OGdxemRwcGFzanh5ZzZlMmxtMjlwbDM2eWM0NhobCgJhdRIVMTIzNTAwMDAwMDAwMDAwMDAwMDAwEm8KUQpGCh8vY29zbW9zLmNyeXB0by5zZWNwMjU2azEuUHViS2V5EiMKIQPwTIu6Ov8ZNVXaOUFby7x7rDVTGMMRnHSmlxSDk8v8ARIECgIIfxj9BBIaChQKAmF1Eg40MTYwNDg2MDAwMDAwMBDyihcaQASrZS+hblzThdDBGBnIUcysSb1qbLP5QlE8ASMvseqQKhhxHcChYf+WHVXRvjM8XZ34oDnf8M+bsyD3ZVgC0So=",
+      "proof": {
+        "total": "1",
+        "index": "0",
+        "leaf_hash": "2leYIhSr1I7L4/ZGnu/4uxIgqMFMr7jU4C28vLm47r8=",
+        "aunts": []
+      }
+    }
+  }
+}

@@ -19,6 +19,30 @@ fn ensure_json<T: DeserializeOwned + PartialEq + Debug>(path: impl AsRef<Path>, 
     }
 }
 
+/// Deserialize a captured response, re-serialize the typed value, and deserialize
+/// again, asserting the two typed values are equal. This verifies our serde impls
+/// losslessly round-trip real-world responses without hand-transcribing every field
+/// (used for the large structural responses where full-equality vectors are impractical).
+#[track_caller]
+fn ensure_roundtrip<T: Serialize + DeserializeOwned + PartialEq + Debug>(path: impl AsRef<Path>) {
+    let json = std::fs::read_to_string(path).unwrap();
+
+    let jd = &mut serde_json::Deserializer::from_str(&json);
+    let response: JsonRpcResponse<T> = match serde_path_to_error::deserialize(jd) {
+        Ok(response) => response,
+        Err(err) => panic!("deserialize: {err}"),
+    };
+
+    let reencoded = serde_json::to_string(&response.result).unwrap();
+    let jd = &mut serde_json::Deserializer::from_str(&reencoded);
+    let roundtripped: T = match serde_path_to_error::deserialize(jd) {
+        Ok(result) => result,
+        Err(err) => panic!("re-deserialize: {err}"),
+    };
+
+    assert_eq!(response.result, roundtripped);
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct JsonRpcResponse<T> {
     jsonrpc: String,
@@ -421,6 +445,251 @@ mod status {
                     ),
                     voting_power: 0,
                 },
+            },
+        );
+    }
+}
+
+// Vectors below are captured from public RPCs of union (union-1), babylon (bbn-1),
+// and osmosis (osmosis-1). Small responses assert full typed equality; the larger
+// structural responses use `ensure_roundtrip` (see the helper at the top of this file).
+
+mod abci_info {
+    use cometbft_types::abci::info_response::InfoResponse;
+    use unionlabs::bounded::BoundedI64;
+
+    use super::*;
+    use crate::rpc_types::AbciInfoResponse;
+
+    #[test]
+    fn union() {
+        ensure_json(
+            "testdata/abci_info/union.json",
+            AbciInfoResponse {
+                response: InfoResponse {
+                    data: "union".to_owned(),
+                    version: "v1.2.3".to_owned(),
+                    app_version: 0,
+                    last_block_height: BoundedI64::new_const(7277988).unwrap(),
+                    last_block_app_hash: "Y8mcAu1ZdKgl03/Jx/1I85N4k6k1CEdMAhPCJ39q/ac="
+                        .parse()
+                        .unwrap(),
+                },
+            },
+        );
+    }
+
+    #[test]
+    fn bbn() {
+        ensure_roundtrip::<AbciInfoResponse>("testdata/abci_info/bbn.json");
+    }
+
+    #[test]
+    fn osmosis() {
+        ensure_roundtrip::<AbciInfoResponse>("testdata/abci_info/osmosis.json");
+    }
+}
+
+mod abci_query {
+    use super::*;
+    use crate::rpc_types::AbciQueryResponse;
+
+    #[test]
+    fn union() {
+        ensure_roundtrip::<AbciQueryResponse>("testdata/abci_query/union-7277835.json");
+    }
+
+    #[test]
+    fn bbn() {
+        ensure_roundtrip::<AbciQueryResponse>("testdata/abci_query/bbn-3858000.json");
+    }
+
+    #[test]
+    fn osmosis() {
+        ensure_roundtrip::<AbciQueryResponse>("testdata/abci_query/osmosis-65368004.json");
+    }
+}
+
+mod block {
+    use super::*;
+    use crate::rpc_types::BlockResponse;
+
+    #[test]
+    fn union() {
+        ensure_roundtrip::<BlockResponse>("testdata/block/union-7277835.json");
+    }
+
+    #[test]
+    fn bbn() {
+        ensure_roundtrip::<BlockResponse>("testdata/block/bbn-3858000.json");
+    }
+
+    #[test]
+    fn osmosis() {
+        ensure_roundtrip::<BlockResponse>("testdata/block/osmosis-65368004.json");
+    }
+}
+
+mod block_results {
+    use super::*;
+    use crate::rpc_types::BlockResultsResponse;
+
+    #[test]
+    fn union() {
+        ensure_roundtrip::<BlockResultsResponse>("testdata/block_results/union-7277835.json");
+    }
+
+    #[test]
+    fn bbn() {
+        ensure_roundtrip::<BlockResultsResponse>("testdata/block_results/bbn-3858000.json");
+    }
+
+    #[test]
+    fn osmosis() {
+        ensure_roundtrip::<BlockResultsResponse>("testdata/block_results/osmosis-65368004.json");
+    }
+}
+
+mod block_search {
+    use super::*;
+    use crate::rpc_types::BlockSearchResponse;
+
+    #[test]
+    fn union() {
+        ensure_roundtrip::<BlockSearchResponse>("testdata/block_search/union-7277835.json");
+    }
+
+    #[test]
+    fn bbn() {
+        ensure_roundtrip::<BlockSearchResponse>("testdata/block_search/bbn-3858000.json");
+    }
+
+    #[test]
+    fn osmosis() {
+        ensure_roundtrip::<BlockSearchResponse>("testdata/block_search/osmosis-65368004.json");
+    }
+}
+
+mod blockchain {
+    use super::*;
+    use crate::rpc_types::BlockchainResponse;
+
+    #[test]
+    fn union() {
+        ensure_roundtrip::<BlockchainResponse>("testdata/blockchain/union-7277835.json");
+    }
+
+    #[test]
+    fn bbn() {
+        ensure_roundtrip::<BlockchainResponse>("testdata/blockchain/bbn-3858000.json");
+    }
+
+    #[test]
+    fn osmosis() {
+        ensure_roundtrip::<BlockchainResponse>("testdata/blockchain/osmosis-65368004.json");
+    }
+}
+
+mod commit {
+    use super::*;
+    use crate::rpc_types::CommitResponse;
+
+    #[test]
+    fn union() {
+        ensure_roundtrip::<CommitResponse>("testdata/commit/union-7277835.json");
+    }
+
+    #[test]
+    fn bbn() {
+        ensure_roundtrip::<CommitResponse>("testdata/commit/bbn-3858000.json");
+    }
+
+    #[test]
+    fn osmosis() {
+        ensure_roundtrip::<CommitResponse>("testdata/commit/osmosis-65368004.json");
+    }
+}
+
+mod header {
+    use super::*;
+    use crate::rpc_types::HeaderResponse;
+
+    #[test]
+    fn union() {
+        ensure_roundtrip::<HeaderResponse>("testdata/header/union-7277835.json");
+    }
+
+    #[test]
+    fn bbn() {
+        ensure_roundtrip::<HeaderResponse>("testdata/header/bbn-3858000.json");
+    }
+
+    #[test]
+    fn osmosis() {
+        ensure_roundtrip::<HeaderResponse>("testdata/header/osmosis-65368004.json");
+    }
+}
+
+mod tx {
+    use super::*;
+    use crate::rpc_types::TxResponse;
+
+    #[test]
+    fn union() {
+        ensure_roundtrip::<TxResponse>("testdata/tx/union-7277835.json");
+    }
+
+    #[test]
+    fn bbn() {
+        ensure_roundtrip::<TxResponse>("testdata/tx/bbn-3858000.json");
+    }
+
+    #[test]
+    fn osmosis() {
+        ensure_roundtrip::<TxResponse>("testdata/tx/osmosis-65368004.json");
+    }
+}
+
+mod tx_search {
+    use super::*;
+    use crate::rpc_types::TxSearchResponse;
+
+    #[test]
+    fn union() {
+        ensure_roundtrip::<TxSearchResponse>("testdata/tx_search/union-7277835.json");
+    }
+
+    #[test]
+    fn bbn() {
+        ensure_roundtrip::<TxSearchResponse>("testdata/tx_search/bbn-3858000.json");
+    }
+
+    #[test]
+    fn osmosis() {
+        ensure_roundtrip::<TxSearchResponse>("testdata/tx_search/osmosis-65368004.json");
+    }
+}
+
+// `broadcast_tx_sync` cannot be captured from a public RPC (it requires broadcasting a
+// signed transaction), so this vector is hand-crafted for a successful (code 0) response.
+mod broadcast_tx_sync {
+    use cometbft_types::code::Code;
+
+    use super::*;
+    use crate::rpc_types::BroadcastTxSyncResponse;
+
+    #[test]
+    fn union() {
+        ensure_json(
+            "testdata/broadcast_tx_sync/union.json",
+            BroadcastTxSyncResponse {
+                codespace: String::new(),
+                code: Code::Ok,
+                data: "".parse().unwrap(),
+                log: String::new(),
+                hash: "a1b2c3d4e5f6070809000a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+                    .parse()
+                    .unwrap(),
             },
         );
     }

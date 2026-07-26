@@ -1,0 +1,11 @@
+{
+  "jsonrpc": "2.0",
+  "id": -1,
+  "result": {
+    "codespace": "",
+    "code": 0,
+    "data": "",
+    "log": "",
+    "hash": "a1b2c3d4e5f6070809000a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+  }
+}
