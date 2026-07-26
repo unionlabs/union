@@ -219,46 +219,50 @@ pub struct Header {
     pub block: Block,
 }
 
-#[test]
-fn l2_block_hash_3996475() {
-    let b = Block {
-        block_number: 3996475,
-        parent_block_hash: 0x07488afa914e19281d6a859f1673d91f84b124576677bc90790954934bcf6a90,
-        classes_trie_root: 0x052dedb4984ca5bde1fa31f46bdedd2462779d7a6db3039be87eb0c532d79470,
-        contracts_trie_root: 0x02c6e3ddcdcf9bcd4b9e01c4b94408b6cf8b82ca9a1b40d808612483278b5afb,
-        sequencer_address: 0x01176a1bd84444c89232ec27754698e5d2e7e1a7f1539f12027f28b23ec9f3d8,
-        block_timestamp: 1764693045,
-        transaction_count: 8,
-        events_count: 14 + 7 + 104 + 5 + 3 + 7 + 5 + 5,
-        state_diff_length: 108,
-        state_diff_commitment: 0x000d69e24d96773a920991dcd7f86fea0526acb3dae9bb3955caf840c71b54f6,
-        transactions_commitment: 0x01df3ce5acd86d8c2d7f1155997a70a004ee0a0c36c67c9baafe87ace22f30d9,
-        events_commitment: 0x030a53d5d62958b18f1094b66c4ad4c3bcee8dd2a36666fc5fc8b46ddaa5b37c,
-        receipts_commitment: 0x0494e30696606f6208ac02b701f2350460c35b0be17cdf23e4017c79a6a69f2f,
-        l1_gas_price: (0x6df5cf40, 0x27d11e1709d4),
-        l1_data_gas_price: (0x1, 0x5cb2),
-        l2_gas_price: (0x1edd2, 0xb2d05e00),
-        l1_da_mode: L1DaMode::Blob,
-        protocol_version: "0.14.0",
-    };
-
-    assert_eq!(b.hash(), 0x366cae7718ded291ef9c5f4c2aba8c3c27baa0e563fd64ba72fe51c2abc4675)
-}
-
-#[test]
-fn consensus_state_encoding() {
-    let mut encoded: ByteArray = Default::default();
-    encoded.append_u256(0x02c6e3ddcdcf9bcd4b9e01c4b94408b6cf8b82ca9a1b40d808612483278b5afb);
-    encoded.append_u256(0x052dedb4984ca5bde1fa31f46bdedd2462779d7a6db3039be87eb0c532d79470);
-    encoded.append_u256(TimestampTrait::from_secs(1764693045).nanos().into());
-
-    assert_eq!(
-        encoded,
-        ConsensusState {
-            contracts_trie_root: 0x02c6e3ddcdcf9bcd4b9e01c4b94408b6cf8b82ca9a1b40d808612483278b5afb,
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn l2_block_hash_3996475() {
+        let b = Block {
+            block_number: 3996475,
+            parent_block_hash: 0x07488afa914e19281d6a859f1673d91f84b124576677bc90790954934bcf6a90,
             classes_trie_root: 0x052dedb4984ca5bde1fa31f46bdedd2462779d7a6db3039be87eb0c532d79470,
-            timestamp: TimestampTrait::from_secs(1764693045),
-        }
-            .ethabi_encode(),
-    )
+            contracts_trie_root: 0x02c6e3ddcdcf9bcd4b9e01c4b94408b6cf8b82ca9a1b40d808612483278b5afb,
+            sequencer_address: 0x01176a1bd84444c89232ec27754698e5d2e7e1a7f1539f12027f28b23ec9f3d8,
+            block_timestamp: 1764693045,
+            transaction_count: 8,
+            events_count: 14 + 7 + 104 + 5 + 3 + 7 + 5 + 5,
+            state_diff_length: 108,
+            state_diff_commitment: 0x000d69e24d96773a920991dcd7f86fea0526acb3dae9bb3955caf840c71b54f6,
+            transactions_commitment: 0x01df3ce5acd86d8c2d7f1155997a70a004ee0a0c36c67c9baafe87ace22f30d9,
+            events_commitment: 0x030a53d5d62958b18f1094b66c4ad4c3bcee8dd2a36666fc5fc8b46ddaa5b37c,
+            receipts_commitment: 0x0494e30696606f6208ac02b701f2350460c35b0be17cdf23e4017c79a6a69f2f,
+            l1_gas_price: (0x6df5cf40, 0x27d11e1709d4),
+            l1_data_gas_price: (0x1, 0x5cb2),
+            l2_gas_price: (0x1edd2, 0xb2d05e00),
+            l1_da_mode: L1DaMode::Blob,
+            protocol_version: "0.14.0",
+        };
+
+        assert_eq!(b.hash(), 0x366cae7718ded291ef9c5f4c2aba8c3c27baa0e563fd64ba72fe51c2abc4675)
+    }
+
+    #[test]
+    fn consensus_state_encoding() {
+        let mut encoded: ByteArray = Default::default();
+        encoded.append_u256(0x02c6e3ddcdcf9bcd4b9e01c4b94408b6cf8b82ca9a1b40d808612483278b5afb);
+        encoded.append_u256(0x052dedb4984ca5bde1fa31f46bdedd2462779d7a6db3039be87eb0c532d79470);
+        encoded.append_u256(TimestampTrait::from_secs(1764693045).nanos().into());
+
+        assert_eq!(
+            encoded,
+            ConsensusState {
+                contracts_trie_root: 0x02c6e3ddcdcf9bcd4b9e01c4b94408b6cf8b82ca9a1b40d808612483278b5afb,
+                classes_trie_root: 0x052dedb4984ca5bde1fa31f46bdedd2462779d7a6db3039be87eb0c532d79470,
+                timestamp: TimestampTrait::from_secs(1764693045),
+            }
+                .ethabi_encode(),
+        )
+    }
 }
