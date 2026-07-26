@@ -34,6 +34,7 @@ import {StateLensIcs23SmtClient} from
 import {ProofLensClient} from "../contracts/clients/ProofLensClient.sol";
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/03-zkgm/Zkgm.sol";
+import "../contracts/apps/lz-dvn/UnionDVN.sol";
 import "../contracts/tge/Vesting.sol";
 import "../contracts/tge/UDrop.sol";
 import "../contracts/tge/QuickWithdrawal.sol";
