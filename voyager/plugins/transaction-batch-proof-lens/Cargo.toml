@@ -30,3 +30,6 @@ tokio                         = { workspace = true }
 tracing                       = { workspace = true }
 unionlabs                     = { workspace = true }
 voyager-sdk                   = { workspace = true }
+
+[dev-dependencies]
+voyager-core = { workspace = true }

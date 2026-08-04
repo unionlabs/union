@@ -58,46 +58,31 @@ pub enum IbcEvent {
         packet_hash: H256,
         packet_data: Bytes,
         source_channel_id: ChannelId,
-        source_channel_version: String,
-        source_connection_id: ConnectionId,
-        source_connection_client_id: ClientId,
         destination_channel_id: ChannelId,
-        destination_connection_id: ConnectionId,
-        destination_connection_client_id: ClientId,
         timeout_timestamp: Timestamp,
     },
 
-    // TODO
-    BatchSend {},
+    BatchSend {
+        packet_hash: H256,
+        batch_hash: H256,
+        channel_id: ChannelId,
+    },
 
     PacketRecv {
         packet_hash: H256,
-        packet_data: Bytes,
-        source_channel_id: ChannelId,
-        source_connection_id: ConnectionId,
-        source_connection_client_id: ClientId,
         destination_channel_id: ChannelId,
-        destination_channel_version: String,
-        destination_connection_id: ConnectionId,
-        destination_connection_client_id: ClientId,
-        timeout_timestamp: Timestamp,
         maker_msg: Bytes,
     },
 
-    // TODO
-    PacketAck {},
+    PacketAck {
+        packet_hash: H256,
+        source_channel_id: ChannelId,
+        acknowledgement: Bytes,
+    },
 
     WriteAck {
         packet_hash: H256,
-        packet_data: Bytes,
-        source_channel_id: ChannelId,
-        source_connection_id: ConnectionId,
-        source_connection_client_id: ClientId,
         destination_channel_id: ChannelId,
-        destination_channel_version: String,
-        destination_connection_id: ConnectionId,
-        destination_connection_client_id: ClientId,
-        timeout_timestamp: Timestamp,
         acknowledgement: Bytes,
     },
 }
@@ -109,7 +94,6 @@ pub struct ChannelEvent {
     pub channel_id: ChannelId,
     pub counterparty_port_id: Bytes,
     pub counterparty_channel_id: Option<ChannelId>,
-    pub connection_id: ConnectionId,
     pub connection_client_id: ClientId,
     pub connection_counterparty_client_id: ClientId,
     pub connection_counterparty_connection_id: ConnectionId,
@@ -141,6 +125,35 @@ impl IbcEvent {
                 .map_err(RpcError::fatal(format!("error parsing value for key {ty}")))
         }
 
+        fn chunked_attr(attrs: &[gno_rpc::types::EventAttribute], ty: &str) -> RpcResult<Bytes> {
+            // If no _size field is present, the value was emitted as a single plain attribute.
+            let Some(hex_str_len) = attr::<usize>(attrs, &format!("{ty}_size")).ok() else {
+                return attr(attrs, ty);
+            };
+
+            // Collect raw chunk strings. gno splits the full "0x<hex>" string into
+            // 4096-char slices, so only chunk[0] carries the "0x" prefix; subsequent
+            // chunks are bare hex continuations.
+            let combined: String = (0..)
+                .map_while(|i| {
+                    attrs
+                        .iter()
+                        .find_map(|a| (a.key == format!("{ty}[{i}]")).then(|| a.value.clone()))
+                })
+                .collect();
+
+            if combined.len() != hex_str_len {
+                return Err(RpcError::fatal_from_message(format!(
+                    "key {ty} incomplete: got {} hex chars, expected {hex_str_len}",
+                    combined.len(),
+                )));
+            }
+
+            combined
+                .parse::<Bytes>()
+                .map_err(RpcError::fatal(format!("error parsing hex for key {ty}")))
+        }
+
         let attrs = gno_event
             .attrs
             .ok_or_else(|| RpcError::fatal_from_message("no attributes on event"))?;
@@ -152,7 +165,6 @@ impl IbcEvent {
                 counterparty_port_id: attr(&attrs, "counterparty_port_id")?,
                 // TODO: Fix this once this is no longer emitted on init
                 counterparty_channel_id: attr::<ChannelId>(&attrs, "counterparty_channel_id").ok(),
-                connection_id: attr(&attrs, "connection_id")?,
                 connection_client_id: attr(&attrs, "connection_client_id")?,
                 connection_counterparty_client_id: attr(
                     &attrs,
@@ -204,44 +216,30 @@ impl IbcEvent {
             "ChannelOpenConfirm" => IbcEvent::ChannelOpenConfirm(parse_channel_event(attrs)?),
             "PacketRecv" => IbcEvent::PacketRecv {
                 packet_hash: attr(&attrs, "packet_hash")?,
-                packet_data: attr(&attrs, "packet_data")?,
-                source_channel_id: attr(&attrs, "source_channel_id")?,
-                source_connection_id: attr(&attrs, "source_connection_id")?,
-                source_connection_client_id: attr(&attrs, "source_connection_client_id")?,
                 destination_channel_id: attr(&attrs, "destination_channel_id")?,
-                destination_channel_version: attr(&attrs, "destination_channel_version")?,
-                destination_connection_id: attr(&attrs, "destination_connection_id")?,
-                destination_connection_client_id: attr(&attrs, "destination_connection_client_id")?,
-                timeout_timestamp: attr(&attrs, "timeout_timestamp")?,
-                maker_msg: attr(&attrs, "maker_msg")?,
+                maker_msg: chunked_attr(&attrs, "maker_msg")?,
             },
             "PacketSend" => IbcEvent::PacketSend {
                 packet_hash: attr(&attrs, "packet_hash")?,
-                packet_data: attr(&attrs, "packet_data")?,
+                packet_data: chunked_attr(&attrs, "packet_data")?,
                 source_channel_id: attr(&attrs, "source_channel_id")?,
-                source_channel_version: attr(&attrs, "source_channel_version")?,
-                source_connection_id: attr(&attrs, "source_connection_id")?,
-                source_connection_client_id: attr(&attrs, "source_connection_client_id")?,
                 destination_channel_id: attr(&attrs, "destination_channel_id")?,
-                destination_connection_id: attr(&attrs, "destination_connection_id")?,
-                destination_connection_client_id: attr(&attrs, "destination_connection_client_id")?,
                 timeout_timestamp: attr(&attrs, "timeout_timestamp")?,
             },
-            // TODO
-            "BatchSend" => IbcEvent::BatchSend {},
-            "PacketAck" => IbcEvent::PacketAck {},
+            "BatchSend" => IbcEvent::BatchSend {
+                packet_hash: attr(&attrs, "packet_hash")?,
+                batch_hash: attr(&attrs, "batch_hash")?,
+                channel_id: attr(&attrs, "channel_id")?,
+            },
+            "PacketAck" => IbcEvent::PacketAck {
+                packet_hash: attr(&attrs, "packet_hash")?,
+                source_channel_id: attr(&attrs, "source_channel_id")?,
+                acknowledgement: chunked_attr(&attrs, "acknowledgement")?,
+            },
             "WriteAck" => IbcEvent::WriteAck {
                 packet_hash: attr(&attrs, "packet_hash")?,
-                packet_data: attr(&attrs, "packet_data")?,
-                source_channel_id: attr(&attrs, "source_channel_id")?,
-                source_connection_id: attr(&attrs, "source_connection_id")?,
-                source_connection_client_id: attr(&attrs, "source_connection_client_id")?,
                 destination_channel_id: attr(&attrs, "destination_channel_id")?,
-                destination_channel_version: attr(&attrs, "destination_channel_version")?,
-                destination_connection_id: attr(&attrs, "destination_connection_id")?,
-                destination_connection_client_id: attr(&attrs, "destination_connection_client_id")?,
-                timeout_timestamp: attr(&attrs, "timeout_timestamp")?,
-                acknowledgement: attr(&attrs, "acknowledgement")?,
+                acknowledgement: chunked_attr(&attrs, "acknowledgement")?,
             },
             event => {
                 warn!("unknown event: {event}");

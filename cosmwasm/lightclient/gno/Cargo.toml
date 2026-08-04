@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [package.metadata.crane]
-# test-include = ["cosmwasm/lightclient/gno/src/test"]
+test-include = ["cosmwasm/lightclient/gno/testdata"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]

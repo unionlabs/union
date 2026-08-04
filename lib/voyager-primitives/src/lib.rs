@@ -144,6 +144,13 @@ impl ClientType {
     /// [Aptos]: https://github.com/aptos-labs/aptos-core
     pub const STATE_LENS_ICS23_SMT: &'static str = "state-lens/ics23/smt";
 
+    /// A client tracking a [gno.land] chain utilizing a bptree as the storage layer,
+    /// verified through that chain's consensus as settled on an intermediary [ICS23] chain.
+    ///
+    /// [ICS23]: https://github.com/cosmos/ics23
+    /// [gno.land]: https://gno.land
+    pub const STATE_LENS_ICS23_BPTREE: &'static str = "state-lens/ics23/bptree";
+
     /// A client tracking a chain via committed proofs on an intermediary chain.
     pub const PROOF_LENS: &'static str = "proof-lens";
 

@@ -1,7 +1,7 @@
 use std::{fmt::Debug, num::NonZeroU64, time::Duration};
 
 use gno_light_client_types::{ClientState, ConsensusState, Fraction};
-use ics23::ibc_api::SDK_SPECS;
+use ics23::ibc_api::GNO_SPECS;
 use jsonrpsee::{Extensions, core::async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -133,7 +133,7 @@ impl ClientBootstrapModuleServer for Module {
                 0,
                 height.inner().try_into().expect("is within bounds; qed;"),
             ),
-            proof_specs: SDK_SPECS.into(),
+            proof_specs: GNO_SPECS.into(),
             upgrade_path: vec!["upgrade".into(), "upgradedIBCState".into()],
             realm: self.ibc_core_realm.clone(),
         })

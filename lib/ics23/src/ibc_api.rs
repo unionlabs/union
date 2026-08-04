@@ -4,13 +4,14 @@ use unionlabs::{
     primitives::Bytes,
 };
 
-pub use crate::proof_specs::{IAVL_PROOF_SPEC, TENDERMINT_PROOF_SPEC};
+pub use crate::proof_specs::{BPTREE_PROOF_SPEC, IAVL_PROOF_SPEC, TENDERMINT_PROOF_SPEC};
 use crate::{
     existence_proof,
     verify::{self},
 };
 
 pub const SDK_SPECS: [ProofSpec; 2] = [IAVL_PROOF_SPEC, TENDERMINT_PROOF_SPEC];
+pub const GNO_SPECS: [ProofSpec; 2] = [BPTREE_PROOF_SPEC, TENDERMINT_PROOF_SPEC];
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum VerifyMembershipError {

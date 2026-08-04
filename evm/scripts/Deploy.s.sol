@@ -31,6 +31,8 @@ import {StateLensIcs23MptClient} from
     "../contracts/clients/StateLensIcs23MptClient.sol";
 import {StateLensIcs23SmtClient} from
     "../contracts/clients/StateLensIcs23SmtClient.sol";
+import {StateLensIcs23BptreeClient} from
+    "../contracts/clients/StateLensIcs23BptreeClient.sol";
 import {ProofLensClient} from "../contracts/clients/ProofLensClient.sol";
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/03-zkgm/Zkgm.sol";
@@ -98,6 +100,8 @@ library LIGHT_CLIENT_SALT {
     string constant STATE_LENS_ICS23_ICS23 =
         "lightclients/state-lens/ics23/ics23";
     string constant STATE_LENS_ICS23_SMT = "lightclients/state-lens/ics23/smt";
+    string constant STATE_LENS_ICS23_BPTREE =
+        "lightclients/state-lens/ics23/bptree";
     string constant PROOF_LENS = "lightclients/proof-lens";
 }
 
@@ -107,6 +111,7 @@ library LightClients {
     string constant STATE_LENS_ICS23_MPT = "state-lens/ics23/mpt";
     string constant STATE_LENS_ICS23_ICS23 = "state-lens/ics23/ics23";
     string constant STATE_LENS_ICS23_SMT = "state-lens/ics23/smt";
+    string constant STATE_LENS_ICS23_BPTREE = "state-lens/ics23/bptree";
     string constant PROOF_LENS = "proof-lens";
 }
 
@@ -505,6 +510,25 @@ abstract contract UnionScript is UnionBase {
                     )
                 ),
                 "StateLensIcs23SmtClient"
+            )
+        );
+    }
+
+    function deployStateLensIcs23BptreeClient(
+        IBCHandler handler,
+        Manager manager
+    ) internal returns (StateLensIcs23BptreeClient) {
+        return StateLensIcs23BptreeClient(
+            deployIfNotExists(
+                LIGHT_CLIENT_SALT.STATE_LENS_ICS23_BPTREE,
+                abi.encode(
+                    address(new StateLensIcs23BptreeClient(address(handler))),
+                    abi.encodeCall(
+                        StateLensIcs23BptreeClient.initialize,
+                        (address(manager))
+                    )
+                ),
+                "StateLensIcs23BptreeClient"
             )
         );
     }

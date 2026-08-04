@@ -183,7 +183,7 @@ impl ClientConfigs {
                     serde_json::to_string(&many.keys().map(|k| (k, ())).collect::<HashMap<_, _>>())
                         .unwrap();
 
-                format!("{clients_json} | has($client_id)")
+                format!("{clients_json} | has($client_id | tostring)")
             }
         }
     }

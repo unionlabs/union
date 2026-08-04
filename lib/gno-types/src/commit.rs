@@ -81,8 +81,8 @@ impl Commit {
     /// The value returned from this function is only sound after this commit has been validated by [`Self::validate_basic`].
     pub fn height(&self) -> BoundedI64<0> {
         self.precommits
-            .first()
-            .and_then(|v| v.as_ref().map(|v| v.height))
+            .iter()
+            .find_map(|v| v.as_ref().map(|v| v.height))
             .unwrap_or(const { result_unwrap!(<BoundedI64<0>>::new_const(0)) })
     }
 
@@ -93,8 +93,8 @@ impl Commit {
     /// The value returned from this function is only sound after this commit has been validated by [`Self::validate_basic`].
     pub fn round(&self) -> BoundedI32<-1> {
         self.precommits
-            .first()
-            .and_then(|v| v.as_ref().map(|v| v.round))
+            .iter()
+            .find_map(|v| v.as_ref().map(|v| v.round))
             .unwrap_or(const { result_unwrap!(<BoundedI32<-1>>::new_const(0)) })
     }
 

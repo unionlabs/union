@@ -190,7 +190,7 @@ impl ClientConfigs {
                     serde_json::to_string(&many.keys().map(|k| (k, ())).collect::<HashMap<_, _>>())
                         .unwrap();
 
-                format!("{clients_json} | has($client_id)")
+                format!("{clients_json} | has($client_id | tostring)")
             }
         }
     }
@@ -1937,9 +1937,64 @@ fn commit(bytes: impl AsRef<[u8]>) -> H256 {
 
 #[cfg(test)]
 mod tests {
+    use ibc_union_spec::{ConnectionId, event::FullEvent};
     use serde_json::json;
+    use voyager_core::filter::InterestFilters;
+    use voyager_sdk::{
+        primitives::{ClientInfo, ClientType, IbcInterface},
+        vm::filter::{FilterResult, InterestFilter},
+    };
 
     use super::*;
+
+    fn connection_open_init_op(counterparty_client_id: u32) -> Op<VoyagerMessage> {
+        Op::Data(Data::IbcEvent(ChainEvent::new::<IbcUnion>(
+            ChainId::new("source-chain"),
+            ClientInfo {
+                client_type: ClientType::new(ClientType::COMETBLS),
+                ibc_interface: IbcInterface::new(IbcInterface::IBC_COSMWASM),
+                metadata: serde_json::Value::Null,
+            },
+            ChainId::new("union-devnet-1"),
+            None,
+            EventProvableHeight::Min(Height::new(1)),
+            FullEvent::ConnectionOpenInit(ConnectionOpenInit {
+                connection_id: ConnectionId::from_raw(1).unwrap(),
+                client_id: ClientId::from_raw(1).unwrap(),
+                counterparty_client_id: ClientId::from_raw(counterparty_client_id).unwrap(),
+            }),
+        )))
+    }
+
+    #[test]
+    fn interest_filter_matches_numeric_client_id() {
+        let info = Module::info(Config {
+            chain_id: ChainId::new("union-devnet-1"),
+            client_configs: ClientConfigsSerde::Many(
+                [5, 7]
+                    .into_iter()
+                    .map(|id| SpecificClientConfig {
+                        client_id: ClientId::from_raw(id).unwrap(),
+                        min_batch_size: 1,
+                        max_batch_size: 1,
+                        max_wait_time: Duration::from_secs(1),
+                    })
+                    .collect(),
+            ),
+        });
+        let filters = InterestFilters::new(vec![info]).unwrap();
+        let takes_interest = |counterparty_client_id| {
+            let op = connection_open_init_op(counterparty_client_id);
+
+            matches!(
+                filters.check_interest(&op),
+                FilterResult::Interest(interest) if interest.remove
+            )
+        };
+
+        assert!(takes_interest(5));
+        assert!(!takes_interest(99));
+    }
 
     #[test]
     fn config_serde() {
