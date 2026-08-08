@@ -191,7 +191,7 @@ module ibc::dispatcher {
     }
 
     #[test_only]
-    public fun init_module_for_testing(publisher: &signer) {
+    public fun init_module_for_tests(publisher: &signer) {
         init_module(publisher);
     }
 }

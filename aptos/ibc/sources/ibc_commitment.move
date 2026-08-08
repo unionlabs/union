@@ -90,9 +90,9 @@ module ibc::commitment {
     // Generate the path for client state
     public(friend) fun client_state_path(client_id: u32): vector<u8> {
         let state_path = vector::empty();
-        let client_State = bcs::to_bytes<u256>(&CLIENT_STATE);
-        vector::reverse(&mut client_State);
-        vector::append(&mut state_path, client_State);
+        let client_state = bcs::to_bytes<u256>(&CLIENT_STATE);
+        vector::reverse(&mut client_state);
+        vector::append(&mut state_path, client_state);
         let client_id_bytes = bcs::to_bytes<u256>(&(client_id as u256));
         vector::reverse(&mut client_id_bytes);
         vector::append(&mut state_path, client_id_bytes);
@@ -168,40 +168,23 @@ module ibc::commitment {
         path_vec
     }
 
-    // Generate the path for channel
     public(friend) fun batch_packets_commitment_path(
-        channel_id: u32, batchHash: vector<u8>
+        batch_hash: vector<u8>
     ): vector<u8> {
-        let path_vec = vector::empty<u8>();
-
-        let channels_bytes = bcs::to_bytes<u256>(&PACKETS);
-        vector::reverse(&mut channels_bytes);
-        vector::append(&mut path_vec, channels_bytes);
-
-        let param_bytes = bcs::to_bytes<u256>(&(channel_id as u256));
-        vector::reverse(&mut param_bytes);
-        vector::append(&mut path_vec, param_bytes);
-
-        vector::append(&mut path_vec, batchHash);
-        path_vec
+        let path = bcs::to_bytes<u256>(&PACKETS);
+        vector::reverse(&mut path);
+        vector::append(&mut path, batch_hash);
+        path
     }
 
     // Generate the path for channel
     public(friend) fun batch_receipts_commitment_path(
-        channel_id: u32, batchHash: vector<u8>
+        batch_hash: vector<u8>
     ): vector<u8> {
-        let path_vec = vector::empty<u8>();
-
-        let channels_bytes = bcs::to_bytes<u256>(&PACKET_ACKS);
-        vector::reverse(&mut channels_bytes);
-        vector::append(&mut path_vec, channels_bytes);
-
-        let param_bytes = bcs::to_bytes<u256>(&(channel_id as u256));
-        vector::reverse(&mut param_bytes);
-        vector::append(&mut path_vec, param_bytes);
-
-        vector::append(&mut path_vec, batchHash);
-        path_vec
+        let out = bcs::to_bytes<u256>(&PACKET_ACKS);
+        vector::reverse(&mut out);
+        vector::append(&mut out, batch_hash);
+        out
     }
 
     // Generate the path for channel
@@ -273,16 +256,14 @@ module ibc::commitment {
         keccak256(packet_commitment_path(channel_id, sequence))
     }
 
-    public(friend) fun batch_packets_commitment_key(
-        channel_id: u32, batch_hash: vector<u8>
-    ): vector<u8> {
-        keccak256(batch_packets_commitment_path(channel_id, batch_hash))
+    public fun batch_packets_commitment_key(batch_hash: vector<u8>): vector<u8> {
+        keccak256(batch_packets_commitment_path(batch_hash))
     }
 
     public(friend) fun batch_receipts_commitment_key(
-        channel_id: u32, batch_hash: vector<u8>
+        batch_hash: vector<u8>
     ): vector<u8> {
-        keccak256(batch_receipts_commitment_path(channel_id, batch_hash))
+        keccak256(batch_receipts_commitment_path(batch_hash))
     }
 
     public(friend) fun next_sequence_send_commitment_key(channel_id: u32): vector<u8> {

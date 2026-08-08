@@ -75,6 +75,7 @@ module ibc::light_client {
     const CLIENT_TYPE_COMETBLS: vector<u8> = b"cometbls";
 
     public(friend) fun create_client(
+        sender: &signer,
         client_type: String,
         ibc_signer: &signer,
         client_id: u32,
@@ -83,6 +84,7 @@ module ibc::light_client {
     ): (vector<u8>, vector<u8>, String, Option<CreateLensClientEvent>) {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::create_client(
+                sender,
                 ibc_signer,
                 client_id,
                 client_state_bytes,
@@ -90,6 +92,7 @@ module ibc::light_client {
             )
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
             return state_lens_ics23_mpt_lc::create_client(
+                sender,
                 ibc_signer,
                 client_id,
                 client_state_bytes,
@@ -97,6 +100,7 @@ module ibc::light_client {
             )
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
             return state_lens_ics23_ics23_lc::create_client(
+                sender,
                 ibc_signer,
                 client_id,
                 client_state_bytes,
@@ -130,41 +134,36 @@ module ibc::light_client {
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public(friend) fun check_for_misbehaviour(
-        client_type: String, client_id: u32, header: vector<u8>
-    ): bool {
-        if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
-            return cometbls_lc::check_for_misbehaviour(client_id, header)
-        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return state_lens_ics23_mpt_lc::check_for_misbehaviour(client_id, header)
-        } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
-            return state_lens_ics23_ics23_lc::check_for_misbehaviour(client_id, header)
-        };
-        abort E_UNKNOWN_CLIENT_TYPE
-    }
-
     public(friend) fun update_client(
-        client_type: String, client_id: u32, client_msg: vector<u8>
-    ): (vector<u8>, vector<vector<u8>>, vector<u64>) {
+        client_type: String,
+        client_id: u32,
+        client_msg: vector<u8>,
+        relayer: address
+    ): (vector<u8>, vector<u8>, u64) {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
-            return cometbls_lc::update_client(client_id, client_msg)
+            return cometbls_lc::update_client(client_id, client_msg, relayer)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return state_lens_ics23_mpt_lc::update_client(client_id, client_msg)
+            return state_lens_ics23_mpt_lc::update_client(client_id, client_msg, relayer)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
-            return state_lens_ics23_ics23_lc::update_client(client_id, client_msg)
+            return state_lens_ics23_ics23_lc::update_client(
+                client_id, client_msg, relayer
+            )
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public(friend) fun report_misbehaviour(
-        client_type: String, client_id: u32, misbehaviour: vector<u8>
+    public(friend) fun misbehaviour(
+        client_type: String,
+        client_id: u32,
+        misbehaviour: vector<u8>,
+        relayer: address
     ) {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
-            cometbls_lc::report_misbehaviour(client_id, misbehaviour)
+            cometbls_lc::misbehaviour(client_id, misbehaviour, relayer)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            state_lens_ics23_mpt_lc::report_misbehaviour(client_id, misbehaviour)
+            state_lens_ics23_mpt_lc::misbehaviour(client_id, misbehaviour, relayer)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
-            state_lens_ics23_ics23_lc::report_misbehaviour(client_id, misbehaviour)
+            state_lens_ics23_ics23_lc::misbehaviour(client_id, misbehaviour, relayer)
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }

@@ -73,10 +73,6 @@ module ibc::height {
         }
     }
 
-    public fun default(): Height {
-        new(0, 0)
-    }
-
     public fun get_revision_number(height: &Height): u64 {
         height.revision_number
     }
@@ -112,11 +108,42 @@ module ibc::height {
     }
 
     public fun decode_bcs(buf: &mut BcsBuf): Height {
-        // let length = bcs_utils::peel_length_prefix(buf);
-        // assert!(length == 2, 1); // TODO: Better error code here
         Height {
             revision_number: bcs_utils::peel_u64(buf),
             revision_height: bcs_utils::peel_u64(buf)
         }
+    }
+
+    #[test]
+    fun height_encoding() {
+        let height = new(1, 2);
+        let encoded = std::bcs::to_bytes(&height);
+        let buf = bcs_utils::new(encoded);
+        assert!(height == decode_bcs(&mut buf), 1);
+    }
+
+    #[test]
+    fun height_gte() {
+        assert!(gte(&new(1, 2), &new(1, 1)), 1);
+        assert!(gte(&new(1, 1), &new(1, 1)), 1);
+        assert!(!gte(&new(1, 0), &new(1, 1)), 1);
+        assert!(gte(&new(2, 0), &new(1, 1)), 1);
+        assert!(!gte(&new(1, 2), &new(2, 1)), 1);
+    }
+
+    #[test]
+    fun height_lt() {
+        assert!(lt(&new(1, 1), &new(1, 2)), 1);
+        assert!(!lt(&new(1, 1), &new(1, 1)), 1);
+        assert!(!lt(&new(1, 1), &new(1, 0)), 1);
+        assert!(lt(&new(1, 1), &new(2, 0)), 1);
+        assert!(!lt(&new(2, 0), &new(1, 1)), 1);
+    }
+
+    #[test]
+    fun height_is_zero() {
+        assert!(is_zero(&new(0, 0)), 1);
+        assert!(!is_zero(&new(1, 0)), 1);
+        assert!(!is_zero(&new(0, 1)), 1);
     }
 }
