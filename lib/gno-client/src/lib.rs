@@ -145,91 +145,76 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
         Ok(response)
     }
 
-    // pub async fn simulate_tx(
-    //     &self,
-    //     messages: impl IntoIterator<Item: Into<RawAny>> + Clone,
-    //     memo: impl AsRef<str>,
-    // ) -> Result<(TxBody, AuthInfo, GasInfo), BroadcastTxCommitError> {
-    //     use protos::cosmos::tx;
+    /// Dry-runs a tx against `.app/simulate` (no broadcast, no mempool/consensus
+    /// involvement) and returns the gas used.
+    #[instrument(skip_all, fields(memo = %memo.as_ref()))]
+    pub async fn simulate_tx(
+        &self,
+        messages: impl IntoIterator<Item = Msg> + Clone,
+        memo: impl AsRef<str>,
+    ) -> Result<u64, BroadcastTxCommitError> {
+        let account = self
+            .rpc()
+            .client()
+            .account_info(&self.wallet.address())
+            .await?
+            .unwrap_or_default();
 
-    //     let account = self
-    //         .account_info(self.wallet.address())
-    //         .await?
-    //         .unwrap_or_default();
+        // the fee doesn't affect execution gas, so a placeholder built from the
+        // configured max is used, matching gnokey's own simulate behaviour
+        let placeholder_fee = self.gas.mk_fee(self.gas.max_gas().await).await?;
 
-    //     let (tx_body, auth_info) = self.tx_info(messages, memo, &account).await;
+        let (tx, _) = build_tx_and_sign(
+            &self.wallet,
+            placeholder_fee,
+            self.rpc().chain_id().to_owned(),
+            messages,
+            memo,
+            account,
+        );
 
-    //     let simulation_signature = self.wallet.sign(
-    //         &SignDoc {
-    //             body_bytes: tx_body.clone().encode_as::<Proto>(),
-    //             auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
-    //             chain_id: self.rpc.chain_id().to_string(),
-    //             account_number: account.account_number,
-    //         }
-    //         .encode_as::<Proto>(),
-    //     );
+        let tx_bytes = proto_encode(tx);
 
-    //     let simulate_response = self
-    //         .rpc
-    //         .client()
-    //         .grpc_abci_query::<_, tx::v1beta1::SimulateResponse>(
-    //             "/cosmos.tx.v1beta1.Service/Simulate",
-    //             &tx::v1beta1::SimulateRequest {
-    //                 tx_bytes: Tx {
-    //                     body: tx_body.clone(),
-    //                     auth_info: auth_info.clone(),
-    //                     signatures: [simulation_signature.into()].to_vec(),
-    //                 }
-    //                 .encode_as::<Proto>(),
-    //                 ..Default::default()
-    //             },
-    //             None,
-    //             false,
-    //         )
-    //         .await?
-    //         .into_result()?
-    //         .ok_or(BroadcastTxCommitError::NoResponse)?;
+        let response = self
+            .rpc()
+            .client()
+            .abci_query(".app/simulate", &tx_bytes, None, false)
+            .await?;
 
-    //     Ok((
-    //         tx_body,
-    //         auth_info,
-    //         simulate_response.gas_info.unwrap_or_default().into(),
-    //     ))
-    // }
+        if let Some(error) = response.response.response_base.error {
+            return Err(BroadcastTxCommitError::TxFailed {
+                error,
+                log: response.response.response_base.log,
+            });
+        }
 
-    // async fn tx_info(
-    //     &self,
-    //     messages: impl IntoIterator<Item: Into<RawAny>> + Clone,
-    //     memo: impl AsRef<str>,
-    //     account: &BaseAccount,
-    // ) -> (TxBody, AuthInfo) {
-    //     let tx_body = TxBody {
-    //         // TODO: Use RawAny here
-    //         messages: messages.clone().into_iter().map(Into::into).collect(),
-    //         memo: memo.as_ref().to_owned(),
-    //         timeout_height: 0,
-    //         extension_options: vec![],
-    //         non_critical_extension_options: vec![],
-    //         // unordered: false,
-    //         // timeout_timestamp: None,
-    //     };
+        let value = response
+            .response
+            .value
+            .ok_or(BroadcastTxCommitError::NoResponse)?;
 
-    //     let auth_info = AuthInfo {
-    //         signer_infos: [SignerInfo {
-    //             public_key: Some(AnyPubKey::Secp256k1(Any(secp256k1::PubKey {
-    //                 key: self.wallet.public_key().into_encoding(),
-    //             }))),
-    //             mode_info: ModeInfo::Single {
-    //                 mode: SignMode::Direct,
-    //             },
-    //             sequence: account.sequence,
-    //         }]
-    //         .to_vec(),
-    //         fee: self.gas.mk_fee(self.gas.max_gas().await).await,
-    //     };
+        parse_simulate_response(&value)
+    }
+}
 
-    //     (tx_body, auth_info)
-    // }
+fn parse_simulate_response(value: &[u8]) -> Result<u64, BroadcastTxCommitError> {
+    let result = protos::tm2::abci::ResponseDeliverTx::decode(value)?;
+
+    if let Some(log) = result
+        .response_base
+        .as_ref()
+        .filter(|response_base| response_base.error.is_some())
+        .map(|response_base| response_base.log.clone())
+    {
+        return Err(BroadcastTxCommitError::SimulationFailed { log });
+    }
+
+    result
+        .gas_used
+        .try_into()
+        .map_err(|_| BroadcastTxCommitError::InvalidGasUsed {
+            gas_used: result.gas_used,
+        })
 }
 
 fn build_tx_and_sign(
@@ -312,6 +297,18 @@ pub enum BroadcastTxCommitError {
         error: gno_rpc::types::response_base::Error,
         log: String,
     },
+    #[error("error decoding simulate response")]
+    ProtoDecode(#[from] prost::DecodeError),
+    #[error("simulation failed: {log}")]
+    SimulationFailed { log: String },
+    #[error("invalid gas price returned from chain: {price:?}")]
+    InvalidGasPrice { price: String },
+    #[error("invalid gas_used returned from simulation: {gas_used}")]
+    InvalidGasUsed { gas_used: i64 },
+    #[error(
+        "chain reported no gas price denom (no gas-usage history yet) and no fallback `denom` is configured"
+    )]
+    MissingGasDenom,
     #[error("tx inclusion couldn't be retrieved after {attempts} attempt(s) (tx hash: {tx_hash})")]
     Inclusion {
         attempts: usize,
@@ -429,5 +426,68 @@ mod tests {
             )),
             <H256>::from(sha2::Sha256::digest(tx_bytes)),
         );
+    }
+
+    #[test]
+    fn parse_simulate_response_extracts_gas_used() {
+        let response = protos::tm2::abci::ResponseDeliverTx {
+            response_base: Some(protos::tm2::abci::ResponseBase {
+                error: None,
+                data: vec![],
+                events: vec![],
+                log: String::new(),
+                info: String::new(),
+            }),
+            gas_wanted: 5000000,
+            gas_used: 1234567,
+        };
+
+        let gas_used = parse_simulate_response(&response.encode_to_vec()).unwrap();
+
+        assert_eq!(gas_used, 1234567);
+    }
+
+    #[test]
+    fn parse_simulate_response_surfaces_simulation_errors() {
+        let response = protos::tm2::abci::ResponseDeliverTx {
+            response_base: Some(protos::tm2::abci::ResponseBase {
+                error: Some(Default::default()),
+                data: vec![],
+                events: vec![],
+                log: "out of gas".to_owned(),
+                info: String::new(),
+            }),
+            gas_wanted: 5000000,
+            gas_used: 5000000,
+        };
+
+        let err = parse_simulate_response(&response.encode_to_vec()).unwrap_err();
+
+        assert!(matches!(
+            err,
+            BroadcastTxCommitError::SimulationFailed { log } if log == "out of gas"
+        ));
+    }
+
+    #[test]
+    fn parse_simulate_response_rejects_negative_gas_used() {
+        let response = protos::tm2::abci::ResponseDeliverTx {
+            response_base: Some(protos::tm2::abci::ResponseBase {
+                error: None,
+                data: vec![],
+                events: vec![],
+                log: String::new(),
+                info: String::new(),
+            }),
+            gas_wanted: 5000000,
+            gas_used: -1,
+        };
+
+        let err = parse_simulate_response(&response.encode_to_vec()).unwrap_err();
+
+        assert!(matches!(
+            err,
+            BroadcastTxCommitError::InvalidGasUsed { gas_used: -1 }
+        ));
     }
 }

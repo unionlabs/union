@@ -1,12 +1,14 @@
+use gno_rpc::rpc_types::TxFee;
 use num_rational::BigRational;
-use unionlabs::cosmos::tx::fee::Fee;
 
+pub mod any;
+pub mod dynamic;
 pub mod fixed;
 
 pub trait GasFillerT {
     async fn max_gas(&self) -> u64;
 
-    async fn mk_fee(&self, gas: u64) -> Fee;
+    async fn mk_fee(&self, gas: u64) -> Result<TxFee, crate::BroadcastTxCommitError>;
 }
 
 impl<T: GasFillerT> GasFillerT for &T {
@@ -14,7 +16,7 @@ impl<T: GasFillerT> GasFillerT for &T {
         (*self).max_gas().await
     }
 
-    async fn mk_fee(&self, gas: u64) -> Fee {
+    async fn mk_fee(&self, gas: u64) -> Result<TxFee, crate::BroadcastTxCommitError> {
         (*self).mk_fee(gas).await
     }
 }
