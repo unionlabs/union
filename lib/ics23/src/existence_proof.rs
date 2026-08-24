@@ -41,7 +41,7 @@ pub fn check_against_spec(
     }
 
     if let Some(max_depth) = spec.max_depth
-        && existence_proof.path.len() < max_depth.inner()
+        && existence_proof.path.len() > max_depth.inner()
     {
         return Err(SpecMismatchError::InnerDepthTooLong {
             path_len: existence_proof.path.len(),

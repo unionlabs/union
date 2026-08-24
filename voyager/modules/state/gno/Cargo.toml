@@ -20,7 +20,7 @@ gno-rpc                         = { workspace = true }
 ibc-union-spec                  = { workspace = true, features = ["serde", "ethabi"] }
 jsonrpsee                       = { workspace = true, features = ["macros", "server", "tracing"] }
 protos                          = { workspace = true }
-reqwest                         = { workspace = true, features = ["json"] }
+reqwest                         = { workspace = true, features = ["json", "rustls-tls"] }
 serde                           = { workspace = true, features = ["derive"] }
 serde-utils                     = { workspace = true }
 serde_json                      = { workspace = true }

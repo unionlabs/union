@@ -3,12 +3,13 @@
 
 use std::fmt::Display;
 
+use futures::{TryFutureExt, TryStreamExt, stream::FuturesUnordered};
 use ibc_union_spec::{
     Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, MustBeZero, Packet, Status,
     path::{BatchPacketsPath, BatchReceiptsPath, StorePath},
     query::{
         ClientStatus, PacketAckByHash, PacketAckByHashResponse, PacketByHash, PacketByHashResponse,
-        PacketsByBatchHash, Query,
+        PacketsByBatchHash, PacketsByBatchHashResponse, Query,
     },
 };
 use jsonrpsee::{Extensions, core::async_trait};
@@ -51,6 +52,8 @@ pub struct Module {
     pub tx_indexer_rpc_url: String,
 
     pub ibc_core_realm: String,
+
+    pub max_query_window: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -59,12 +62,22 @@ pub struct Config {
     pub rpc_url: String,
     pub tx_indexer_rpc_url: String,
     pub ibc_core_realm: String,
+
+    #[serde(default)]
+    pub max_query_window: Option<u64>,
 }
 
 impl StateModule<IbcUnion> for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: StateModuleInfo) -> anyhow::Result<Self> {
+        if config.max_query_window == Some(0) {
+            return Err(anyhow::anyhow!(
+                "max_query_window must not be 0 (omit it or set it to `null` to search \
+                 unbounded instead)"
+            ));
+        }
+
         let gno_client = gno_rpc::Client::new(config.rpc_url).await?;
 
         let chain_id = gno_client.status(None).await?.node_info.network;
@@ -78,8 +91,33 @@ impl StateModule<IbcUnion> for Module {
             tx_indexer_rpc_url: config.tx_indexer_rpc_url,
             chain_id: ChainId::new(chain_id),
             ibc_core_realm: config.ibc_core_realm,
+            max_query_window: config.max_query_window,
         })
     }
+}
+
+fn mk_windows(latest_height: u64, window: u64) -> Vec<(u64, u64)> {
+    let mut windows = Vec::new();
+    let mut hi = latest_height;
+
+    loop {
+        let mut lo = hi.saturating_sub(window.saturating_sub(1));
+
+        // avoid a degenerate trailing (0, 0) window
+        if lo <= 1 {
+            lo = 0;
+        }
+
+        windows.push((lo, hi));
+
+        if lo == 0 {
+            break;
+        }
+
+        hi = lo - 1;
+    }
+
+    windows
 }
 
 impl Module {
@@ -90,11 +128,45 @@ impl Module {
         packet_hash: H256,
     ) -> RpcResult<PacketByHashResponse> {
         let ibc_core_realm = &self.ibc_core_realm;
-        let query = format!(
-            r#"query getEvents {{
+
+        let windows: Vec<Option<(u64, u64)>> = match self.max_query_window {
+            Some(window) => {
+                let latest_height = self
+                    .gno_client
+                    .status(None)
+                    .await
+                    .map_err(RpcError::retryable(format!(
+                        "error querying latest height while constructing query windows \
+                         for packet {packet_hash}",
+                    )))?
+                    .sync_info
+                    .latest_block_height;
+
+                mk_windows(latest_height, window)
+                    .into_iter()
+                    .map(Some)
+                    .collect()
+            }
+            None => vec![None],
+        };
+
+        let mut res = None;
+
+        for window in windows {
+            let block_height_filter = window.map_or_else(String::new, |(lo, hi)| {
+                format!(
+                    "block_height: {{ gt: {}, lt: {} }},",
+                    lo.saturating_sub(1),
+                    hi.saturating_add(1)
+                )
+            });
+
+            let query = format!(
+                r#"query getEvents {{
   getTransactions(
     where: {{
       success: {{ eq: true }},
+      {block_height_filter}
       response: {{
         events: {{
           _and: [
@@ -139,25 +211,62 @@ impl Module {
     }}
   }}
 }}"#
-        );
+            );
 
-        println!("{query}");
+            println!("{query}");
 
-        let res = self
-            .tx_indexer_client
-            .post(&self.tx_indexer_rpc_url)
-            .json(&json!({
-                "operationName": "getEvents",
-                "query": query
-            }))
-            .send()
-            .await
-            .map_err(RpcError::retryable("error sending graphql query"))?
-            .json::<Value>()
-            .await
-            .map_err(RpcError::retryable(
-                "invalid json returned from graphql query",
-            ))?;
+            let window_res = self
+                .tx_indexer_client
+                .post(&self.tx_indexer_rpc_url)
+                .json(&json!({
+                    "operationName": "getEvents",
+                    "query": query
+                }))
+                .send()
+                .await
+                .map_err(RpcError::retryable("error sending graphql query"))?
+                .json::<Value>()
+                .await
+                .map_err(RpcError::retryable(
+                    "invalid json returned from graphql query",
+                ))?;
+
+            // indexer returns null (not []) for getTransactions when there's no match
+            let empty = Vec::new();
+            let transactions_in_window = match window_res.pointer("/data/getTransactions") {
+                Some(Value::Array(transactions)) => transactions,
+                Some(Value::Null) => &empty,
+                _ => {
+                    return Err(RpcError::retryable_from_message(
+                        "no getTransactions in graphql response",
+                    ));
+                }
+            };
+
+            match transactions_in_window.len() {
+                0 => {
+                    debug!(?window, "packet not found in window");
+                    continue;
+                }
+                1 => {
+                    res = Some(window_res);
+                    break;
+                }
+                found => {
+                    return Err(RpcError::retryable_from_message(format!(
+                        "expected exactly one transaction matching channel_id {channel_id} \
+                         and packet_hash {packet_hash} in window {window:?}, found {found}",
+                    )));
+                }
+            }
+        }
+
+        let res = res.ok_or_else(|| {
+            RpcError::retryable_from_message(format!(
+                "no packet_send event matching channel_id {channel_id} / packet_hash \
+                 {packet_hash} found after searching all windows",
+            ))
+        })?;
 
         let hash = res
             .pointer("/data/getTransactions/0/hash")
@@ -181,31 +290,78 @@ impl Module {
                 RpcError::fatal_from_message("block height in graphql response is not a u64")
             })?;
 
-        let raw_event = res
-            .pointer("/data/getTransactions/0/response/events/0")
+        let events = res
+            .pointer("/data/getTransactions/0/response/events")
+            .and_then(Value::as_array)
             .ok_or_else(|| {
                 RpcError::fatal_from_message("no response events in graphql response")
             })?;
 
-        let event = serde_json::from_value(raw_event.clone())
-            .map_err(RpcError::fatal("invalid attrs in graphql response"))?;
+        let (source_channel_id, destination_channel_id, packet_data, timeout_timestamp) = events
+            .iter()
+            .filter(|event| {
+                event.pointer("/type").and_then(Value::as_str) == Some("PacketSend")
+                    && event.pointer("/pkg_path").and_then(Value::as_str)
+                        == Some(ibc_core_realm.as_str())
+            })
+            .map(|raw_event| {
+                let event = serde_json::from_value(raw_event.clone())
+                    .map_err(RpcError::fatal("invalid attrs in graphql response"))?;
 
-        let IbcEvent::PacketSend {
-            packet_data,
-            source_channel_id,
-            destination_channel_id,
-            timeout_timestamp,
-            ..
-        } = IbcEvent::from_gno_event(event)?.ok_or_else(|| {
-            RpcError::fatal_from_message(
-                "invalid graphql response: invalid event returned from query",
+                let IbcEvent::PacketSend {
+                    packet_hash: found_packet_hash,
+                    packet_data,
+                    source_channel_id: found_channel_id,
+                    destination_channel_id,
+                    timeout_timestamp,
+                } = IbcEvent::from_gno_event(event)?.ok_or_else(|| {
+                    RpcError::fatal_from_message(
+                        "invalid graphql response: invalid event returned from query",
+                    )
+                })?
+                else {
+                    return Err(RpcError::fatal_from_message(
+                        "invalid graphql response: unexpected event returned from query",
+                    ));
+                };
+
+                Ok((
+                    found_packet_hash,
+                    found_channel_id,
+                    packet_data,
+                    destination_channel_id,
+                    timeout_timestamp,
+                ))
+            })
+            .collect::<RpcResult<Vec<_>>>()?
+            .into_iter()
+            // the tx can bundle multiple gno msgs together, so the where clause only
+            // guarantees *a* matching event is somewhere in the tx, not that every
+            // packet_send event in it belongs to this packet
+            .find_map(
+                |(
+                    found_packet_hash,
+                    found_channel_id,
+                    packet_data,
+                    destination_channel_id,
+                    timeout_timestamp,
+                )| {
+                    (found_packet_hash == packet_hash && found_channel_id == channel_id).then_some(
+                        (
+                            found_channel_id,
+                            destination_channel_id,
+                            packet_data,
+                            timeout_timestamp,
+                        ),
+                    )
+                },
             )
-        })?
-        else {
-            return Err(RpcError::fatal_from_message(
-                "invalid graphql response: unexpected event returned from query",
-            ));
-        };
+            .ok_or_else(|| {
+                RpcError::fatal_from_message(format!(
+                    "no packet_send event matching channel_id {channel_id} / packet_hash \
+                     {packet_hash} found in graphql response",
+                ))
+            })?;
 
         Ok(PacketByHashResponse {
             packet: Packet {
@@ -216,7 +372,196 @@ impl Module {
                 timeout_timestamp,
             },
             tx_hash: Some(hash.into_encoding()),
-            provable_height: height,
+            provable_height: height + 1,
+        })
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %channel_id, %batch_hash))]
+    pub async fn query_packets_by_batch_hash(
+        &self,
+        channel_id: ChannelId,
+        batch_hash: H256,
+    ) -> RpcResult<PacketsByBatchHashResponse> {
+        let ibc_core_realm = &self.ibc_core_realm;
+        let query = format!(
+            r#"query getEvents {{
+  getTransactions(
+    where: {{
+      success: {{ eq: true }},
+      response: {{
+        events: {{
+          _and: [
+            {{
+              GnoEvent: {{
+                type: {{ eq: "BatchSend" }}
+                pkg_path: {{ eq: "{ibc_core_realm}" }},
+                attrs: {{
+                  key: {{ eq: "channel_id" }}
+                  value: {{ eq: "{channel_id}" }}
+                }}
+              }}
+          	}}
+            {{
+              GnoEvent: {{
+                type: {{ eq: "BatchSend" }}
+                pkg_path: {{ eq: "{ibc_core_realm}" }},
+                attrs: {{
+                  key: {{ eq:"batch_hash" }}
+                  value: {{ eq:"{batch_hash}" }}
+                }}
+              }}
+          	}}
+          ]
+        }}
+      }}
+    }}
+  ) {{
+    block_height
+    hash
+    response {{
+      events {{
+        ... on GnoEvent {{
+          type
+          pkg_path
+          attrs {{
+            key
+            value
+          }}
+        }}
+      }}
+    }}
+  }}
+}}"#
+        );
+
+        let res = self
+            .tx_indexer_client
+            .post(&self.tx_indexer_rpc_url)
+            .json(&json!({
+                "operationName": "getEvents",
+                "query": query
+            }))
+            .send()
+            .await
+            .map_err(RpcError::retryable("error sending graphql query"))?
+            .json::<Value>()
+            .await
+            .map_err(RpcError::retryable(
+                "invalid json returned from graphql query",
+            ))?;
+
+        // indexer returns null (not []) for getTransactions when there's no match
+        let empty = Vec::new();
+        let transactions = match res.pointer("/data/getTransactions") {
+            Some(Value::Array(transactions)) => transactions,
+            Some(Value::Null) => &empty,
+            _ => {
+                return Err(RpcError::retryable_from_message(
+                    "no getTransactions in graphql response",
+                ));
+            }
+        };
+
+        if transactions.len() != 1 {
+            return Err(RpcError::retryable_from_message(format!(
+                "expected exactly one transaction matching channel_id {channel_id} and \
+                 batch_hash {batch_hash}, found {}",
+                transactions.len()
+            )));
+        }
+
+        let hash = res
+            .pointer("/data/getTransactions/0/hash")
+            .ok_or_else(|| RpcError::fatal_from_message("no tx hash in graphql response"))?
+            .as_str()
+            .ok_or_else(|| {
+                RpcError::fatal_from_message("tx hash in graphql response is not a string")
+            })?
+            .parse::<H256<Base64>>()
+            .map_err(RpcError::fatal("invalid tx hash in graphql response"))?;
+
+        let height = res
+            .pointer("/data/getTransactions/0/block_height")
+            .ok_or_else(|| RpcError::fatal_from_message("no block height in graphql response"))?
+            .as_number()
+            .ok_or_else(|| {
+                RpcError::fatal_from_message("block height in graphql response is not a number")
+            })?
+            .as_u64()
+            .ok_or_else(|| {
+                RpcError::fatal_from_message("block height in graphql response is not a u64")
+            })?;
+
+        let events = res
+            .pointer("/data/getTransactions/0/response/events")
+            .and_then(Value::as_array)
+            .ok_or_else(|| {
+                RpcError::fatal_from_message("no response events in graphql response")
+            })?;
+
+        let packet_hashes = events
+            .iter()
+            .filter(|event| {
+                event.pointer("/type").and_then(Value::as_str) == Some("BatchSend")
+                    && event.pointer("/pkg_path").and_then(Value::as_str)
+                        == Some(ibc_core_realm.as_str())
+            })
+            .map(|raw_event| {
+                let event = serde_json::from_value(raw_event.clone())
+                    .map_err(RpcError::fatal("invalid attrs in graphql response"))?;
+
+                let IbcEvent::BatchSend {
+                    packet_hash,
+                    batch_hash: found_batch_hash,
+                    channel_id: found_channel_id,
+                } = IbcEvent::from_gno_event(event)?.ok_or_else(|| {
+                    RpcError::fatal_from_message(
+                        "invalid graphql response: invalid event returned from query",
+                    )
+                })?
+                else {
+                    return Err(RpcError::fatal_from_message(
+                        "invalid graphql response: unexpected event returned from query",
+                    ));
+                };
+
+                Ok((found_batch_hash, found_channel_id, packet_hash))
+            })
+            .collect::<RpcResult<Vec<_>>>()?
+            .into_iter()
+            // the tx can bundle multiple gno msgs together (see
+            // `do_send_transaction`/`broadcast_tx_commit` in the gno transaction
+            // plugin), so the where clause only guarantees *a* matching event is
+            // somewhere in the tx, not that every BatchSend event in it belongs to
+            // this batch. events for other batches bundled into the same tx are
+            // filtered out here rather than treated as an error.
+            .filter_map(|(found_batch_hash, found_channel_id, packet_hash)| {
+                (found_batch_hash == batch_hash && found_channel_id == channel_id)
+                    .then_some(packet_hash)
+            })
+            .collect::<Vec<_>>();
+
+        if packet_hashes.len() < 2 {
+            return Err(RpcError::fatal_from_message(format!(
+                "expected at least 2 packets in batch {batch_hash}, found {}",
+                packet_hashes.len()
+            )));
+        }
+
+        let packets = packet_hashes
+            .into_iter()
+            .map(|packet_hash| {
+                self.query_packet_by_hash(channel_id, packet_hash)
+                    .map_ok(|res| res.packet)
+            })
+            .collect::<FuturesUnordered<_>>()
+            .try_collect::<Vec<_>>()
+            .await?;
+
+        Ok(PacketsByBatchHashResponse {
+            packets,
+            tx_hash: hash.into_encoding(),
+            provable_height: height + 1,
         })
     }
 
@@ -226,129 +571,172 @@ impl Module {
         channel_id: ChannelId,
         packet_hash: H256,
     ) -> RpcResult<PacketAckByHashResponse> {
-        // let query = format!(
-        //     "wasm-write_ack.packet_hash='{packet_hash}' AND wasm-write_ack.channel_id={channel_id}"
-        // );
+        let ibc_core_realm = &self.ibc_core_realm;
+        let query = format!(
+            r#"query getEvents {{
+  getTransactions(
+    where: {{
+      success: {{ eq: true }},
+      response: {{
+        events: {{
+          _and: [
+            {{
+              GnoEvent: {{
+                type: {{ eq: "WriteAck" }}
+                pkg_path: {{ eq: "{ibc_core_realm}" }},
+                attrs: {{
+                  key: {{ eq: "destination_channel_id" }}
+                  value: {{ eq: "{channel_id}" }}
+                }}
+              }}
+          	}}
+            {{
+              GnoEvent: {{
+                type: {{ eq: "WriteAck" }}
+                pkg_path: {{ eq: "{ibc_core_realm}" }},
+                attrs: {{
+                  key: {{ eq:"packet_hash" }}
+                  value: {{ eq:"{packet_hash}" }}
+                }}
+              }}
+          	}}
+          ]
+        }}
+      }}
+    }}
+  ) {{
+    block_height
+    hash
+    response {{
+      events {{
+        ... on GnoEvent {{
+          type
+          pkg_path
+          attrs {{
+            key
+            value
+          }}
+        }}
+      }}
+    }}
+  }}
+}}"#
+        );
 
-        // let mut tx_result = self
-        //     .gno_client
-        //     .tx_search(
-        //         &query,
-        //         false,
-        //         const { NonZeroU32::new(1).unwrap() },
-        //         const { NonZeroU8::new(1).unwrap() },
-        //         Order::Asc,
-        //     )
-        //     .await
-        //     .map_err(RpcError::retryable(
-        //         "error querying packet ack by packet hash in tx",
-        //     ))?;
+        let res = self
+            .tx_indexer_client
+            .post(&self.tx_indexer_rpc_url)
+            .json(&json!({
+                "operationName": "getEvents",
+                "query": query
+            }))
+            .send()
+            .await
+            .map_err(RpcError::retryable("error sending graphql query"))?
+            .json::<Value>()
+            .await
+            .map_err(RpcError::retryable(
+                "invalid json returned from graphql query",
+            ))?;
 
-        // if tx_result.total_count != 1 {
-        //     return Err(RpcError::retryable_from_message(format!(
-        //         "error querying for acknowledgement for packet \
-        //          {packet_hash}, expected 1 tx but found {}",
-        //         tx_result.total_count,
-        //     ))
-        //     .with_data(json!({ "tx_result": tx_result })));
-        // }
+        // indexer returns null (not []) for getTransactions when there's no match
+        let empty = Vec::new();
+        let transactions = match res.pointer("/data/getTransactions") {
+            Some(Value::Array(transactions)) => transactions,
+            Some(Value::Null) => &empty,
+            _ => {
+                return Err(RpcError::retryable_from_message(
+                    "no getTransactions in graphql response",
+                ));
+            }
+        };
 
-        // let tx = tx_result.txs.pop().expect("len is > 1; qed;");
+        if transactions.len() != 1 {
+            return Err(RpcError::retryable_from_message(format!(
+                "expected exactly one transaction matching channel_id {channel_id} and \
+                 packet_hash {packet_hash}, found {}",
+                transactions.len()
+            )));
+        }
 
-        // let extract_event = |event: &gno_rpc::types::abci::event::Event| {
-        //     CosmosSdkEvent::<IbcEvent>::new(event.clone())
-        //         .ok()
-        //         .and_then(|e| match e.event {
-        //             IbcEvent::WasmWriteAck {
-        //                 channel_id: found_channel_id,
-        //                 packet_hash: found_packet_hash,
-        //                 acknowledgement,
-        //             } => (channel_id == found_channel_id
-        //                 && packet_hash == found_packet_hash
-        //                 && e.contract_address
-        //                     .is_some_and(|a| a == self.ibc_host_contract_address))
-        //             .then_some(acknowledgement),
-        //             _ => None,
-        //         })
-        // };
+        let hash = res
+            .pointer("/data/getTransactions/0/hash")
+            .ok_or_else(|| RpcError::fatal_from_message("no tx hash in graphql response"))?
+            .as_str()
+            .ok_or_else(|| {
+                RpcError::fatal_from_message("tx hash in graphql response is not a string")
+            })?
+            .parse::<H256<Base64>>()
+            .map_err(RpcError::fatal("invalid tx hash in graphql response"))?;
 
-        // let maybe_ack = tx.tx_result.events.iter().find_map(extract_event);
+        let height = res
+            .pointer("/data/getTransactions/0/block_height")
+            .ok_or_else(|| RpcError::fatal_from_message("no block height in graphql response"))?
+            .as_number()
+            .ok_or_else(|| {
+                RpcError::fatal_from_message("block height in graphql response is not a number")
+            })?
+            .as_u64()
+            .ok_or_else(|| {
+                RpcError::fatal_from_message("block height in graphql response is not a u64")
+            })?;
 
-        // match maybe_ack {
-        //     Some(ack) => {
-        //         info!(%packet_hash, %channel_id, "queried packet");
+        let events = res
+            .pointer("/data/getTransactions/0/response/events")
+            .and_then(Value::as_array)
+            .ok_or_else(|| {
+                RpcError::fatal_from_message("no response events in graphql response")
+            })?;
 
-        //         Ok(PacketAckByHashResponse {
-        //             ack: ack.into_encoding(),
-        //             tx_hash: Some(tx.hash.into_encoding()),
-        //             provable_height: tx.height.expect("tx must have a height; qed;").get() + 1,
-        //         })
-        //     }
-        //     None => {
-        //         info!("packet not found in a tx, checking for block events");
+        let acknowledgement = events
+            .iter()
+            .filter(|event| {
+                event.pointer("/type").and_then(Value::as_str) == Some("WriteAck")
+                    && event.pointer("/pkg_path").and_then(Value::as_str)
+                        == Some(ibc_core_realm.as_str())
+            })
+            .map(|raw_event| {
+                let event = serde_json::from_value(raw_event.clone())
+                    .map_err(RpcError::fatal("invalid attrs in graphql response"))?;
 
-        //         let mut block_search_response = self
-        //             .gno_client
-        //             .block_search(
-        //                 query,
-        //                 const { NonZeroU32::new(1).unwrap() },
-        //                 const { NonZeroU8::new(1).unwrap() },
-        //                 Order::Asc,
-        //             )
-        //             .await
-        //             .map_err(RpcError::retryable(
-        //                 "error querying packet ack by packet hash in block",
-        //             ))?;
+                let IbcEvent::WriteAck {
+                    packet_hash: found_packet_hash,
+                    destination_channel_id: found_channel_id,
+                    acknowledgement,
+                } = IbcEvent::from_gno_event(event)?.ok_or_else(|| {
+                    RpcError::fatal_from_message(
+                        "invalid graphql response: invalid event returned from query",
+                    )
+                })?
+                else {
+                    return Err(RpcError::fatal_from_message(
+                        "invalid graphql response: unexpected event returned from query",
+                    ));
+                };
 
-        //         if block_search_response.total_count != 1 {
-        //             return Err(RpcError::retryable_from_message(format!(
-        //                 "error querying for packet {packet_hash}, \
-        //                 expected 1 block but found {}",
-        //                 block_search_response.total_count,
-        //             ))
-        //             .with_data(json!({ "block_response": block_search_response })));
-        //         }
+                Ok((found_packet_hash, found_channel_id, acknowledgement))
+            })
+            .collect::<RpcResult<Vec<_>>>()?
+            .into_iter()
+            // the tx can bundle multiple gno msgs together, so the where clause only
+            // guarantees *a* matching event is somewhere in the tx, not that every
+            // write_ack event in it belongs to this packet
+            .find_map(|(found_packet_hash, found_channel_id, acknowledgement)| {
+                (found_packet_hash == packet_hash && found_channel_id == channel_id)
+                    .then_some(acknowledgement)
+            })
+            .ok_or_else(|| {
+                RpcError::fatal_from_message(format!(
+                    "no write_ack event matching channel_id {channel_id} / packet_hash \
+                     {packet_hash} found in graphql response",
+                ))
+            })?;
 
-        //         let block_response = block_search_response
-        //             .blocks
-        //             .pop()
-        //             .expect("len is > 1; qed;");
-
-        //         let block_results = self
-        //             .gno_client
-        //             .block_results(Some(
-        //                 (block_response.block.header.height.inner() as u64)
-        //                     .try_into()
-        //                     .expect("block number is valid"),
-        //             ))
-        //             .await
-        //             .map_err(RpcError::retryable(format!(
-        //                 "error querying block {}",
-        //                 block_response.block.header.height
-        //             )))?;
-
-        //         let ack = block_results
-        //             .finalize_block_events
-        //             .iter()
-        //             .flatten()
-        //             .find_map(extract_event)
-        //             .ok_or_else(|| {
-        //                 RpcError::retryable_from_message(format!(
-        //                     "error querying for packet {packet_hash}, channel \
-        //                     {channel_id}; the wasm-packet_ack event was not found",
-        //                 ))
-        //                 .with_data(json!({ "block_results": block_results }))
-        //             })?;
-
-        //         Ok(PacketAckByHashResponse {
-        //             ack: ack.into_encoding(),
-        //             tx_hash: Some(tx.hash.into_encoding()),
-        //             provable_height: block_response.block.header.height.inner() as u64 + 1,
-        //         })
-        //     }
-        // }
-
-        todo!()
+        Ok(PacketAckByHashResponse {
+            ack: acknowledgement.into_encoding(),
+            tx_hash: Some(hash.into_encoding()),
+            provable_height: height + 1,
+        })
     }
 
     #[instrument(skip_all, fields(?height))]
@@ -681,13 +1069,13 @@ impl StateModuleServer<IbcUnion> for Module {
                 .query_packet_by_hash(channel_id, packet_hash)
                 .await
                 .map(into_value),
-            // TODO: Also query block events here
             Query::PacketsByBatchHash(PacketsByBatchHash {
-                channel_id: _,
-                batch_hash: _,
-            }) => {
-                todo!()
-            }
+                channel_id,
+                batch_hash,
+            }) => self
+                .query_packets_by_batch_hash(channel_id, batch_hash)
+                .await
+                .map(into_value),
             Query::PacketAckByHash(PacketAckByHash {
                 channel_id,
                 packet_hash,
@@ -798,11 +1186,71 @@ impl StateModuleServer<IbcUnion> for Module {
     }
 }
 
-// REVIEW: Do I need to do unescaping here?
 fn parse_gno_string_object(s: impl AsRef<str>) -> RpcResult<String> {
-    s.as_ref()
-        .strip_prefix("(\"")
-        .and_then(|s| s.strip_suffix("\" string)"))
-        .map(ToOwned::to_owned)
+    let s = s.as_ref();
+    // Handles both old format ("value" string) and new format
+    // ("value" gno.land/p/.../types.T, nil error)
+    s.strip_prefix("(\"")
+        .and_then(|s| s.find("\" ").map(|end| s[..end].to_owned()))
         .ok_or(RpcError::fatal_from_message("invalid string object"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::mk_windows;
+
+    fn assert_valid_windows(windows: &[(u64, u64)], latest_height: u64) {
+        assert!(!windows.is_empty(), "must produce at least one window");
+
+        assert_eq!(windows[0].1, latest_height, "first window must end at latest_height");
+        assert_eq!(
+            windows.last().expect("checked above; qed").0,
+            0,
+            "last window must start at 0"
+        );
+
+        for &(lo, hi) in windows {
+            assert!(lo <= hi, "window must not be inverted: {lo}..={hi}");
+        }
+
+        for window in windows.windows(2) {
+            assert_eq!(window[0].0, window[1].1 + 1, "windows must be contiguous: {window:?}");
+        }
+    }
+
+    #[test]
+    fn mk_windows_exact_multiple_of_window_size() {
+        // this used to produce a spurious trailing (0, 0) window
+        let windows = mk_windows(1000, 500);
+        assert_eq!(windows, vec![(501, 1000), (0, 500)]);
+        assert_valid_windows(&windows, 1000);
+    }
+
+    #[test]
+    fn mk_windows_not_a_multiple_of_window_size() {
+        let windows = mk_windows(1001, 500);
+        assert_eq!(windows, vec![(502, 1001), (2, 501), (0, 1)]);
+        assert_valid_windows(&windows, 1001);
+    }
+
+    #[test]
+    fn mk_windows_latest_height_smaller_than_window() {
+        let windows = mk_windows(10, 500);
+        assert_eq!(windows, vec![(0, 10)]);
+        assert_valid_windows(&windows, 10);
+    }
+
+    #[test]
+    fn mk_windows_latest_height_zero() {
+        let windows = mk_windows(0, 500);
+        assert_eq!(windows, vec![(0, 0)]);
+        assert_valid_windows(&windows, 0);
+    }
+
+    #[test]
+    fn mk_windows_window_size_one() {
+        let windows = mk_windows(3, 1);
+        assert_eq!(windows, vec![(3, 3), (2, 2), (0, 1)]);
+        assert_valid_windows(&windows, 3);
+    }
 }
