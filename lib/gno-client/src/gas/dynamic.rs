@@ -68,6 +68,14 @@ impl GasFiller {
 fn parse_gas_price_response(value: &[u8]) -> Result<GasPrice, crate::BroadcastTxCommitError> {
     let gas_price = serde_json::from_slice::<GasPriceResponse>(value)?;
 
+    if gas_price.price.is_empty() {
+        return Ok(GasPrice {
+            gas: gas_price.gas,
+            amount: 0,
+            denom: String::new(),
+        });
+    }
+
     let split_at = gas_price
         .price
         .find(|c: char| !c.is_ascii_digit())
@@ -75,15 +83,11 @@ fn parse_gas_price_response(value: &[u8]) -> Result<GasPrice, crate::BroadcastTx
 
     let (amount, denom) = gas_price.price.split_at(split_at);
 
-    let amount: u128 = if gas_price.price.is_empty() {
-        0
-    } else {
-        amount
-            .parse()
-            .map_err(|_| crate::BroadcastTxCommitError::InvalidGasPrice {
-                price: gas_price.price.clone(),
-            })?
-    };
+    let amount: u128 = amount
+        .parse()
+        .map_err(|_| crate::BroadcastTxCommitError::InvalidGasPrice {
+            price: gas_price.price.clone(),
+        })?;
 
     if amount > 0 && gas_price.gas <= 0 {
         return Err(crate::BroadcastTxCommitError::InvalidGasPrice {

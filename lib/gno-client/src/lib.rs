@@ -200,13 +200,12 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
 fn parse_simulate_response(value: &[u8]) -> Result<u64, BroadcastTxCommitError> {
     let result = protos::tm2::abci::ResponseDeliverTx::decode(value)?;
 
-    if let Some(log) = result
-        .response_base
-        .as_ref()
-        .filter(|response_base| response_base.error.is_some())
-        .map(|response_base| response_base.log.clone())
-    {
-        return Err(BroadcastTxCommitError::SimulationFailed { log });
+    if let Some(response_base) = &result.response_base {
+        if response_base.error.is_some() {
+            return Err(BroadcastTxCommitError::SimulationFailed {
+                log: response_base.log.clone(),
+            });
+        }
     }
 
     result
