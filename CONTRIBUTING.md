@@ -49,6 +49,7 @@ Some things to keep in mind while working on a PR:
 - Your commits must be [signed](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits). This is also enforced by our CI.
   - Aside from the requirement for this repository, it is good practice to sign your commits, otherwise anyone can trivially impersonate you on github and you can get [rekt](https://github.com/KaiserKarel/rekt).
 - If you have `nix` installed, ensure you run `nix fmt` and `nix build .#checks.your-architecture.spellcheck` before pushing. These are both checked in CI, and if they're checked locally first it will make the lifecycle of your PR much faster.
+  `nix fmt` reports spelling errors without automatically correcting them, using the same `typos.toml` configuration as the standalone spellcheck. Keep running the standalone check: it also covers files excluded from formatting, such as Markdown under `site/src/content`.
 - We do not use merge commits in this repository. If you have conflicts in your branch, you must rebase it on top of latest main (as opposed to merging main into your branch). This results in a much cleaner git history. This is *not* enforced by our CI, but your PR will not be approved if it contains merge commits.
 
 ## Reviews

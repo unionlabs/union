@@ -19,6 +19,10 @@
       edition = "2024";
     };
     taplo.enable = true;
+    typos = {
+      enable = true;
+      package = pkgsUnstable.typos;
+    };
     biome = {
       enable = true;
       package = pkgs.biome;
@@ -77,6 +81,14 @@
       statix.options = [ "explain" ];
       mdformat.options = [ "--number" ];
       deadnix.options = [ "--no-lambda-pattern-names" ];
+      # Report spelling errors without rewriting identifiers or excluded files.
+      typos.options = lib.mkForce [
+        "--config"
+        "typos.toml"
+        "--force-exclude"
+        "--format"
+        "brief"
+      ];
       shellcheck.options = [
         "--shell=bash"
         "--check-sourced"
