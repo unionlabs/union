@@ -19,7 +19,7 @@ use voyager_sdk::{
     primitives::{ChainId, QueryHeight},
     rpc::{RpcError, RpcResult},
     types::RawClientId,
-    vm::{Op, conc, data, now, promise},
+    vm::{Op, conc, data, noop, now, promise},
 };
 
 use crate::{
@@ -291,7 +291,10 @@ impl MakeMsg<IbcUnion> {
             msg = IbcUnion::event_name(&self.event)
         )
     )]
-    pub async fn call(self, voyager_client: &VoyagerClient) -> RpcResult<Op<VoyagerMessage>> {
+    pub async fn call<C: jsonrpsee::core::client::ClientT + Send + Sync>(
+        self,
+        voyager_client: &voyager_sdk::client::VoyagerClient<C>,
+    ) -> RpcResult<Op<VoyagerMessage>> {
         let MakeMsg {
             origin_chain_id,
             origin_chain_proof_height,
@@ -331,6 +334,13 @@ impl MakeMsg<IbcUnion> {
                     connection_state = %serde_json::to_string(&connection_state).unwrap(),
                     "connection"
                 );
+
+                if !handshake_state_matches(
+                    connection_state.state,
+                    ibc_union_spec::ConnectionState::Init,
+                ) {
+                    return Ok(noop());
+                }
 
                 // proof of connection_state, encoded for the client on the target chain
                 let connection_proof = voyager_client
@@ -398,6 +408,13 @@ impl MakeMsg<IbcUnion> {
                     "connection"
                 );
 
+                if !handshake_state_matches(
+                    connection_state.state,
+                    ibc_union_spec::ConnectionState::TryOpen,
+                ) {
+                    return Ok(noop());
+                }
+
                 // proof of connection_state, encoded for the client on the target chain
                 let connection_proof = voyager_client
                     .query_ibc_proof(
@@ -462,6 +479,13 @@ impl MakeMsg<IbcUnion> {
                     "connection"
                 );
 
+                if !handshake_state_matches(
+                    connection_state.state,
+                    ibc_union_spec::ConnectionState::Open,
+                ) {
+                    return Ok(noop());
+                }
+
                 // proof of connection_state, encoded for the client on the target chain
                 let connection_proof = voyager_client
                     .query_ibc_proof(
@@ -495,6 +519,19 @@ impl MakeMsg<IbcUnion> {
             }
 
             EventUnion::ChannelOpenInit(event) => {
+                let channel = voyager_client
+                    .query_ibc_state(
+                        origin_chain_id.clone(),
+                        QueryHeight::Specific(origin_chain_proof_height),
+                        ibc_union_spec::path::ChannelPath {
+                            channel_id: event.channel_id,
+                        },
+                    )
+                    .await?;
+                if !handshake_state_matches(channel.state, ibc_union_spec::ChannelState::Init) {
+                    return Ok(noop());
+                }
+
                 let proof = voyager_client
                     .query_ibc_proof(
                         origin_chain_id,
@@ -541,6 +578,19 @@ impl MakeMsg<IbcUnion> {
             }
 
             EventUnion::ChannelOpenTry(event) => {
+                let channel = voyager_client
+                    .query_ibc_state(
+                        origin_chain_id.clone(),
+                        QueryHeight::Specific(origin_chain_proof_height),
+                        ibc_union_spec::path::ChannelPath {
+                            channel_id: event.channel_id,
+                        },
+                    )
+                    .await?;
+                if !handshake_state_matches(channel.state, ibc_union_spec::ChannelState::TryOpen) {
+                    return Ok(noop());
+                }
+
                 let proof = voyager_client
                     .query_ibc_proof(
                         origin_chain_id,
@@ -581,6 +631,19 @@ impl MakeMsg<IbcUnion> {
             }
 
             EventUnion::ChannelOpenAck(event) => {
+                let channel = voyager_client
+                    .query_ibc_state(
+                        origin_chain_id.clone(),
+                        QueryHeight::Specific(origin_chain_proof_height),
+                        ibc_union_spec::path::ChannelPath {
+                            channel_id: event.channel_id,
+                        },
+                    )
+                    .await?;
+                if !handshake_state_matches(channel.state, ibc_union_spec::ChannelState::Open) {
+                    return Ok(noop());
+                }
+
                 let proof = voyager_client
                     .query_ibc_proof(
                         origin_chain_id,
@@ -766,10 +829,10 @@ impl MakeMsg<IbcClassic> {
 
         match event {
             EventClassic::ConnectionOpenInit(connection_open_init_event) => {
-                let ConnectionHandshakeStateAndProof {
+                let Some(ConnectionHandshakeStateAndProof {
                     connection_state,
                     encoded_connection_state_proof,
-                } = mk_connection_handshake_state_and_proofs(
+                }) = mk_connection_handshake_state_and_proofs(
                     voyager_client,
                     origin_chain_id,
                     target_chain_id,
@@ -778,7 +841,10 @@ impl MakeMsg<IbcClassic> {
                     connection_open_init_event.connection_id.clone(),
                     origin_chain_proof_height,
                 )
-                .await?;
+                .await?
+                else {
+                    return Ok(noop());
+                };
 
                 Ok(data(IbcDatagram::new::<IbcClassic>(
                     ibc_classic_spec::Datagram::from(unionlabs::ibc::core::connection::msg_connection_open_try::MsgConnectionOpenTry {
@@ -1071,7 +1137,7 @@ async fn mk_connection_handshake_state_and_proofs(
     counterparty_client_id: unionlabs::id::ClientId,
     connection_id: unionlabs::id::ConnectionId,
     origin_chain_proof_height: Height,
-) -> RpcResult<ConnectionHandshakeStateAndProof> {
+) -> RpcResult<Option<ConnectionHandshakeStateAndProof>> {
     // info of the client on the target chain that will verify the storage
     // proofs
     let target_client_info = voyager_client
@@ -1114,6 +1180,13 @@ async fn mk_connection_handshake_state_and_proofs(
         connection_state = %serde_json::to_string(&connection_state).unwrap(),
     );
 
+    if !handshake_state_matches(
+        connection_state.state,
+        unionlabs::ibc::core::connection::state::State::Init,
+    ) {
+        return Ok(None);
+    }
+
     // proof of connection_state, encoded for the client on the target chain
     let connection_proof = voyager_client
         .query_ibc_proof(
@@ -1137,13 +1210,220 @@ async fn mk_connection_handshake_state_and_proofs(
         .await?;
     debug!(%encoded_connection_state_proof);
 
-    Ok(ConnectionHandshakeStateAndProof {
+    Ok(Some(ConnectionHandshakeStateAndProof {
         connection_state,
         encoded_connection_state_proof,
-    })
+    }))
 }
 
 struct ConnectionHandshakeStateAndProof {
     connection_state: unionlabs::ibc::core::connection::connection_end::ConnectionEnd,
     encoded_connection_state_proof: Bytes,
+}
+
+/// Ignore events whose source state has changed by the height used for the proof.
+/// RPC and missing-state errors still propagate from the state query.
+fn handshake_state_matches<S: PartialEq + std::fmt::Display>(actual: S, expected: S) -> bool {
+    if actual == expected {
+        true
+    } else {
+        info!(%actual, %expected, "ignoring handshake event with unexpected source state");
+        false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ibc_union_spec::{ChannelState, ConnectionState};
+    use unionlabs::ibc::core::connection::state::State;
+
+    use super::handshake_state_matches;
+
+    #[test]
+    fn union_connection_handshakes_require_exact_source_state() {
+        let states = [
+            ConnectionState::Init,
+            ConnectionState::TryOpen,
+            ConnectionState::Open,
+        ];
+        for expected in states {
+            for actual in states {
+                assert_eq!(
+                    handshake_state_matches(actual, expected),
+                    actual == expected
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn union_channel_handshakes_reject_stale_and_closed_states() {
+        let states = [
+            ChannelState::Init,
+            ChannelState::TryOpen,
+            ChannelState::Open,
+            ChannelState::Closed,
+        ];
+        for expected in [
+            ChannelState::Init,
+            ChannelState::TryOpen,
+            ChannelState::Open,
+        ] {
+            for actual in states {
+                assert_eq!(
+                    handshake_state_matches(actual, expected),
+                    actual == expected
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn classic_connection_open_init_requires_init_state() {
+        for actual in [
+            State::UninitializedUnspecified,
+            State::Init,
+            State::Tryopen,
+            State::Open,
+        ] {
+            assert_eq!(
+                handshake_state_matches(actual, State::Init),
+                actual == State::Init
+            );
+        }
+    }
+
+    async fn run_union_handshake(event_name: &str, state: Option<&str>, rpc_error: bool) {
+        use std::sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        };
+
+        use ibc_union_spec::IbcUnion;
+        use jsonrpsee::{
+            RpcModule, http_client::HttpClientBuilder, server::ServerBuilder,
+            types::ErrorObjectOwned,
+        };
+        use serde_json::{Value, json};
+        use unionlabs::ibc::core::client::height::Height;
+        use voyager_sdk::{client::VoyagerClient, primitives::ChainId, vm::Op};
+
+        use super::{EventUnion, MakeMsg};
+
+        let height = Height::new(42);
+        let is_channel = event_name.starts_with("channel");
+        let expected = if event_name.ends_with("init") {
+            "init"
+        } else if event_name.ends_with("try") {
+            "try_open"
+        } else {
+            "open"
+        };
+        let state = state.map(str::to_owned);
+        let returned_state = state.clone();
+        let proofs = Arc::new(AtomicUsize::new(0));
+        let mut rpc = RpcModule::new(());
+        rpc.register_method(
+            "voyager_clientInfo",
+            |_, _, _| json!({"client_type": "test", "ibc_interface": "test"}),
+        )
+        .unwrap();
+        rpc.register_method("voyager_queryIbcState", move |params, _, _| {
+            let params: Vec<Value> = params.parse().unwrap();
+            assert_eq!(params[0], "origin");
+            assert_eq!(params[2], json!(height));
+            let path = if is_channel { "channel" } else { "connection" };
+            assert_eq!(params[3][path][if is_channel { "channel_id" } else { "connection_id" }], 1);
+            if rpc_error {
+                return Err(ErrorObjectOwned::owned(-1, "state RPC failed", None::<()>));
+            }
+            let stored = returned_state.as_ref().map(|state| if is_channel {
+                json!({"state": state, "connection_id": 1, "counterparty_channel_id": 2, "counterparty_port_id": "0x01", "version": "test"})
+            } else {
+                json!({"state": state, "client_id": 1, "counterparty_client_id": 2, "counterparty_connection_id": 2})
+            });
+            Ok::<_, ErrorObjectOwned>(json!({"height": height, "state": stored}))
+        }).unwrap();
+        let proof_count = proofs.clone();
+        rpc.register_method("voyager_queryIbcProof", move |params, _, _| {
+            let params: Vec<Value> = params.parse().unwrap();
+            assert_eq!(params[0], "origin");
+            assert_eq!(params[2], json!(height));
+            proof_count.fetch_add(1, Ordering::SeqCst);
+            json!({"Proof": {"proof_type": "membership", "height": height, "proof": {}}})
+        })
+        .unwrap();
+        rpc.register_method("voyager_encodeProof", |_, _, _| "0x01")
+            .unwrap();
+        let server = ServerBuilder::default().build("127.0.0.1:0").await.unwrap();
+        let address = server.local_addr().unwrap();
+        let handle = server.start(rpc);
+        let client = VoyagerClient::new(
+            HttpClientBuilder::default()
+                .build(format!("http://{address}"))
+                .unwrap(),
+        );
+        let connection = json!({"state": "open", "client_id": 1, "counterparty_client_id": 2, "counterparty_connection_id": 2});
+        let mut value = if is_channel {
+            json!({"port_id": "0x01", "channel_id": 1, "counterparty_port_id": "0x02", "connection": connection, "version": "test"})
+        } else {
+            json!({"connection_id": 1, "client_id": 1, "counterparty_client_id": 2})
+        };
+        if !event_name.ends_with("init") {
+            value[if is_channel {
+                "counterparty_channel_id"
+            } else {
+                "counterparty_connection_id"
+            }] = json!(2);
+        }
+        let event: EventUnion =
+            serde_json::from_value(json!({"@type": event_name, "@value": value})).unwrap();
+        let result = MakeMsg::<IbcUnion> {
+            origin_chain_id: ChainId::new("origin"),
+            target_chain_id: ChainId::new("target"),
+            origin_chain_proof_height: height,
+            event,
+        }
+        .call(&client)
+        .await;
+        if rpc_error || state.is_none() {
+            assert!(result.is_err(), "{event_name}: query errors must propagate");
+            assert_eq!(proofs.load(Ordering::SeqCst), 0);
+        } else if state.as_deref() == Some(expected) {
+            assert!(
+                matches!(result.unwrap(), Op::Data(_)),
+                "{event_name}: matching state must emit a datagram"
+            );
+            assert_eq!(proofs.load(Ordering::SeqCst), 1);
+        } else {
+            assert!(
+                matches!(result.unwrap(), Op::Noop),
+                "{event_name}: mismatching state must skip the datagram"
+            );
+            assert_eq!(proofs.load(Ordering::SeqCst), 0);
+        }
+        handle.stop().unwrap();
+        handle.stopped().await;
+    }
+
+    #[tokio::test]
+    async fn union_handshake_calls_check_state_before_querying_proofs() {
+        for event in [
+            "connection_open_init",
+            "connection_open_try",
+            "connection_open_ack",
+            "channel_open_init",
+            "channel_open_try",
+            "channel_open_ack",
+        ] {
+            for state in ["init", "try_open", "open"] {
+                run_union_handshake(event, Some(state), false).await;
+            }
+            if event.starts_with("channel") {
+                run_union_handshake(event, Some("closed"), false).await;
+            }
+            run_union_handshake(event, None, false).await;
+            run_union_handshake(event, None, true).await;
+        }
+    }
 }
