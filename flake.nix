@@ -645,12 +645,10 @@
 
   nixConfig = {
     extra-substituters = [
-      # "https://union.cachix.org/"
-      "https://cache.garnix.io"
+      "https://union.cachix.org/"
     ];
     extra-trusted-public-keys = [
-      # "union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M="
-      "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
+      "union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M="
     ];
   };
 }
