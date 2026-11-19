@@ -4,6 +4,8 @@ use std::{fmt::Debug, path::Path};
 
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
+use crate::Client;
+
 #[track_caller]
 fn ensure_json<T: DeserializeOwned + PartialEq + Debug>(path: impl AsRef<Path>, t: T) {
     let json = std::fs::read_to_string(path).unwrap();
@@ -427,3 +429,16 @@ struct JsonRpcResponse<T> {
 //         );
 //     }
 // }
+
+#[tokio::test]
+#[ignore = "hits live mainnet RPC"]
+async fn render_query_returns_data() {
+    let client = Client::new("https://rpc.gno.land:443").await.unwrap();
+
+    let out = client
+        .render_query("gno.land/r/gov/dao", "", None)
+        .await
+        .unwrap();
+
+    assert!(out.is_some(), "render_query must return rendered data");
+}

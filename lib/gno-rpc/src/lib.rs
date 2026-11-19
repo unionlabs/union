@@ -189,7 +189,11 @@ impl Client {
             .await?
             .response;
 
-        Ok(res.value)
+        if let Some(error) = res.response_base.error {
+            return Err(JsonRpcError::Custom(ErrorReporter(error).to_string()));
+        }
+
+        Ok(res.response_base.data)
     }
 
     #[instrument(
